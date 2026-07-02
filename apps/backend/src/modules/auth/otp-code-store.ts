@@ -2,6 +2,7 @@ export interface StoredOtpCode {
   code: string;
   createdAt: Date;
   expiresAt: Date;
+  attempts: number;
 }
 
 export interface OtpCodeStore {

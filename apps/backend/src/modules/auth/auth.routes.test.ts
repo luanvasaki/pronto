@@ -1,6 +1,10 @@
+import { eq } from 'drizzle-orm';
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { db } from '../../db/client';
+import { users } from '../../db/schema';
 import { createApp } from '../../app';
+import { otpCodeStore } from './otp-code-store';
 
 describe('POST /auth/otp/request', () => {
   it('responde 200 pra um celular válido', async () => {
@@ -29,5 +33,39 @@ describe('POST /auth/otp/request', () => {
     const second = await request(app).post('/auth/otp/request').send({ phone });
 
     expect(second.status).toBe(429);
+  });
+});
+
+describe('fluxo completo: pedir OTP e validar', () => {
+  const phone = '+5511988887002';
+
+  afterEach(async () => {
+    await db.delete(users).where(eq(users.phone, phone));
+  });
+
+  it('cria a conta depois de pedir e validar o código certo', async () => {
+    const app = createApp();
+
+    await request(app).post('/auth/otp/request').send({ phone });
+    const stored = await otpCodeStore.find(phone);
+
+    const response = await request(app)
+      .post('/auth/otp/verify')
+      .send({ phone, code: stored?.code });
+
+    expect(response.status).toBe(200);
+    expect(response.body.isNewUser).toBe(true);
+    expect(response.body.user.phone).toBe(phone);
+  });
+
+  it('responde 401 pra código errado', async () => {
+    const app = createApp();
+    await request(app).post('/auth/otp/request').send({ phone });
+
+    const response = await request(app)
+      .post('/auth/otp/verify')
+      .send({ phone, code: '000000' });
+
+    expect(response.status).toBe(401);
   });
 });

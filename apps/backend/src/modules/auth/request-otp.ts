@@ -36,6 +36,7 @@ export async function requestOtp(
     code,
     createdAt: new Date(now),
     expiresAt: new Date(now + CODE_TTL_MS),
+    attempts: 0,
   });
 
   await sender.send(phone, code);
