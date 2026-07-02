@@ -9,7 +9,16 @@ npm install --workspace=apps/backend   # a partir da raiz do monorepo
 npm run dev --workspace=apps/backend   # servidor com reload em src/server.ts
 ```
 
-Servidor sobe em `http://localhost:3000` (configurável via `.env`, veja `.env.example`).
+Servidor sobe em `http://localhost:3000` (configurável via `.env`, veja `.env.example`). Precisa do Postgres local rodando — veja o README na raiz do monorepo.
+
+## Banco de dados
+
+```bash
+npm run db:generate --workspace=apps/backend   # gera SQL a partir do schema em src/db/schema
+npm run db:migrate --workspace=apps/backend    # aplica migrações pendentes no DATABASE_URL do .env
+```
+
+Nunca editar um arquivo em `migrations/` à mão depois de gerado — mudança de schema é sempre um novo `db:generate`.
 
 ## Testando
 
@@ -18,7 +27,7 @@ npm test --workspace=apps/backend        # roda uma vez
 npm run test:watch --workspace=apps/backend
 ```
 
-Os testes usam `supertest` contra o `app` exportado de `src/app.ts` — nenhuma porta de rede real é aberta.
+Os testes de rota usam `supertest` contra o `app` exportado de `src/app.ts` (nenhuma porta de rede real é aberta). Os testes de schema/repositório usam o Postgres real do `.env` — por isso precisam do banco local de pé.
 
 ## Lint e build
 

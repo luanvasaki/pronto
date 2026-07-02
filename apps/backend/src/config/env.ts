@@ -15,7 +15,18 @@ function readPort(): number {
   return parsed;
 }
 
+function readDatabaseUrl(): string {
+  const raw = process.env.DATABASE_URL;
+
+  if (!raw) {
+    throw new Error('DATABASE_URL não definida. Veja apps/backend/.env.example.');
+  }
+
+  return raw;
+}
+
 export const env = {
   port: readPort(),
   nodeEnv: process.env.NODE_ENV ?? 'development',
+  databaseUrl: readDatabaseUrl(),
 };
