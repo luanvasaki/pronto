@@ -43,6 +43,13 @@
       "when": 1783032497108,
       "tag": "0005_dear_toad",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783032730670,
+      "tag": "0006_premium_wallflower",
+      "breakpoints": true
     }
   ]
 }
