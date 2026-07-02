@@ -1,0 +1,13 @@
+{
+  "name": "shift",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Marketplace de contratação de freelancers sob demanda (staffing avulso para bares, restaurantes, eventos e hotéis).",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}
