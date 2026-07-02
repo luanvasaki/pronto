@@ -29,6 +29,8 @@ npm run test:watch --workspace=apps/backend
 
 Os testes de rota usam `supertest` contra o `app` exportado de `src/app.ts` (nenhuma porta de rede real é aberta). Os testes de schema/repositório usam o Postgres real do `.env` — por isso precisam do banco local de pé.
 
+**Cuidado com fixture entre arquivos de teste**: o Vitest roda arquivos em paralelo contra o mesmo banco. Um valor fixo (telefone, CNPJ) reusado em dois arquivos diferentes colide sob concorrência de forma intermitente — cada arquivo de teste precisa dos seus próprios valores únicos, não só únicos dentro do próprio arquivo.
+
 ## Lint e build
 
 ```bash
