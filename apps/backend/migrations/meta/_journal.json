@@ -8,6 +8,13 @@
       "when": 1782960113885,
       "tag": "0000_tiny_kingpin",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782987082776,
+      "tag": "0001_parallel_echo",
+      "breakpoints": true
     }
   ]
 }
