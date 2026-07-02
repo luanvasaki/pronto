@@ -1,4 +1,5 @@
 import express, { Express } from 'express';
+import { authRoutes } from './modules/auth/auth.routes';
 import { healthRoutes } from './modules/health/health.routes';
 import { errorHandler } from './shared/middlewares/error-handler';
 import { notFoundHandler } from './shared/middlewares/not-found';
@@ -14,6 +15,7 @@ export function createApp(): Express {
   app.use(express.json());
 
   app.use(healthRoutes);
+  app.use(authRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
