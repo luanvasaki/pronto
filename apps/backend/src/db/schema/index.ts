@@ -7,3 +7,4 @@ export * from './applications';
 export * from './shifts';
 export * from './ratings';
 export * from './payments';
+export * from './documents';

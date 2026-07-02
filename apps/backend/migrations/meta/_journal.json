@@ -64,6 +64,13 @@
       "when": 1783033039385,
       "tag": "0008_youthful_nitro",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783033241849,
+      "tag": "0009_flawless_cable",
+      "breakpoints": true
     }
   ]
 }
