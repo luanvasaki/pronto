@@ -1,5 +1,25 @@
 # business
 
-PWA da empresa + painel administrativo (Next.js) — também instalável via navegador.
+PWA da empresa + painel administrativo (Next.js App Router) — instalável direto do navegador, sem loja de app.
 
-Scaffold ainda não existe — ver tarefa **T0.7** do roadmap.
+## Rodando localmente
+
+```bash
+npm install --workspace=apps/business   # a partir da raiz do monorepo
+npm run dev --workspace=apps/business
+```
+
+Abre em `http://localhost:3000` (ou outra porta, se `backend`/`worker` já estiverem rodando).
+
+## PWA
+
+- `src/app/manifest.ts` gera o `/manifest.webmanifest` (nome, ícones, cor de tema).
+- `public/sw.js` é o service worker — hoje só o mínimo pra instalabilidade, sem estratégia de cache.
+- Ícones em `public/icons/` são placeholder — a identidade visual real ainda não existe.
+
+## Lint e build
+
+```bash
+npm run lint --workspace=apps/business
+npm run build --workspace=apps/business
+```
