@@ -71,6 +71,13 @@
       "when": 1783033241849,
       "tag": "0009_flawless_cable",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783034931693,
+      "tag": "0010_lively_shinko_yamashiro",
+      "breakpoints": true
     }
   ]
 }
