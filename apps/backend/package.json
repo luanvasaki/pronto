@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx src/db/seed.ts"
   },
   "dependencies": {
     "dotenv": "^17.4.2",

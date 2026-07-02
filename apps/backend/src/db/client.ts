@@ -7,3 +7,8 @@ const pool = new Pool({ connectionString: env.databaseUrl });
 
 /** Instância única do Drizzle — repositórios importam isso, nada mais. */
 export const db = drizzle(pool, { schema });
+
+/** Fecha o pool — usado por scripts de uma execução só (seed, etc.). */
+export async function closeDb(): Promise<void> {
+  await pool.end();
+}
