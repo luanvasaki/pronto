@@ -50,6 +50,13 @@
       "when": 1783032730670,
       "tag": "0006_premium_wallflower",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783032894488,
+      "tag": "0007_square_juggernaut",
+      "breakpoints": true
     }
   ]
 }

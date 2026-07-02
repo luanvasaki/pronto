@@ -5,3 +5,4 @@ export * from './skill-categories';
 export * from './jobs';
 export * from './applications';
 export * from './shifts';
+export * from './ratings';
