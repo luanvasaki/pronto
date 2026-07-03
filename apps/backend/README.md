@@ -9,7 +9,7 @@ npm install --workspace=apps/backend   # a partir da raiz do monorepo
 npm run dev --workspace=apps/backend   # servidor com reload em src/server.ts
 ```
 
-Servidor sobe em `http://localhost:3000` (configurável via `.env`, veja `.env.example`). Precisa do Postgres local rodando — veja o README na raiz do monorepo.
+Servidor sobe em `http://localhost:4000` (configurável via `.env`, veja `.env.example` — a porta é 4000, não 3000, pra não brigar com o Next.js do `worker`/`business`). Precisa do Postgres local rodando — veja o README na raiz do monorepo.
 
 ## Banco de dados
 
