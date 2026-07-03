@@ -9,3 +9,4 @@ export * from './ratings';
 export * from './payments';
 export * from './documents';
 export * from './refresh-tokens';
+export * from './worker-skills';
