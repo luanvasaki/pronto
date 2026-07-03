@@ -71,3 +71,43 @@ describe('fluxo completo: pedir OTP e validar', () => {
     expect(response.status).toBe(401);
   });
 });
+
+describe('GET /auth/me', () => {
+  const phone = '+5511988887003';
+
+  afterEach(async () => {
+    await db.delete(users).where(eq(users.phone, phone));
+  });
+
+  it('responde 401 sem token', async () => {
+    const app = createApp();
+
+    const response = await request(app).get('/auth/me');
+
+    expect(response.status).toBe(401);
+  });
+
+  it('responde 401 com token inválido', async () => {
+    const app = createApp();
+
+    const response = await request(app).get('/auth/me').set('Authorization', 'Bearer lixo');
+
+    expect(response.status).toBe(401);
+  });
+
+  it('responde 200 com os dados do usuário logado', async () => {
+    const app = createApp();
+    await request(app).post('/auth/otp/request').send({ phone });
+    const stored = await otpCodeStore.find(phone);
+    const login = await request(app)
+      .post('/auth/otp/verify')
+      .send({ phone, code: stored?.code });
+
+    const response = await request(app)
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${login.body.accessToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.user.phone).toBe(phone);
+  });
+});

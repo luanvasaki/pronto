@@ -5,13 +5,14 @@ import { HttpError } from '../../shared/errors/http-error';
 import { issueTokens } from './issue-tokens';
 import { OtpCodeStore } from './otp-code-store';
 import { isValidPhone } from './request-otp';
+import { toUserResponse, UserResponse } from './user-response';
 
 const MAX_ATTEMPTS = 5;
 const CODE_PATTERN = /^\d{6}$/;
 const INVALID_CODE_MESSAGE = 'Código inválido ou expirado.';
 
 export interface VerifyOtpResult {
-  user: { id: string; phone: string; status: string };
+  user: UserResponse;
   isNewUser: boolean;
   accessToken: string;
   refreshToken: string;
@@ -65,8 +66,4 @@ export async function verifyOtp(
 
   const tokens = await issueTokens(createdUser.id);
   return { user: toUserResponse(createdUser), isNewUser: true, ...tokens };
-}
-
-function toUserResponse(user: typeof users.$inferSelect): VerifyOtpResult['user'] {
-  return { id: user.id, phone: user.phone, status: user.status };
 }
