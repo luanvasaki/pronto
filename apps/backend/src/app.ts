@@ -4,6 +4,7 @@ import express, { Express } from 'express';
 import { env } from './config/env';
 import { authRoutes } from './modules/auth/auth.routes';
 import { healthRoutes } from './modules/health/health.routes';
+import { skillCategoriesRoutes } from './modules/skill-categories/skill-categories.routes';
 import { workerDocumentRoutes } from './modules/workers/worker-document.routes';
 import { workerProfileRoutes } from './modules/workers/worker-profile.routes';
 import { errorHandler } from './shared/middlewares/error-handler';
@@ -24,6 +25,7 @@ export function createApp(): Express {
   app.use(express.json());
 
   app.use(healthRoutes);
+  app.use(skillCategoriesRoutes);
   app.use(authRoutes);
   app.use(workerProfileRoutes);
   app.use(workerDocumentRoutes);
