@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError } from '../../../lib/api';
+import { ApiError } from '@shift/shared';
 import CodigoPage from './page';
 
 const replaceMock = vi.fn();
@@ -14,9 +14,13 @@ vi.mock('next/navigation', () => ({
 }));
 
 const verifyOtpMock = vi.fn();
-vi.mock('../../../lib/auth-api', () => ({
-  verifyOtp: (...args: unknown[]) => verifyOtpMock(...args),
-}));
+vi.mock('@shift/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@shift/shared')>();
+  return {
+    ...actual,
+    verifyOtp: (...args: unknown[]) => verifyOtpMock(...args),
+  };
+});
 
 describe('CodigoPage', () => {
   beforeEach(() => {

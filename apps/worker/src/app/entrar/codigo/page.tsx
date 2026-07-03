@@ -3,12 +3,9 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useEffect, useState } from 'react';
+import { ApiError, extractDigits, isValidOtpCode, verifyOtp } from '@shift/shared';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
-import { ApiError } from '../../../lib/api';
-import { verifyOtp } from '../../../lib/auth-api';
-import { extractDigits } from '../../../lib/digits';
-import { isValidOtpCode } from './otp-code';
 
 export default function CodigoPage() {
   return (

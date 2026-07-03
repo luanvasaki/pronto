@@ -2,8 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
+import { ApiError } from '@shift/shared';
 import { Button } from '../../../components/ui/button';
-import { ApiError } from '../../../lib/api';
 import { uploadWorkerDocument } from '../../../lib/worker-profile-api';
 
 export default function DocumentoPage() {

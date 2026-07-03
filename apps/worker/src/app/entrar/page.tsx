@@ -2,11 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
+import { ApiError, extractDigits, isValidBrazilianPhone, requestOtp, toE164 } from '@shift/shared';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { ApiError } from '../../lib/api';
-import { requestOtp } from '../../lib/auth-api';
-import { extractDigits, isValidBrazilianPhone, toE164 } from './phone';
 
 export default function EntrarPage() {
   const router = useRouter();

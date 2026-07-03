@@ -2,9 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
+import { ApiError } from '@shift/shared';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { ApiError } from '../../lib/api';
 import {
   listSkillCategories,
   SkillCategory,

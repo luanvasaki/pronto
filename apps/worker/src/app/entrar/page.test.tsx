@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError } from '../../lib/api';
+import { ApiError } from '@shift/shared';
 import EntrarPage from './page';
 
 const pushMock = vi.fn();
@@ -10,9 +10,13 @@ vi.mock('next/navigation', () => ({
 }));
 
 const requestOtpMock = vi.fn();
-vi.mock('../../lib/auth-api', () => ({
-  requestOtp: (...args: unknown[]) => requestOtpMock(...args),
-}));
+vi.mock('@shift/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@shift/shared')>();
+  return {
+    ...actual,
+    requestOtp: (...args: unknown[]) => requestOtpMock(...args),
+  };
+});
 
 describe('EntrarPage', () => {
   beforeEach(() => {
