@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
+import { ApiError } from '../../../lib/api';
+import { verifyOtp } from '../../../lib/auth-api';
 import { extractDigits } from '../../../lib/digits';
 import { isValidOtpCode } from './otp-code';
 
@@ -21,6 +23,8 @@ function CodigoForm() {
   const searchParams = useSearchParams();
   const phone = searchParams.get('phone');
   const [code, setCode] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!phone) {
@@ -32,12 +36,27 @@ function CodigoForm() {
     return null;
   }
 
+  // Reatribuído como `const` própria pro TypeScript carregar o tipo
+  // estreitado (string, não string | null) pro closure do handleSubmit.
+  const verifiedPhone: string = phone;
   const isValid = isValidOtpCode(code);
 
-  function handleSubmit(event: FormEvent): void {
+  async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
-    if (!isValid) return;
-    // TODO (T2.10): chamar POST /auth/otp/verify com { phone, code }
+    if (!isValid || isSubmitting) return;
+
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      await verifyOtp(verifiedPhone, code);
+      // TODO: quando existir área autenticada de verdade, trocar por
+      // um destino real — hoje "/" ainda é só um placeholder.
+      router.push('/');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Não foi possível confirmar o código.');
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -60,10 +79,11 @@ function CodigoForm() {
           placeholder="000000"
           value={code}
           onChange={(event) => setCode(extractDigits(event.target.value))}
+          error={error ?? undefined}
           className="font-mono text-lg tracking-[0.3em]"
         />
 
-        <Button type="submit" disabled={!isValid}>
+        <Button type="submit" disabled={!isValid} isLoading={isSubmitting}>
           Confirmar
         </Button>
 

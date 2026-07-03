@@ -4,19 +4,33 @@ import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { ApiError } from '../../lib/api';
+import { requestOtp } from '../../lib/auth-api';
 import { extractDigits, isValidBrazilianPhone, toE164 } from './phone';
 
 export default function EntrarPage() {
   const router = useRouter();
   const [phone, setPhone] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const isValid = isValidBrazilianPhone(phone);
 
-  function handleSubmit(event: FormEvent): void {
+  async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
-    if (!isValid) return;
+    if (!isValid || isSubmitting) return;
 
-    router.push(`/entrar/codigo?phone=${encodeURIComponent(toE164(phone))}`);
+    setError(null);
+    setIsSubmitting(true);
+    const e164 = toE164(phone);
+
+    try {
+      await requestOtp(e164);
+      router.push(`/entrar/codigo?phone=${encodeURIComponent(e164)}`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Não foi possível enviar o código.');
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -38,9 +52,10 @@ export default function EntrarPage() {
           placeholder="11999990000"
           value={phone}
           onChange={(event) => setPhone(extractDigits(event.target.value))}
+          error={error ?? undefined}
         />
 
-        <Button type="submit" disabled={!isValid}>
+        <Button type="submit" disabled={!isValid} isLoading={isSubmitting}>
           Continuar
         </Button>
       </form>
