@@ -1,10 +1,21 @@
 import { eq } from 'drizzle-orm';
+import { Express } from 'express';
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { users } from '../../db/schema';
 import { createApp } from '../../app';
 import { otpCodeStore } from './otp-code-store';
+
+async function loginAndGetTokens(
+  app: Express,
+  phone: string,
+): Promise<{ accessToken: string; refreshToken: string }> {
+  await request(app).post('/auth/otp/request').send({ phone });
+  const stored = await otpCodeStore.find(phone);
+  const login = await request(app).post('/auth/otp/verify').send({ phone, code: stored?.code });
+  return { accessToken: login.body.accessToken, refreshToken: login.body.refreshToken };
+}
 
 describe('POST /auth/otp/request', () => {
   it('responde 200 pra um celular válido', async () => {
@@ -109,5 +120,60 @@ describe('GET /auth/me', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.user.phone).toBe(phone);
+  });
+});
+
+describe('POST /auth/refresh', () => {
+  const phone = '+5511988887004';
+
+  afterEach(async () => {
+    await db.delete(users).where(eq(users.phone, phone));
+  });
+
+  it('responde 401 pra refresh token desconhecido', async () => {
+    const app = createApp();
+
+    const response = await request(app).post('/auth/refresh').send({ refreshToken: 'lixo' });
+
+    expect(response.status).toBe(401);
+  });
+
+  it('emite um par novo de tokens e o antigo deixa de servir', async () => {
+    const app = createApp();
+    const { refreshToken } = await loginAndGetTokens(app, phone);
+
+    const response = await request(app).post('/auth/refresh').send({ refreshToken });
+    expect(response.status).toBe(200);
+    expect(response.body.refreshToken).not.toBe(refreshToken);
+
+    const reuse = await request(app).post('/auth/refresh').send({ refreshToken });
+    expect(reuse.status).toBe(401);
+  });
+});
+
+describe('POST /auth/logout', () => {
+  const phone = '+5511988887005';
+
+  afterEach(async () => {
+    await db.delete(users).where(eq(users.phone, phone));
+  });
+
+  it('responde 200 e invalida o refresh token pra uso futuro', async () => {
+    const app = createApp();
+    const { refreshToken } = await loginAndGetTokens(app, phone);
+
+    const logoutResponse = await request(app).post('/auth/logout').send({ refreshToken });
+    expect(logoutResponse.status).toBe(200);
+
+    const afterLogout = await request(app).post('/auth/refresh').send({ refreshToken });
+    expect(afterLogout.status).toBe(401);
+  });
+
+  it('responde 200 mesmo pra refresh token desconhecido', async () => {
+    const app = createApp();
+
+    const response = await request(app).post('/auth/logout').send({ refreshToken: 'lixo' });
+
+    expect(response.status).toBe(200);
   });
 });
