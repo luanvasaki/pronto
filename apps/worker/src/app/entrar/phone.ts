@@ -1,9 +1,4 @@
-const NON_DIGIT = /\D/g;
-
-/** O que o usuário digita vira só números — máscara fica pra depois, se precisar. */
-export function extractDigits(raw: string): string {
-  return raw.replace(NON_DIGIT, '');
-}
+export { extractDigits } from '../../lib/digits';
 
 /** Celular brasileiro: DDD (2) + número (8 ou 9 dígitos). */
 export function isValidBrazilianPhone(digits: string): boolean {
