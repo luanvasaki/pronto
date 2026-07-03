@@ -1,0 +1,56 @@
+import { eq, inArray } from 'drizzle-orm';
+import { db } from '../../db/client';
+import { skillCategories, workerProfiles, workerSkills } from '../../db/schema';
+import { HttpError } from '../../shared/errors/http-error';
+
+export interface UpsertWorkerProfileInput {
+  fullName: string | undefined;
+  categoryIds: string[] | undefined;
+}
+
+export interface WorkerProfileResponse {
+  fullName: string;
+  categoryIds: string[];
+}
+
+/**
+ * Cria ou atualiza numa chamada só — a tela de cadastro manda nome +
+ * categorias juntos, não em dois passos. Substitui as categorias
+ * associadas em vez de diffar o que já existia: mais simples e
+ * igualmente correto pro volume de categorias por trabalhador (poucas).
+ */
+export async function upsertWorkerProfile(
+  userId: string,
+  input: UpsertWorkerProfileInput,
+): Promise<WorkerProfileResponse> {
+  const fullName = input.fullName?.trim();
+  const categoryIds = input.categoryIds;
+
+  if (!fullName || fullName.length < 2) {
+    throw new HttpError(400, 'Nome é obrigatório.');
+  }
+
+  if (!categoryIds || categoryIds.length === 0) {
+    throw new HttpError(400, 'Escolha ao menos uma categoria.');
+  }
+
+  const validCategories = await db.query.skillCategories.findMany({
+    where: inArray(skillCategories.id, categoryIds),
+  });
+  if (validCategories.length !== new Set(categoryIds).size) {
+    throw new HttpError(400, 'Categoria inválida.');
+  }
+
+  await db
+    .insert(workerProfiles)
+    .values({ userId, fullName })
+    .onConflictDoUpdate({
+      target: workerProfiles.userId,
+      set: { fullName, updatedAt: new Date() },
+    });
+
+  await db.delete(workerSkills).where(eq(workerSkills.workerId, userId));
+  await db.insert(workerSkills).values(categoryIds.map((categoryId) => ({ workerId: userId, categoryId })));
+
+  return { fullName, categoryIds };
+}

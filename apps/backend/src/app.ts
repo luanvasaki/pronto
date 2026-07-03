@@ -4,6 +4,7 @@ import express, { Express } from 'express';
 import { env } from './config/env';
 import { authRoutes } from './modules/auth/auth.routes';
 import { healthRoutes } from './modules/health/health.routes';
+import { workerProfileRoutes } from './modules/workers/worker-profile.routes';
 import { errorHandler } from './shared/middlewares/error-handler';
 import { notFoundHandler } from './shared/middlewares/not-found';
 
@@ -23,6 +24,7 @@ export function createApp(): Express {
 
   app.use(healthRoutes);
   app.use(authRoutes);
+  app.use(workerProfileRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
