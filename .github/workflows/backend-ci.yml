@@ -35,6 +35,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://shift:shift_ci_password@localhost:5432/shift_test
       JWT_SECRET: ci-only-secret-never-used-outside-this-workflow
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3200
 
     steps:
       - uses: actions/checkout@v4

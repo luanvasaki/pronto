@@ -7,14 +7,21 @@ import { users } from '../../db/schema';
 import { createApp } from '../../app';
 import { otpCodeStore } from './otp-code-store';
 
-async function loginAndGetTokens(
-  app: Express,
-  phone: string,
-): Promise<{ accessToken: string; refreshToken: string }> {
-  await request(app).post('/auth/otp/request').send({ phone });
+type Agent = ReturnType<typeof request.agent>;
+
+async function requestOtpCode(agent: Agent, phone: string): Promise<string> {
+  await agent.post('/auth/otp/request').send({ phone });
   const stored = await otpCodeStore.find(phone);
-  const login = await request(app).post('/auth/otp/verify').send({ phone, code: stored?.code });
-  return { accessToken: login.body.accessToken, refreshToken: login.body.refreshToken };
+  return stored?.code ?? '';
+}
+
+function extractSetCookie(headers: Record<string, unknown>, name: string): string {
+  const raw = (headers['set-cookie'] ?? []) as string[];
+  const found = raw.find((cookie) => cookie.startsWith(`${name}=`));
+  if (!found) {
+    throw new Error(`Cookie ${name} não encontrado na resposta.`);
+  }
+  return found.split(';')[0];
 }
 
 describe('POST /auth/otp/request', () => {
@@ -54,30 +61,35 @@ describe('fluxo completo: pedir OTP e validar', () => {
     await db.delete(users).where(eq(users.phone, phone));
   });
 
-  it('cria a conta depois de pedir e validar o código certo', async () => {
+  it('cria a conta e manda os cookies de sessão httpOnly', async () => {
     const app = createApp();
+    const agent = request.agent(app);
+    const code = await requestOtpCode(agent, phone);
 
-    await request(app).post('/auth/otp/request').send({ phone });
-    const stored = await otpCodeStore.find(phone);
-
-    const response = await request(app)
-      .post('/auth/otp/verify')
-      .send({ phone, code: stored?.code });
+    const response = await agent.post('/auth/otp/verify').send({ phone, code });
 
     expect(response.status).toBe(200);
     expect(response.body.isNewUser).toBe(true);
     expect(response.body.user.phone).toBe(phone);
-    expect(response.body.accessToken).toEqual(expect.any(String));
-    expect(response.body.refreshToken).toEqual(expect.any(String));
+    // Tokens nunca voltam no corpo — só em cookie httpOnly.
+    expect(response.body.accessToken).toBeUndefined();
+    // extractSetCookie corta pro "nome=valor" (pra poder reapresentar
+    // como header Cookie depois) — o HttpOnly precisa do header cru.
+    const rawCookies = response.headers['set-cookie'] as unknown as string[];
+    expect(rawCookies.some((c) => c.startsWith('shift_access_token=') && c.includes('HttpOnly'))).toBe(
+      true,
+    );
+    expect(rawCookies.some((c) => c.startsWith('shift_refresh_token=') && c.includes('HttpOnly'))).toBe(
+      true,
+    );
   });
 
   it('responde 401 pra código errado', async () => {
     const app = createApp();
-    await request(app).post('/auth/otp/request').send({ phone });
+    const agent = request.agent(app);
+    await requestOtpCode(agent, phone);
 
-    const response = await request(app)
-      .post('/auth/otp/verify')
-      .send({ phone, code: '000000' });
+    const response = await agent.post('/auth/otp/verify').send({ phone, code: '000000' });
 
     expect(response.status).toBe(401);
   });
@@ -90,7 +102,7 @@ describe('GET /auth/me', () => {
     await db.delete(users).where(eq(users.phone, phone));
   });
 
-  it('responde 401 sem token', async () => {
+  it('responde 401 sem cookie de sessão', async () => {
     const app = createApp();
 
     const response = await request(app).get('/auth/me');
@@ -98,25 +110,23 @@ describe('GET /auth/me', () => {
     expect(response.status).toBe(401);
   });
 
-  it('responde 401 com token inválido', async () => {
+  it('responde 401 com cookie de token inválido', async () => {
     const app = createApp();
 
-    const response = await request(app).get('/auth/me').set('Authorization', 'Bearer lixo');
+    const response = await request(app)
+      .get('/auth/me')
+      .set('Cookie', 'shift_access_token=lixo');
 
     expect(response.status).toBe(401);
   });
 
-  it('responde 200 com os dados do usuário logado', async () => {
-    const app = createApp();
-    await request(app).post('/auth/otp/request').send({ phone });
-    const stored = await otpCodeStore.find(phone);
-    const login = await request(app)
-      .post('/auth/otp/verify')
-      .send({ phone, code: stored?.code });
+  it('responde 200 com os dados do usuário logado (cookie levado automaticamente pelo agent)', async () => {
+    const app: Express = createApp();
+    const agent = request.agent(app);
+    const code = await requestOtpCode(agent, phone);
+    await agent.post('/auth/otp/verify').send({ phone, code });
 
-    const response = await request(app)
-      .get('/auth/me')
-      .set('Authorization', `Bearer ${login.body.accessToken}`);
+    const response = await agent.get('/auth/me');
 
     expect(response.status).toBe(200);
     expect(response.body.user.phone).toBe(phone);
@@ -130,23 +140,27 @@ describe('POST /auth/refresh', () => {
     await db.delete(users).where(eq(users.phone, phone));
   });
 
-  it('responde 401 pra refresh token desconhecido', async () => {
+  it('responde 400 sem cookie de refresh', async () => {
     const app = createApp();
 
-    const response = await request(app).post('/auth/refresh').send({ refreshToken: 'lixo' });
+    const response = await request(app).post('/auth/refresh');
 
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(400);
   });
 
-  it('emite um par novo de tokens e o antigo deixa de servir', async () => {
+  it('emite cookies novos e o refresh antigo deixa de servir (reuso detectado)', async () => {
     const app = createApp();
-    const { refreshToken } = await loginAndGetTokens(app, phone);
+    const agent = request.agent(app);
+    const code = await requestOtpCode(agent, phone);
+    const login = await agent.post('/auth/otp/verify').send({ phone, code });
+    const oldRefreshCookie = extractSetCookie(login.headers, 'shift_refresh_token');
 
-    const response = await request(app).post('/auth/refresh').send({ refreshToken });
-    expect(response.status).toBe(200);
-    expect(response.body.refreshToken).not.toBe(refreshToken);
+    const refreshed = await agent.post('/auth/refresh');
+    expect(refreshed.status).toBe(200);
 
-    const reuse = await request(app).post('/auth/refresh').send({ refreshToken });
+    // Reapresenta o cookie antigo (já girado) numa requisição separada,
+    // simulando alguém com uma cópia antiga do token.
+    const reuse = await request(app).post('/auth/refresh').set('Cookie', oldRefreshCookie);
     expect(reuse.status).toBe(401);
   });
 });
@@ -158,21 +172,24 @@ describe('POST /auth/logout', () => {
     await db.delete(users).where(eq(users.phone, phone));
   });
 
-  it('responde 200 e invalida o refresh token pra uso futuro', async () => {
+  it('invalida o cookie de refresh pra uso futuro', async () => {
     const app = createApp();
-    const { refreshToken } = await loginAndGetTokens(app, phone);
+    const agent = request.agent(app);
+    const code = await requestOtpCode(agent, phone);
+    const login = await agent.post('/auth/otp/verify').send({ phone, code });
+    const refreshCookie = extractSetCookie(login.headers, 'shift_refresh_token');
 
-    const logoutResponse = await request(app).post('/auth/logout').send({ refreshToken });
+    const logoutResponse = await agent.post('/auth/logout');
     expect(logoutResponse.status).toBe(200);
 
-    const afterLogout = await request(app).post('/auth/refresh').send({ refreshToken });
+    const afterLogout = await request(app).post('/auth/refresh').set('Cookie', refreshCookie);
     expect(afterLogout.status).toBe(401);
   });
 
-  it('responde 200 mesmo pra refresh token desconhecido', async () => {
+  it('responde 200 mesmo sem cookie nenhum', async () => {
     const app = createApp();
 
-    const response = await request(app).post('/auth/logout').send({ refreshToken: 'lixo' });
+    const response = await request(app).post('/auth/logout');
 
     expect(response.status).toBe(200);
   });

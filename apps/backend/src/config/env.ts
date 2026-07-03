@@ -35,9 +35,20 @@ function readJwtSecret(): string {
   return raw;
 }
 
+function readCorsOrigins(): string[] {
+  const raw = process.env.CORS_ORIGINS;
+
+  if (!raw) {
+    throw new Error('CORS_ORIGINS não definida. Veja apps/backend/.env.example.');
+  }
+
+  return raw.split(',').map((origin) => origin.trim());
+}
+
 export const env = {
   port: readPort(),
   nodeEnv: process.env.NODE_ENV ?? 'development',
   databaseUrl: readDatabaseUrl(),
   jwtSecret: readJwtSecret(),
+  corsOrigins: readCorsOrigins(),
 };
