@@ -5,6 +5,7 @@ build/
 .expo/
 .turbo/
 coverage/
+uploads/
 
 .env
 .env.local
