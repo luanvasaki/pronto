@@ -70,6 +70,8 @@ describe('verifyOtp', () => {
     expect(result.isNewUser).toBe(true);
     expect(result.user.phone).toBe(NEW_USER_PHONE);
     expect(result.user.status).toBe('active');
+    expect(result.accessToken).toEqual(expect.any(String));
+    expect(result.refreshToken).toEqual(expect.any(String));
   });
 
   it('loga (não duplica) quando o celular já tem conta', async () => {
@@ -81,6 +83,7 @@ describe('verifyOtp', () => {
 
     expect(result.isNewUser).toBe(false);
     expect(result.user.id).toBe(existing.id);
+    expect(result.accessToken).toEqual(expect.any(String));
   });
 
   it('descarta o código depois de usado — não dá pra reusar', async () => {

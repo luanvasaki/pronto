@@ -25,8 +25,19 @@ function readDatabaseUrl(): string {
   return raw;
 }
 
+function readJwtSecret(): string {
+  const raw = process.env.JWT_SECRET;
+
+  if (!raw) {
+    throw new Error('JWT_SECRET não definida. Veja apps/backend/.env.example.');
+  }
+
+  return raw;
+}
+
 export const env = {
   port: readPort(),
   nodeEnv: process.env.NODE_ENV ?? 'development',
   databaseUrl: readDatabaseUrl(),
+  jwtSecret: readJwtSecret(),
 };

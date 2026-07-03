@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { users } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
+import { issueTokens } from './issue-tokens';
 import { OtpCodeStore } from './otp-code-store';
 import { isValidPhone } from './request-otp';
 
@@ -12,6 +13,8 @@ const INVALID_CODE_MESSAGE = 'Código inválido ou expirado.';
 export interface VerifyOtpResult {
   user: { id: string; phone: string; status: string };
   isNewUser: boolean;
+  accessToken: string;
+  refreshToken: string;
 }
 
 /**
@@ -47,7 +50,8 @@ export async function verifyOtp(
 
   const existingUser = await db.query.users.findFirst({ where: eq(users.phone, phone) });
   if (existingUser) {
-    return { user: toUserResponse(existingUser), isNewUser: false };
+    const tokens = await issueTokens(existingUser.id);
+    return { user: toUserResponse(existingUser), isNewUser: false, ...tokens };
   }
 
   const [createdUser] = await db
@@ -59,7 +63,8 @@ export async function verifyOtp(
     throw new HttpError(500, 'Falha ao criar usuário.');
   }
 
-  return { user: toUserResponse(createdUser), isNewUser: true };
+  const tokens = await issueTokens(createdUser.id);
+  return { user: toUserResponse(createdUser), isNewUser: true, ...tokens };
 }
 
 function toUserResponse(user: typeof users.$inferSelect): VerifyOtpResult['user'] {

@@ -56,6 +56,8 @@ describe('fluxo completo: pedir OTP e validar', () => {
     expect(response.status).toBe(200);
     expect(response.body.isNewUser).toBe(true);
     expect(response.body.user.phone).toBe(phone);
+    expect(response.body.accessToken).toEqual(expect.any(String));
+    expect(response.body.refreshToken).toEqual(expect.any(String));
   });
 
   it('responde 401 pra código errado', async () => {
