@@ -25,6 +25,18 @@ describe('apiFetch', () => {
     );
   });
 
+  it('não força Content-Type quando o corpo é FormData', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    vi.stubGlobal('fetch', fetchMock);
+    const formData = new FormData();
+    formData.append('document', new Blob(['x']));
+
+    await apiFetch('/worker-profile/document', { method: 'POST', body: formData });
+
+    const [, options] = fetchMock.mock.calls[0];
+    expect(options.headers).toBeUndefined();
+  });
+
   it('retorna o corpo desserializado quando a resposta é ok', async () => {
     mockFetch({ ok: true, json: async () => ({ user: { id: '1' } }) });
 

@@ -69,7 +69,7 @@ describe('CodigoPage', () => {
     // Sucesso navega pra outra página (na app real, esta desmonta) —
     // o mock de router não desmonta nada, então só confirmamos a
     // chamada em vez de esperar o botão "reabilitar".
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/'));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/cadastro'));
     expect(verifyOtpMock).toHaveBeenCalledWith('+5511999990000', '123456');
   });
 
