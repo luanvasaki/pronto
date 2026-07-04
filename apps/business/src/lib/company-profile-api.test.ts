@@ -5,7 +5,21 @@ vi.mock('@shift/shared', () => ({
   apiFetch: (...args: unknown[]) => apiFetchMock(...args),
 }));
 
-const { upsertCompanyProfile } = await import('./company-profile-api');
+const { getCompanyProfile, upsertCompanyProfile } = await import('./company-profile-api');
+
+describe('getCompanyProfile', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama GET /company-profile/me', async () => {
+    apiFetchMock.mockResolvedValue({ id: '1', tradeName: 'Bar', verificationStatus: 'pending' });
+
+    await getCompanyProfile();
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/company-profile/me');
+  });
+});
 
 describe('upsertCompanyProfile', () => {
   beforeEach(() => {

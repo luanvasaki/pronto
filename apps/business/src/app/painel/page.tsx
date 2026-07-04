@@ -56,12 +56,20 @@ export default function PainelPage() {
     <main className="flex flex-1 flex-col gap-6 px-4 py-8">
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-2xl font-bold text-text">Suas vagas</h1>
-        <Link
-          href="/vagas/nova"
-          className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-90"
-        >
-          Publicar vaga
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/perfil"
+            className="text-sm text-text-secondary underline underline-offset-2 hover:text-primary"
+          >
+            Perfil
+          </Link>
+          <Link
+            href="/vagas/nova"
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-90"
+          >
+            Publicar vaga
+          </Link>
+        </div>
       </div>
 
       {error && <p className="text-sm text-danger">{error}</p>}
