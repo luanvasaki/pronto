@@ -1,14 +1,5 @@
 import { apiFetch } from '@shift/shared';
 
-export interface SkillCategory {
-  id: string;
-  name: string;
-}
-
-export function listSkillCategories(): Promise<{ categories: SkillCategory[] }> {
-  return apiFetch('/skill-categories');
-}
-
 export interface UpsertWorkerProfileResponse {
   fullName: string;
   categoryIds: string[];

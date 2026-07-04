@@ -5,23 +5,7 @@ vi.mock('@shift/shared', () => ({
   apiFetch: (...args: unknown[]) => apiFetchMock(...args),
 }));
 
-const { listSkillCategories, upsertWorkerProfile, uploadWorkerDocument } = await import(
-  './worker-profile-api'
-);
-
-describe('listSkillCategories', () => {
-  beforeEach(() => {
-    apiFetchMock.mockReset();
-  });
-
-  it('chama GET /skill-categories', async () => {
-    apiFetchMock.mockResolvedValue({ categories: [] });
-
-    await listSkillCategories();
-
-    expect(apiFetchMock).toHaveBeenCalledWith('/skill-categories');
-  });
-});
+const { upsertWorkerProfile, uploadWorkerDocument } = await import('./worker-profile-api');
 
 describe('upsertWorkerProfile', () => {
   beforeEach(() => {

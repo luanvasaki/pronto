@@ -2,14 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
-import { ApiError } from '@shift/shared';
+import { ApiError, listSkillCategories, SkillCategory } from '@shift/shared';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import {
-  listSkillCategories,
-  SkillCategory,
-  upsertWorkerProfile,
-} from '../../lib/worker-profile-api';
+import { upsertWorkerProfile } from '../../lib/worker-profile-api';
 
 export default function CadastroPage() {
   const router = useRouter();

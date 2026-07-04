@@ -10,9 +10,16 @@ vi.mock('next/navigation', () => ({
 }));
 
 const listSkillCategoriesMock = vi.fn();
+vi.mock('@shift/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@shift/shared')>();
+  return {
+    ...actual,
+    listSkillCategories: (...args: unknown[]) => listSkillCategoriesMock(...args),
+  };
+});
+
 const upsertWorkerProfileMock = vi.fn();
 vi.mock('../../lib/worker-profile-api', () => ({
-  listSkillCategories: (...args: unknown[]) => listSkillCategoriesMock(...args),
   upsertWorkerProfile: (...args: unknown[]) => upsertWorkerProfileMock(...args),
 }));
 
