@@ -3,6 +3,7 @@ import cors from 'cors';
 import express, { Express } from 'express';
 import { env } from './config/env';
 import { authRoutes } from './modules/auth/auth.routes';
+import { companyProfileRoutes } from './modules/companies/company-profile.routes';
 import { healthRoutes } from './modules/health/health.routes';
 import { skillCategoriesRoutes } from './modules/skill-categories/skill-categories.routes';
 import { workerDocumentRoutes } from './modules/workers/worker-document.routes';
@@ -27,6 +28,7 @@ export function createApp(): Express {
   app.use(healthRoutes);
   app.use(skillCategoriesRoutes);
   app.use(authRoutes);
+  app.use(companyProfileRoutes);
   app.use(workerProfileRoutes);
   app.use(workerDocumentRoutes);
 
