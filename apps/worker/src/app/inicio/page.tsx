@@ -1,8 +1,10 @@
 'use client';
 
 import { ApiError, listSkillCategories } from '@shift/shared';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { listNearbyJobs, NearbyJob } from '../../lib/jobs-api';
+import { Button } from '../../components/ui/button';
+import { applyToJob, listNearbyJobs, NearbyJob } from '../../lib/jobs-api';
 import { updateWorkerLocation } from '../../lib/worker-profile-api';
 
 const CATEGORY_LABEL_FALLBACK = 'Categoria';
@@ -48,6 +50,10 @@ export default function InicioPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
+  const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
+  const [applyError, setApplyError] = useState<{ jobId: string; message: string } | null>(null);
+
   useEffect(() => {
     async function load(): Promise<void> {
       try {
@@ -67,6 +73,23 @@ export default function InicioPage() {
     void load();
   }, []);
 
+  async function handleApply(jobId: string): Promise<void> {
+    setApplyError(null);
+    setApplyingJobId(jobId);
+
+    try {
+      await applyToJob(jobId);
+      setAppliedJobIds((current) => new Set(current).add(jobId));
+    } catch (err) {
+      setApplyError({
+        jobId,
+        message: err instanceof ApiError ? err.message : 'Não foi possível enviar sua candidatura.',
+      });
+    } finally {
+      setApplyingJobId(null);
+    }
+  }
+
   if (isLoading) {
     return (
       <main className="flex flex-1 items-center justify-center px-4">
@@ -85,7 +108,15 @@ export default function InicioPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-4 py-8">
-      <h1 className="font-heading text-2xl font-bold text-text">Vagas perto de você</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-heading text-2xl font-bold text-text">Vagas perto de você</h1>
+        <Link
+          href="/candidaturas"
+          className="text-sm text-text-secondary underline underline-offset-2 hover:text-primary"
+        >
+          Minhas candidaturas
+        </Link>
+      </div>
 
       {jobs.length === 0 && (
         <p className="text-sm text-text-secondary">Nenhuma vaga disponível perto de você no momento.</p>
@@ -106,6 +137,21 @@ export default function InicioPage() {
             <p className="mt-1 text-sm text-text-secondary">{job.addressLabel}</p>
             <p className="mt-1 text-sm text-text-secondary">{formatDateRange(job.startsAt, job.endsAt)}</p>
             <p className="mt-2 font-mono text-sm font-semibold text-text">R$ {job.payAmount}</p>
+
+            {applyError?.jobId === job.id && (
+              <p className="mt-2 text-sm text-danger">{applyError.message}</p>
+            )}
+
+            <Button
+              type="button"
+              variant={appliedJobIds.has(job.id) ? 'outlined' : 'primary'}
+              disabled={appliedJobIds.has(job.id)}
+              isLoading={applyingJobId === job.id}
+              onClick={() => handleApply(job.id)}
+              className="mt-3 w-full"
+            >
+              {appliedJobIds.has(job.id) ? 'Candidatura enviada ✓' : 'Candidatar-se'}
+            </Button>
           </li>
         ))}
       </ul>
