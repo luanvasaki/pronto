@@ -5,7 +5,13 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { useRequireAuth } from '../../../hooks/use-require-auth';
-import { JobApplication, listJobApplications, updateApplicationStatus } from '../../../lib/applications-api';
+import {
+  JobApplication,
+  listJobApplications,
+  rateShift,
+  releasePayment,
+  updateApplicationStatus,
+} from '../../../lib/applications-api';
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Em análise',
@@ -29,6 +35,21 @@ const SHIFT_STATUS_LABEL: Record<string, string> = {
   cancelled: 'Cancelado',
 };
 
+const PAYMENT_STATUS_LABEL: Record<string, string> = {
+  pending: 'Pagamento em processamento',
+  charged: 'Pagamento cobrado',
+  released: 'Pagamento liberado',
+  failed: 'Falha na cobrança do pagamento',
+  refunded: 'Pagamento estornado',
+};
+
+const RATING_SCORES = [1, 2, 3, 4, 5];
+
+interface RatingDraft {
+  score: number;
+  comment: string;
+}
+
 export default function VagaCandidatosPage() {
   const { isChecking } = useRequireAuth();
   const params = useParams<{ id: string }>();
@@ -39,6 +60,13 @@ export default function VagaCandidatosPage() {
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<{ id: string; message: string } | null>(null);
+
+  const [ratingDrafts, setRatingDrafts] = useState<Record<string, RatingDraft>>({});
+  const [ratingSubmittingId, setRatingSubmittingId] = useState<string | null>(null);
+  const [ratingError, setRatingError] = useState<{ shiftId: string; message: string } | null>(null);
+
+  const [releasingShiftId, setReleasingShiftId] = useState<string | null>(null);
+  const [releaseError, setReleaseError] = useState<{ shiftId: string; message: string } | null>(null);
 
   useEffect(() => {
     if (isChecking) return;
@@ -66,6 +94,64 @@ export default function VagaCandidatosPage() {
       });
     } finally {
       setUpdatingId(null);
+    }
+  }
+
+  function setRatingScore(shiftId: string, score: number): void {
+    setRatingDrafts((current) => ({ ...current, [shiftId]: { score, comment: current[shiftId]?.comment ?? '' } }));
+  }
+
+  function setRatingComment(shiftId: string, comment: string): void {
+    setRatingDrafts((current) => ({ ...current, [shiftId]: { score: current[shiftId]?.score ?? 0, comment } }));
+  }
+
+  async function handleRate(applicationId: string, shiftId: string): Promise<void> {
+    const draft = ratingDrafts[shiftId];
+    if (!draft?.score) return;
+
+    setRatingError(null);
+    setRatingSubmittingId(shiftId);
+
+    try {
+      const rating = await rateShift(shiftId, draft.score, draft.comment.trim() || undefined);
+      setApplications((current) =>
+        current.map((application) =>
+          application.id === applicationId && application.shift
+            ? { ...application, shift: { ...application.shift, ratings: { ...application.shift.ratings, company: rating } } }
+            : application,
+        ),
+      );
+    } catch (err) {
+      setRatingError({
+        shiftId,
+        message:
+          err instanceof ApiError || err instanceof Error ? err.message : 'Não foi possível enviar a avaliação.',
+      });
+    } finally {
+      setRatingSubmittingId(null);
+    }
+  }
+
+  async function handleReleasePayment(applicationId: string, shiftId: string): Promise<void> {
+    setReleaseError(null);
+    setReleasingShiftId(shiftId);
+
+    try {
+      const payment = await releasePayment(shiftId);
+      setApplications((current) =>
+        current.map((application) =>
+          application.id === applicationId && application.shift
+            ? { ...application, shift: { ...application.shift, payment } }
+            : application,
+        ),
+      );
+    } catch (err) {
+      setReleaseError({
+        shiftId,
+        message: err instanceof ApiError ? err.message : 'Não foi possível liberar o pagamento.',
+      });
+    } finally {
+      setReleasingShiftId(null);
     }
   }
 
@@ -113,6 +199,12 @@ export default function VagaCandidatosPage() {
               </p>
             )}
 
+            {application.shift?.payment && (
+              <p className="mt-1 text-sm text-text-secondary">
+                {PAYMENT_STATUS_LABEL[application.shift.payment.status] ?? application.shift.payment.status}
+              </p>
+            )}
+
             {actionError?.id === application.id && (
               <p className="mt-2 text-sm text-danger">{actionError.message}</p>
             )}
@@ -133,6 +225,75 @@ export default function VagaCandidatosPage() {
                   onClick={() => handleDecision(application.id, 'rejected')}
                 >
                   Rejeitar
+                </Button>
+              </div>
+            )}
+
+            {application.shift?.payment?.status === 'charged' && (
+              <div className="mt-3">
+                {releaseError?.shiftId === application.shift.id && (
+                  <p className="mb-2 text-sm text-danger">{releaseError.message}</p>
+                )}
+                <Button
+                  type="button"
+                  variant="outlined"
+                  isLoading={releasingShiftId === application.shift.id}
+                  onClick={() => handleReleasePayment(application.id, application.shift!.id)}
+                >
+                  Liberar pagamento
+                </Button>
+              </div>
+            )}
+
+            {application.shift?.status === 'completed' && application.shift.ratings.company && (
+              <p className="mt-3 text-sm text-success">
+                Você avaliou: {application.shift.ratings.company.score} de 5.
+              </p>
+            )}
+
+            {application.shift?.status === 'completed' && !application.shift.ratings.company && (
+              <div className="mt-3 flex flex-col gap-2 rounded-md border border-border p-3">
+                <p className="text-sm font-medium text-text">Avaliar o trabalhador</p>
+                <div className="flex gap-1.5" role="group" aria-label="Nota de 1 a 5">
+                  {RATING_SCORES.map((score) => {
+                    const shiftId = application.shift!.id;
+                    const selected = (ratingDrafts[shiftId]?.score ?? 0) >= score;
+                    return (
+                      <button
+                        key={score}
+                        type="button"
+                        aria-label={`${score} de 5`}
+                        aria-pressed={selected}
+                        onClick={() => setRatingScore(shiftId, score)}
+                        className={`h-9 w-9 rounded-md border text-sm font-semibold transition ${
+                          selected
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border text-text-secondary hover:border-primary/50'
+                        }`}
+                      >
+                        {score}
+                      </button>
+                    );
+                  })}
+                </div>
+                <textarea
+                  rows={2}
+                  placeholder="Comentário (opcional)"
+                  value={ratingDrafts[application.shift.id]?.comment ?? ''}
+                  onChange={(event) => setRatingComment(application.shift!.id, event.target.value)}
+                  className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+                />
+                {ratingError?.shiftId === application.shift.id && (
+                  <p className="text-sm text-danger">{ratingError.message}</p>
+                )}
+                <Button
+                  type="button"
+                  variant="outlined"
+                  isLoading={ratingSubmittingId === application.shift.id}
+                  disabled={!ratingDrafts[application.shift.id]?.score}
+                  onClick={() => handleRate(application.id, application.shift!.id)}
+                >
+                  Enviar avaliação
                 </Button>
               </div>
             )}

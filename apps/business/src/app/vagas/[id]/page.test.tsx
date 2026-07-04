@@ -18,9 +18,13 @@ vi.mock('@shift/shared', async (importOriginal) => {
 
 const listJobApplicationsMock = vi.fn();
 const updateApplicationStatusMock = vi.fn();
+const rateShiftMock = vi.fn();
+const releasePaymentMock = vi.fn();
 vi.mock('../../../lib/applications-api', () => ({
   listJobApplications: (...args: unknown[]) => listJobApplicationsMock(...args),
   updateApplicationStatus: (...args: unknown[]) => updateApplicationStatusMock(...args),
+  rateShift: (...args: unknown[]) => rateShiftMock(...args),
+  releasePayment: (...args: unknown[]) => releasePaymentMock(...args),
 }));
 
 const PENDING_APPLICATION = {
@@ -31,10 +35,33 @@ const PENDING_APPLICATION = {
   shift: null,
 };
 
+function makeCompletedApplication(
+  overrides: Partial<{
+    payment: { id: string; shiftId: string; amount: string; status: string; chargedAt: string | null; releasedAt: string | null } | null;
+    ratings: { worker: unknown; company: { id: string; shiftId: string; raterRole: string; score: number; comment: string | null; createdAt: string } | null };
+  }> = {},
+) {
+  return {
+    ...PENDING_APPLICATION,
+    status: 'approved',
+    shift: {
+      id: 'shift-1',
+      status: 'completed',
+      checkInAt: '2026-07-01T18:00:00.000Z',
+      checkOutAt: '2026-07-01T23:00:00.000Z',
+      payment: null,
+      ratings: { worker: null, company: null },
+      ...overrides,
+    },
+  };
+}
+
 describe('VagaCandidatosPage', () => {
   beforeEach(() => {
     listJobApplicationsMock.mockReset();
     updateApplicationStatusMock.mockReset();
+    rateShiftMock.mockReset();
+    releasePaymentMock.mockReset();
   });
 
   it('mostra estado vazio quando não há candidatos', async () => {
@@ -74,7 +101,7 @@ describe('VagaCandidatosPage', () => {
     const approvedWithShift = {
       ...PENDING_APPLICATION,
       status: 'approved',
-      shift: { id: 'shift-1', status: 'scheduled', checkInAt: null, checkOutAt: null },
+      shift: { id: 'shift-1', status: 'scheduled', checkInAt: null, checkOutAt: null, payment: null, ratings: { worker: null, company: null } },
     };
     listJobApplicationsMock
       .mockResolvedValueOnce({ applications: [PENDING_APPLICATION] })
@@ -104,5 +131,93 @@ describe('VagaCandidatosPage', () => {
     expect(
       await screen.findByText('Não foi possível atualizar a candidatura.'),
     ).toBeInTheDocument();
+  });
+
+  it('mostra o botão de liberar pagamento quando o pagamento está cobrado', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [
+        makeCompletedApplication({
+          payment: { id: 'p1', shiftId: 'shift-1', amount: '130.00', status: 'charged', chargedAt: null, releasedAt: null },
+        }),
+      ],
+    });
+
+    render(<VagaCandidatosPage />);
+
+    expect(await screen.findByText('Pagamento cobrado')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /liberar pagamento/i })).toBeInTheDocument();
+  });
+
+  it('libera o pagamento e atualiza o status', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [
+        makeCompletedApplication({
+          payment: { id: 'p1', shiftId: 'shift-1', amount: '130.00', status: 'charged', chargedAt: null, releasedAt: null },
+        }),
+      ],
+    });
+    releasePaymentMock.mockResolvedValue({
+      id: 'p1',
+      shiftId: 'shift-1',
+      amount: '130.00',
+      status: 'released',
+      chargedAt: null,
+      releasedAt: '2026-07-02T00:00:00.000Z',
+    });
+    const user = userEvent.setup();
+
+    render(<VagaCandidatosPage />);
+    await screen.findByRole('button', { name: /liberar pagamento/i });
+    await user.click(screen.getByRole('button', { name: /liberar pagamento/i }));
+
+    expect(await screen.findByText('Pagamento liberado')).toBeInTheDocument();
+    expect(releasePaymentMock).toHaveBeenCalledWith('shift-1');
+  });
+
+  it('mostra o formulário de avaliação pra turno concluído ainda não avaliado', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [makeCompletedApplication()] });
+
+    render(<VagaCandidatosPage />);
+
+    expect(await screen.findByText('Avaliar o trabalhador')).toBeInTheDocument();
+  });
+
+  it('envia a avaliação do trabalhador', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [makeCompletedApplication()] });
+    rateShiftMock.mockResolvedValue({
+      id: 'rating-1',
+      shiftId: 'shift-1',
+      raterRole: 'company',
+      score: 5,
+      comment: null,
+      createdAt: '2026-07-02T00:00:00.000Z',
+    });
+    const user = userEvent.setup();
+
+    render(<VagaCandidatosPage />);
+    await screen.findByText('Avaliar o trabalhador');
+    await user.click(screen.getByRole('button', { name: '5 de 5' }));
+    await user.click(screen.getByRole('button', { name: /enviar avaliação/i }));
+
+    await waitFor(() => expect(rateShiftMock).toHaveBeenCalledWith('shift-1', 5, undefined));
+    expect(await screen.findByText('Você avaliou: 5 de 5.')).toBeInTheDocument();
+  });
+
+  it('não mostra o formulário quando o turno já foi avaliado', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [
+        makeCompletedApplication({
+          ratings: {
+            worker: null,
+            company: { id: 'rating-1', shiftId: 'shift-1', raterRole: 'company', score: 4, comment: null, createdAt: '2026-07-02T00:00:00.000Z' },
+          },
+        }),
+      ],
+    });
+
+    render(<VagaCandidatosPage />);
+
+    expect(await screen.findByText('Você avaliou: 4 de 5.')).toBeInTheDocument();
+    expect(screen.queryByText('Avaliar o trabalhador')).not.toBeInTheDocument();
   });
 });

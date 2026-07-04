@@ -5,7 +5,9 @@ vi.mock('@shift/shared', () => ({
   apiFetch: (...args: unknown[]) => apiFetchMock(...args),
 }));
 
-const { listJobApplications, updateApplicationStatus } = await import('./applications-api');
+const { listJobApplications, updateApplicationStatus, rateShift, releasePayment } = await import(
+  './applications-api'
+);
 
 describe('listJobApplications', () => {
   beforeEach(() => {
@@ -35,5 +37,36 @@ describe('updateApplicationStatus', () => {
       method: 'PATCH',
       body: JSON.stringify({ status: 'approved' }),
     });
+  });
+});
+
+describe('rateShift', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama POST /shifts/:id/rating com nota e comentário', async () => {
+    apiFetchMock.mockResolvedValue({ id: 'rating-1', score: 5 });
+
+    await rateShift('shift-1', 5, 'Chegou no horário.');
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/shifts/shift-1/rating', {
+      method: 'POST',
+      body: JSON.stringify({ score: 5, comment: 'Chegou no horário.' }),
+    });
+  });
+});
+
+describe('releasePayment', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama POST /shifts/:id/payment/release', async () => {
+    apiFetchMock.mockResolvedValue({ id: 'payment-1', status: 'released' });
+
+    await releasePayment('shift-1');
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/shifts/shift-1/payment/release', { method: 'POST' });
   });
 });
