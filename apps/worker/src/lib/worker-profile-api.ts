@@ -29,3 +29,15 @@ export function uploadWorkerDocument(file: File): Promise<UploadDocumentResponse
     body: formData,
   });
 }
+
+export interface UpdateWorkerLocationResponse {
+  homeLat: number;
+  homeLng: number;
+}
+
+export function updateWorkerLocation(lat: number, lng: number): Promise<UpdateWorkerLocationResponse> {
+  return apiFetch('/worker-profile/location', {
+    method: 'PATCH',
+    body: JSON.stringify({ lat, lng }),
+  });
+}

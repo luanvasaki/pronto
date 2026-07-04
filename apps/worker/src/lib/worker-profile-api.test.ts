@@ -5,7 +5,9 @@ vi.mock('@shift/shared', () => ({
   apiFetch: (...args: unknown[]) => apiFetchMock(...args),
 }));
 
-const { upsertWorkerProfile, uploadWorkerDocument } = await import('./worker-profile-api');
+const { upsertWorkerProfile, uploadWorkerDocument, updateWorkerLocation } = await import(
+  './worker-profile-api'
+);
 
 describe('upsertWorkerProfile', () => {
   beforeEach(() => {
@@ -40,5 +42,22 @@ describe('uploadWorkerDocument', () => {
     expect(options.method).toBe('POST');
     expect(options.body).toBeInstanceOf(FormData);
     expect(options.body.get('document')).toBe(file);
+  });
+});
+
+describe('updateWorkerLocation', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama PATCH /worker-profile/location com lat e lng', async () => {
+    apiFetchMock.mockResolvedValue({ homeLat: -23.55, homeLng: -46.63 });
+
+    await updateWorkerLocation(-23.55, -46.63);
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/worker-profile/location', {
+      method: 'PATCH',
+      body: JSON.stringify({ lat: -23.55, lng: -46.63 }),
+    });
   });
 });
