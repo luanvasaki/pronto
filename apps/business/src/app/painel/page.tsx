@@ -90,6 +90,12 @@ export default function PainelPage() {
             <p className="mt-2 text-sm text-text-secondary">
               {job.positionsFilled}/{job.positionsTotal} preenchidas · R$ {job.payAmount}
             </p>
+            <Link
+              href={`/vagas/${job.id}`}
+              className="mt-2 inline-block text-sm text-primary underline underline-offset-2 hover:brightness-90"
+            >
+              Ver candidatos
+            </Link>
           </li>
         ))}
       </ul>
