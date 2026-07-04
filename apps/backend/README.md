@@ -31,6 +31,16 @@ Os testes de rota usam `supertest` contra o `app` exportado de `src/app.ts` (nen
 
 **Cuidado com fixture entre arquivos de teste**: o Vitest roda arquivos em paralelo contra o mesmo banco. Um valor fixo (telefone, CNPJ) reusado em dois arquivos diferentes colide sob concorrência de forma intermitente — cada arquivo de teste precisa dos seus próprios valores únicos, não só únicos dentro do próprio arquivo.
 
+## Conceder acesso de admin
+
+Não existe rota nenhuma pra virar admin — é deliberado, já que isso libera aprovar/rejeitar KYC de trabalhador e verificação de empresa. Só via update direto no banco:
+
+```sql
+UPDATE users SET is_admin = true WHERE phone = '+55...';
+```
+
+Com isso a conta acessa `/admin` no app `business` (que também é o painel admin, não só o app da empresa).
+
 ## Lint e build
 
 ```bash
