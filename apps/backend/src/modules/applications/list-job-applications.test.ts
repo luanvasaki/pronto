@@ -1,9 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
-import { applications, companies, jobs, skillCategories, users, workerProfiles } from '../../db/schema';
+import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from './create-application';
 import { listJobApplications } from './list-job-applications';
+import { updateApplicationStatus } from './update-application-status';
 
 // Fixtures únicas entre arquivos de teste (ver README).
 const WORKER_PHONE = '+5511966660014';
@@ -50,6 +51,7 @@ describe('listJobApplications', () => {
       if (company) {
         const companyJobs = await db.query.jobs.findMany({ where: eq(jobs.companyId, company.id) });
         for (const job of companyJobs) {
+          await db.delete(shifts).where(eq(shifts.jobId, job.id));
           await db.delete(applications).where(eq(applications.jobId, job.id));
         }
         await db.delete(jobs).where(eq(jobs.companyId, company.id));
@@ -85,5 +87,18 @@ describe('listJobApplications', () => {
     expect(result).toHaveLength(1);
     expect(result[0].status).toBe('pending');
     expect(result[0].worker.fullName).toBe('Ana Souza');
+    expect(result[0].shift).toBeNull();
+  });
+
+  it('inclui o turno quando a candidatura já foi aprovada', async () => {
+    const { worker, owner, job } = await setup();
+    const application = await createApplication(worker.id, job.id);
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+
+    const result = await listJobApplications(owner.id, job.id);
+
+    expect(result[0].status).toBe('approved');
+    expect(result[0].shift?.status).toBe('scheduled');
+    expect(result[0].shift?.checkInAt).toBeNull();
   });
 });

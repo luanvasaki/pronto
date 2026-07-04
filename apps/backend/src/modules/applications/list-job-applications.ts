@@ -1,6 +1,6 @@
 import { desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { applications, companies, jobs, workerProfiles } from '../../db/schema';
+import { applications, companies, jobs, shifts, workerProfiles } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 
 export interface JobApplicationResponse {
@@ -12,6 +12,12 @@ export interface JobApplicationResponse {
     fullName: string;
     avgRating: string | null;
   };
+  shift: {
+    id: string;
+    status: string;
+    checkInAt: Date | null;
+    checkOutAt: Date | null;
+  } | null;
 }
 
 /** Só o dono da empresa da vaga pode ver os candidatos dela. */
@@ -43,17 +49,27 @@ export async function listJobApplications(
   });
   const workersById = new Map(workerRows.map((worker) => [worker.userId, worker]));
 
+  const applicationIds = rows.map((row) => row.id);
+  const shiftRows = await db.query.shifts.findMany({
+    where: inArray(shifts.applicationId, applicationIds),
+  });
+  const shiftsByApplicationId = new Map(shiftRows.map((shift) => [shift.applicationId, shift]));
+
   return rows.flatMap((row) => {
     const worker = workersById.get(row.workerId);
     if (!worker) {
       return [];
     }
+    const shift = shiftsByApplicationId.get(row.id);
     return [
       {
         id: row.id,
         status: row.status,
         createdAt: row.createdAt,
         worker: { id: worker.userId, fullName: worker.fullName, avgRating: worker.avgRating },
+        shift: shift
+          ? { id: shift.id, status: shift.status, checkInAt: shift.checkInAt, checkOutAt: shift.checkOutAt }
+          : null,
       },
     ];
   });
