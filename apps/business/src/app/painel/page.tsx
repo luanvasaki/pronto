@@ -1,10 +1,11 @@
 'use client';
 
-import { listSkillCategories } from '@shift/shared';
+import { ApiError, listSkillCategories } from '@shift/shared';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { Button } from '../../components/ui/button';
 import { useRequireAuth } from '../../hooks/use-require-auth';
-import { Job, listMyJobs } from '../../lib/jobs-api';
+import { cancelJob, Job, listMyJobs } from '../../lib/jobs-api';
 
 const JOB_STATUS_LABEL: Record<string, string> = {
   open: 'Aberta',
@@ -24,6 +25,9 @@ export default function PainelPage() {
   const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
+  const [cancelingJobId, setCancelingJobId] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<{ jobId: string; message: string } | null>(null);
+
   useEffect(() => {
     if (isChecking) return;
 
@@ -41,6 +45,23 @@ export default function PainelPage() {
 
     void load();
   }, [isChecking]);
+
+  async function handleCancel(jobId: string): Promise<void> {
+    setCancelError(null);
+    setCancelingJobId(jobId);
+
+    try {
+      const updated = await cancelJob(jobId);
+      setJobs((current) => current.map((job) => (job.id === jobId ? updated : job)));
+    } catch (err) {
+      setCancelError({
+        jobId,
+        message: err instanceof ApiError ? err.message : 'Não foi possível cancelar a vaga.',
+      });
+    } finally {
+      setCancelingJobId(null);
+    }
+  }
 
   if (isChecking || isLoadingJobs) {
     return (
@@ -98,12 +119,38 @@ export default function PainelPage() {
             <p className="mt-2 text-sm text-text-secondary">
               {job.positionsFilled}/{job.positionsTotal} preenchidas · R$ {job.payAmount}
             </p>
-            <Link
-              href={`/vagas/${job.id}`}
-              className="mt-2 inline-block text-sm text-primary underline underline-offset-2 hover:brightness-90"
-            >
-              Ver candidatos
-            </Link>
+
+            {cancelError?.jobId === job.id && (
+              <p className="mt-2 text-sm text-danger">{cancelError.message}</p>
+            )}
+
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <Link
+                href={`/vagas/${job.id}`}
+                className="text-sm text-primary underline underline-offset-2 hover:brightness-90"
+              >
+                Ver candidatos
+              </Link>
+              {job.status === 'open' && (
+                <Link
+                  href={`/vagas/${job.id}/editar`}
+                  className="text-sm text-primary underline underline-offset-2 hover:brightness-90"
+                >
+                  Editar
+                </Link>
+              )}
+              {job.status !== 'cancelled' && (
+                <Button
+                  type="button"
+                  variant="outlined"
+                  isLoading={cancelingJobId === job.id}
+                  onClick={() => handleCancel(job.id)}
+                  className="px-3 py-1.5 text-xs"
+                >
+                  Cancelar vaga
+                </Button>
+              )}
+            </div>
           </li>
         ))}
       </ul>

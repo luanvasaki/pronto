@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PainelPage from './page';
 
@@ -17,8 +18,10 @@ vi.mock('@shift/shared', async (importOriginal) => {
 });
 
 const listMyJobsMock = vi.fn();
+const cancelJobMock = vi.fn();
 vi.mock('../../lib/jobs-api', () => ({
   listMyJobs: (...args: unknown[]) => listMyJobsMock(...args),
+  cancelJob: (...args: unknown[]) => cancelJobMock(...args),
 }));
 
 const JOB = {
@@ -40,6 +43,7 @@ describe('PainelPage', () => {
   beforeEach(() => {
     listSkillCategoriesMock.mockReset().mockResolvedValue({ categories: [{ id: 'cat-1', name: 'Garçom' }] });
     listMyJobsMock.mockReset();
+    cancelJobMock.mockReset();
   });
 
   it('mostra estado vazio quando não há vagas', async () => {
@@ -78,5 +82,39 @@ describe('PainelPage', () => {
     render(<PainelPage />);
 
     expect(await screen.findByText('Não foi possível carregar suas vagas.')).toBeInTheDocument();
+  });
+
+  it('mostra link de editar só pra vaga aberta', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB, { ...JOB, id: 'job-2', status: 'filled' }] });
+
+    render(<PainelPage />);
+
+    await screen.findAllByText('Garçom');
+    expect(screen.getAllByRole('link', { name: /editar/i })).toHaveLength(1);
+  });
+
+  it('cancela a vaga e atualiza o status na tela', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    cancelJobMock.mockResolvedValue({ ...JOB, status: 'cancelled' });
+    const user = userEvent.setup();
+
+    render(<PainelPage />);
+    await screen.findByText('Garçom');
+    await user.click(screen.getByRole('button', { name: /cancelar vaga/i }));
+
+    await waitFor(() => expect(cancelJobMock).toHaveBeenCalledWith('job-1'));
+    expect(await screen.findByText('Cancelada')).toBeInTheDocument();
+  });
+
+  it('mostra a mensagem da API quando o cancelamento falha', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    cancelJobMock.mockRejectedValue(new Error('falha de rede'));
+    const user = userEvent.setup();
+
+    render(<PainelPage />);
+    await screen.findByText('Garçom');
+    await user.click(screen.getByRole('button', { name: /cancelar vaga/i }));
+
+    expect(await screen.findByText('Não foi possível cancelar a vaga.')).toBeInTheDocument();
   });
 });

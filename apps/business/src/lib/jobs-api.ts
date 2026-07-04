@@ -37,3 +37,18 @@ export function createJob(input: CreateJobInput): Promise<Job> {
     body: JSON.stringify(input),
   });
 }
+
+export type UpdateJobInput = CreateJobInput;
+
+export function updateJob(jobId: string, input: UpdateJobInput): Promise<Job> {
+  return apiFetch(`/jobs/${jobId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function cancelJob(jobId: string): Promise<Job> {
+  return apiFetch(`/jobs/${jobId}/cancel`, {
+    method: 'POST',
+  });
+}
