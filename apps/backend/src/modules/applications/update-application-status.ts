@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, lt } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, companies, jobs, shifts } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
@@ -18,10 +18,12 @@ function isApprovalStatus(value: string): value is ApprovalStatus {
  * outra chamada já respondeu essa candidatura entre a leitura e agora.
  *
  * Aprovar incrementa positionsFilled e marca a vaga como "filled"
- * quando completa, e cria o turno (shift) correspondente. O contador
- * positionsFilled ainda usa leitura-depois-escrita — no volume do MVP
- * (dono aprovando manualmente, uma vaga de cada vez) isso é suficiente;
- * revisar se virar um ponto de disputa real.
+ * quando completa, e cria o turno (shift) correspondente. A checagem
+ * de vaga cheia acontece antes de qualquer escrita (evita aprovar
+ * além de positionsTotal no caso comum, dono respondendo uma
+ * candidatura de cada vez) e o UPDATE de positionsFilled também é
+ * condicional (WHERE positions_filled < positions_total), pra fechar
+ * a mesma corrida entre duas aprovações simultâneas.
  */
 export async function updateApplicationStatus(
   ownerUserId: string,
@@ -52,6 +54,10 @@ export async function updateApplicationStatus(
     throw new HttpError(403, 'Você não tem acesso a essa candidatura.');
   }
 
+  if (status === 'approved' && job.positionsFilled >= job.positionsTotal) {
+    throw new HttpError(400, 'Essa vaga já está preenchida.');
+  }
+
   const [updated] = await db
     .update(applications)
     .set({ status, updatedAt: new Date() })
@@ -63,14 +69,18 @@ export async function updateApplicationStatus(
 
   if (status === 'approved') {
     const positionsFilled = job.positionsFilled + 1;
-    await db
+    const [updatedJob] = await db
       .update(jobs)
       .set({
         positionsFilled,
         status: positionsFilled >= job.positionsTotal ? 'filled' : job.status,
         updatedAt: new Date(),
       })
-      .where(eq(jobs.id, job.id));
+      .where(and(eq(jobs.id, job.id), lt(jobs.positionsFilled, jobs.positionsTotal)))
+      .returning();
+    if (!updatedJob) {
+      throw new HttpError(400, 'Essa vaga já está preenchida.');
+    }
 
     const [shift] = await db
       .insert(shifts)

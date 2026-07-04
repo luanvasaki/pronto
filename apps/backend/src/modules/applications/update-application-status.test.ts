@@ -7,6 +7,7 @@ import { updateApplicationStatus } from './update-application-status';
 
 // Fixtures únicas entre arquivos de teste (ver README).
 const WORKER_PHONE = '+5511966660017';
+const OTHER_WORKER_PHONE = '+5511966660018';
 const OWNER_PHONE = '+5511966660019';
 const OTHER_OWNER_PHONE = '+5511966660020';
 const TEST_CNPJ = '11222333000211';
@@ -58,6 +59,7 @@ describe('updateApplicationStatus', () => {
       }
     }
     await db.delete(users).where(eq(users.phone, WORKER_PHONE));
+    await db.delete(users).where(eq(users.phone, OTHER_WORKER_PHONE));
     await db.delete(users).where(eq(users.phone, OWNER_PHONE));
     await db.delete(users).where(eq(users.phone, OTHER_OWNER_PHONE));
     await db.delete(skillCategories).where(eq(skillCategories.name, TEST_CATEGORY_NAME));
@@ -137,6 +139,40 @@ describe('updateApplicationStatus', () => {
 
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     expect(shift).toBeUndefined();
+  });
+
+  it('rejeita aprovar candidatura pra vaga que já está preenchida', async () => {
+    const { owner, job, application } = await setup(1);
+    const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
+    await db.insert(workerProfiles).values({ userId: otherWorker.id, fullName: 'Beatriz Lima' });
+    const otherApplication = await createApplication(otherWorker.id, job.id);
+
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+
+    await expect(updateApplicationStatus(owner.id, otherApplication.id, 'approved')).rejects.toThrow(
+      'já está preenchida',
+    );
+
+    const updatedJob = await db.query.jobs.findFirst({ where: eq(jobs.id, job.id) });
+    expect(updatedJob?.positionsFilled).toBe(1);
+    const otherShift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, otherApplication.id) });
+    expect(otherShift).toBeUndefined();
+    const refreshedOtherApplication = await db.query.applications.findFirst({
+      where: eq(applications.id, otherApplication.id),
+    });
+    expect(refreshedOtherApplication?.status).toBe('pending');
+  });
+
+  it('ainda permite rejeitar uma candidatura mesmo com a vaga já preenchida', async () => {
+    const { owner, job, application } = await setup(1);
+    const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
+    await db.insert(workerProfiles).values({ userId: otherWorker.id, fullName: 'Beatriz Lima' });
+    const otherApplication = await createApplication(otherWorker.id, job.id);
+
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+    const result = await updateApplicationStatus(owner.id, otherApplication.id, 'rejected');
+
+    expect(result.status).toBe('rejected');
   });
 
   it('rejeita candidatura duplicada mesmo em corrida (duas chamadas simultâneas)', async () => {
