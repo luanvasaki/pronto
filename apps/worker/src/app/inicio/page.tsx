@@ -4,6 +4,7 @@ import { ApiError, listSkillCategories } from '@shift/shared';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui/button';
+import { getCurrentPosition } from '../../lib/geolocation';
 import { applyToJob, listNearbyJobs, NearbyJob } from '../../lib/jobs-api';
 import { updateWorkerLocation } from '../../lib/worker-profile-api';
 
@@ -12,18 +13,6 @@ const CATEGORY_LABEL_FALLBACK = 'Categoria';
 function formatDateRange(startsAt: string, endsAt: string): string {
   const formatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
   return `${formatter.format(new Date(startsAt))} até ${formatter.format(new Date(endsAt))}`;
-}
-
-function getCurrentPosition(): Promise<GeolocationPosition> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error('Geolocalização não é suportada nesse navegador.'));
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(resolve, () =>
-      reject(new Error('Precisamos da sua localização pra mostrar vagas perto de você.')),
-    );
-  });
 }
 
 /**
@@ -38,7 +27,7 @@ async function fetchNearbyJobs(): Promise<{ jobs: NearbyJob[] }> {
     if (!(err instanceof ApiError) || err.status !== 400) {
       throw err;
     }
-    const position = await getCurrentPosition();
+    const position = await getCurrentPosition('Precisamos da sua localização pra mostrar vagas perto de você.');
     await updateWorkerLocation(position.coords.latitude, position.coords.longitude);
     return listNearbyJobs();
   }
@@ -110,12 +99,20 @@ export default function InicioPage() {
     <main className="flex flex-1 flex-col gap-4 px-4 py-8">
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-2xl font-bold text-text">Vagas perto de você</h1>
-        <Link
-          href="/candidaturas"
-          className="text-sm text-text-secondary underline underline-offset-2 hover:text-primary"
-        >
-          Minhas candidaturas
-        </Link>
+        <div className="flex gap-4">
+          <Link
+            href="/candidaturas"
+            className="text-sm text-text-secondary underline underline-offset-2 hover:text-primary"
+          >
+            Minhas candidaturas
+          </Link>
+          <Link
+            href="/turnos"
+            className="text-sm text-text-secondary underline underline-offset-2 hover:text-primary"
+          >
+            Meus turnos
+          </Link>
+        </div>
       </div>
 
       {jobs.length === 0 && (
