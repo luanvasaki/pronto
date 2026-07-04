@@ -93,6 +93,22 @@ describe('createApplication', () => {
     await expect(createApplication(worker.id, job.id)).rejects.toThrow('já se candidatou');
   });
 
+  it('rejeita candidatura duplicada mesmo em corrida (duas chamadas simultâneas)', async () => {
+    const worker = await createWorker();
+    const job = await createJob();
+
+    const results = await Promise.allSettled([
+      createApplication(worker.id, job.id),
+      createApplication(worker.id, job.id),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason.message).toContain('já se candidatou');
+  });
+
   it('cria a candidatura com status "pending"', async () => {
     const worker = await createWorker();
     const job = await createJob();
