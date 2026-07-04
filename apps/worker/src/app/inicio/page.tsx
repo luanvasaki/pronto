@@ -112,6 +112,12 @@ export default function InicioPage() {
           >
             Meus turnos
           </Link>
+          <Link
+            href="/perfil"
+            className="text-sm text-text-secondary underline underline-offset-2 hover:text-primary"
+          >
+            Perfil
+          </Link>
         </div>
       </div>
 

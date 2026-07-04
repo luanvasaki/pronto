@@ -5,9 +5,23 @@ vi.mock('@shift/shared', () => ({
   apiFetch: (...args: unknown[]) => apiFetchMock(...args),
 }));
 
-const { upsertWorkerProfile, uploadWorkerDocument, updateWorkerLocation } = await import(
+const { getWorkerProfile, upsertWorkerProfile, uploadWorkerDocument, updateWorkerLocation } = await import(
   './worker-profile-api'
 );
+
+describe('getWorkerProfile', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama GET /worker-profile/me', async () => {
+    apiFetchMock.mockResolvedValue({ fullName: 'Ana', categoryIds: ['1'], kycStatus: 'pending' });
+
+    await getWorkerProfile();
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/worker-profile/me');
+  });
+});
 
 describe('upsertWorkerProfile', () => {
   beforeEach(() => {

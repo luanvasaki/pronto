@@ -1,5 +1,18 @@
 import { apiFetch } from '@shift/shared';
 
+export interface WorkerProfileDetails {
+  fullName: string;
+  categoryIds: string[];
+  kycStatus: string;
+  avgRating: string | null;
+  totalShiftsCompleted: number;
+  totalNoShows: number;
+}
+
+export function getWorkerProfile(): Promise<WorkerProfileDetails> {
+  return apiFetch('/worker-profile/me');
+}
+
 export interface UpsertWorkerProfileResponse {
   fullName: string;
   categoryIds: string[];
