@@ -1,69 +1,82 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PainelPage from './page';
 
-const replaceMock = vi.fn();
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: replaceMock }),
+  useRouter: () => ({ replace: vi.fn() }),
 }));
 
-const getCurrentUserMock = vi.fn();
-const refreshSessionMock = vi.fn();
+const listSkillCategoriesMock = vi.fn();
 vi.mock('@shift/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shift/shared')>();
   return {
     ...actual,
-    getCurrentUser: (...args: unknown[]) => getCurrentUserMock(...args),
-    refreshSession: (...args: unknown[]) => refreshSessionMock(...args),
+    getCurrentUser: vi.fn().mockResolvedValue({ user: { id: '1' } }),
+    listSkillCategories: (...args: unknown[]) => listSkillCategoriesMock(...args),
   };
 });
 
+const listMyJobsMock = vi.fn();
+vi.mock('../../lib/jobs-api', () => ({
+  listMyJobs: (...args: unknown[]) => listMyJobsMock(...args),
+}));
+
+const JOB = {
+  id: 'job-1',
+  categoryId: 'cat-1',
+  description: 'Vaga de garçom pra evento',
+  addressLabel: 'Vila Madalena, São Paulo',
+  locationLat: -23.55,
+  locationLng: -46.63,
+  positionsTotal: 4,
+  positionsFilled: 1,
+  payAmount: '130.00',
+  startsAt: '2026-08-01T18:00:00.000Z',
+  endsAt: '2026-08-01T23:00:00.000Z',
+  status: 'open',
+};
+
 describe('PainelPage', () => {
   beforeEach(() => {
-    replaceMock.mockClear();
-    getCurrentUserMock.mockReset();
-    refreshSessionMock.mockReset();
+    listSkillCategoriesMock.mockReset().mockResolvedValue({ categories: [{ id: 'cat-1', name: 'Garçom' }] });
+    listMyJobsMock.mockReset();
   });
 
-  it('mostra uma mensagem de confirmação antes de checar a sessão', () => {
-    getCurrentUserMock.mockReturnValue(new Promise(() => {}));
+  it('mostra estado vazio quando não há vagas', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [] });
 
     render(<PainelPage />);
 
-    expect(screen.getByText('Confirmando sua sessão...')).toBeInTheDocument();
+    expect(await screen.findByText('Você ainda não publicou nenhuma vaga.')).toBeInTheDocument();
   });
 
-  it('mostra o conteúdo quando a sessão já é válida', async () => {
-    getCurrentUserMock.mockResolvedValue({ user: { id: '1' } });
+  it('lista as vagas com categoria e status', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
 
     render(<PainelPage />);
 
-    expect(await screen.findByText(/login confirmado/i)).toBeInTheDocument();
-    expect(refreshSessionMock).not.toHaveBeenCalled();
-    expect(replaceMock).not.toHaveBeenCalled();
+    expect(await screen.findByText('Garçom')).toBeInTheDocument();
+    expect(screen.getByText('Vila Madalena, São Paulo')).toBeInTheDocument();
+    expect(screen.getByText('Aberta')).toBeInTheDocument();
+    expect(screen.getByText(/1\/4 preenchidas/)).toBeInTheDocument();
   });
 
-  it('renova a sessão quando o access token expirou e mostra o conteúdo', async () => {
-    getCurrentUserMock.mockRejectedValueOnce(new Error('401')).mockResolvedValueOnce({
-      user: { id: '1' },
-    });
-    refreshSessionMock.mockResolvedValue({ success: true });
+  it('mostra link pra publicar vaga', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [] });
 
     render(<PainelPage />);
 
-    expect(await screen.findByText(/login confirmado/i)).toBeInTheDocument();
-    expect(refreshSessionMock).toHaveBeenCalled();
-    expect(getCurrentUserMock).toHaveBeenCalledTimes(2);
-    expect(replaceMock).not.toHaveBeenCalled();
+    expect(await screen.findByRole('link', { name: /publicar vaga/i })).toHaveAttribute(
+      'href',
+      '/vagas/nova',
+    );
   });
 
-  it('redireciona pra /entrar quando não há sessão válida', async () => {
-    getCurrentUserMock.mockRejectedValue(new Error('401'));
-    refreshSessionMock.mockRejectedValue(new Error('sem refresh token'));
+  it('mostra mensagem de erro quando a listagem falha', async () => {
+    listMyJobsMock.mockRejectedValue(new Error('falha'));
 
     render(<PainelPage />);
 
-    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/entrar'));
-    expect(screen.queryByText(/login confirmado/i)).not.toBeInTheDocument();
+    expect(await screen.findByText('Não foi possível carregar suas vagas.')).toBeInTheDocument();
   });
 });
