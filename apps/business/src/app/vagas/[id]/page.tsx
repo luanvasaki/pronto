@@ -21,6 +21,14 @@ const STATUS_CLASS: Record<string, string> = {
   withdrawn: 'bg-border text-text-secondary',
 };
 
+const SHIFT_STATUS_LABEL: Record<string, string> = {
+  scheduled: 'Aguardando check-in',
+  checked_in: 'Em andamento',
+  completed: 'Concluído',
+  no_show: 'Não compareceu',
+  cancelled: 'Cancelado',
+};
+
 export default function VagaCandidatosPage() {
   const { isChecking } = useRequireAuth();
   const params = useParams<{ id: string }>();
@@ -46,12 +54,11 @@ export default function VagaCandidatosPage() {
     setUpdatingId(applicationId);
 
     try {
-      const updated = await updateApplicationStatus(applicationId, status);
-      setApplications((current) =>
-        current.map((application) =>
-          application.id === applicationId ? { ...application, status: updated.status } : application,
-        ),
-      );
+      await updateApplicationStatus(applicationId, status);
+      // Recarrega em vez de só mesclar o status local — aprovar cria um
+      // turno no backend, e só um refetch traz esse dado novo.
+      const refreshed = await listJobApplications(jobId);
+      setApplications(refreshed.applications);
     } catch (err) {
       setActionError({
         id: applicationId,
@@ -98,6 +105,12 @@ export default function VagaCandidatosPage() {
 
             {application.worker.avgRating && (
               <p className="mt-1 text-sm text-text-secondary">Nota média: {application.worker.avgRating}</p>
+            )}
+
+            {application.shift && (
+              <p className="mt-1 text-sm text-text-secondary">
+                Turno: {SHIFT_STATUS_LABEL[application.shift.status] ?? application.shift.status}
+              </p>
             )}
 
             {actionError?.id === application.id && (

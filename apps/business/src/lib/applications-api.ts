@@ -9,6 +9,12 @@ export interface JobApplication {
     fullName: string;
     avgRating: string | null;
   };
+  shift: {
+    id: string;
+    status: string;
+    checkInAt: string | null;
+    checkOutAt: string | null;
+  } | null;
 }
 
 export function listJobApplications(jobId: string): Promise<{ applications: JobApplication[] }> {

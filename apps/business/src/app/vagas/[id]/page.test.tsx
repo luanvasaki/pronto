@@ -28,6 +28,7 @@ const PENDING_APPLICATION = {
   status: 'pending',
   createdAt: '2026-07-01T12:00:00.000Z',
   worker: { id: 'worker-1', fullName: 'Ana Souza', avgRating: null },
+  shift: null,
 };
 
 describe('VagaCandidatosPage', () => {
@@ -69,8 +70,15 @@ describe('VagaCandidatosPage', () => {
     expect(screen.queryByRole('button', { name: /aprovar/i })).not.toBeInTheDocument();
   });
 
-  it('aprova um candidato e atualiza o status na tela', async () => {
-    listJobApplicationsMock.mockResolvedValue({ applications: [PENDING_APPLICATION] });
+  it('aprova um candidato, recarrega a lista e mostra o turno criado', async () => {
+    const approvedWithShift = {
+      ...PENDING_APPLICATION,
+      status: 'approved',
+      shift: { id: 'shift-1', status: 'scheduled', checkInAt: null, checkOutAt: null },
+    };
+    listJobApplicationsMock
+      .mockResolvedValueOnce({ applications: [PENDING_APPLICATION] })
+      .mockResolvedValueOnce({ applications: [approvedWithShift] });
     updateApplicationStatusMock.mockResolvedValue({ id: 'app-1', status: 'approved' });
     const user = userEvent.setup();
 
@@ -79,7 +87,9 @@ describe('VagaCandidatosPage', () => {
     await user.click(screen.getByRole('button', { name: /aprovar/i }));
 
     await waitFor(() => expect(screen.getByText('Aprovado')).toBeInTheDocument());
+    expect(screen.getByText('Turno: Aguardando check-in')).toBeInTheDocument();
     expect(updateApplicationStatusMock).toHaveBeenCalledWith('app-1', 'approved');
+    expect(listJobApplicationsMock).toHaveBeenCalledTimes(2);
   });
 
   it('mostra a mensagem da API quando a decisão falha', async () => {
