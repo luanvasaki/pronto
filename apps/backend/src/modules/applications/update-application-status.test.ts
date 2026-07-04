@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
-import { applications, companies, jobs, skillCategories, users, workerProfiles } from '../../db/schema';
+import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from './create-application';
 import { updateApplicationStatus } from './update-application-status';
 
@@ -51,6 +51,7 @@ describe('updateApplicationStatus', () => {
       if (company) {
         const companyJobs = await db.query.jobs.findMany({ where: eq(jobs.companyId, company.id) });
         for (const job of companyJobs) {
+          await db.delete(shifts).where(eq(shifts.jobId, job.id));
           await db.delete(applications).where(eq(applications.jobId, job.id));
         }
         await db.delete(jobs).where(eq(jobs.companyId, company.id));
@@ -116,5 +117,40 @@ describe('updateApplicationStatus', () => {
 
     const updatedJob = await db.query.jobs.findFirst({ where: eq(jobs.id, job.id) });
     expect(updatedJob?.positionsFilled).toBe(0);
+  });
+
+  it('cria o turno com o valor da vaga congelado ao aprovar', async () => {
+    const { owner, job, worker, application } = await setup();
+
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+
+    const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
+    expect(shift?.status).toBe('scheduled');
+    expect(shift?.workerId).toBe(worker.id);
+    expect(shift?.payAmountSnapshot).toBe(job.payAmount);
+  });
+
+  it('não cria turno ao rejeitar', async () => {
+    const { owner, application } = await setup();
+
+    await updateApplicationStatus(owner.id, application.id, 'rejected');
+
+    const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
+    expect(shift).toBeUndefined();
+  });
+
+  it('rejeita candidatura duplicada mesmo em corrida (duas chamadas simultâneas)', async () => {
+    const { owner, application } = await setup();
+
+    const results = await Promise.allSettled([
+      updateApplicationStatus(owner.id, application.id, 'approved'),
+      updateApplicationStatus(owner.id, application.id, 'rejected'),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason.message).toContain('já foi respondida');
   });
 });

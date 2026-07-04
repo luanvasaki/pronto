@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { applications, companies, jobs } from '../../db/schema';
+import { applications, companies, jobs, shifts } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { ApplicationResponse, toApplicationResponse } from './application-response';
 
@@ -11,10 +11,17 @@ function isApprovalStatus(value: string): value is ApprovalStatus {
 }
 
 /**
+ * O UPDATE de status é condicional (WHERE status = 'pending') em vez
+ * de checar-depois-escrever — fecha a mesma corrida encontrada em
+ * create-application (duas chamadas simultâneas passando pela checagem
+ * antes de qualquer uma escrever). Se `updated` vier vazio, é porque
+ * outra chamada já respondeu essa candidatura entre a leitura e agora.
+ *
  * Aprovar incrementa positionsFilled e marca a vaga como "filled"
- * quando completa. Não desconta candidaturas concorrentes — no volume
- * do MVP (dono aprovando manualmente, um de cada vez) a leitura-depois-
- * escrita aqui é suficiente; revisar se isso virar um ponto de disputa.
+ * quando completa, e cria o turno (shift) correspondente. O contador
+ * positionsFilled ainda usa leitura-depois-escrita — no volume do MVP
+ * (dono aprovando manualmente, uma vaga de cada vez) isso é suficiente;
+ * revisar se virar um ponto de disputa real.
  */
 export async function updateApplicationStatus(
   ownerUserId: string,
@@ -48,10 +55,10 @@ export async function updateApplicationStatus(
   const [updated] = await db
     .update(applications)
     .set({ status, updatedAt: new Date() })
-    .where(eq(applications.id, applicationId))
+    .where(and(eq(applications.id, applicationId), eq(applications.status, 'pending')))
     .returning();
   if (!updated) {
-    throw new HttpError(500, 'Não foi possível atualizar a candidatura.');
+    throw new HttpError(400, 'Essa candidatura já foi respondida.');
   }
 
   if (status === 'approved') {
@@ -64,6 +71,19 @@ export async function updateApplicationStatus(
         updatedAt: new Date(),
       })
       .where(eq(jobs.id, job.id));
+
+    const [shift] = await db
+      .insert(shifts)
+      .values({
+        applicationId: updated.id,
+        jobId: job.id,
+        workerId: updated.workerId,
+        payAmountSnapshot: job.payAmount,
+      })
+      .returning();
+    if (!shift) {
+      throw new HttpError(500, 'Não foi possível criar o turno.');
+    }
   }
 
   return toApplicationResponse(updated);
