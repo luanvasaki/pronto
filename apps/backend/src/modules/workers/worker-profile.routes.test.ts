@@ -47,3 +47,34 @@ describe('PUT /worker-profile', () => {
     expect(response.body.fullName).toBe('Ana Souza');
   });
 });
+
+describe('GET /worker-profile/me', () => {
+  afterEach(async () => {
+    await db.delete(users).where(eq(users.phone, TEST_PHONE));
+    await db.delete(skillCategories).where(eq(skillCategories.name, TEST_CATEGORY_NAME));
+  });
+
+  it('responde 401 sem sessão', async () => {
+    const app = createApp();
+
+    const response = await request(app).get('/worker-profile/me');
+
+    expect(response.status).toBe(401);
+  });
+
+  it('retorna o perfil de quem já se cadastrou', async () => {
+    const app = createApp();
+    const agent = await loginAgent(app);
+    const [category] = await db
+      .insert(skillCategories)
+      .values({ name: TEST_CATEGORY_NAME })
+      .returning();
+    await agent.put('/worker-profile').send({ fullName: 'Ana Souza', categoryIds: [category.id] });
+
+    const response = await agent.get('/worker-profile/me');
+
+    expect(response.status).toBe(200);
+    expect(response.body.fullName).toBe('Ana Souza');
+    expect(response.body.categoryIds).toEqual([category.id]);
+  });
+});

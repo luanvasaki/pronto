@@ -45,3 +45,29 @@ describe('PUT /company-profile', () => {
     expect(response.body.verificationStatus).toBe('pending');
   });
 });
+
+describe('GET /company-profile/me', () => {
+  afterEach(async () => {
+    await db.delete(users).where(eq(users.phone, TEST_PHONE));
+  });
+
+  it('responde 401 sem sessão', async () => {
+    const app = createApp();
+
+    const response = await request(app).get('/company-profile/me');
+
+    expect(response.status).toBe(401);
+  });
+
+  it('retorna o perfil de quem já cadastrou a empresa', async () => {
+    const app = createApp();
+    const agent = await loginAgent(app);
+    await agent.put('/company-profile').send({ legalName: 'Bar do Zé Ltda', tradeName: 'Bar do Zé', cnpj: TEST_CNPJ });
+
+    const response = await agent.get('/company-profile/me');
+
+    expect(response.status).toBe(200);
+    expect(response.body.tradeName).toBe('Bar do Zé');
+    expect(response.body.totalJobsPosted).toBe(0);
+  });
+});
