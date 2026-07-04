@@ -47,7 +47,10 @@ function CodigoForm() {
 
     try {
       await verifyOtp(verifiedPhone, code);
-      router.push('/painel');
+      // Sempre manda pro cadastro por enquanto, mesmo pra quem loga de
+      // novo — ainda não existe um jeito de checar se o perfil já foi
+      // completado (isso entra quando existir GET /company-profile).
+      router.push('/cadastro');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível confirmar o código.');
       setIsSubmitting(false);

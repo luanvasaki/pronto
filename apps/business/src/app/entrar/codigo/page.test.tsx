@@ -62,7 +62,7 @@ describe('CodigoPage', () => {
     expect(replaceMock).toHaveBeenCalledWith('/entrar');
   });
 
-  it('chama verifyOtp e navega pro painel quando o código está certo', async () => {
+  it('chama verifyOtp e navega pro cadastro quando o código está certo', async () => {
     verifyOtpMock.mockResolvedValue({ user: { id: '1' }, isNewUser: false });
     const user = userEvent.setup();
     render(<CodigoPage />);
@@ -73,7 +73,7 @@ describe('CodigoPage', () => {
     // Sucesso navega pra outra página (na app real, esta desmonta) —
     // o mock de router não desmonta nada, então só confirmamos a
     // chamada em vez de esperar o botão "reabilitar".
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/painel'));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/cadastro'));
     expect(verifyOtpMock).toHaveBeenCalledWith('+5511999990000', '123456');
   });
 
