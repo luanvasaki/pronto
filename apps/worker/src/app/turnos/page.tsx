@@ -4,7 +4,7 @@ import { ApiError, listSkillCategories } from '@shift/shared';
 import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { getCurrentPosition } from '../../lib/geolocation';
-import { checkIn, checkOut, listMyShifts, Shift } from '../../lib/shifts-api';
+import { checkIn, checkOut, listMyShifts, rateShift, Shift } from '../../lib/shifts-api';
 
 const CATEGORY_LABEL_FALLBACK = 'Categoria';
 
@@ -24,6 +24,21 @@ const SHIFT_STATUS_CLASS: Record<string, string> = {
   cancelled: 'bg-border text-text-secondary',
 };
 
+const PAYMENT_STATUS_LABEL: Record<string, string> = {
+  pending: 'Pagamento em processamento',
+  charged: 'Pagamento cobrado — aguardando liberação',
+  released: 'Pagamento liberado',
+  failed: 'Falha na cobrança do pagamento',
+  refunded: 'Pagamento estornado',
+};
+
+const RATING_SCORES = [1, 2, 3, 4, 5];
+
+interface RatingDraft {
+  score: number;
+  comment: string;
+}
+
 function formatDateRange(startsAt: string, endsAt: string): string {
   const formatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
   return `${formatter.format(new Date(startsAt))} até ${formatter.format(new Date(endsAt))}`;
@@ -37,6 +52,10 @@ export default function TurnosPage() {
 
   const [actingShiftId, setActingShiftId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<{ shiftId: string; message: string } | null>(null);
+
+  const [ratingDrafts, setRatingDrafts] = useState<Record<string, RatingDraft>>({});
+  const [ratingSubmittingId, setRatingSubmittingId] = useState<string | null>(null);
+  const [ratingError, setRatingError] = useState<{ shiftId: string; message: string } | null>(null);
 
   useEffect(() => {
     async function load(): Promise<void> {
@@ -90,6 +109,39 @@ export default function TurnosPage() {
     }
   }
 
+  function setRatingScore(shiftId: string, score: number): void {
+    setRatingDrafts((current) => ({ ...current, [shiftId]: { score, comment: current[shiftId]?.comment ?? '' } }));
+  }
+
+  function setRatingComment(shiftId: string, comment: string): void {
+    setRatingDrafts((current) => ({ ...current, [shiftId]: { score: current[shiftId]?.score ?? 0, comment } }));
+  }
+
+  async function handleRate(shiftId: string): Promise<void> {
+    const draft = ratingDrafts[shiftId];
+    if (!draft?.score) return;
+
+    setRatingError(null);
+    setRatingSubmittingId(shiftId);
+
+    try {
+      const rating = await rateShift(shiftId, draft.score, draft.comment.trim() || undefined);
+      setShifts((current) =>
+        current.map((shift) =>
+          shift.id === shiftId ? { ...shift, ratings: { ...shift.ratings, worker: rating } } : shift,
+        ),
+      );
+    } catch (err) {
+      setRatingError({
+        shiftId,
+        message:
+          err instanceof ApiError || err instanceof Error ? err.message : 'Não foi possível enviar a avaliação.',
+      });
+    } finally {
+      setRatingSubmittingId(null);
+    }
+  }
+
   if (isLoading) {
     return (
       <main className="flex flex-1 items-center justify-center px-4">
@@ -129,6 +181,12 @@ export default function TurnosPage() {
             </p>
             <p className="mt-2 font-mono text-sm font-semibold text-text">R$ {shift.payAmountSnapshot}</p>
 
+            {shift.payment && (
+              <p className="mt-1 text-sm text-text-secondary">
+                {PAYMENT_STATUS_LABEL[shift.payment.status] ?? shift.payment.status}
+              </p>
+            )}
+
             {actionError?.shiftId === shift.id && (
               <p className="mt-2 text-sm text-danger">{actionError.message}</p>
             )}
@@ -153,6 +211,56 @@ export default function TurnosPage() {
               >
                 Fazer check-out
               </Button>
+            )}
+
+            {shift.status === 'completed' && shift.ratings.worker && (
+              <p className="mt-3 text-sm text-success">Você avaliou: {shift.ratings.worker.score} de 5.</p>
+            )}
+
+            {shift.status === 'completed' && !shift.ratings.worker && (
+              <div className="mt-3 flex flex-col gap-2 rounded-md border border-border p-3">
+                <p className="text-sm font-medium text-text">Avaliar a empresa</p>
+                <div className="flex gap-1.5" role="group" aria-label="Nota de 1 a 5">
+                  {RATING_SCORES.map((score) => {
+                    const selected = (ratingDrafts[shift.id]?.score ?? 0) >= score;
+                    return (
+                      <button
+                        key={score}
+                        type="button"
+                        aria-label={`${score} de 5`}
+                        aria-pressed={selected}
+                        onClick={() => setRatingScore(shift.id, score)}
+                        className={`h-9 w-9 rounded-md border text-sm font-semibold transition ${
+                          selected
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border text-text-secondary hover:border-primary/50'
+                        }`}
+                      >
+                        {score}
+                      </button>
+                    );
+                  })}
+                </div>
+                <textarea
+                  rows={2}
+                  placeholder="Comentário (opcional)"
+                  value={ratingDrafts[shift.id]?.comment ?? ''}
+                  onChange={(event) => setRatingComment(shift.id, event.target.value)}
+                  className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+                />
+                {ratingError?.shiftId === shift.id && (
+                  <p className="text-sm text-danger">{ratingError.message}</p>
+                )}
+                <Button
+                  type="button"
+                  variant="outlined"
+                  isLoading={ratingSubmittingId === shift.id}
+                  disabled={!ratingDrafts[shift.id]?.score}
+                  onClick={() => handleRate(shift.id)}
+                >
+                  Enviar avaliação
+                </Button>
+              </div>
             )}
           </li>
         ))}

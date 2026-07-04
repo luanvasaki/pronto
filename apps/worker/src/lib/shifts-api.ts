@@ -1,6 +1,29 @@
 import { apiFetch } from '@shift/shared';
 import { Job } from './jobs-api';
 
+export interface Payment {
+  id: string;
+  shiftId: string;
+  amount: string;
+  status: string;
+  chargedAt: string | null;
+  releasedAt: string | null;
+}
+
+export interface Rating {
+  id: string;
+  shiftId: string;
+  raterRole: string;
+  score: number;
+  comment: string | null;
+  createdAt: string;
+}
+
+export interface ShiftRatings {
+  worker: Rating | null;
+  company: Rating | null;
+}
+
 export interface Shift {
   id: string;
   applicationId: string;
@@ -15,6 +38,8 @@ export interface Shift {
   checkOutLat: number | null;
   checkOutLng: number | null;
   job: Job;
+  payment: Payment | null;
+  ratings: ShiftRatings;
 }
 
 export function listMyShifts(): Promise<{ shifts: Shift[] }> {
@@ -32,5 +57,12 @@ export function checkOut(shiftId: string, lat: number, lng: number): Promise<Shi
   return apiFetch(`/shifts/${shiftId}/check-out`, {
     method: 'POST',
     body: JSON.stringify({ lat, lng }),
+  });
+}
+
+export function rateShift(shiftId: string, score: number, comment: string | undefined): Promise<Rating> {
+  return apiFetch(`/shifts/${shiftId}/rating`, {
+    method: 'POST',
+    body: JSON.stringify({ score, comment }),
   });
 }

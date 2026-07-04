@@ -15,10 +15,12 @@ vi.mock('@shift/shared', async (importOriginal) => {
 const listMyShiftsMock = vi.fn();
 const checkInMock = vi.fn();
 const checkOutMock = vi.fn();
+const rateShiftMock = vi.fn();
 vi.mock('../../lib/shifts-api', () => ({
   listMyShifts: (...args: unknown[]) => listMyShiftsMock(...args),
   checkIn: (...args: unknown[]) => checkInMock(...args),
   checkOut: (...args: unknown[]) => checkOutMock(...args),
+  rateShift: (...args: unknown[]) => rateShiftMock(...args),
 }));
 
 const JOB = {
@@ -36,7 +38,13 @@ const JOB = {
   status: 'filled',
 };
 
-function makeShift(overrides: Partial<{ status: string }> = {}) {
+function makeShift(
+  overrides: Partial<{
+    status: string;
+    payment: { id: string; shiftId: string; amount: string; status: string; chargedAt: string | null; releasedAt: string | null } | null;
+    ratings: { worker: { id: string; shiftId: string; raterRole: string; score: number; comment: string | null; createdAt: string } | null; company: unknown };
+  }> = {},
+) {
   return {
     id: 'shift-1',
     applicationId: 'app-1',
@@ -51,6 +59,8 @@ function makeShift(overrides: Partial<{ status: string }> = {}) {
     checkOutLat: null,
     checkOutLng: null,
     job: JOB,
+    payment: null,
+    ratings: { worker: null, company: null },
     ...overrides,
   };
 }
@@ -61,6 +71,7 @@ describe('TurnosPage', () => {
     listMyShiftsMock.mockReset();
     checkInMock.mockReset();
     checkOutMock.mockReset();
+    rateShiftMock.mockReset();
     Object.defineProperty(window.navigator, 'geolocation', { value: undefined, configurable: true });
   });
 
@@ -90,13 +101,85 @@ describe('TurnosPage', () => {
     expect(screen.getByRole('button', { name: /fazer check-out/i })).toBeInTheDocument();
   });
 
-  it('não mostra nenhum botão pra turno concluído', async () => {
+  it('não mostra botão de check-in/check-out pra turno concluído', async () => {
     listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'completed' })] });
 
     render(<TurnosPage />);
 
     await screen.findByText('Concluído');
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /fazer check-in/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /fazer check-out/i })).not.toBeInTheDocument();
+  });
+
+  it('mostra o status do pagamento quando existe', async () => {
+    listMyShiftsMock.mockResolvedValue({
+      shifts: [
+        makeShift({
+          status: 'completed',
+          payment: { id: 'p1', shiftId: 'shift-1', amount: '130.00', status: 'charged', chargedAt: null, releasedAt: null },
+        }),
+      ],
+    });
+
+    render(<TurnosPage />);
+
+    expect(await screen.findByText(/aguardando liberação/i)).toBeInTheDocument();
+  });
+
+  it('mostra o formulário de avaliação pra turno concluído ainda não avaliado', async () => {
+    listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'completed' })] });
+
+    render(<TurnosPage />);
+
+    expect(await screen.findByText('Avaliar a empresa')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '5 de 5' })).toBeInTheDocument();
+  });
+
+  it('envia a avaliação com a nota escolhida', async () => {
+    listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'completed' })] });
+    rateShiftMock.mockResolvedValue({
+      id: 'rating-1',
+      shiftId: 'shift-1',
+      raterRole: 'worker',
+      score: 4,
+      comment: null,
+      createdAt: '2026-08-02T00:00:00.000Z',
+    });
+    const user = userEvent.setup();
+
+    render(<TurnosPage />);
+    await screen.findByText('Avaliar a empresa');
+    await user.click(screen.getByRole('button', { name: '4 de 5' }));
+    await user.click(screen.getByRole('button', { name: /enviar avaliação/i }));
+
+    await waitFor(() => expect(rateShiftMock).toHaveBeenCalledWith('shift-1', 4, undefined));
+    expect(await screen.findByText('Você avaliou: 4 de 5.')).toBeInTheDocument();
+  });
+
+  it('não mostra o formulário quando o turno já foi avaliado', async () => {
+    listMyShiftsMock.mockResolvedValue({
+      shifts: [
+        makeShift({
+          status: 'completed',
+          ratings: {
+            worker: {
+              id: 'rating-1',
+              shiftId: 'shift-1',
+              raterRole: 'worker',
+              score: 3,
+              comment: null,
+              createdAt: '2026-08-02T00:00:00.000Z',
+            },
+            company: null,
+          },
+        }),
+      ],
+    });
+
+    render(<TurnosPage />);
+
+    expect(await screen.findByText('Você avaliou: 3 de 5.')).toBeInTheDocument();
+    expect(screen.queryByText('Avaliar a empresa')).not.toBeInTheDocument();
   });
 
   it('faz check-in usando a localização do navegador', async () => {
