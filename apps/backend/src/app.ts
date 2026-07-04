@@ -2,6 +2,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { Express } from 'express';
 import { env } from './config/env';
+import { applicationsRoutes } from './modules/applications/applications.routes';
 import { authRoutes } from './modules/auth/auth.routes';
 import { companyProfileRoutes } from './modules/companies/company-profile.routes';
 import { jobsRoutes } from './modules/jobs/jobs.routes';
@@ -31,6 +32,7 @@ export function createApp(): Express {
   app.use(authRoutes);
   app.use(companyProfileRoutes);
   app.use(jobsRoutes);
+  app.use(applicationsRoutes);
   app.use(workerProfileRoutes);
   app.use(workerDocumentRoutes);
 
