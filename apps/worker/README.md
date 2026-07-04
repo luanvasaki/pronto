@@ -9,7 +9,7 @@ npm install --workspace=apps/worker   # a partir da raiz do monorepo
 npm run dev --workspace=apps/worker
 ```
 
-Abre em `http://localhost:3000` (ou outra porta, se a do backend já estiver ocupada).
+Abre em `http://localhost:3000` (porta fixa — precisa bater com `CORS_ORIGINS` do backend).
 
 ## PWA
 
