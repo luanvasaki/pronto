@@ -24,7 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Shift — vagas de trabalho avulso",
+  title: "Pronto — vagas de trabalho avulso",
   description: "Encontre vagas de trabalho avulso perto de você.",
   icons: {
     apple: "/icons/icon-192.png",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Shift",
+    title: "Pronto",
   },
 };
 

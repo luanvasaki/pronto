@@ -24,7 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Shift para empresas",
+  title: "Pronto para empresas",
   description: "Publique vagas e gerencie candidatos em minutos.",
   icons: {
     apple: "/icons/icon-192.png",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Shift Empresas",
+    title: "Pronto Empresas",
   },
 };
 

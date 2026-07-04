@@ -2,7 +2,7 @@
   "name": "@shift/backend",
   "version": "0.0.0",
   "private": true,
-  "description": "API do marketplace shift.",
+  "description": "API do marketplace Pronto.",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",

@@ -1,4 +1,4 @@
-# shift
+# Pronto
 
 Marketplace de contratação de freelancers sob demanda — conecta empresas (bares, restaurantes, buffets, eventos, hotéis) que precisam de staff temporário em poucas horas com trabalhadores disponíveis.
 

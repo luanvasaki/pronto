@@ -6,8 +6,8 @@ import type { MetadataRoute } from 'next';
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Shift — vagas de trabalho avulso',
-    short_name: 'Shift',
+    name: 'Pronto — vagas de trabalho avulso',
+    short_name: 'Pronto',
     description: 'Encontre vagas de trabalho avulso perto de você.',
     start_url: '/',
     display: 'standalone',

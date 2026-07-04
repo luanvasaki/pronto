@@ -6,8 +6,8 @@ import type { MetadataRoute } from 'next';
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Shift para empresas',
-    short_name: 'Shift Empresas',
+    name: 'Pronto para empresas',
+    short_name: 'Pronto Empresas',
     description: 'Publique vagas e gerencie candidatos em minutos.',
     start_url: '/',
     display: 'standalone',
