@@ -2,6 +2,9 @@ import { desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, companies, jobs, shifts, workerProfiles } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
+import { getPaymentsByShiftIds } from '../payments/get-payments-by-shift-ids';
+import { PaymentResponse } from '../payments/payment-response';
+import { getRatingsByShiftIds, ShiftRatings } from '../ratings/get-ratings-by-shift-ids';
 
 export interface JobApplicationResponse {
   id: string;
@@ -17,6 +20,8 @@ export interface JobApplicationResponse {
     status: string;
     checkInAt: Date | null;
     checkOutAt: Date | null;
+    payment: PaymentResponse | null;
+    ratings: ShiftRatings;
   } | null;
 }
 
@@ -55,6 +60,12 @@ export async function listJobApplications(
   });
   const shiftsByApplicationId = new Map(shiftRows.map((shift) => [shift.applicationId, shift]));
 
+  const shiftIds = shiftRows.map((shift) => shift.id);
+  const [paymentsByShiftId, ratingsByShiftId] = await Promise.all([
+    getPaymentsByShiftIds(shiftIds),
+    getRatingsByShiftIds(shiftIds),
+  ]);
+
   return rows.flatMap((row) => {
     const worker = workersById.get(row.workerId);
     if (!worker) {
@@ -68,7 +79,14 @@ export async function listJobApplications(
         createdAt: row.createdAt,
         worker: { id: worker.userId, fullName: worker.fullName, avgRating: worker.avgRating },
         shift: shift
-          ? { id: shift.id, status: shift.status, checkInAt: shift.checkInAt, checkOutAt: shift.checkOutAt }
+          ? {
+              id: shift.id,
+              status: shift.status,
+              checkInAt: shift.checkInAt,
+              checkOutAt: shift.checkOutAt,
+              payment: paymentsByShiftId.get(shift.id) ?? null,
+              ratings: ratingsByShiftId.get(shift.id) ?? { worker: null, company: null },
+            }
           : null,
       },
     ];

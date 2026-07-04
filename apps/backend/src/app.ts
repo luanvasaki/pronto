@@ -7,6 +7,8 @@ import { authRoutes } from './modules/auth/auth.routes';
 import { companyProfileRoutes } from './modules/companies/company-profile.routes';
 import { jobsRoutes } from './modules/jobs/jobs.routes';
 import { healthRoutes } from './modules/health/health.routes';
+import { paymentsRoutes } from './modules/payments/payments.routes';
+import { ratingsRoutes } from './modules/ratings/ratings.routes';
 import { skillCategoriesRoutes } from './modules/skill-categories/skill-categories.routes';
 import { shiftsRoutes } from './modules/shifts/shifts.routes';
 import { workerDocumentRoutes } from './modules/workers/worker-document.routes';
@@ -35,6 +37,8 @@ export function createApp(): Express {
   app.use(jobsRoutes);
   app.use(applicationsRoutes);
   app.use(shiftsRoutes);
+  app.use(ratingsRoutes);
+  app.use(paymentsRoutes);
   app.use(workerProfileRoutes);
   app.use(workerDocumentRoutes);
 
