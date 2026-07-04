@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import { boolean, pgEnum, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 
 /**
  * Campos deliberadamente mínimos pro escopo do MVP: login é só
@@ -16,6 +16,10 @@ export const users = pgTable(
     email: varchar('email', { length: 255 }),
     phoneVerifiedAt: timestamp('phone_verified_at', { withTimezone: true }),
     status: userStatusEnum('status').notNull().default('active'),
+    // Sem self-serve pra virar admin — só concedido via update direto
+    // no banco (ver README de operações). É deliberadamente rígido:
+    // aprovar KYC e verificação de empresa é ação sensível.
+    isAdmin: boolean('is_admin').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

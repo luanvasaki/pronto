@@ -4,6 +4,7 @@ export interface UserResponse {
   id: string;
   phone: string;
   status: string;
+  isAdmin: boolean;
 }
 
 export interface VerifyOtpResponse {

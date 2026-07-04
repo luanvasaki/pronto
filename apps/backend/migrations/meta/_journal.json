@@ -85,6 +85,13 @@
       "when": 1783073901825,
       "tag": "0011_early_cargill",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1783172683875,
+      "tag": "0012_swift_annihilus",
+      "breakpoints": true
     }
   ]
 }
