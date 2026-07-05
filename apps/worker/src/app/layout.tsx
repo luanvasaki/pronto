@@ -1,33 +1,34 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { Bricolage_Grotesque, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import { RegisterServiceWorker } from "./register-service-worker";
 import "./globals.css";
 
-// Inter carrega o texto e os botões; Jakarta só os títulos; mono só
-// pro código OTP e valor monetário — ver documento de design.
-const inter = Inter({
-  variable: "--font-inter",
+// Hanken Grotesk carrega o texto e os botões; Bricolage Grotesque só
+// os títulos; mono só pro código OTP e valor monetário — ver
+// design_handoff_pronto/README.md.
+const hanken = Hanken_Grotesk({
+  variable: "--font-hanken",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
   subsets: ["latin"],
-  weight: ["700", "800"],
+  weight: ["600", "700", "800"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
-  weight: ["500"],
+  weight: ["500", "600"],
 });
 
 export const metadata: Metadata = {
   title: "Pronto — vagas de trabalho avulso",
   description: "Encontre vagas de trabalho avulso perto de você.",
   icons: {
-    apple: "/icons/icon-192.png",
+    apple: "/icons/icon-180.png",
   },
   appleWebApp: {
     capable: true,
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#4F46E5",
+  themeColor: "#F5531E",
 };
 
 export default function RootLayout({
@@ -48,7 +49,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${inter.variable} ${jakarta.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${hanken.variable} ${bricolage.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {children}

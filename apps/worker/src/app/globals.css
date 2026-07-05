@@ -1,42 +1,43 @@
 @import "tailwindcss";
 
 /*
- * Tokens do design system (ver documento de design). Cada cor tem um
- * par claro/escuro — nenhum componente deveria usar hex direto, só
- * essas variáveis, pra dark mode ser automático em todo lugar.
+ * Tokens do design system (handoff "Pronto", ver design_handoff_pronto/README.md).
+ * Cada cor tem um par claro/escuro — nenhum componente deveria usar
+ * hex direto, só essas variáveis, pra dark mode ser automático em
+ * todo lugar. Dark mode é quente (near-black amarronzado), não cinza.
  */
 :root {
-  --color-primary: #4f46e5;
-  --color-secondary: #111827;
-  --color-accent: #ec4899;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-background: #fafafa;
+  --color-primary: #f5531e;
+  --color-secondary: #1a1712;
+  --color-accent: #c2410c;
+  --color-success: #17a860;
+  --color-warning: #e0900f;
+  --color-danger: #c0392b;
+  --color-background: #f7f4ee;
   --color-surface: #ffffff;
-  --color-border: #e5e7eb;
-  --color-text: #111827;
-  --color-text-secondary: #6b7280;
+  --color-border: #e4ded2;
+  --color-text: #1a1712;
+  --color-text-secondary: #7a7264;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-primary: #818cf8;
-    --color-secondary: #f5f5f7;
-    --color-accent: #f472b6;
-    --color-success: #34d399;
-    --color-warning: #fbbf24;
-    --color-danger: #f87171;
-    --color-background: #0a0a0b;
-    --color-surface: #17171b;
-    --color-border: #27272a;
-    --color-text: #f5f5f7;
-    --color-text-secondary: #9ca3af;
+    --color-primary: #ff6b3d;
+    --color-secondary: #f0ece2;
+    --color-accent: #ff8a4c;
+    --color-success: #35c489;
+    --color-warning: #f5b93d;
+    --color-danger: #f07567;
+    --color-background: #14120d;
+    --color-surface: #201c16;
+    --color-border: #322d24;
+    --color-text: #f2eee5;
+    --color-text-secondary: #a79e8c;
   }
 }
 
@@ -58,8 +59,8 @@
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
 
-  --font-sans: var(--font-inter);
-  --font-heading: var(--font-jakarta);
+  --font-sans: var(--font-hanken);
+  --font-heading: var(--font-bricolage);
   --font-mono: var(--font-jetbrains-mono);
 }
 
