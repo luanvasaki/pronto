@@ -113,5 +113,6 @@ describe('listNearbyJobs', () => {
     expect(result[0].id).toBe(nearJob.id);
     expect(result[0].distanceKm).toBeGreaterThan(0);
     expect(result[0].distanceKm).toBeLessThan(20);
+    expect(result[0].companyName).toBe('Buffet Aurora');
   });
 });

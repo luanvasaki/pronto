@@ -1,12 +1,14 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { jobs, workerProfiles, workerSkills } from '../../db/schema';
+import { companies, jobs, workerProfiles, workerSkills } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { haversineDistanceKm } from './haversine';
 import { JobResponse, toJobResponse } from './job-response';
 
 export interface NearbyJobResponse extends JobResponse {
   distanceKm: number;
+  companyName: string;
+  companyAvgRating: string | null;
 }
 
 /**
@@ -36,6 +38,11 @@ export async function listNearbyJobs(workerId: string): Promise<NearbyJobRespons
     where: and(eq(jobs.status, 'open'), inArray(jobs.categoryId, categoryIds)),
   });
 
+  const companyIds = [...new Set(openJobs.map((job) => job.companyId))];
+  const companyRows =
+    companyIds.length > 0 ? await db.query.companies.findMany({ where: inArray(companies.id, companyIds) }) : [];
+  const companiesById = new Map(companyRows.map((company) => [company.id, company]));
+
   const homeLat = profile.homeLat;
   const homeLng = profile.homeLng;
 
@@ -47,8 +54,16 @@ export async function listNearbyJobs(workerId: string): Promise<NearbyJobRespons
     }))
     .filter(({ distanceKm }) => distanceKm <= profile.searchRadiusKm)
     .sort((a, b) => a.distanceKm - b.distanceKm)
-    .map(({ job, distanceKm }) => ({
-      ...toJobResponse(job),
-      distanceKm: Math.round(distanceKm * 10) / 10,
-    }));
+    .flatMap(({ job, distanceKm }) => {
+      const company = companiesById.get(job.companyId);
+      if (!company) return [];
+      return [
+        {
+          ...toJobResponse(job),
+          distanceKm: Math.round(distanceKm * 10) / 10,
+          companyName: company.tradeName,
+          companyAvgRating: company.avgRating,
+        },
+      ];
+    });
 }

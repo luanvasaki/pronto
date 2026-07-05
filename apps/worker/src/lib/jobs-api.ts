@@ -17,6 +17,8 @@ export interface Job {
 
 export interface NearbyJob extends Job {
   distanceKm: number;
+  companyName: string;
+  companyAvgRating: string | null;
 }
 
 export function listNearbyJobs(): Promise<{ jobs: NearbyJob[] }> {
