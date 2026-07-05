@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #F7F4EE; }
+  table { border-collapse: collapse; width: 100%; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 13px; background: rgba(26,23,18,0.06); padding: 2px 6px; border-radius: 5px; }
+  th, td { text-align: left; }
+</style>
+</helmet>
+<div style="background:#F7F4EE; color:#1A1712; font-family:'Hanken Grotesk',sans-serif; line-height:1.5; padding:clamp(28px,5vw,72px); max-width:1080px; margin:0 auto;">
+
+  <!-- HEADER -->
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; padding-bottom:28px; border-bottom:1px solid rgba(26,23,18,0.14);">
+    <div>
+      <div style="display:flex; align-items:flex-end; margin-bottom:12px;">
+        <span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:26px; letter-spacing:-0.03em; line-height:0.8;">pr</span>
+        <span style="width:15px; height:15px; border:3.5px solid #F5531E; border-radius:50%; box-sizing:border-box; margin:0 1px 3px;"></span>
+        <span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:26px; letter-spacing:-0.03em; line-height:0.8;">nto</span>
+      </div>
+      <h1 style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:clamp(26px,3.6vw,38px); letter-spacing:-0.02em; margin:0;">Especificação de handoff</h1>
+    </div>
+    <div style="font-size:13px; color:#7A7264; text-align:right; line-height:1.7;">Doc. 04 · para engenharia<br>Tokens · Logo · Tipografia · Raios · Telas</div>
+  </div>
+
+  <div style="background:rgba(245,83,30,0.08); border:1px solid rgba(245,83,30,0.3); border-radius:12px; padding:14px 18px; margin:24px 0 40px; font-size:14px; color:#7A3925; line-height:1.5;">
+    <strong>Nota de marca:</strong> o símbolo é um <strong>anel</strong> (o "o" de pr<span style="color:#F5531E;">◯</span>nto), não um ponto — mudança intencional para nos afastar do "Ponto". Onde antes havia um ponto laranja, agora vai o anel.
+  </div>
+
+  <!-- 1. COR -->
+  <section style="margin-bottom:52px;">
+    <h2 style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:24px; letter-spacing:-0.01em; margin:0 0 6px;">1 · Tokens de cor</h2>
+    <p style="color:#7A7264; font-size:15px; margin:0 0 20px;">Mesmos 11 nomes — só troque os hex. Dark mode é quente (near-black amarronzado), não cinza, para casar com a marca.</p>
+    <div style="border:1px solid rgba(26,23,18,0.12); border-radius:14px; overflow:hidden;">
+      <table style="font-size:14px;">
+        <thead>
+          <tr style="background:#1A1712; color:#F0ECE2;">
+            <th style="padding:12px 16px; font-weight:600;">Token</th>
+            <th style="padding:12px 16px; font-weight:600;">Uso</th>
+            <th style="padding:12px 16px; font-weight:600;">Claro</th>
+            <th style="padding:12px 16px; font-weight:600;">Escuro</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:#fff; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px;"><code>primary</code></td><td style="padding:11px 16px; color:#7A7264;">botão principal, links, foco</td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#F5531E;border:1px solid rgba(0,0,0,0.1);"></span><code>#F5531E</code></span></td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#FF6B3D;"></span><code>#FF6B3D</code></span></td></tr>
+          <tr style="background:#FCFAF5; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px;"><code>secondary</code></td><td style="padding:11px 16px; color:#7A7264;">ação secundária</td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#1A1712;"></span><code>#1A1712</code></span></td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#F0ECE2;border:1px solid rgba(0,0,0,0.1);"></span><code>#F0ECE2</code></span></td></tr>
+          <tr style="background:#fff; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px;"><code>accent</code></td><td style="padding:11px 16px; color:#7A7264;">destaque pontual (ember)</td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#C2410C;"></span><code>#C2410C</code></span></td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#FF8A4C;"></span><code>#FF8A4C</code></span></td></tr>
+          <tr style="background:#FCFAF5; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px;"><code>success</code></td><td style="padding:11px 16px; color:#7A7264;">confirmação, avaliação, "disponível"</td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#17A860;"></span><code>#17A860</code></span></td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#35C489;"></span><code>#35C489</code></span></td></tr>
+          <tr style="background:#fff; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px;"><code>warning</code></td><td style="padding:11px 16px; color:#7A7264;">pendente, atenção, "aguardando"</td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#E0900F;"></span><code>#E0900F</code></span></td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#F5B93D;"></span><code>#F5B93D</code></span></td></tr>
+          <tr style="background:#FCFAF5; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px;"><code>danger</code></td><td style="padding:11px 16px; color:#7A7264;">erro, cancelamento</td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#C0392B;"></span><code>#C0392B</code></span></td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#F07567;"></span><code>#F07567</code></span></td></tr>
+          <tr style="background:#fff; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px;"><code>background</code></td><td style="padding:11px 16px; color:#7A7264;">fundo da página</td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#F7F4EE;border:1px solid rgba(0,0,0,0.1);"></span><code>#F7F4EE</code></span></td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#14120D;"></span><code>#14120D</code></span></td></tr>
+          <tr style="background:#FCFAF5; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px;"><code>surface</code></td><td style="padding:11px 16px; color:#7A7264;">cards, inputs</td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#FFFFFF;border:1px solid rgba(0,0,0,0.1);"></span><code>#FFFFFF</code></span></td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#201C16;"></span><code>#201C16</code></span></td></tr>
+          <tr style="background:#fff; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px;"><code>border</code></td><td style="padding:11px 16px; color:#7A7264;">bordas, divisórias</td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#E4DED2;"></span><code>#E4DED2</code></span></td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#322D24;"></span><code>#322D24</code></span></td></tr>
+          <tr style="background:#FCFAF5; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px;"><code>text</code></td><td style="padding:11px 16px; color:#7A7264;">texto principal</td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#1A1712;"></span><code>#1A1712</code></span></td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#F2EEE5;border:1px solid rgba(0,0,0,0.1);"></span><code>#F2EEE5</code></span></td></tr>
+          <tr style="background:#fff;"><td style="padding:11px 16px;"><code>text-secondary</code></td><td style="padding:11px 16px; color:#7A7264;">texto de apoio</td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#7A7264;"></span><code>#7A7264</code></span></td><td style="padding:11px 16px;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px;height:18px;border-radius:5px;background:#A79E8C;"></span><code>#A79E8C</code></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 2. LOGO -->
+  <section style="margin-bottom:52px;">
+    <h2 style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:24px; letter-spacing:-0.01em; margin:0 0 6px;">2 · Logo &amp; ícone</h2>
+    <p style="color:#7A7264; font-size:15px; margin:0 0 20px;">Arquivos no pacote <code>handoff/</code> (download no fim). Ícone é vetor puro (qualquer tamanho). Wordmark final vetorizado sob demanda.</p>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
+      <div style="background:#fff; border:1px solid rgba(26,23,18,0.12); border-radius:14px; padding:24px; display:flex; flex-direction:column; align-items:center; gap:14px;">
+        <div style="width:80px; height:80px; background:#F5531E; border-radius:18px; display:flex; align-items:center; justify-content:center;"><span style="width:38px;height:38px;border-radius:50%;border:9px solid #fff;"></span></div>
+        <div style="text-align:center;"><div style="font-weight:600; font-size:14px;">Ícone / PWA</div><div style="font-size:12px; color:#7A7264; margin-top:2px;">svg · png 192/512/180</div></div>
+      </div>
+      <div style="background:#1A1712; border:1px solid rgba(26,23,18,0.12); border-radius:14px; padding:24px; display:flex; flex-direction:column; align-items:center; gap:14px;">
+        <div style="display:flex; align-items:flex-end; height:80px;"><span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:34px; letter-spacing:-0.03em; color:#F0ECE2; line-height:0.8;">pr</span><span style="width:19px;height:19px;border:4px solid #F5531E;border-radius:50%;box-sizing:border-box;margin:0 1px 3px;"></span><span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:34px; letter-spacing:-0.03em; color:#F0ECE2; line-height:0.8;">nto</span></div>
+        <div style="text-align:center;"><div style="font-weight:600; font-size:14px; color:#F0ECE2;">Wordmark · escuro</div><div style="font-size:12px; color:#8F887A; margin-top:2px;">wordmark-dark.svg</div></div>
+      </div>
+      <div style="background:#fff; border:1px solid rgba(26,23,18,0.12); border-radius:14px; padding:24px; display:flex; flex-direction:column; align-items:center; gap:14px;">
+        <div style="display:flex; align-items:flex-end; height:80px;"><span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:34px; letter-spacing:-0.03em; color:#1A1712; line-height:0.8;">pr</span><span style="width:19px;height:19px;border:4px solid #F5531E;border-radius:50%;box-sizing:border-box;margin:0 1px 3px;"></span><span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:34px; letter-spacing:-0.03em; color:#1A1712; line-height:0.8;">nto</span></div>
+        <div style="text-align:center;"><div style="font-weight:600; font-size:14px;">Wordmark · claro</div><div style="font-size:12px; color:#7A7264; margin-top:2px;">wordmark-light.svg</div></div>
+      </div>
+    </div>
+    <div style="margin-top:16px; background:#FCFAF5; border:1px solid rgba(26,23,18,0.1); border-radius:12px; padding:16px 18px; font-size:13.5px; color:#453F33; line-height:1.6;">
+      <strong>CSS do wordmark</strong> (se preferir renderizar pela fonte, sem SVG): <code>pr</code> + anel + <code>nto</code> em Bricolage Grotesque 800, <code>letter-spacing:-0.03em</code>. O anel = <code>border: 0.16em solid #F5531E; border-radius:50%; width/height: 0.58em</code>, alinhado à base.
+    </div>
+  </section>
+
+  <!-- 3. TIPOGRAFIA -->
+  <section style="margin-bottom:52px;">
+    <h2 style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:24px; letter-spacing:-0.01em; margin:0 0 6px;">3 · Tipografia</h2>
+    <p style="color:#7A7264; font-size:15px; margin:0 0 20px;">Muda: <code>Inter</code> → Hanken Grotesk e <code>Plus Jakarta Sans</code> → Bricolage Grotesque. Mono continua.</p>
+    <div style="border:1px solid rgba(26,23,18,0.12); border-radius:14px; overflow:hidden;">
+      <table style="font-size:14px;">
+        <thead><tr style="background:#1A1712; color:#F0ECE2;"><th style="padding:12px 16px; font-weight:600;">Papel</th><th style="padding:12px 16px; font-weight:600;">Fonte (nova)</th><th style="padding:12px 16px; font-weight:600;">Pesos</th></tr></thead>
+        <tbody>
+          <tr style="background:#fff; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:12px 16px; color:#7A7264;">Títulos, números grandes, valores em destaque</td><td style="padding:12px 16px;"><span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:16px;">Bricolage Grotesque</span></td><td style="padding:12px 16px;"><code>600 · 700 · 800</code></td></tr>
+          <tr style="background:#FCFAF5; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:12px 16px; color:#7A7264;">Corpo, UI, botões, labels</td><td style="padding:12px 16px;"><span style="font-family:'Hanken Grotesk',sans-serif; font-weight:600; font-size:16px;">Hanken Grotesk</span></td><td style="padding:12px 16px;"><code>400 · 500 · 600 · 700</code></td></tr>
+          <tr style="background:#fff;"><td style="padding:12px 16px; color:#7A7264;">Código OTP</td><td style="padding:12px 16px;"><span style="font-family:'JetBrains Mono',monospace; font-weight:600; font-size:15px;">JetBrains Mono</span> <span style="color:#7A7264;">(manter)</span></td><td style="padding:12px 16px;"><code>500 · 600</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:14px; font-size:13.5px; color:#453F33; line-height:1.6; background:#FCFAF5; border:1px solid rgba(26,23,18,0.1); border-radius:12px; padding:16px 18px;">
+      <strong>Valores em R$:</strong> recomendo trocar mono por <strong>Hanken Grotesk</strong> com <code>font-variant-numeric: tabular-nums</code> (dinheiro fica na cara da marca e alinhado). Se preferir manter JetBrains Mono, funciona igual.<br>
+      <span style="color:#7A7264;">Import:</span> <code>Bricolage+Grotesque:wght@600;700;800</code> · <code>Hanken+Grotesk:wght@400;500;600;700</code> · <code>JetBrains+Mono:wght@500;600</code>
+    </div>
+  </section>
+
+  <!-- 4. RAIOS -->
+  <section style="margin-bottom:52px;">
+    <h2 style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:24px; letter-spacing:-0.01em; margin:0 0 6px;">4 · Cantos / raios</h2>
+    <p style="color:#7A7264; font-size:15px; margin:0 0 20px;">Ajuste leve na escala: <code>6/10</code> → <code>8/12</code>. Mantém 4 níveis + pill.</p>
+    <div style="display:flex; gap:16px; flex-wrap:wrap;">
+      <div style="text-align:center;"><div style="width:80px;height:56px;background:#fff;border:1px solid rgba(26,23,18,0.15);border-radius:8px;"></div><div style="font-size:12.5px;color:#453F33;margin-top:8px;"><code>sm 8px</code><br><span style="color:#7A7264;">input, chip</span></div></div>
+      <div style="text-align:center;"><div style="width:80px;height:56px;background:#fff;border:1px solid rgba(26,23,18,0.15);border-radius:12px;"></div><div style="font-size:12.5px;color:#453F33;margin-top:8px;"><code>md 12px</code><br><span style="color:#7A7264;">botão</span></div></div>
+      <div style="text-align:center;"><div style="width:80px;height:56px;background:#fff;border:1px solid rgba(26,23,18,0.15);border-radius:16px;"></div><div style="font-size:12.5px;color:#453F33;margin-top:8px;"><code>lg 16px</code><br><span style="color:#7A7264;">card</span></div></div>
+      <div style="text-align:center;"><div style="width:80px;height:56px;background:#fff;border:1px solid rgba(26,23,18,0.15);border-radius:24px;"></div><div style="font-size:12.5px;color:#453F33;margin-top:8px;"><code>xl 24px</code><br><span style="color:#7A7264;">modal, sheet</span></div></div>
+      <div style="text-align:center;"><div style="width:80px;height:56px;background:#fff;border:1px solid rgba(26,23,18,0.15);border-radius:999px;"></div><div style="font-size:12.5px;color:#453F33;margin-top:8px;"><code>full 999</code><br><span style="color:#7A7264;">pill, avatar</span></div></div>
+    </div>
+  </section>
+
+  <!-- 5. TELAS -->
+  <section style="margin-bottom:40px;">
+    <h2 style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:24px; letter-spacing:-0.01em; margin:0 0 6px;">5 · Telas</h2>
+    <p style="color:#7A7264; font-size:15px; margin:0 0 20px;">Sem Figma ainda. Referência viva = protótipos deste projeto (<code>App Trabalhador</code> mobile, <code>Painel Empresa</code> desktop). Mapa por tela:</p>
+    <div style="border:1px solid rgba(26,23,18,0.12); border-radius:14px; overflow:hidden;">
+      <table style="font-size:13.5px;">
+        <thead><tr style="background:#1A1712; color:#F0ECE2;"><th style="padding:11px 16px; font-weight:600;">Tela</th><th style="padding:11px 16px; font-weight:600;">Referência</th><th style="padding:11px 16px; font-weight:600;">Componentes / tokens</th></tr></thead>
+        <tbody>
+          <tr style="background:#fff; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px; font-weight:600;">Login (celular + OTP)</td><td style="padding:11px 16px; color:#7A7264;">a desenhar</td><td style="padding:11px 16px; color:#453F33;">card <code>surface</code>, campos OTP mono, botão <code>primary</code>, ícone-anel no topo</td></tr>
+          <tr style="background:#FCFAF5; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px; font-weight:600;">Cadastro (trab. / empresa)</td><td style="padding:11px 16px; color:#7A7264;">a desenhar</td><td style="padding:11px 16px; color:#453F33;">seletor de perfil (2 chips), inputs, botão <code>primary</code></td></tr>
+          <tr style="background:#fff; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px; font-weight:600;">Busca de vagas</td><td style="padding:11px 16px; color:#0F7A45; font-weight:600;">App · aba Turnos ✓</td><td style="padding:11px 16px; color:#453F33;">card de turno, filtros (chips), badge <code>success</code></td></tr>
+          <tr style="background:#FCFAF5; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px; font-weight:600;">Publicar / editar vaga</td><td style="padding:11px 16px; color:#0F7A45; font-weight:600;">Painel · modal Publicar ✓</td><td style="padding:11px 16px; color:#453F33;">form + estimativa ao vivo, selects, botão <code>primary</code></td></tr>
+          <tr style="background:#fff; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px; font-weight:600;">Candidatos</td><td style="padding:11px 16px; color:#0F7A45; font-weight:600;">Painel · modal Candidatos ✓</td><td style="padding:11px 16px; color:#453F33;">lista + avatar, botão <code>success</code> (Aprovar)</td></tr>
+          <tr style="background:#FCFAF5; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px; font-weight:600;">Avaliação</td><td style="padding:11px 16px; color:#7A7264;">a desenhar</td><td style="padding:11px 16px; color:#453F33;">estrelas <code>primary</code>, textarea, botão <code>primary</code></td></tr>
+          <tr style="background:#fff; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px; font-weight:600;">Turnos (check-in/out)</td><td style="padding:11px 16px; color:#7A7264;">App · aba Agenda (parcial)</td><td style="padding:11px 16px; color:#453F33;">card confirmado, botão grande <code>primary</code>, badges de status</td></tr>
+          <tr style="background:#FCFAF5; border-bottom:1px solid rgba(26,23,18,0.08);"><td style="padding:11px 16px; font-weight:600;">Perfil</td><td style="padding:11px 16px; color:#0F7A45; font-weight:600;">App · aba Perfil ✓</td><td style="padding:11px 16px; color:#453F33;">avatar, selo verificado <code>success</code>, stats, chips</td></tr>
+          <tr style="background:#fff;"><td style="padding:11px 16px; font-weight:600;">Painel admin</td><td style="padding:11px 16px; color:#0F7A45; font-weight:600;">Painel · Início/Escala ✓</td><td style="padding:11px 16px; color:#453F33;">sidebar, stat cards, tabelas, escala semanal</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:13.5px; color:#7A7264; margin:16px 0 0;">As 4 telas "a desenhar" eu monto na sequência se você quiser — mesmo sistema, já saem prontas para o dev.</p>
+  </section>
+
+  <div style="border-top:1px solid rgba(26,23,18,0.14); padding-top:24px; font-size:13px; color:#A69C88;">Doc. 04 — Handoff · pacote de arquivos em <code>handoff/</code> (SVG + PNG). Tudo alinhado ao Design System (Doc. 03).</div>
+
+</div>
+</x-dc>
+</body>
+</html>

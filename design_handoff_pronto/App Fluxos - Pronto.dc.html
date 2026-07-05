@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #E7E2D6; }
+  .fl-sc::-webkit-scrollbar { display: none; }
+</style>
+</helmet>
+<div style="background:#E7E2D6; color:#1A1712; font-family:'Hanken Grotesk',sans-serif; padding:48px clamp(20px,4vw,56px); min-height:100vh;">
+  <div style="max-width:1720px; margin:0 auto 32px;">
+    <div style="font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:#F5531E; font-weight:600; margin-bottom:12px;">App · fluxos restantes</div>
+    <h1 style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:clamp(28px,4vw,44px); letter-spacing:-0.03em; margin:0;">As 4 telas que faltavam</h1>
+    <p style="font-size:16px; color:#453F33; max-width:640px; margin:12px 0 0;">Login/OTP, cadastro, avaliação e check-in/out — mesmo sistema. As estrelas e o botão de check-in são interativos.</p>
+  </div>
+
+  <div style="display:flex; gap:28px; flex-wrap:wrap;">
+
+    <!-- ================= 1. LOGIN / OTP ================= -->
+    <div>
+      <div style="font-size:13px; font-weight:700; color:#453F33; margin-bottom:12px; display:flex; align-items:center; gap:8px;"><span style="width:22px;height:22px;border-radius:6px;background:#1A1712;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;">1</span>Login · código</div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="402" height="874" hint-size="402px,874px">
+        <div style="height:100%; background:#F7F4EE; display:flex; flex-direction:column; padding:64px 28px 34px; font-family:'Hanken Grotesk',sans-serif;">
+          <div style="display:flex; align-items:flex-end; margin-bottom:44px;">
+            <span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:24px; letter-spacing:-0.03em; line-height:0.8;">pr</span><span style="width:13px;height:13px;border:3px solid #F5531E;border-radius:50%;box-sizing:border-box;margin:0 1px 3px;"></span><span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:24px; letter-spacing:-0.03em; line-height:0.8;">nto</span>
+          </div>
+          <h1 style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:30px; letter-spacing:-0.02em; margin:0 0 10px;">Confirme seu número</h1>
+          <p style="font-size:16px; color:#7A7264; margin:0 0 34px; line-height:1.45;">Enviamos um código por SMS para<br><strong style="color:#1A1712;">+55 15 99•••-••21</strong>.</p>
+          <div style="display:flex; gap:10px; margin-bottom:24px;">
+            <div style="flex:1; aspect-ratio:1; border-radius:14px; background:#fff; border:1.5px solid rgba(26,23,18,0.15); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:28px;">4</div>
+            <div style="flex:1; aspect-ratio:1; border-radius:14px; background:#fff; border:1.5px solid rgba(26,23,18,0.15); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:28px;">7</div>
+            <div style="flex:1; aspect-ratio:1; border-radius:14px; background:#fff; border:1.5px solid rgba(26,23,18,0.15); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:28px;">2</div>
+            <div style="flex:1; aspect-ratio:1; border-radius:14px; background:#fff; border:2px solid #F5531E; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:28px; color:#F5531E;">|</div>
+            <div style="flex:1; aspect-ratio:1; border-radius:14px; background:#fff; border:1.5px solid rgba(26,23,18,0.15);"></div>
+          </div>
+          <div style="font-size:14px; color:#A69C88; margin-bottom:auto;">Reenviar código em <strong style="color:#7A7264;">0:24</strong></div>
+          <button style="width:100%; border:none; background:#F5531E; color:#fff; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:17px; padding:16px; border-radius:14px; box-shadow:0 10px 24px rgba(245,83,30,0.3);">Confirmar</button>
+        </div>
+      </x-import>
+    </div>
+
+    <!-- ================= 2. CADASTRO ================= -->
+    <div>
+      <div style="font-size:13px; font-weight:700; color:#453F33; margin-bottom:12px; display:flex; align-items:center; gap:8px;"><span style="width:22px;height:22px;border-radius:6px;background:#1A1712;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;">2</span>Cadastro · perfil</div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="402" height="874" hint-size="402px,874px">
+        <div style="height:100%; background:#F7F4EE; display:flex; flex-direction:column; padding:64px 28px 34px; font-family:'Hanken Grotesk',sans-serif;">
+          <div style="display:flex; align-items:flex-end; margin-bottom:40px;">
+            <span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:24px; letter-spacing:-0.03em; line-height:0.8;">pr</span><span style="width:13px;height:13px;border:3px solid #F5531E;border-radius:50%;box-sizing:border-box;margin:0 1px 3px;"></span><span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:24px; letter-spacing:-0.03em; line-height:0.8;">nto</span>
+          </div>
+          <h1 style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:28px; letter-spacing:-0.02em; margin:0 0 20px; line-height:1.05;">Como você vai<br>usar o Pronto?</h1>
+          <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:26px;">
+            <div style="background:#fff; border:2px solid #F5531E; border-radius:18px; padding:18px; display:flex; align-items:center; gap:14px; box-shadow:0 8px 20px rgba(245,83,30,0.1);">
+              <div style="width:46px;height:46px;border-radius:12px;background:rgba(245,83,30,0.1);color:#F5531E;display:flex;align-items:center;justify-content:center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#F5531E"/></svg></div>
+              <div style="flex:1;"><div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:17px;">Quero trabalhar</div><div style="font-size:13px; color:#7A7264;">Pegar turnos perto de mim</div></div>
+              <span style="width:22px;height:22px;border-radius:50%;background:#F5531E;display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            </div>
+            <div style="background:#fff; border:1.5px solid rgba(26,23,18,0.12); border-radius:18px; padding:18px; display:flex; align-items:center; gap:14px;">
+              <div style="width:46px;height:46px;border-radius:12px;background:#F7F4EE;color:#453F33;display:flex;align-items:center;justify-content:center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="8" width="18" height="12" rx="2.5" stroke="#453F33" stroke-width="2"/><path d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2" stroke="#453F33" stroke-width="2"/></svg></div>
+              <div style="flex:1;"><div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:17px;">Preciso de reforço</div><div style="font-size:13px; color:#7A7264;">Contratar para minha empresa</div></div>
+              <span style="width:22px;height:22px;border-radius:50%;border:2px solid rgba(26,23,18,0.15);"></span>
+            </div>
+          </div>
+          <label style="font-size:12.5px; font-weight:600; color:#453F33; margin-bottom:6px;">Nome completo</label>
+          <input value="Lucas Silva" style="width:100%; padding:13px 15px; border-radius:12px; border:1px solid rgba(26,23,18,0.15); background:#fff; font-size:15px; margin-bottom:auto;"/>
+          <button style="width:100%; border:none; background:#F5531E; color:#fff; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:17px; padding:16px; border-radius:14px; box-shadow:0 10px 24px rgba(245,83,30,0.3);">Continuar</button>
+        </div>
+      </x-import>
+    </div>
+
+    <!-- ================= 3. AVALIAÇÃO ================= -->
+    <div>
+      <div style="font-size:13px; font-weight:700; color:#453F33; margin-bottom:12px; display:flex; align-items:center; gap:8px;"><span style="width:22px;height:22px;border-radius:6px;background:#1A1712;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;">3</span>Avaliação · interativa</div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="402" height="874" hint-size="402px,874px">
+        <div style="height:100%; background:#F7F4EE; display:flex; flex-direction:column; padding:64px 28px 34px; font-family:'Hanken Grotesk',sans-serif; align-items:center; text-align:center;">
+          <div style="font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:#17A860; font-weight:600; margin-bottom:20px;">✓ Turno concluído</div>
+          <div style="width:76px; height:76px; border-radius:50%; background:#F5531E; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:26px; margin-bottom:14px;">AL</div>
+          <h1 style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:25px; letter-spacing:-0.02em; margin:0 0 4px;">Como foi a Ana?</h1>
+          <p style="font-size:14.5px; color:#7A7264; margin:0 0 24px;">Garçom · Seu Quintal · 5h</p>
+          <div style="display:flex; gap:8px; margin-bottom:26px;">
+            <sc-for list="{{ stars }}" as="s" hint-placeholder-count="5">
+              <span onClick="{{ s.onClick }}" style="cursor:pointer; font-size:40px; line-height:1; color:{{ s.color }};">★</span>
+            </sc-for>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:22px;">
+            <sc-for list="{{ tagList }}" as="t" hint-placeholder-count="4">
+              <span onClick="{{ t.onClick }}" style="cursor:pointer; padding:9px 15px; border-radius:100px; font-size:14px; font-weight:600; background:{{ t.bg }}; color:{{ t.fg }}; border:1.5px solid {{ t.border }};">{{ t.label }}</span>
+            </sc-for>
+          </div>
+          <textarea placeholder="Escreva um comentário (opcional)" style="width:100%; height:84px; padding:13px 15px; border-radius:14px; border:1px solid rgba(26,23,18,0.15); background:#fff; font-size:15px; font-family:'Hanken Grotesk',sans-serif; resize:none; margin-bottom:auto;"></textarea>
+          <button style="width:100%; border:none; background:#F5531E; color:#fff; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:17px; padding:16px; border-radius:14px; box-shadow:0 10px 24px rgba(245,83,30,0.3);">Enviar avaliação</button>
+        </div>
+      </x-import>
+    </div>
+
+    <!-- ================= 4. CHECK-IN / OUT ================= -->
+    <div>
+      <div style="font-size:13px; font-weight:700; color:#453F33; margin-bottom:12px; display:flex; align-items:center; gap:8px;"><span style="width:22px;height:22px;border-radius:6px;background:#1A1712;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;">4</span>Check-in / check-out · interativo</div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="402" height="874" hint-size="402px,874px">
+        <div style="height:100%; background:#F7F4EE; display:flex; flex-direction:column; padding:64px 28px 34px; font-family:'Hanken Grotesk',sans-serif;">
+          <div style="font-size:14px; color:#7A7264; font-weight:500;">Turno de hoje</div>
+          <h1 style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:26px; letter-spacing:-0.02em; margin:2px 0 20px;">Garçom · Seu Quintal</h1>
+
+          <div style="background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:18px; padding:20px; margin-bottom:20px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+              <span style="width:34px;height:34px;border-radius:50%; background:{{ dotA_bg }}; display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="{{ dotA_ic }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <div style="flex:1;"><div style="font-weight:600; font-size:15px; color:{{ rowA_fg }};">Check-in</div><div style="font-size:12.5px; color:#A69C88;">{{ rowA_time }}</div></div>
+            </div>
+            <div style="width:2px; height:20px; background:rgba(26,23,18,0.1); margin-left:16px; margin-bottom:16px;"></div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+              <span style="width:34px;height:34px;border-radius:50%; background:{{ dotB_bg }}; display:flex; align-items:center; justify-content:center; color:{{ dotB_ic }}; font-size:15px;">•</span>
+              <div style="flex:1;"><div style="font-weight:600; font-size:15px; color:{{ rowB_fg }};">Em andamento</div><div style="font-size:12.5px; color:#A69C88;">{{ rowB_time }}</div></div>
+            </div>
+            <div style="width:2px; height:20px; background:rgba(26,23,18,0.1); margin-left:16px; margin-bottom:16px;"></div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="width:34px;height:34px;border-radius:50%; background:{{ dotC_bg }}; display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="{{ dotC_ic }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <div style="flex:1;"><div style="font-weight:600; font-size:15px; color:{{ rowC_fg }};">Check-out</div><div style="font-size:12.5px; color:#A69C88;">{{ rowC_time }}</div></div>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:10px; background:rgba(23,168,96,0.09); border-radius:12px; padding:12px 14px; margin-bottom:auto;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z" stroke="#17A860" stroke-width="2"/><circle cx="12" cy="10" r="2.4" stroke="#17A860" stroke-width="2"/></svg>
+            <span style="font-size:13px; color:#0F7A45; font-weight:600;">Você está no local · localização confirmada</span>
+          </div>
+
+          <button onClick="{{ advance }}" style="width:100%; border:none; background:{{ btn_bg }}; color:{{ btn_fg }}; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:17px; padding:17px; border-radius:14px; cursor:pointer; box-shadow:{{ btn_shadow }};">{{ btn_label }}</button>
+        </div>
+      </x-import>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state = { rating:4, tags:{ Pontual:true, Rápida:false, Caprichosa:true, Educada:false }, step:1 };
+  }
+  setRating(n){ this.setState({ rating:n }); }
+  toggleTag(t){ this.setState(s => ({ tags: Object.assign({}, s.tags, { [t]: !s.tags[t] }) })); }
+  advance(){ this.setState(s => ({ step: Math.min(2, s.step + 1) })); }
+
+  renderVals(){
+    const st = this.state;
+    const stars = [1,2,3,4,5].map(i => ({ i, color: i <= st.rating ? '#F5531E' : 'rgba(26,23,18,0.15)', onClick: () => this.setRating(i) }));
+    const tagList = ['Pontual','Rápida','Caprichosa','Educada'].map(label => {
+      const on = st.tags[label];
+      return { label, onClick: () => this.toggleTag(label),
+        bg: on ? '#1A1712' : '#fff', fg: on ? '#fff' : '#453F33', border: on ? '#1A1712' : 'rgba(26,23,18,0.12)' };
+    });
+
+    const step = st.step; // 0 none, 1 checked-in, 2 done
+    const green = '#17A860', greenBg = 'rgba(23,168,96,0.12)', muted = 'rgba(26,23,18,0.08)', mutedIc = 'rgba(26,23,18,0.25)';
+    return {
+      stars, tagList,
+      // timeline A = check-in
+      dotA_bg: step >= 1 ? green : muted, dotA_ic: step >= 1 ? '#fff' : 'transparent',
+      rowA_fg: step >= 1 ? '#1A1712' : '#A69C88', rowA_time: step >= 1 ? 'Feito às 18:02' : 'Aguardando',
+      // B = em andamento
+      dotB_bg: step === 1 ? greenBg : (step === 2 ? green : muted), dotB_ic: step === 1 ? green : (step === 2 ? '#fff' : mutedIc),
+      rowB_fg: step >= 1 ? '#1A1712' : '#A69C88', rowB_time: step === 1 ? 'Você está no turno há 3h12' : (step === 2 ? 'Concluído' : '—'),
+      // C = check-out
+      dotC_bg: step >= 2 ? green : muted, dotC_ic: step >= 2 ? '#fff' : 'transparent',
+      rowC_fg: step >= 2 ? '#1A1712' : '#A69C88', rowC_time: step >= 2 ? 'Feito às 23:05' : 'Ao fim do turno',
+      // button
+      advance: () => this.advance(),
+      btn_label: step === 0 ? 'Fazer check-in' : (step === 1 ? 'Fazer check-out' : '✓ Turno concluído'),
+      btn_bg: step === 2 ? 'rgba(23,168,96,0.14)' : '#F5531E',
+      btn_fg: step === 2 ? '#0F7A45' : '#fff',
+      btn_shadow: step === 2 ? 'none' : '0 10px 24px rgba(245,83,30,0.3)'
+    };
+  }
+}
+</script>
+</body>
+</html>

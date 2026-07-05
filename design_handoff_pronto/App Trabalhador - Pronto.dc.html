@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&amp;family=Hanken+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #EDE9E1; }
+  @keyframes riseIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes sheetIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .pronto-scroll::-webkit-scrollbar { display: none; }
+</style>
+</helmet>
+<div style="min-height:100vh; background:#EDE9E1; display:flex; align-items:center; justify-content:center; padding:40px 20px; font-family:'Hanken Grotesk',sans-serif;">
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="402" height="874" hint-size="402px,874px">
+
+  <div style="height:100%; display:flex; flex-direction:column; background:#F7F4EE; position:relative; overflow:hidden; font-family:'Hanken Grotesk',sans-serif; color:#1A1712;">
+
+    <!-- ======= SCROLL BODY ======= -->
+    <div class="pronto-scroll" style="flex:1; overflow-y:auto; overflow-x:hidden; padding-top:52px;">
+
+      <!-- ============ LOGO ============ -->
+      <div style="padding:2px 20px 6px; display:flex; align-items:center; justify-content:center;">
+        <div style="display:flex; align-items:flex-end;">
+          <span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:19px; letter-spacing:-0.03em; color:#1A1712; line-height:0.8;">pr</span>
+          <span style="width:11px; height:11px; border:3px solid #F5531E; border-radius:50%; box-sizing:border-box; margin:0 1px 2px;"></span>
+          <span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:19px; letter-spacing:-0.03em; color:#1A1712; line-height:0.8;">nto</span>
+        </div>
+      </div>
+
+      <!-- ============ TELA: TURNOS ============ -->
+      <sc-if value="{{ isTurnos }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:riseIn .4s ease both;">
+          <!-- header -->
+          <div style="padding:8px 20px 4px; display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <div style="font-size:14px; color:#7A7264; font-weight:500;">Boa tarde,</div>
+              <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:28px; letter-spacing:-0.02em; line-height:1;">Lucas Silva<br></div>
+              <div style="font-size:13px; color:#A69C88; margin-top:5px; display:flex; align-items:center; gap:5px;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z" stroke="#A69C88" stroke-width="2"></path><circle cx="12" cy="10" r="2.4" stroke="#A69C88" stroke-width="2"></circle></svg>
+                Campolim, Sorocaba
+              </div>
+            </div>
+            <div style="width:46px; height:46px; border-radius:50%; background:#1A1712; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:17px;">LS</div>
+          </div>
+
+          <!-- availability toggle -->
+          <div onClick="{{ toggleAvail }}" style="margin:16px 20px 0; background:{{ availCardBg }}; border-radius:18px; padding:16px 18px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:background .25s; box-shadow:0 6px 18px rgba(26,23,18,0.06);">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="width:10px; height:10px; border-radius:50%; background:{{ availDot }};"></span>
+              <div>
+                <div style="font-weight:700; font-size:16px; color:{{ availText }};">{{ availLabel }}</div>
+                <div style="font-size:12.5px; color:{{ availSub }};">{{ availDesc }}</div>
+              </div>
+            </div>
+            <div style="width:50px; height:30px; border-radius:100px; background:{{ availTrack }}; position:relative; transition:background .25s;">
+              <span style="position:absolute; top:3px; left:{{ availKnob }}; width:24px; height:24px; border-radius:50%; background:#fff; transition:left .25s; box-shadow:0 1px 3px rgba(0,0,0,0.25);"></span>
+            </div>
+          </div>
+
+          <!-- filters -->
+          <div class="pronto-scroll" style="display:flex; gap:9px; overflow-x:auto; padding:20px 20px 6px;">
+            <span onClick="{{ fTodos }}" style="flex:0 0 auto; padding:9px 16px; border-radius:100px; font-size:14px; font-weight:600; cursor:pointer; background:{{ chipTodosBg }}; color:{{ chipTodosFg }}; border:1px solid rgba(26,23,18,0.1);">Todos</span>
+            <span onClick="{{ fHoje }}" style="flex:0 0 auto; padding:9px 16px; border-radius:100px; font-size:14px; font-weight:600; cursor:pointer; background:{{ chipHojeBg }}; color:{{ chipHojeFg }}; border:1px solid rgba(26,23,18,0.1);">Hoje</span>
+            <span onClick="{{ fAmanha }}" style="flex:0 0 auto; padding:9px 16px; border-radius:100px; font-size:14px; font-weight:600; cursor:pointer; background:{{ chipAmanhaBg }}; color:{{ chipAmanhaFg }}; border:1px solid rgba(26,23,18,0.1);">Amanhã</span>
+            <span onClick="{{ fFds }}" style="flex:0 0 auto; padding:9px 16px; border-radius:100px; font-size:14px; font-weight:600; cursor:pointer; background:{{ chipFdsBg }}; color:{{ chipFdsFg }}; border:1px solid rgba(26,23,18,0.1);">Fim de semana</span>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:baseline; padding:14px 20px 10px;">
+            <span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:18px;">Turnos perto de você</span>
+            <span style="font-size:13px; color:#F5531E; font-weight:600;">{{ visibleCount }} disponíveis</span>
+          </div><div style="display:flex; flex-direction:column; gap:12px; padding:0 20px 24px;">
+            <sc-for list="{{ visibleShifts }}" as="shift" hint-placeholder-count="4">
+              <div onClick="{{ shift.onOpen }}" style="background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:20px; padding:16px; cursor:pointer; box-shadow:0 4px 14px rgba(26,23,18,0.05);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+                  <div>
+                    <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:19px; line-height:1.05;">{{ shift.role }}</div>
+                    <div style="font-size:13.5px; color:#7A7264; margin-top:3px;">{{ shift.place }} · ★ {{ shift.rate }}</div>
+                  </div>
+                  <div style="text-align:right; flex-shrink:0;">
+                    <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:19px; color:#F5531E;">{{ shift.payLabel }}</div>
+                    <div style="font-size:12px; color:#A69C88;">{{ shift.hoursLabel }}</div>
+                  </div>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
+                  <span style="display:inline-flex; align-items:center; gap:5px; background:#F7F4EE; border-radius:8px; padding:6px 10px; font-size:12.5px; font-weight:600; color:#453F33;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2.5" stroke="#7A7264" stroke-width="2"></rect><path d="M3 9h18M8 3v4M16 3v4" stroke="#7A7264" stroke-width="2"></path></svg>
+                    {{ shift.dayTime }}
+                  </span>
+                  <span style="display:inline-flex; align-items:center; gap:5px; background:#F7F4EE; border-radius:8px; padding:6px 10px; font-size:12.5px; font-weight:600; color:#453F33;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z" stroke="#7A7264" stroke-width="2"></path><circle cx="12" cy="10" r="2.2" stroke="#7A7264" stroke-width="2"></circle></svg>
+                    {{ shift.dist }}
+                  </span>
+                </div>
+                <sc-if value="{{ shift.notAccepted }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ shift.onAccept }}" style="margin-top:14px; width:100%; border:none; background:#F5531E; color:#fff; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:15px; padding:12px; border-radius:12px; cursor:pointer;">Aceitar turno</button>
+                </sc-if>
+                <sc-if value="{{ shift.accepted }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:14px; width:100%; background:rgba(23,168,96,0.12); color:#0F7A45; font-weight:700; font-size:15px; padding:12px; border-radius:12px; text-align:center; display:flex; align-items:center; justify-content:center; gap:7px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#0F7A45" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    Aceito · na sua agenda
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ TELA: AGENDA ============ -->
+      <sc-if value="{{ isAgenda }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:riseIn .4s ease both; padding:8px 20px 24px;">
+          <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:28px; letter-spacing:-0.02em;">Minha agenda</div>
+          <div style="font-size:14px; color:#7A7264; margin-top:2px;">{{ agendaCount }} turno(s) confirmado(s)</div>
+
+          <sc-if value="{{ hasAgenda }}" hint-placeholder-val="{{ true }}">
+            <div style="margin-top:22px; display:flex; flex-direction:column; gap:14px;">
+              <sc-for list="{{ agendaShifts }}" as="shift" hint-placeholder-count="2">
+                <div style="background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:20px; overflow:hidden; box-shadow:0 4px 14px rgba(26,23,18,0.05);">
+                  <div style="background:#1A1712; color:#fff; padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:600; font-size:14px;">{{ shift.dayTime }}</span>
+                    <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#5FD79A;"><span style="width:6px;height:6px;background:#17A860;border-radius:50%;"></span>Confirmado</span>
+                  </div>
+                  <div style="padding:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                      <div>
+                        <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:19px;">{{ shift.role }}</div>
+                        <div style="font-size:13.5px; color:#7A7264; margin-top:3px;">{{ shift.place }}</div>
+                        <div style="font-size:13px; color:#A69C88; margin-top:8px;">{{ shift.address }}</div>
+                      </div>
+                      <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:18px; color:#F5531E;">{{ shift.payLabel }}</div>
+                    </div>
+                    <button style="margin-top:14px; width:100%; border:1.5px solid rgba(26,23,18,0.15); background:#fff; color:#1A1712; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:14px; padding:11px; border-radius:12px; cursor:pointer;">Ver detalhes e como chegar</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ agendaEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:60px; text-align:center; color:#A69C88;">
+              <div style="font-size:40px;">🗓️</div>
+              <div style="font-weight:600; color:#7A7264; margin-top:10px;">Nenhum turno ainda</div>
+              <div style="font-size:14px; margin-top:4px;">Aceite um turno na aba Turnos.</div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- ============ TELA: GANHOS ============ -->
+      <sc-if value="{{ isGanhos }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:riseIn .4s ease both; padding:8px 20px 24px;">
+          <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:28px; letter-spacing:-0.02em;">Ganhos</div>
+          <div style="margin-top:18px; background:#1A1712; color:#fff; border-radius:22px; padding:24px;">
+            <div style="font-size:13px; color:#B4AD9C; letter-spacing:0.04em;">Disponível para saque</div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:42px; letter-spacing:-0.02em; margin:6px 0 18px;">R$ 1.240<span style="font-size:24px; color:#B4AD9C;">,00</span></div>
+            <button style="width:100%; border:none; background:#F5531E; color:#fff; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:16px; padding:14px; border-radius:14px; cursor:pointer;">Sacar via Pix · na hora</button>
+          </div>
+          <div style="display:flex; gap:12px; margin-top:14px;">
+            <div style="flex:1; background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:16px; padding:16px;"><div style="font-size:12.5px; color:#7A7264;">Esta semana</div><div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:22px;">R$ 640</div></div>
+            <div style="flex:1; background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:16px; padding:16px;"><div style="font-size:12.5px; color:#7A7264;">Este mês</div><div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:22px;">R$ 2.980</div></div>
+          </div>
+          <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:18px; margin:24px 0 10px;">Últimos turnos</div>
+          <div style="background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:18px; overflow:hidden;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 16px; border-bottom:1px solid rgba(26,23,18,0.07);"><div><div style="font-weight:600; font-size:15px;">Garçom · Seu Quintal</div><div style="font-size:12.5px; color:#A69C88;">Ontem · 5h</div></div><div style="font-weight:700; color:#0F7A45;">+ R$ 110</div></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 16px; border-bottom:1px solid rgba(26,23,18,0.07);"><div><div style="font-weight:600; font-size:15px;">Aux. de eventos · Espaço Campolim</div><div style="font-size:12.5px; color:#A69C88;">Sáb · 6h</div></div><div style="font-weight:700; color:#0F7A45;">+ R$ 150</div></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 16px;"><div><div style="font-weight:600; font-size:15px;">Bartender · New York Bar 41</div><div style="font-size:12.5px; color:#A69C88;">Qui · 6h</div></div><div style="font-weight:700; color:#0F7A45;">+ R$ 132</div></div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ TELA: PERFIL ============ -->
+      <sc-if value="{{ isPerfil }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:riseIn .4s ease both; padding:8px 20px 24px;">
+          <div style="display:flex; align-items:center; gap:16px;">
+            <div style="width:72px; height:72px; border-radius:50%; background:#1A1712; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:26px;">AL</div>
+            <div>
+              <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:24px; letter-spacing:-0.02em; display:flex; align-items:center; gap:7px;">Ana Lima
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.2 1.6 2.7-.2 1.1 2.5 2.3 1.4-.6 2.7.6 2.7-2.3 1.4-1.1 2.5-2.7-.2L12 22l-2.2-1.6-2.7.2-1.1-2.5-2.3-1.4.6-2.7-.6-2.7 2.3-1.4L7.1 3.4l2.7.2z" fill="#17A860"></path><path d="M8.5 12l2.3 2.3 4.7-4.7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </div>
+              <div style="font-size:14px; color:#7A7264; margin-top:3px;">★ 4.9 · 87 turnos · desde 2025</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:20px;">
+            <div style="flex:1; background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:16px; padding:14px; text-align:center;"><div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:22px;">98%</div><div style="font-size:12px; color:#7A7264;">Pontualidade</div></div>
+            <div style="flex:1; background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:16px; padding:14px; text-align:center;"><div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:22px;">92%</div><div style="font-size:12px; color:#7A7264;">Aceite</div></div>
+            <div style="flex:1; background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:16px; padding:14px; text-align:center;"><div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:22px;">87</div><div style="font-size:12px; color:#7A7264;">Turnos</div></div>
+          </div>
+          <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:17px; margin:24px 0 10px;">Minhas funções</div>
+          <div style="display:flex; gap:9px; flex-wrap:wrap;">
+            <span style="background:#fff; border:1px solid rgba(26,23,18,0.12); border-radius:100px; padding:8px 15px; font-size:14px; font-weight:600;">Garçom</span>
+            <span style="background:#fff; border:1px solid rgba(26,23,18,0.12); border-radius:100px; padding:8px 15px; font-size:14px; font-weight:600;">Bartender</span>
+            <span style="background:#fff; border:1px solid rgba(26,23,18,0.12); border-radius:100px; padding:8px 15px; font-size:14px; font-weight:600;">Aux. de eventos</span>
+            <span style="background:#F7F4EE; border:1px dashed rgba(26,23,18,0.2); border-radius:100px; padding:8px 15px; font-size:14px; font-weight:600; color:#7A7264;">+ Adicionar</span>
+          </div>
+          <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:17px; margin:24px 0 10px;">Avaliações recentes</div>
+          <div style="background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:18px; padding:16px;">
+            <div style="color:#F5531E; font-size:14px;">★★★★★</div>
+            <p style="font-size:14.5px; line-height:1.45; margin:8px 0 4px;">“Profissional, pontual e muito atenciosa. Chamaria de novo sem pensar.”</p>
+            <div style="font-size:12.5px; color:#A69C88;">Bumbu Sushi Bar · há 3 dias</div>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+
+    <!-- ======= TAB BAR ======= -->
+    <div style="flex-shrink:0; background:rgba(247,244,238,0.9); backdrop-filter:blur(12px); border-top:1px solid rgba(26,23,18,0.08); display:flex; padding:10px 8px 30px;">
+      <div onClick="{{ goTurnos }}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; color:{{ navTurnos }};">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"></path></svg>
+        <span style="font-size:11px; font-weight:600;">Turnos</span>
+      </div>
+      <div onClick="{{ goAgenda }}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; color:{{ navAgenda }};">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="2"></rect><path d="M3 9h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2"></path></svg>
+        <span style="font-size:11px; font-weight:600;">Agenda</span>
+      </div>
+      <div onClick="{{ goGanhos }}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; color:{{ navGanhos }};">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="3" stroke="currentColor" stroke-width="2"></rect><path d="M16 12h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path><path d="M3 9h13" stroke="currentColor" stroke-width="2"></path></svg>
+        <span style="font-size:11px; font-weight:600;">Ganhos</span>
+      </div>
+      <div onClick="{{ goPerfil }}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; color:{{ navPerfil }};">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"></circle><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+        <span style="font-size:11px; font-weight:600;">Perfil</span>
+      </div>
+    </div>
+
+    <!-- ======= DETALHE (overlay) ======= -->
+    <sc-if value="{{ hasOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; inset:0; z-index:80; background:rgba(26,23,18,0.35);" onClick="{{ openShift.onClose }}"></div>
+      <div style="position:absolute; left:0; right:0; bottom:0; z-index:81; background:#F7F4EE; border-radius:28px 28px 0 0; max-height:88%; overflow-y:auto; animation:sheetIn .32s cubic-bezier(.2,.8,.2,1) both;" class="pronto-scroll">
+        <div style="position:sticky; top:0; background:#F7F4EE; padding:12px 0 6px; display:flex; justify-content:center;">
+          <span style="width:40px; height:5px; border-radius:100px; background:rgba(26,23,18,0.18);"></span>
+        </div>
+        <div style="padding:8px 22px 0;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+            <div>
+              <div style="display:inline-block; background:rgba(245,83,30,0.1); color:#C43C10; font-size:12px; font-weight:700; padding:5px 11px; border-radius:100px;">{{ openShift.tag }}</div>
+              <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:30px; letter-spacing:-0.025em; line-height:1; margin-top:12px;">{{ openShift.role }}</div>
+              <div style="font-size:15px; color:#7A7264; margin-top:6px;">{{ openShift.place }} · ★ {{ openShift.rate }}</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px; margin-top:22px;">
+            <div style="flex:1; background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:16px; padding:16px;">
+              <div style="font-size:12px; color:#A69C88; text-transform:uppercase; letter-spacing:0.06em;">Você recebe</div>
+              <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:26px; color:#F5531E; margin-top:4px;">{{ openShift.payLabel }}</div>
+              <div style="font-size:12.5px; color:#7A7264;">{{ openShift.hoursLabel }} · {{ openShift.rateHour }}</div>
+            </div>
+            <div style="flex:1; background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:16px; padding:16px;">
+              <div style="font-size:12px; color:#A69C88; text-transform:uppercase; letter-spacing:0.06em;">Quando</div>
+              <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:18px; margin-top:4px; line-height:1.1;">{{ openShift.dayTime }}</div>
+              <div style="font-size:12.5px; color:#7A7264;">{{ openShift.dist }}</div>
+            </div>
+          </div>
+
+          <!-- mapa placeholder -->
+          <div style="margin-top:14px; background:#E7E2D6; border:1px solid rgba(26,23,18,0.08); border-radius:16px; height:120px; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+            <div style="position:absolute; inset:0; background-image:linear-gradient(rgba(26,23,18,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(26,23,18,0.05) 1px, transparent 1px); background-size:22px 22px;"></div>
+            <div style="width:18px; height:18px; background:#F5531E; border:3px solid #fff; border-radius:50%; box-shadow:0 3px 8px rgba(245,83,30,0.5); position:relative; z-index:1;"></div>
+            <div style="position:absolute; bottom:10px; left:12px; font-size:12.5px; color:#453F33; font-weight:600; z-index:1;">{{ openShift.address }}</div>
+          </div>
+
+          <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:17px; margin:22px 0 10px;">Detalhes do turno</div>
+          <div style="display:flex; flex-direction:column; gap:11px; font-size:14.5px; color:#453F33;">
+            <div style="display:flex; gap:10px;"><span style="color:#F5531E; font-weight:700;">·</span> Traje: {{ openShift.dress }}</div>
+            <div style="display:flex; gap:10px;"><span style="color:#F5531E; font-weight:700;">·</span> Leve: {{ openShift.bring }}</div>
+            <div style="display:flex; gap:10px;"><span style="color:#F5531E; font-weight:700;">·</span> Pagamento via Pix, liberado após o turno.</div>
+          </div>
+          <div style="height:100px;"></div>
+        </div>
+
+        <!-- CTA fixo -->
+        <div style="position:sticky; bottom:0; background:linear-gradient(transparent, #F7F4EE 22%); padding:16px 22px 24px;">
+          <sc-if value="{{ openShift.notAccepted }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ openShift.onAccept }}" style="width:100%; border:none; background:#F5531E; color:#fff; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:17px; padding:16px; border-radius:16px; cursor:pointer; box-shadow:0 10px 24px rgba(245,83,30,0.35);">Aceitar em 1 toque</button>
+          </sc-if>
+          <sc-if value="{{ openShift.accepted }}" hint-placeholder-val="{{ false }}">
+            <div style="width:100%; background:rgba(23,168,96,0.14); color:#0F7A45; font-weight:700; font-size:17px; padding:16px; border-radius:16px; text-align:center;">✓ Turno confirmado</div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ======= TOAST ======= -->
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; left:16px; right:16px; bottom:98px; z-index:90; background:#1A1712; color:#fff; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:12px; box-shadow:0 12px 30px rgba(0,0,0,0.3); animation:toastIn .3s ease both;">
+        <span style="width:26px; height:26px; border-radius:50%; background:#17A860; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </span>
+        <span style="font-size:14.5px; font-weight:600;">{{ toast }}</span>
+      </div>
+    </sc-if>
+
+  </div>
+
+</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'turnos', available: true, filter: 'todos', openId: null, accepted: ['s3'], toast: null };
+  }
+
+  data() {
+    return [
+      { id:'s1', role:'Garçom', tag:'Garçom · turno noite', place:'Seu Quintal', rate:'4.9', bucket:'fds', dayTime:'Sáb · 18h–23h', hours:5, pay:110, dist:'2,1 km', address:'R. Francisca de Queiroz, 29 · Vila Independência', dress:'Camisa preta, calça preta, sapato fechado', bring:'Documento com foto' },
+      { id:'s2', role:'Bartender', tag:'Bartender · turno noite', place:'New York Bar 41', rate:'4.7', bucket:'hoje', dayTime:'Hoje · 19h–00h', hours:5, pay:150, dist:'3,4 km', address:'R. Esmeraldo Tarquinio, 121 · Parque Campolim', dress:'Camisa da casa (fornecida), calça escura', bring:'Documento com foto' },
+      { id:'s3', role:'Aux. de cozinha', tag:'Auxiliar de cozinha', place:'Bumbu Sushi Bar', rate:'4.8', bucket:'amanha', dayTime:'Amanhã · 11h–16h', hours:5, pay:120, dist:'1,2 km', address:'Av. Mário Campolim, 677 · Parque Campolim', dress:'Roupa branca, sapato antiderrapante', bring:'Touca e documento' }
+    ];
+  }
+
+  open(id){ this.setState({ openId: id }); }
+  close(){ this.setState({ openId: null }); }
+  toggleAvail(){ this.setState(s => ({ available: !s.available })); }
+  setTab(t){ this.setState({ tab: t, openId: null }); }
+  setFilter(f){ this.setState({ filter: f }); }
+  accept(id){
+    this.setState(s => ({
+      accepted: s.accepted.includes(id) ? s.accepted : [...s.accepted, id],
+      openId: null,
+      toast: 'Turno aceito! Já está na sua agenda.'
+    }));
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: null }), 2800);
+  }
+
+  fmt(n){ return 'R$ ' + n; }
+
+  decorate(s){
+    const acc = this.state.accepted.includes(s.id);
+    return Object.assign({}, s, {
+      accepted: acc,
+      notAccepted: !acc,
+      payLabel: 'R$ ' + s.pay,
+      hoursLabel: s.hours + 'h',
+      rateHour: 'R$ ' + Math.round(s.pay / s.hours) + '/h',
+      dayTime: s.dayTime,
+      onOpen: () => this.open(s.id),
+      onClose: () => this.close(),
+      onAccept: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.accept(s.id); }
+    });
+  }
+
+  renderVals(){
+    const st = this.state;
+    const all = this.data();
+    const visible = all.filter(s => st.filter === 'todos' ? true : s.bucket === st.filter).map(s => this.decorate(s));
+    const agenda = all.filter(s => st.accepted.includes(s.id)).map(s => this.decorate(s));
+    const openShift = st.openId ? this.decorate(all.find(s => s.id === st.openId)) : null;
+    const active = '#F5531E', idle = '#A69C88';
+    const chip = (f) => st.filter === f ? { bg: '#1A1712', fg: '#fff' } : { bg: '#fff', fg: '#453F33' };
+    const cT = chip('todos'), cH = chip('hoje'), cA = chip('amanha'), cF = chip('fds');
+
+    return {
+      isTurnos: st.tab === 'turnos', isAgenda: st.tab === 'agenda', isGanhos: st.tab === 'ganhos', isPerfil: st.tab === 'perfil',
+      navTurnos: st.tab === 'turnos' ? active : idle,
+      navAgenda: st.tab === 'agenda' ? active : idle,
+      navGanhos: st.tab === 'ganhos' ? active : idle,
+      navPerfil: st.tab === 'perfil' ? active : idle,
+      goTurnos: () => this.setTab('turnos'),
+      goAgenda: () => this.setTab('agenda'),
+      goGanhos: () => this.setTab('ganhos'),
+      goPerfil: () => this.setTab('perfil'),
+
+      available: st.available,
+      availLabel: st.available ? 'Disponível para turnos' : 'Indisponível',
+      availDesc: st.available ? 'Você aparece para empresas perto de você' : 'Toque para voltar a receber turnos',
+      availDot: st.available ? '#17A860' : '#A69C88',
+      availText: st.available ? '#0F7A45' : '#453F33',
+      availSub: st.available ? '#4E9E77' : '#A69C88',
+      availCardBg: st.available ? 'rgba(23,168,96,0.09)' : '#fff',
+      availTrack: st.available ? '#17A860' : 'rgba(26,23,18,0.2)',
+      availKnob: st.available ? '23px' : '3px',
+      toggleAvail: () => this.toggleAvail(),
+
+      filter: st.filter,
+      fTodos: () => this.setFilter('todos'), fHoje: () => this.setFilter('hoje'), fAmanha: () => this.setFilter('amanha'), fFds: () => this.setFilter('fds'),
+      chipTodosBg: cT.bg, chipTodosFg: cT.fg,
+      chipHojeBg: cH.bg, chipHojeFg: cH.fg,
+      chipAmanhaBg: cA.bg, chipAmanhaFg: cA.fg,
+      chipFdsBg: cF.bg, chipFdsFg: cF.fg,
+
+      visibleShifts: visible,
+      visibleCount: visible.length,
+      agendaShifts: agenda,
+      agendaCount: agenda.length,
+      hasAgenda: agenda.length > 0,
+      agendaEmpty: agenda.length === 0,
+
+      openShift: openShift,
+      hasOpen: !!openShift,
+
+      toast: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

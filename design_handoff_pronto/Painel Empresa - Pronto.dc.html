@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #E7E2D6; }
+  @keyframes riseIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  .pron-sc::-webkit-scrollbar { width: 8px; height: 8px; }
+  .pron-sc::-webkit-scrollbar-thumb { background: rgba(26,23,18,0.14); border-radius: 8px; }
+  select, input { font-family: 'Hanken Grotesk', sans-serif; }
+</style>
+</helmet>
+<div style="min-height:100vh; background:#E7E2D6; display:flex; align-items:center; justify-content:center; padding:28px; font-family:'Hanken Grotesk',sans-serif;">
+<x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" width="{{ cw }}" height="{{ ch }}" url="painel.pronto.work" tabs="{{ tabs }}" hint-size="1280px,820px">
+
+  <div style="height:100%; display:flex; position:relative; background:#F7F4EE; color:#1A1712; font-family:'Hanken Grotesk',sans-serif; overflow:hidden;">
+
+    <!-- ===== SIDEBAR ===== -->
+    <div style="width:236px; flex-shrink:0; background:#1A1712; color:#F0ECE2; display:flex; flex-direction:column; padding:22px 16px;">
+      <div style="display:flex; align-items:flex-end; padding:4px 8px 24px;">
+        <span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:24px; letter-spacing:-0.03em; color:#F0ECE2; line-height:0.8;">pr</span>
+        <span style="width:13px; height:13px; border:3px solid #F5531E; border-radius:50%; box-sizing:border-box; margin:0 1px 3px;"></span>
+        <span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:24px; letter-spacing:-0.03em; color:#F0ECE2; line-height:0.8;">nto</span>
+        <span style="font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#8F887A; margin-left:8px; margin-bottom:2px;">Empresa</span>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:4px;">
+        <div onClick="{{ goInicio }}" style="display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:11px; cursor:pointer; background:{{ niInicio.bg }}; color:{{ niInicio.fg }}; font-weight:600; font-size:14.5px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M4 11l8-6 8 6v8a1 1 0 01-1 1h-4v-6h-6v6H5a1 1 0 01-1-1v-8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Início
+        </div>
+        <div onClick="{{ goTurnos }}" style="display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:11px; cursor:pointer; background:{{ niTurnos.bg }}; color:{{ niTurnos.fg }}; font-weight:600; font-size:14.5px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="14" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M8 6V4h8v2M3 11h18" stroke="currentColor" stroke-width="2"/></svg>Turnos
+        </div>
+        <div onClick="{{ goEscala }}" style="display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:11px; cursor:pointer; background:{{ niEscala.bg }}; color:{{ niEscala.fg }}; font-weight:600; font-size:14.5px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M3 9h18M8 3v4M16 3v4M7 14h3M13 14h4M7 17h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Escala
+        </div>
+        <div onClick="{{ goProfs }}" style="display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:11px; cursor:pointer; background:{{ niProfs.bg }}; color:{{ niProfs.fg }}; font-weight:600; font-size:14.5px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 5.5a3 3 0 010 5.5M18 20c0-2.4-1-4.2-2.5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Profissionais
+        </div>
+      </div>
+
+      <div style="margin-top:auto; display:flex; align-items:center; gap:11px; padding:12px; border-radius:12px; background:rgba(240,236,226,0.05);">
+        <div style="width:38px; height:38px; border-radius:10px; background:#F5531E; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:14px;">DF</div>
+        <div style="min-width:0;">
+          <div style="font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Dona Francisca do Campolim</div>
+          <div style="font-size:12px; color:#8F887A;">Parque Campolim</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MAIN ===== -->
+    <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+      <!-- topbar -->
+      <div style="height:68px; flex-shrink:0; border-bottom:1px solid rgba(26,23,18,0.1); display:flex; align-items:center; justify-content:space-between; padding:0 28px; background:rgba(247,244,238,0.9);">
+        <div>
+          <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:20px; letter-spacing:-0.01em; line-height:1;">{{ pageTitle }}</div>
+          <div style="font-size:12.5px; color:#A69C88; margin-top:2px;">{{ pageSub }}</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div style="width:40px; height:40px; border-radius:11px; border:1px solid rgba(26,23,18,0.1); display:flex; align-items:center; justify-content:center; position:relative;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M6 9a6 6 0 1112 0c0 5 2 6 2 6H4s2-1 2-6z" stroke="#453F33" stroke-width="2" stroke-linejoin="round"/><path d="M10 20a2 2 0 004 0" stroke="#453F33" stroke-width="2"/></svg>
+            <span style="position:absolute; top:8px; right:9px; width:7px; height:7px; background:#F5531E; border-radius:50%; border:1.5px solid #F7F4EE;"></span>
+          </div>
+          <button onClick="{{ openPublish }}" style="border:none; background:#F5531E; color:#fff; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:14.5px; padding:12px 20px; border-radius:12px; cursor:pointer; display:flex; align-items:center; gap:8px; box-shadow:0 8px 20px rgba(245,83,30,0.28);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>Publicar turno
+          </button>
+        </div>
+      </div>
+
+      <!-- content -->
+      <div class="pron-sc" style="flex:1; overflow-y:auto; padding:28px;">
+
+        <!-- ===== INÍCIO ===== -->
+        <sc-if value="{{ isInicio }}" hint-placeholder-val="{{ true }}">
+          <div style="animation:riseIn .4s ease both;">
+            <!-- stats -->
+            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px;">
+              <div style="background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:16px; padding:20px;">
+                <div style="font-size:13px; color:#7A7264;">Turnos abertos</div>
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:34px; letter-spacing:-0.02em; margin-top:4px;">{{ statAbertos }}</div>
+                <div style="font-size:12.5px; color:#F5531E; font-weight:600; margin-top:2px;">{{ statCandidatos }} candidatos aguardando</div>
+              </div>
+              <div style="background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:16px; padding:20px;">
+                <div style="font-size:13px; color:#7A7264;">Preenchidos na semana</div>
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:34px; letter-spacing:-0.02em; margin-top:4px;">{{ statPreenchidos }}</div>
+                <div style="font-size:12.5px; color:#17A860; font-weight:600; margin-top:2px;">100% cobertos</div>
+              </div>
+              <div style="background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:16px; padding:20px;">
+                <div style="font-size:13px; color:#7A7264;">Gasto no mês</div>
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:34px; letter-spacing:-0.02em; margin-top:4px;">R$ 4.820</div>
+                <div style="font-size:12.5px; color:#A69C88; margin-top:2px;">32 turnos preenchidos</div>
+              </div>
+              <div style="background:#1A1712; color:#fff; border-radius:16px; padding:20px;">
+                <div style="font-size:13px; color:#B4AD9C;">Avaliação da casa</div>
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:34px; letter-spacing:-0.02em; margin-top:4px;">★ 4.8</div>
+                <div style="font-size:12.5px; color:#8F887A; margin-top:2px;">como contratante</div>
+              </div>
+            </div>
+
+            <!-- open shifts needing people -->
+            <div style="display:flex; align-items:baseline; justify-content:space-between; margin:32px 0 14px;">
+              <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:19px;">Precisam de gente</div>
+              <span style="font-size:13px; color:#7A7264;">Escolha e aprove em segundos</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <sc-for list="{{ openShifts }}" as="s" hint-placeholder-count="2">
+                <div style="background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:16px; padding:18px 20px; display:flex; align-items:center; gap:20px;">
+                  <div style="width:52px; height:52px; border-radius:13px; background:rgba(245,83,30,0.1); color:#F5531E; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;">
+                    <span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:18px; line-height:1;">{{ s.dayNum }}</span>
+                    <span style="font-size:10px; text-transform:uppercase; letter-spacing:0.06em;">{{ s.dayLbl }}</span>
+                  </div>
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:17px;">{{ s.role }} · {{ s.qtyLabel }}</div>
+                    <div style="font-size:13.5px; color:#7A7264; margin-top:2px;">{{ s.time }} · {{ s.payLabel }} por pessoa</div>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:14px; flex-shrink:0;">
+                    <span style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:#453F33; background:#F7F4EE; padding:7px 12px; border-radius:100px;">
+                      <span style="width:7px; height:7px; background:#17A860; border-radius:50%;"></span>{{ s.candCount }} candidatos
+                    </span>
+                    <button onClick="{{ s.onView }}" style="border:1.5px solid #1A1712; background:#1A1712; color:#fff; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:13.5px; padding:9px 16px; border-radius:10px; cursor:pointer;">Ver candidatos</button>
+                  </div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ noOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="background:#fff; border:1px dashed rgba(26,23,18,0.15); border-radius:16px; padding:32px; text-align:center; color:#A69C88;">Tudo coberto por aqui. Publique um novo turno quando precisar.</div>
+              </sc-if>
+            </div>
+
+            <!-- filled -->
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:19px; margin:32px 0 14px;">Turnos confirmados</div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <sc-for list="{{ filledShifts }}" as="s" hint-placeholder-count="2">
+                <div style="background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:14px; padding:14px 20px; display:flex; align-items:center; gap:16px;">
+                  <span style="width:9px; height:9px; background:#17A860; border-radius:50%; flex-shrink:0;"></span>
+                  <div style="flex:1;"><span style="font-weight:600; font-size:15px;">{{ s.role }}</span> <span style="color:#7A7264; font-size:14px;">· {{ s.dayFull }} · {{ s.time }}</span></div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="width:28px; height:28px; border-radius:50%; background:{{ s.hiredColor }}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; font-family:'Bricolage Grotesque',sans-serif;">{{ s.hiredInitials }}</div>
+                    <span style="font-size:14px; font-weight:600;">{{ s.hiredName }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== TURNOS ===== -->
+        <sc-if value="{{ isTurnos }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:riseIn .4s ease both;">
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <sc-for list="{{ allShifts }}" as="s" hint-placeholder-count="4">
+                <div style="background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:16px; padding:18px 20px; display:flex; align-items:center; gap:20px;">
+                  <div style="width:52px; height:52px; border-radius:13px; background:{{ s.badgeBg }}; color:{{ s.badgeFg }}; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;">
+                    <span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:18px; line-height:1;">{{ s.dayNum }}</span>
+                    <span style="font-size:10px; text-transform:uppercase; letter-spacing:0.06em;">{{ s.dayLbl }}</span>
+                  </div>
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:17px;">{{ s.role }} · {{ s.qtyLabel }}</div>
+                    <div style="font-size:13.5px; color:#7A7264; margin-top:2px;">{{ s.time }} · {{ s.payLabel }} por pessoa</div>
+                  </div>
+                  <span style="font-size:12.5px; font-weight:700; padding:6px 12px; border-radius:100px; background:{{ s.statusBg }}; color:{{ s.statusFg }};">{{ s.statusLabel }}</span>
+                  <sc-if value="{{ s.isOpen }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ s.onView }}" style="border:1.5px solid #1A1712; background:#1A1712; color:#fff; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:13.5px; padding:9px 16px; border-radius:10px; cursor:pointer;">Candidatos</button>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== ESCALA ===== -->
+        <sc-if value="{{ isEscala }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:riseIn .4s ease both;">
+            <div style="font-size:13px; color:#7A7264; margin-bottom:16px;">Semana de 7 a 13 de julho</div>
+            <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:10px;">
+              <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+                <div style="background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:14px; min-height:200px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+                  <div style="display:flex; align-items:baseline; justify-content:space-between; padding-bottom:8px; border-bottom:1px solid rgba(26,23,18,0.07);">
+                    <span style="font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.04em; color:#453F33;">{{ d.lbl }}</span>
+                    <span style="font-size:12px; color:#A69C88;">{{ d.num }}</span>
+                  </div>
+                  <sc-for list="{{ d.shifts }}" as="c" hint-placeholder-count="1">
+                    <div style="background:{{ c.bg }}; border-left:3px solid {{ c.accent }}; border-radius:8px; padding:8px 10px;">
+                      <div style="font-weight:700; font-size:12.5px; color:{{ c.fg }};">{{ c.role }}</div>
+                      <div style="font-size:11px; color:{{ c.sub }}; margin-top:1px;">{{ c.time }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== PROFISSIONAIS ===== -->
+        <sc-if value="{{ isProfs }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:riseIn .4s ease both;">
+            <div style="font-size:13px; color:#7A7264; margin-bottom:16px;">Profissionais que já trabalharam com você — convide direto para o próximo turno.</div>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
+              <sc-for list="{{ roster }}" as="p" hint-placeholder-count="6">
+                <div style="background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:16px; padding:20px; display:flex; flex-direction:column; align-items:flex-start; gap:12px;">
+                  <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:46px; height:46px; border-radius:50%; background:{{ p.color }}; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:15px;">{{ p.initials }}</div>
+                    <div><div style="font-weight:700; font-size:15.5px;">{{ p.name }}</div><div style="font-size:12.5px; color:#7A7264;">{{ p.role }} · ★ {{ p.rate }}</div></div>
+                  </div>
+                  <div style="font-size:12.5px; color:#A69C88;">{{ p.turnos }} turnos com você · {{ p.dist }}</div>
+                  <button style="align-self:stretch; border:1.5px solid rgba(26,23,18,0.15); background:#fff; color:#1A1712; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:13.5px; padding:10px; border-radius:11px; cursor:pointer;">Convidar para turno</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+
+    <!-- ===== MODAL: PUBLICAR ===== -->
+    <sc-if value="{{ publishOpen }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closePublish }}" style="position:absolute; inset:0; z-index:70; background:rgba(26,23,18,0.4); backdrop-filter:blur(2px);"></div>
+      <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:71; width:520px; max-height:90%; overflow-y:auto; background:#F7F4EE; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,0.35); animation:modalIn .3s ease both;" class="pron-sc">
+        <div style="padding:26px 28px 18px; display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:24px; letter-spacing:-0.02em;">Publicar turno</div>
+            <div style="font-size:13.5px; color:#7A7264; margin-top:2px;">Leva 30 segundos. Você vê o preço antes de publicar.</div>
+          </div>
+          <div onClick="{{ closePublish }}" style="width:34px; height:34px; border-radius:9px; background:#EDE8DC; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; color:#7A7264;">✕</div>
+        </div>
+
+        <div style="padding:0 28px 8px; display:flex; flex-direction:column; gap:16px;">
+          <div>
+            <label style="font-size:12.5px; font-weight:600; color:#453F33; display:block; margin-bottom:6px;">Função</label>
+            <select value="{{ form.role }}" onChange="{{ onRole }}" style="width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(26,23,18,0.15); background:#fff; font-size:15px; color:#1A1712;">
+              <option>Garçom</option><option>Bartender</option><option>Aux. de cozinha</option><option>Recepcionista</option><option>Aux. de eventos</option><option>Limpeza</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <div style="flex:1;">
+              <label style="font-size:12.5px; font-weight:600; color:#453F33; display:block; margin-bottom:6px;">Data</label>
+              <input type="date" value="{{ form.date }}" onChange="{{ onDate }}" style="width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(26,23,18,0.15); background:#fff; font-size:15px; color:#1A1712;"/>
+            </div>
+            <div style="width:96px;">
+              <label style="font-size:12.5px; font-weight:600; color:#453F33; display:block; margin-bottom:6px;">Vagas</label>
+              <select value="{{ form.qty }}" onChange="{{ onQty }}" style="width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(26,23,18,0.15); background:#fff; font-size:15px; color:#1A1712;">
+                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <div style="flex:1;">
+              <label style="font-size:12.5px; font-weight:600; color:#453F33; display:block; margin-bottom:6px;">Início</label>
+              <select value="{{ form.start }}" onChange="{{ onStart }}" style="width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(26,23,18,0.15); background:#fff; font-size:15px; color:#1A1712;">
+                <sc-for list="{{ hoursOpts }}" as="h" hint-placeholder-count="6"><option value="{{ h.v }}">{{ h.l }}</option></sc-for>
+              </select>
+            </div>
+            <div style="flex:1;">
+              <label style="font-size:12.5px; font-weight:600; color:#453F33; display:block; margin-bottom:6px;">Fim</label>
+              <select value="{{ form.end }}" onChange="{{ onEnd }}" style="width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(26,23,18,0.15); background:#fff; font-size:15px; color:#1A1712;">
+                <sc-for list="{{ hoursOpts }}" as="h" hint-placeholder-count="6"><option value="{{ h.v }}">{{ h.l }}</option></sc-for>
+              </select>
+            </div>
+          </div>
+
+          <!-- estimate -->
+          <div style="background:#1A1712; color:#F0ECE2; border-radius:16px; padding:18px;">
+            <div style="font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:#8F887A; margin-bottom:12px;">Estimativa · {{ estDur }}h × {{ form.qty }} vaga(s)</div>
+            <div style="display:flex; justify-content:space-between; font-size:14px; padding:5px 0;"><span style="color:#B4AD9C;">Profissionais recebem</span><span style="font-weight:600;">{{ estWorker }}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:14px; padding:5px 0;"><span style="color:#B4AD9C;">Taxa Pronto</span><span style="font-weight:600;">{{ estFee }}</span></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding-top:12px; margin-top:6px; border-top:1px solid rgba(240,236,226,0.14);"><span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:16px;">Você paga</span><span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:24px; color:#F5531E;">{{ estTotal }}</span></div>
+          </div>
+        </div>
+
+        <div style="padding:16px 28px 26px;">
+          <button onClick="{{ doPublish }}" style="width:100%; border:none; background:#F5531E; color:#fff; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:16px; padding:15px; border-radius:14px; cursor:pointer; box-shadow:0 10px 24px rgba(245,83,30,0.3);">Publicar e receber candidatos</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ===== MODAL: CANDIDATOS ===== -->
+    <sc-if value="{{ candOpen }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closeCand }}" style="position:absolute; inset:0; z-index:72; background:rgba(26,23,18,0.4); backdrop-filter:blur(2px);"></div>
+      <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:73; width:500px; max-height:88%; overflow-y:auto; background:#F7F4EE; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,0.35); animation:modalIn .3s ease both;" class="pron-sc">
+        <div style="padding:26px 28px 16px; display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:22px; letter-spacing:-0.02em;">{{ candShift.role }}</div>
+            <div style="font-size:13.5px; color:#7A7264; margin-top:2px;">{{ candShift.dayFull }} · {{ candShift.time }} · faltam {{ candShift.remaining }} vaga(s)</div>
+          </div>
+          <div onClick="{{ closeCand }}" style="width:34px; height:34px; border-radius:9px; background:#EDE8DC; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; color:#7A7264;">✕</div>
+        </div>
+        <div style="padding:0 22px 24px; display:flex; flex-direction:column; gap:10px;">
+          <sc-for list="{{ candShift.candidates }}" as="c" hint-placeholder-count="3">
+            <div style="background:#fff; border:1px solid rgba(26,23,18,0.08); border-radius:15px; padding:14px 16px; display:flex; align-items:center; gap:14px;">
+              <div style="width:46px; height:46px; border-radius:50%; background:{{ c.color }}; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:15px; flex-shrink:0;">{{ c.initials }}</div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-weight:700; font-size:15.5px;">{{ c.name }}</div>
+                <div style="font-size:12.5px; color:#7A7264;">★ {{ c.rate }} · {{ c.turnos }} turnos · {{ c.dist }}</div>
+              </div>
+              <button onClick="{{ c.onHire }}" style="border:none; background:#17A860; color:#fff; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:13.5px; padding:10px 16px; border-radius:11px; cursor:pointer; flex-shrink:0;">Aprovar</button>
+            </div>
+          </sc-for>
+          <sc-if value="{{ candShift.empty }}" hint-placeholder-val="{{ false }}">
+            <div style="text-align:center; color:#A69C88; padding:24px;">Todos aprovados! Turno coberto. ✓</div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ===== TOAST ===== -->
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; bottom:24px; left:50%; transform:translateX(-50%); z-index:90; background:#1A1712; color:#fff; border-radius:14px; padding:14px 20px; display:flex; align-items:center; gap:12px; box-shadow:0 14px 34px rgba(0,0,0,0.32); animation:toastIn .3s ease both;">
+        <span style="width:24px; height:24px; border-radius:50%; background:#17A860; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span style="font-size:14.5px; font-weight:600;">{{ toast }}</span>
+      </div>
+    </sc-if>
+
+  </div>
+
+</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.base = { 'Garçom':22, 'Bartender':30, 'Aux. de cozinha':24, 'Recepcionista':22, 'Aux. de eventos':25, 'Limpeza':20 };
+    this.pool = [
+      { name:'Ana Lima', initials:'AL', rate:'4.9', turnos:87, dist:'2,1 km', color:'#F5531E' },
+      { name:'Diego Alves', initials:'DA', rate:'4.8', turnos:45, dist:'3,0 km', color:'#1A1712' },
+      { name:'Carla Souza', initials:'CS', rate:'4.7', turnos:62, dist:'1,8 km', color:'#17A860' },
+      { name:'João Silva', initials:'JS', rate:'4.8', turnos:63, dist:'3,4 km', color:'#7A4DF0' },
+      { name:'Marina Reis', initials:'MR', rate:'4.9', turnos:51, dist:'2,5 km', color:'#F5531E' }
+    ];
+    this.state = {
+      nav:'inicio', publishOpen:false, candId:null, toast:null,
+      form:{ role:'Garçom', date:'2025-07-12', start:18, end:23, qty:1 },
+      shifts:[
+        { id:'t1', role:'Garçom', dayNum:'12', dayLbl:'sex', dayFull:'Sex, 12 jul', time:'18h–23h', hours:5, qty:2, filled:0, status:'aberto', base:22, cands:['Ana Lima','Diego Alves','Carla Souza'], hired:[] },
+        { id:'t2', role:'Bartender', dayNum:'13', dayLbl:'sáb', dayFull:'Sáb, 13 jul', time:'19h–00h', hours:5, qty:1, filled:0, status:'aberto', base:30, cands:['João Silva','Marina Reis'], hired:[] },
+        { id:'t3', role:'Aux. de cozinha', dayNum:'11', dayLbl:'qui', dayFull:'Qui, 11 jul', time:'11h–16h', hours:5, qty:1, filled:1, status:'preenchido', base:24, cands:[], hired:['Ana Lima'] },
+        { id:'t4', role:'Recepcionista', dayNum:'13', dayLbl:'sáb', dayFull:'Sáb, 13 jul', time:'08h–14h', hours:6, qty:1, filled:1, status:'preenchido', base:22, cands:[], hired:['Marina Reis'] }
+      ]
+    };
+  }
+
+  personByName(n){ return this.pool.find(p => p.name === n) || { name:n, initials:n.slice(0,2).toUpperCase(), color:'#7A7264', rate:'4.8', turnos:40, dist:'—' }; }
+  go(n){ this.setState({ nav:n }); }
+  openPub(){ this.setState({ publishOpen:true }); }
+  closePub(){ this.setState({ publishOpen:false }); }
+  updForm(k,v){ this.setState(s => ({ form: Object.assign({}, s.form, { [k]: (k==='qty'||k==='start'||k==='end') ? parseInt(v,10) : v }) })); }
+  showToast(msg){ this.setState({ toast:msg }); clearTimeout(this._t); this._t = setTimeout(()=>this.setState({ toast:null }), 2800); }
+  dur(f){ return f.end > f.start ? f.end - f.start : (f.end + 24 - f.start); }
+
+  publish(){
+    const f = this.state.form;
+    const d = this.dur(f);
+    const dt = new Date(f.date + 'T00:00:00');
+    const dias = ['dom','seg','ter','qua','qui','sex','sáb'];
+    const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    const dl = dias[dt.getDay()], dn = String(dt.getDate()), mn = meses[dt.getMonth()];
+    const pad = (h)=> String(h).padStart(2,'0') + 'h';
+    const shift = {
+      id:'t'+Date.now(), role:f.role, dayNum:dn, dayLbl:dl, dayFull:dl.charAt(0).toUpperCase()+dl.slice(1)+', '+dn+' '+mn,
+      time: pad(f.start)+'–'+pad(f.end===24?0:f.end), hours:d, qty:f.qty, filled:0, status:'aberto',
+      base: this.base[f.role] || 22, cands:['Diego Alves','Carla Souza','Ana Lima'].slice(0, Math.max(2, f.qty+1)), hired:[]
+    };
+    this.setState(s => ({ shifts:[shift, ...s.shifts], publishOpen:false }));
+    this.showToast('Turno publicado! Candidatos a caminho.');
+  }
+
+  hire(shiftId, name){
+    const target = this.state.shifts.find(x => x.id === shiftId);
+    if (!target) return;
+    const willFill = target.filled + 1;
+    const covered = willFill >= target.qty;
+    this.setState(s => ({
+      candId: covered ? null : s.candId,
+      shifts: s.shifts.map(sh => {
+        if (sh.id !== shiftId) return sh;
+        return Object.assign({}, sh, {
+          filled: sh.filled + 1,
+          hired:[...sh.hired, name],
+          cands: sh.cands.filter(c => c !== name),
+          status: (sh.filled + 1) >= sh.qty ? 'preenchido' : 'aberto'
+        });
+      })
+    }));
+    if (covered) this.showToast(target.role + ' coberto! ✓');
+    else this.showToast(name.split(' ')[0] + ' aprovado. Falta preencher.');
+  }
+
+  fmt(n){ return 'R$ ' + n.toLocaleString('pt-BR'); }
+
+  renderVals(){
+    const st = this.state;
+    const shifts = st.shifts;
+    const nav = (k)=> st.nav===k ? { bg:'rgba(245,83,30,0.16)', fg:'#fff' } : { bg:'transparent', fg:'#B4AD9C' };
+
+    const decorate = (s)=> Object.assign({}, s, {
+      qtyLabel: s.qty + (s.qty>1 ? ' vagas' : ' vaga'),
+      payLabel: 'R$ ' + (s.base * s.hours),
+      candCount: s.cands.length,
+      isOpen: s.status === 'aberto',
+      statusLabel: s.status === 'aberto' ? 'Aberto' : 'Preenchido',
+      statusBg: s.status === 'aberto' ? 'rgba(245,83,30,0.12)' : 'rgba(23,168,96,0.12)',
+      statusFg: s.status === 'aberto' ? '#C43C10' : '#0F7A45',
+      badgeBg: s.status === 'aberto' ? 'rgba(245,83,30,0.1)' : 'rgba(23,168,96,0.1)',
+      badgeFg: s.status === 'aberto' ? '#F5531E' : '#0F7A45',
+      hiredName: s.hired[0] || '',
+      hiredInitials: s.hired[0] ? this.personByName(s.hired[0]).initials : '',
+      hiredColor: s.hired[0] ? this.personByName(s.hired[0]).color : '#7A7264',
+      onView: ()=> this.setState({ candId: s.id })
+    });
+
+    const all = shifts.map(decorate);
+    const openShifts = all.filter(s => s.status === 'aberto');
+    const filledShifts = all.filter(s => s.status === 'preenchido');
+
+    // candidate modal
+    const cs = st.candId ? shifts.find(s => s.id === st.candId) : null;
+    let candShift = null;
+    if (cs) {
+      candShift = {
+        role: cs.role, dayFull: cs.dayFull, time: cs.time, remaining: Math.max(0, cs.qty - cs.filled),
+        empty: cs.cands.length === 0,
+        candidates: cs.cands.map(n => { const p = this.personByName(n); return Object.assign({}, p, { onHire: ()=> this.hire(cs.id, n) }); })
+      };
+    }
+
+    // week (escala)
+    const days = [['seg','7'],['ter','8'],['qua','9'],['qui','10'],['sex','11'],['sáb','12'],['dom','13']];
+    const week = days.map(([lbl,num]) => ({
+      lbl, num,
+      shifts: shifts.filter(s => s.dayNum === num).map(s => ({
+        role: s.role, time: s.time,
+        bg: s.status==='aberto' ? 'rgba(245,83,30,0.08)' : 'rgba(23,168,96,0.08)',
+        accent: s.status==='aberto' ? '#F5531E' : '#17A860',
+        fg: '#1A1712', sub: '#7A7264'
+      }))
+    }));
+
+    // publish estimate
+    const f = st.form, d = this.dur(f), b = this.base[f.role] || 22;
+    const worker = b * d * f.qty;
+    const fee = Math.round(worker * 0.15);
+    const hoursOpts = [];
+    for (let h = 6; h <= 24; h++) hoursOpts.push({ v: h, l: String(h).padStart(2,'0') + ':00' });
+
+    const roster = this.pool.map(p => Object.assign({}, p, {
+      role: p.name==='João Silva'||p.name==='Marina Reis' ? 'Bartender' : 'Garçom'
+    }));
+
+    const openCount = openShifts.length;
+    const candTotal = openShifts.reduce((a,s)=> a + s.candCount, 0);
+
+    return {
+      cw: 1280, ch: 820, tabs: [{ title: 'Painel — Pronto' }],
+
+      isInicio: st.nav==='inicio', isTurnos: st.nav==='turnos', isEscala: st.nav==='escala', isProfs: st.nav==='profissionais',
+      goInicio: ()=>this.go('inicio'), goTurnos: ()=>this.go('turnos'), goEscala: ()=>this.go('escala'), goProfs: ()=>this.go('profissionais'),
+      niInicio: nav('inicio'), niTurnos: nav('turnos'), niEscala: nav('escala'), niProfs: nav('profissionais'),
+
+      pageTitle: st.nav==='inicio' ? 'Bom dia, Dona Francisca' : st.nav==='turnos' ? 'Todos os turnos' : st.nav==='escala' ? 'Escala da semana' : 'Profissionais',
+      pageSub: st.nav==='inicio' ? 'Aqui está o que precisa da sua atenção hoje' : st.nav==='turnos' ? 'Abertos e preenchidos' : st.nav==='escala' ? 'Sua semana de uma olhada' : 'Sua rede de confiança',
+
+      statAbertos: openCount, statCandidatos: candTotal, statPreenchidos: filledShifts.length,
+      openShifts, filledShifts, allShifts: all, noOpen: openCount === 0,
+      week, roster,
+
+      openPublish: ()=>this.openPub(), closePublish: ()=>this.closePub(), publishOpen: st.publishOpen,
+      form: f, onRole: (e)=>this.updForm('role', e.target.value), onDate:(e)=>this.updForm('date', e.target.value),
+      onStart:(e)=>this.updForm('start', e.target.value), onEnd:(e)=>this.updForm('end', e.target.value), onQty:(e)=>this.updForm('qty', e.target.value),
+      hoursOpts, estDur: d, estWorker: this.fmt(worker), estFee: this.fmt(fee), estTotal: this.fmt(worker+fee),
+      doPublish: ()=>this.publish(),
+
+      candOpen: !!candShift, candShift, closeCand: ()=>this.setState({ candId:null }),
+
+      toast: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>
