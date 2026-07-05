@@ -59,7 +59,7 @@ export default function CandidaturasPage() {
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-4 px-4 py-8">
+    <main className="flex flex-1 flex-col gap-4 px-5 py-8">
       <h1 className="font-heading text-2xl font-bold text-text">Minhas candidaturas</h1>
 
       {error && <p className="text-sm text-danger">{error}</p>}
@@ -70,9 +70,12 @@ export default function CandidaturasPage() {
 
       <ul className="flex flex-col gap-3">
         {applications.map((application) => (
-          <li key={application.id} className="rounded-md border border-border bg-surface p-4">
+          <li
+            key={application.id}
+            className="rounded-[20px] border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
+          >
             <div className="flex items-start justify-between gap-3">
-              <p className="text-sm font-semibold text-text">
+              <p className="font-heading text-[17px] font-bold text-text">
                 {categoryNames[application.job.categoryId] ?? CATEGORY_LABEL_FALLBACK}
               </p>
               <span
@@ -87,7 +90,7 @@ export default function CandidaturasPage() {
             <p className="mt-1 text-sm text-text-secondary">
               {formatDateRange(application.job.startsAt, application.job.endsAt)}
             </p>
-            <p className="mt-2 font-mono text-sm font-semibold text-text">R$ {application.job.payAmount}</p>
+            <p className="mt-2 font-heading text-lg font-bold text-primary">R$ {application.job.payAmount}</p>
           </li>
         ))}
       </ul>

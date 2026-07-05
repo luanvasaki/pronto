@@ -16,6 +16,13 @@ const KYC_STATUS_CLASS: Record<string, string> = {
   rejected: 'bg-danger/10 text-danger',
 };
 
+function initials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
+  return (first + last).toUpperCase();
+}
+
 export default function PerfilPage() {
   const [profile, setProfile] = useState<WorkerProfileDetails | null>(null);
   const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
@@ -58,44 +65,49 @@ export default function PerfilPage() {
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-6 px-4 py-8">
-      <div>
-        <h1 className="font-heading text-2xl font-bold text-text">{profile.fullName}</h1>
-        <span
-          className={`mt-2 inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${
-            KYC_STATUS_CLASS[profile.kycStatus] ?? KYC_STATUS_CLASS.pending
-          }`}
-        >
-          {KYC_STATUS_LABEL[profile.kycStatus] ?? profile.kycStatus}
-        </span>
-      </div>
-
-      <div>
-        <h2 className="text-sm font-medium text-text-secondary">Categorias</h2>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {profile.categoryIds.map((categoryId) => (
-            <span
-              key={categoryId}
-              className="rounded-full border border-border px-2.5 py-1 text-xs font-medium text-text"
-            >
-              {categoryNames[categoryId] ?? 'Categoria'}
-            </span>
-          ))}
+    <main className="flex flex-1 flex-col gap-6 px-5 py-8">
+      <div className="flex items-center gap-4">
+        <div className="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-full bg-secondary font-heading text-xl font-bold text-background">
+          {initials(profile.fullName)}
+        </div>
+        <div>
+          <h1 className="font-heading text-xl font-bold text-text">{profile.fullName}</h1>
+          <span
+            className={`mt-1 inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${
+              KYC_STATUS_CLASS[profile.kycStatus] ?? KYC_STATUS_CLASS.pending
+            }`}
+          >
+            {KYC_STATUS_LABEL[profile.kycStatus] ?? profile.kycStatus}
+          </span>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-md border border-border bg-surface p-4 text-center">
-          <p className="font-mono text-xl font-semibold text-text">{profile.avgRating ?? '—'}</p>
+        <div className="rounded-2xl border border-border bg-surface p-3.5 text-center">
+          <p className="font-heading text-xl font-bold text-text">{profile.avgRating ?? '—'}</p>
           <p className="mt-1 text-xs text-text-secondary">Nota média</p>
         </div>
-        <div className="rounded-md border border-border bg-surface p-4 text-center">
-          <p className="font-mono text-xl font-semibold text-text">{profile.totalShiftsCompleted}</p>
+        <div className="rounded-2xl border border-border bg-surface p-3.5 text-center">
+          <p className="font-heading text-xl font-bold text-text">{profile.totalShiftsCompleted}</p>
           <p className="mt-1 text-xs text-text-secondary">Turnos concluídos</p>
         </div>
-        <div className="rounded-md border border-border bg-surface p-4 text-center">
-          <p className="font-mono text-xl font-semibold text-text">{profile.totalNoShows}</p>
+        <div className="rounded-2xl border border-border bg-surface p-3.5 text-center">
+          <p className="font-heading text-xl font-bold text-text">{profile.totalNoShows}</p>
           <p className="mt-1 text-xs text-text-secondary">Faltas</p>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-heading text-[17px] font-bold text-text">Minhas funções</h2>
+        <div className="mt-2.5 flex flex-wrap gap-2">
+          {profile.categoryIds.map((categoryId) => (
+            <span
+              key={categoryId}
+              className="rounded-full border border-border bg-surface px-3.5 py-2 text-sm font-semibold text-text"
+            >
+              {categoryNames[categoryId] ?? 'Categoria'}
+            </span>
+          ))}
         </div>
       </div>
     </main>
