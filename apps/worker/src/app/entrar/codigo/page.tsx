@@ -3,9 +3,15 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useEffect, useState } from 'react';
-import { ApiError, extractDigits, isValidOtpCode, verifyOtp } from '@shift/shared';
+import { ApiError, isValidOtpCode, requestOtp, verifyOtp } from '@shift/shared';
 import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
+import { Logo } from '../../../components/ui/logo';
+import { OtpInput } from '../../../components/ui/otp-input';
+
+const OTP_LENGTH = 6;
+// Mesmo valor do COOLDOWN_MS do backend (request-otp.ts) — reenviar
+// antes disso só resultaria em 429.
+const RESEND_COOLDOWN_SECONDS = 60;
 
 export default function CodigoPage() {
   return (
@@ -22,12 +28,20 @@ function CodigoForm() {
   const [code, setCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [secondsToResend, setSecondsToResend] = useState(RESEND_COOLDOWN_SECONDS);
+  const [isResending, setIsResending] = useState(false);
 
   useEffect(() => {
     if (!phone) {
       router.replace('/entrar');
     }
   }, [phone, router]);
+
+  useEffect(() => {
+    if (secondsToResend <= 0) return;
+    const timer = setInterval(() => setSecondsToResend((current) => current - 1), 1000);
+    return () => clearInterval(timer);
+  }, [secondsToResend]);
 
   if (!phone) {
     return null;
@@ -57,29 +71,53 @@ function CodigoForm() {
     }
   }
 
+  async function handleResend(): Promise<void> {
+    if (isResending || secondsToResend > 0) return;
+
+    setError(null);
+    setIsResending(true);
+
+    try {
+      await requestOtp(verifiedPhone);
+      setSecondsToResend(RESEND_COOLDOWN_SECONDS);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Não foi possível reenviar o código.');
+    } finally {
+      setIsResending(false);
+    }
+  }
+
+  const resendLabel = `${Math.floor(secondsToResend / 60)}:${String(secondsToResend % 60).padStart(2, '0')}`;
+
   return (
     <main className="flex flex-1 items-center justify-center px-4">
       <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-5">
+        <Logo className="mb-2" />
         <div>
-          <h1 className="font-heading text-2xl font-bold text-text">Digite o código</h1>
-          <p className="mt-1 text-[15px] text-text-secondary">
-            Enviamos um código de 6 dígitos para {phone}.
+          <h1 className="font-heading text-2xl font-bold text-text">Confirme seu número</h1>
+          <p className="mt-1 text-[15px] leading-relaxed text-text-secondary">
+            Enviamos um código de 6 dígitos para <strong className="text-text">{phone}</strong>.
           </p>
         </div>
 
-        <Input
-          id="code"
-          label="Código"
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={6}
-          placeholder="000000"
-          value={code}
-          onChange={(event) => setCode(extractDigits(event.target.value))}
-          error={error ?? undefined}
-          className="font-mono text-lg tracking-[0.3em]"
-        />
+        <OtpInput length={OTP_LENGTH} value={code} onChange={setCode} disabled={isSubmitting} />
+
+        {error && <p className="text-sm text-danger">{error}</p>}
+
+        {secondsToResend > 0 ? (
+          <p className="text-sm text-text-secondary">
+            Reenviar código em <strong className="text-text-secondary">{resendLabel}</strong>
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={isResending}
+            className="text-left text-sm font-medium text-primary underline underline-offset-2 disabled:opacity-60"
+          >
+            {isResending ? 'Reenviando...' : 'Reenviar código'}
+          </button>
+        )}
 
         <Button type="submit" disabled={!isValid} isLoading={isSubmitting}>
           Confirmar
