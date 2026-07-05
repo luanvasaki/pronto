@@ -57,6 +57,13 @@ export default function NovaVagaPage() {
   }
 
   const positionsTotalNumber = Number(positionsTotal);
+  const payAmountNumber = Number(payAmount);
+  const showEstimate =
+    Number.isInteger(positionsTotalNumber) &&
+    positionsTotalNumber >= 1 &&
+    PAY_AMOUNT_REGEX.test(payAmount) &&
+    payAmountNumber > 0;
+  const estimateTotal = positionsTotalNumber * payAmountNumber;
   const isValid =
     categoryId !== '' &&
     description.trim().length >= 10 &&
@@ -202,6 +209,20 @@ export default function NovaVagaPage() {
           value={endsAt}
           onChange={(event) => setEndsAt(event.target.value)}
         />
+
+        {showEstimate && (
+          <div className="rounded-2xl bg-secondary p-4 text-background">
+            <p className="text-xs tracking-wide text-text-secondary uppercase">
+              Estimativa · {positionsTotalNumber} vaga(s)
+            </p>
+            <div className="mt-3 flex items-center justify-between">
+              <span className="font-heading text-base font-bold">Total estimado</span>
+              <span className="font-heading text-2xl font-extrabold text-primary">
+                R$ {estimateTotal.toFixed(2)}
+              </span>
+            </div>
+          </div>
+        )}
 
         {error && <p className="text-sm text-danger">{error}</p>}
 

@@ -40,7 +40,7 @@ describe('PerfilPage', () => {
     expect(await screen.findByText('Bar do Zé')).toBeInTheDocument();
     expect(screen.getByText('Bar do Zé Ltda')).toBeInTheDocument();
     expect(screen.getByText('Empresa verificada')).toBeInTheDocument();
-    expect(screen.getByText('4.2')).toBeInTheDocument();
+    expect(screen.getByText('★ 4.2')).toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument();
   });
 
@@ -59,7 +59,7 @@ describe('PerfilPage', () => {
 
     await screen.findByText('Bar do Zé');
     expect(screen.getByText('Verificação em análise')).toBeInTheDocument();
-    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.getByText('★ —')).toBeInTheDocument();
   });
 
   it('mostra mensagem de erro quando a chamada falha', async () => {

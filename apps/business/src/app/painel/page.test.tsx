@@ -24,6 +24,11 @@ vi.mock('../../lib/jobs-api', () => ({
   cancelJob: (...args: unknown[]) => cancelJobMock(...args),
 }));
 
+const getCompanyProfileMock = vi.fn();
+vi.mock('../../lib/company-profile-api', () => ({
+  getCompanyProfile: (...args: unknown[]) => getCompanyProfileMock(...args),
+}));
+
 const JOB = {
   id: 'job-1',
   categoryId: 'cat-1',
@@ -44,6 +49,15 @@ describe('PainelPage', () => {
     listSkillCategoriesMock.mockReset().mockResolvedValue({ categories: [{ id: 'cat-1', name: 'Garçom' }] });
     listMyJobsMock.mockReset();
     cancelJobMock.mockReset();
+    getCompanyProfileMock.mockReset().mockResolvedValue({
+      id: 'company-1',
+      legalName: 'Bar do Zé Ltda',
+      tradeName: 'Bar do Zé',
+      cnpj: '11222333000181',
+      verificationStatus: 'approved',
+      avgRating: '4.8',
+      totalJobsPosted: 3,
+    });
   });
 
   it('mostra estado vazio quando não há vagas', async () => {

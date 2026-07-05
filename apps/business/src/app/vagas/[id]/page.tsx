@@ -43,11 +43,28 @@ const PAYMENT_STATUS_LABEL: Record<string, string> = {
   refunded: 'Pagamento estornado',
 };
 
+const AVATAR_COLORS = ['bg-primary', 'bg-secondary', 'bg-accent', 'bg-success'];
+
 const RATING_SCORES = [1, 2, 3, 4, 5];
 
 interface RatingDraft {
   score: number;
   comment: string;
+}
+
+function initials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
+  return (first + last).toUpperCase();
+}
+
+function avatarColor(fullName: string): string {
+  let hash = 0;
+  for (let i = 0; i < fullName.length; i += 1) {
+    hash = (hash + fullName.charCodeAt(i)) % AVATAR_COLORS.length;
+  }
+  return AVATAR_COLORS[hash];
 }
 
 export default function VagaCandidatosPage() {
@@ -166,7 +183,7 @@ export default function VagaCandidatosPage() {
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-4 px-4 py-8">
+    <main className="flex flex-1 flex-col gap-4 px-5 py-8">
       <h1 className="font-heading text-2xl font-bold text-text">Candidatos</h1>
 
       {error && <p className="text-sm text-danger">{error}</p>}
@@ -177,9 +194,22 @@ export default function VagaCandidatosPage() {
 
       <ul className="flex flex-col gap-3">
         {applications.map((application) => (
-          <li key={application.id} className="rounded-md border border-border bg-surface p-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-text">{application.worker.fullName}</p>
+          <li
+            key={application.id}
+            className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
+          >
+            <div className="flex items-center gap-3.5">
+              <div
+                className={`flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full font-heading text-[15px] font-bold text-white ${avatarColor(application.worker.fullName)}`}
+              >
+                {initials(application.worker.fullName)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-heading text-[15.5px] font-bold text-text">{application.worker.fullName}</p>
+                {application.worker.avgRating && (
+                  <p className="text-[12.5px] text-text-secondary">★ {application.worker.avgRating}</p>
+                )}
+              </div>
               <span
                 className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
                   STATUS_CLASS[application.status] ?? STATUS_CLASS.pending
@@ -189,12 +219,8 @@ export default function VagaCandidatosPage() {
               </span>
             </div>
 
-            {application.worker.avgRating && (
-              <p className="mt-1 text-sm text-text-secondary">Nota média: {application.worker.avgRating}</p>
-            )}
-
             {application.shift && (
-              <p className="mt-1 text-sm text-text-secondary">
+              <p className="mt-2 text-sm text-text-secondary">
                 Turno: {SHIFT_STATUS_LABEL[application.shift.status] ?? application.shift.status}
               </p>
             )}
@@ -213,6 +239,7 @@ export default function VagaCandidatosPage() {
               <div className="mt-3 flex gap-2">
                 <Button
                   type="button"
+                  variant="success"
                   isLoading={updatingId === application.id}
                   onClick={() => handleDecision(application.id, 'approved')}
                 >
@@ -252,8 +279,8 @@ export default function VagaCandidatosPage() {
             )}
 
             {application.shift?.status === 'completed' && !application.shift.ratings.company && (
-              <div className="mt-3 flex flex-col gap-2 rounded-md border border-border p-3">
-                <p className="text-sm font-medium text-text">Avaliar o trabalhador</p>
+              <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-border p-4">
+                <p className="font-heading text-[15px] font-bold text-text">Avaliar o trabalhador</p>
                 <div className="flex gap-1.5" role="group" aria-label="Nota de 1 a 5">
                   {RATING_SCORES.map((score) => {
                     const shiftId = application.shift!.id;
@@ -265,30 +292,27 @@ export default function VagaCandidatosPage() {
                         aria-label={`${score} de 5`}
                         aria-pressed={selected}
                         onClick={() => setRatingScore(shiftId, score)}
-                        className={`h-9 w-9 rounded-md border text-sm font-semibold transition ${
-                          selected
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border text-text-secondary hover:border-primary/50'
+                        className={`text-4xl leading-none transition ${
+                          selected ? 'text-primary' : 'text-border'
                         }`}
                       >
-                        {score}
+                        ★
                       </button>
                     );
                   })}
                 </div>
                 <textarea
                   rows={2}
-                  placeholder="Comentário (opcional)"
+                  placeholder="Escreva um comentário (opcional)"
                   value={ratingDrafts[application.shift.id]?.comment ?? ''}
                   onChange={(event) => setRatingComment(application.shift!.id, event.target.value)}
-                  className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+                  className="w-full rounded-[14px] border border-border bg-surface px-3.5 py-3 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
                 />
                 {ratingError?.shiftId === application.shift.id && (
                   <p className="text-sm text-danger">{ratingError.message}</p>
                 )}
                 <Button
                   type="button"
-                  variant="outlined"
                   isLoading={ratingSubmittingId === application.shift.id}
                   disabled={!ratingDrafts[application.shift.id]?.score}
                   onClick={() => handleRate(application.id, application.shift!.id)}
