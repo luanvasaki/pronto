@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { Logo } from '../../components/ui/logo';
 import { upsertCompanyProfile } from '../../lib/company-profile-api';
 import { isValidCnpj } from './cnpj';
 
@@ -37,6 +38,7 @@ export default function CadastroPage() {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-8">
       <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-5">
+        <Logo className="mb-2" />
         <div>
           <h1 className="font-heading text-2xl font-bold text-text">Complete o cadastro da empresa</h1>
           <p className="mt-1 text-[15px] text-text-secondary">

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { ApiError } from '@shift/shared';
 import { Button } from '../../../components/ui/button';
+import { Logo } from '../../../components/ui/logo';
 import { uploadWorkerDocument } from '../../../lib/worker-profile-api';
 
 export default function DocumentoPage() {
@@ -31,6 +32,7 @@ export default function DocumentoPage() {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-8">
       <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-5">
+        <Logo className="mb-2" />
         <div>
           <h1 className="font-heading text-2xl font-bold text-text">Envie seu documento</h1>
           <p className="mt-1 text-[15px] text-text-secondary">
