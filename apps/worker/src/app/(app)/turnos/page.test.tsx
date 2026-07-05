@@ -16,7 +16,7 @@ const listMyShiftsMock = vi.fn();
 const checkInMock = vi.fn();
 const checkOutMock = vi.fn();
 const rateShiftMock = vi.fn();
-vi.mock('../../lib/shifts-api', () => ({
+vi.mock('../../../lib/shifts-api', () => ({
   listMyShifts: (...args: unknown[]) => listMyShiftsMock(...args),
   checkIn: (...args: unknown[]) => checkInMock(...args),
   checkOut: (...args: unknown[]) => checkOutMock(...args),
@@ -97,7 +97,7 @@ describe('TurnosPage', () => {
 
     render(<TurnosPage />);
 
-    expect(await screen.findByText('Em andamento')).toBeInTheDocument();
+    expect((await screen.findAllByText('Em andamento')).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /fazer check-out/i })).toBeInTheDocument();
   });
 
@@ -106,7 +106,7 @@ describe('TurnosPage', () => {
 
     render(<TurnosPage />);
 
-    await screen.findByText('Concluído');
+    await screen.findAllByText('Concluído');
     expect(screen.queryByRole('button', { name: /fazer check-in/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /fazer check-out/i })).not.toBeInTheDocument();
   });
@@ -197,7 +197,7 @@ describe('TurnosPage', () => {
     await screen.findByText('Agendado');
     await user.click(screen.getByRole('button', { name: /fazer check-in/i }));
 
-    await waitFor(() => expect(screen.getByText('Em andamento')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText('Em andamento').length).toBeGreaterThan(0));
     expect(checkInMock).toHaveBeenCalledWith('shift-1', -23.55, -46.63);
   });
 

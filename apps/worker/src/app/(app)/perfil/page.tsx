@@ -2,7 +2,7 @@
 
 import { listSkillCategories } from '@shift/shared';
 import { useEffect, useState } from 'react';
-import { getWorkerProfile, WorkerProfileDetails } from '../../lib/worker-profile-api';
+import { getWorkerProfile, WorkerProfileDetails } from '../../../lib/worker-profile-api';
 
 const KYC_STATUS_LABEL: Record<string, string> = {
   pending: 'Documento em análise',

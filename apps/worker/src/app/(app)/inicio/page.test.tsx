@@ -15,13 +15,13 @@ vi.mock('@shift/shared', async (importOriginal) => {
 
 const listNearbyJobsMock = vi.fn();
 const applyToJobMock = vi.fn();
-vi.mock('../../lib/jobs-api', () => ({
+vi.mock('../../../lib/jobs-api', () => ({
   listNearbyJobs: (...args: unknown[]) => listNearbyJobsMock(...args),
   applyToJob: (...args: unknown[]) => applyToJobMock(...args),
 }));
 
 const updateWorkerLocationMock = vi.fn();
-vi.mock('../../lib/worker-profile-api', () => ({
+vi.mock('../../../lib/worker-profile-api', () => ({
   updateWorkerLocation: (...args: unknown[]) => updateWorkerLocationMock(...args),
 }));
 
@@ -39,6 +39,8 @@ const JOB = {
   endsAt: '2026-08-01T23:00:00.000Z',
   status: 'open',
   distanceKm: 2.3,
+  companyName: 'Buffet Aurora',
+  companyAvgRating: '4.8',
 };
 
 describe('InicioPage', () => {
@@ -121,7 +123,7 @@ describe('InicioPage', () => {
 
     render(<InicioPage />);
     await screen.findByText('Garçom');
-    await user.click(screen.getByRole('button', { name: /candidatar-se/i }));
+    await user.click(screen.getByRole('button', { name: /aceitar turno/i }));
 
     expect(await screen.findByRole('button', { name: /candidatura enviada/i })).toBeDisabled();
     expect(applyToJobMock).toHaveBeenCalledWith('job-1');
@@ -134,9 +136,9 @@ describe('InicioPage', () => {
 
     render(<InicioPage />);
     await screen.findByText('Garçom');
-    await user.click(screen.getByRole('button', { name: /candidatar-se/i }));
+    await user.click(screen.getByRole('button', { name: /aceitar turno/i }));
 
     expect(await screen.findByText('Você já se candidatou a essa vaga.')).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByRole('button', { name: /candidatar-se/i })).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: /aceitar turno/i })).toBeEnabled());
   });
 });

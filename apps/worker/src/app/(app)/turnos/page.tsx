@@ -2,9 +2,9 @@
 
 import { ApiError, listSkillCategories } from '@shift/shared';
 import { useEffect, useState } from 'react';
-import { Button } from '../../components/ui/button';
-import { getCurrentPosition } from '../../lib/geolocation';
-import { checkIn, checkOut, listMyShifts, rateShift, Shift } from '../../lib/shifts-api';
+import { Button } from '../../../components/ui/button';
+import { getCurrentPosition } from '../../../lib/geolocation';
+import { checkIn, checkOut, listMyShifts, rateShift, Shift } from '../../../lib/shifts-api';
 
 const CATEGORY_LABEL_FALLBACK = 'Categoria';
 
@@ -42,6 +42,46 @@ interface RatingDraft {
 function formatDateRange(startsAt: string, endsAt: string): string {
   const formatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
   return `${formatter.format(new Date(startsAt))} até ${formatter.format(new Date(endsAt))}`;
+}
+
+function formatTime(iso: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { timeStyle: 'short' }).format(new Date(iso));
+}
+
+interface TimelineRowProps {
+  label: string;
+  time: string;
+  done: boolean;
+  active?: boolean;
+  last?: boolean;
+}
+
+function TimelineRow({ label, time, done, active, last }: TimelineRowProps) {
+  return (
+    <div>
+      <div className="flex items-center gap-2.5">
+        <span
+          className={`flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full ${
+            done || active ? 'bg-success' : 'bg-border'
+          }`}
+        >
+          {done && (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+          {active && !done && <span className="h-2 w-2 rounded-full bg-surface" aria-hidden="true" />}
+        </span>
+        <div>
+          <p className={`text-[15px] font-semibold ${done || active ? 'text-text' : 'text-text-secondary'}`}>
+            {label}
+          </p>
+          <p className="text-[12.5px] text-text-secondary">{time}</p>
+        </div>
+      </div>
+      {!last && <div className="ml-[13px] my-1 h-4 w-0.5 bg-border" />}
+    </div>
+  );
 }
 
 export default function TurnosPage() {
@@ -151,7 +191,7 @@ export default function TurnosPage() {
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-4 px-4 py-8">
+    <main className="flex flex-1 flex-col gap-4 px-5 py-8">
       <h1 className="font-heading text-2xl font-bold text-text">Meus turnos</h1>
 
       {error && <p className="text-sm text-danger">{error}</p>}
@@ -161,109 +201,136 @@ export default function TurnosPage() {
       )}
 
       <ul className="flex flex-col gap-3">
-        {shifts.map((shift) => (
-          <li key={shift.id} className="rounded-md border border-border bg-surface p-4">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-sm font-semibold text-text">
-                {categoryNames[shift.job.categoryId] ?? CATEGORY_LABEL_FALLBACK}
-              </p>
-              <span
-                className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  SHIFT_STATUS_CLASS[shift.status] ?? SHIFT_STATUS_CLASS.scheduled
-                }`}
-              >
-                {SHIFT_STATUS_LABEL[shift.status] ?? shift.status}
-              </span>
-            </div>
-            <p className="mt-1 text-sm text-text-secondary">{shift.job.addressLabel}</p>
-            <p className="mt-1 text-sm text-text-secondary">
-              {formatDateRange(shift.job.startsAt, shift.job.endsAt)}
-            </p>
-            <p className="mt-2 font-mono text-sm font-semibold text-text">R$ {shift.payAmountSnapshot}</p>
+        {shifts.map((shift) => {
+          const step = shift.status === 'completed' ? 2 : shift.status === 'checked_in' ? 1 : 0;
+          const showTimeline = ['scheduled', 'checked_in', 'completed'].includes(shift.status);
 
-            {shift.payment && (
+          return (
+            <li
+              key={shift.id}
+              className="rounded-[20px] border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-heading text-[17px] font-bold text-text">
+                  {categoryNames[shift.job.categoryId] ?? CATEGORY_LABEL_FALLBACK}
+                </p>
+                <span
+                  className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    SHIFT_STATUS_CLASS[shift.status] ?? SHIFT_STATUS_CLASS.scheduled
+                  }`}
+                >
+                  {SHIFT_STATUS_LABEL[shift.status] ?? shift.status}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-text-secondary">{shift.job.addressLabel}</p>
               <p className="mt-1 text-sm text-text-secondary">
-                {PAYMENT_STATUS_LABEL[shift.payment.status] ?? shift.payment.status}
+                {formatDateRange(shift.job.startsAt, shift.job.endsAt)}
               </p>
-            )}
+              <p className="mt-2 font-heading text-lg font-bold text-primary">R$ {shift.payAmountSnapshot}</p>
 
-            {actionError?.shiftId === shift.id && (
-              <p className="mt-2 text-sm text-danger">{actionError.message}</p>
-            )}
+              {shift.payment && (
+                <p className="mt-1 text-sm text-text-secondary">
+                  {PAYMENT_STATUS_LABEL[shift.payment.status] ?? shift.payment.status}
+                </p>
+              )}
 
-            {shift.status === 'scheduled' && (
-              <Button
-                type="button"
-                isLoading={actingShiftId === shift.id}
-                onClick={() => handleCheckIn(shift.id)}
-                className="mt-3 w-full"
-              >
-                Fazer check-in
-              </Button>
-            )}
-
-            {shift.status === 'checked_in' && (
-              <Button
-                type="button"
-                isLoading={actingShiftId === shift.id}
-                onClick={() => handleCheckOut(shift.id)}
-                className="mt-3 w-full"
-              >
-                Fazer check-out
-              </Button>
-            )}
-
-            {shift.status === 'completed' && shift.ratings.worker && (
-              <p className="mt-3 text-sm text-success">Você avaliou: {shift.ratings.worker.score} de 5.</p>
-            )}
-
-            {shift.status === 'completed' && !shift.ratings.worker && (
-              <div className="mt-3 flex flex-col gap-2 rounded-md border border-border p-3">
-                <p className="text-sm font-medium text-text">Avaliar a empresa</p>
-                <div className="flex gap-1.5" role="group" aria-label="Nota de 1 a 5">
-                  {RATING_SCORES.map((score) => {
-                    const selected = (ratingDrafts[shift.id]?.score ?? 0) >= score;
-                    return (
-                      <button
-                        key={score}
-                        type="button"
-                        aria-label={`${score} de 5`}
-                        aria-pressed={selected}
-                        onClick={() => setRatingScore(shift.id, score)}
-                        className={`h-9 w-9 rounded-md border text-sm font-semibold transition ${
-                          selected
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border text-text-secondary hover:border-primary/50'
-                        }`}
-                      >
-                        {score}
-                      </button>
-                    );
-                  })}
+              {showTimeline && (
+                <div className="mt-3.5 rounded-[18px] border border-border bg-background p-4">
+                  <TimelineRow
+                    label="Check-in"
+                    done={step >= 1}
+                    time={shift.checkInAt ? formatTime(shift.checkInAt) : 'Aguardando'}
+                  />
+                  <TimelineRow
+                    label="Em andamento"
+                    done={step >= 2}
+                    active={step === 1}
+                    time={step === 1 ? 'Turno em andamento' : step === 2 ? 'Concluído' : '—'}
+                  />
+                  <TimelineRow
+                    label="Check-out"
+                    done={step >= 2}
+                    last
+                    time={shift.checkOutAt ? formatTime(shift.checkOutAt) : 'Ao fim do turno'}
+                  />
                 </div>
-                <textarea
-                  rows={2}
-                  placeholder="Comentário (opcional)"
-                  value={ratingDrafts[shift.id]?.comment ?? ''}
-                  onChange={(event) => setRatingComment(shift.id, event.target.value)}
-                  className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
-                />
-                {ratingError?.shiftId === shift.id && (
-                  <p className="text-sm text-danger">{ratingError.message}</p>
-                )}
+              )}
+
+              {actionError?.shiftId === shift.id && (
+                <p className="mt-2 text-sm text-danger">{actionError.message}</p>
+              )}
+
+              {shift.status === 'scheduled' && (
                 <Button
                   type="button"
-                  variant="outlined"
-                  isLoading={ratingSubmittingId === shift.id}
-                  disabled={!ratingDrafts[shift.id]?.score}
-                  onClick={() => handleRate(shift.id)}
+                  isLoading={actingShiftId === shift.id}
+                  onClick={() => handleCheckIn(shift.id)}
+                  className="mt-3.5 w-full"
                 >
-                  Enviar avaliação
+                  Fazer check-in
                 </Button>
-              </div>
-            )}
-          </li>
-        ))}
+              )}
+
+              {shift.status === 'checked_in' && (
+                <Button
+                  type="button"
+                  isLoading={actingShiftId === shift.id}
+                  onClick={() => handleCheckOut(shift.id)}
+                  className="mt-3.5 w-full"
+                >
+                  Fazer check-out
+                </Button>
+              )}
+
+              {shift.status === 'completed' && shift.ratings.worker && (
+                <p className="mt-3.5 text-sm text-success">Você avaliou: {shift.ratings.worker.score} de 5.</p>
+              )}
+
+              {shift.status === 'completed' && !shift.ratings.worker && (
+                <div className="mt-3.5 flex flex-col gap-3 rounded-[18px] border border-border p-4">
+                  <p className="font-heading text-[15px] font-bold text-text">Avaliar a empresa</p>
+                  <div className="flex gap-1.5" role="group" aria-label="Nota de 1 a 5">
+                    {RATING_SCORES.map((score) => {
+                      const selected = (ratingDrafts[shift.id]?.score ?? 0) >= score;
+                      return (
+                        <button
+                          key={score}
+                          type="button"
+                          aria-label={`${score} de 5`}
+                          aria-pressed={selected}
+                          onClick={() => setRatingScore(shift.id, score)}
+                          className={`text-4xl leading-none transition ${
+                            selected ? 'text-primary' : 'text-border'
+                          }`}
+                        >
+                          ★
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <textarea
+                    rows={2}
+                    placeholder="Escreva um comentário (opcional)"
+                    value={ratingDrafts[shift.id]?.comment ?? ''}
+                    onChange={(event) => setRatingComment(shift.id, event.target.value)}
+                    className="w-full rounded-[14px] border border-border bg-surface px-3.5 py-3 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+                  />
+                  {ratingError?.shiftId === shift.id && (
+                    <p className="text-sm text-danger">{ratingError.message}</p>
+                  )}
+                  <Button
+                    type="button"
+                    isLoading={ratingSubmittingId === shift.id}
+                    disabled={!ratingDrafts[shift.id]?.score}
+                    onClick={() => handleRate(shift.id)}
+                  >
+                    Enviar avaliação
+                  </Button>
+                </div>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </main>
   );

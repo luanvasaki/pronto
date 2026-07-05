@@ -2,7 +2,7 @@
 
 import { listSkillCategories } from '@shift/shared';
 import { useEffect, useState } from 'react';
-import { listMyApplications, MyApplication } from '../../lib/applications-api';
+import { listMyApplications, MyApplication } from '../../../lib/applications-api';
 
 const CATEGORY_LABEL_FALLBACK = 'Categoria';
 

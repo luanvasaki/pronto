@@ -12,7 +12,7 @@ vi.mock('@shift/shared', async (importOriginal) => {
 });
 
 const getWorkerProfileMock = vi.fn();
-vi.mock('../../lib/worker-profile-api', () => ({
+vi.mock('../../../lib/worker-profile-api', () => ({
   getWorkerProfile: (...args: unknown[]) => getWorkerProfileMock(...args),
 }));
 

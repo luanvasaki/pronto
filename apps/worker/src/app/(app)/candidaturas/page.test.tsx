@@ -12,7 +12,7 @@ vi.mock('@shift/shared', async (importOriginal) => {
 });
 
 const listMyApplicationsMock = vi.fn();
-vi.mock('../../lib/applications-api', () => ({
+vi.mock('../../../lib/applications-api', () => ({
   listMyApplications: (...args: unknown[]) => listMyApplicationsMock(...args),
 }));
 
