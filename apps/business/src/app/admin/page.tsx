@@ -105,31 +105,35 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-8 px-4 py-8">
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-5 py-8">
       <h1 className="font-heading text-2xl font-bold text-text">Verificações pendentes</h1>
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
       <section>
-        <h2 className="text-lg font-semibold text-text">Documentos de trabalhadores</h2>
+        <h2 className="font-heading text-lg font-bold text-text">Documentos de trabalhadores</h2>
         {documents.length === 0 && (
           <p className="mt-2 text-sm text-text-secondary">Nenhum documento pendente.</p>
         )}
         <ul className="mt-3 flex flex-col gap-3">
           {documents.map((document) => (
-            <li key={document.id} className="rounded-md border border-border bg-surface p-4">
-              <p className="text-sm font-semibold text-text">{document.workerFullName}</p>
+            <li
+              key={document.id}
+              className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
+            >
+              <p className="font-heading text-[15.5px] font-bold text-text">{document.workerFullName}</p>
               {imageUrls[document.id] && (
                 // eslint-disable-next-line @next/next/no-img-element -- vem de um blob: URL autenticado, next/image não se aplica
                 <img
                   src={imageUrls[document.id]}
                   alt={`Documento de ${document.workerFullName}`}
-                  className="mt-2 max-h-64 rounded-md border border-border object-contain"
+                  className="mt-2.5 max-h-64 rounded-xl border border-border object-contain"
                 />
               )}
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3.5 flex gap-2">
                 <Button
                   type="button"
+                  variant="success"
                   isLoading={actingId === document.id}
                   onClick={() => handleReviewDocument(document.id, 'approved')}
                 >
@@ -150,19 +154,23 @@ export default function AdminPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold text-text">Empresas</h2>
+        <h2 className="font-heading text-lg font-bold text-text">Empresas</h2>
         {companies.length === 0 && (
           <p className="mt-2 text-sm text-text-secondary">Nenhuma empresa pendente.</p>
         )}
         <ul className="mt-3 flex flex-col gap-3">
           {companies.map((company) => (
-            <li key={company.id} className="rounded-md border border-border bg-surface p-4">
-              <p className="text-sm font-semibold text-text">{company.tradeName}</p>
+            <li
+              key={company.id}
+              className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
+            >
+              <p className="font-heading text-[15.5px] font-bold text-text">{company.tradeName}</p>
               <p className="text-sm text-text-secondary">{company.legalName}</p>
               <p className="font-mono text-sm text-text-secondary">CNPJ {company.cnpj}</p>
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3.5 flex gap-2">
                 <Button
                   type="button"
+                  variant="success"
                   isLoading={actingId === company.id}
                   onClick={() => handleReviewCompany(company.id, 'approved')}
                 >
