@@ -21,9 +21,22 @@ vi.mock('../../../lib/jobs-api', () => ({
 }));
 
 const updateWorkerLocationMock = vi.fn();
+const getWorkerProfileMock = vi.fn();
 vi.mock('../../../lib/worker-profile-api', () => ({
   updateWorkerLocation: (...args: unknown[]) => updateWorkerLocationMock(...args),
+  getWorkerProfile: (...args: unknown[]) => getWorkerProfileMock(...args),
 }));
+
+const PROFILE = {
+  fullName: 'Ana Souza',
+  categoryIds: ['cat-1'],
+  photoUrl: null,
+  homeAddressLabel: 'Campolim, Sorocaba',
+  kycStatus: 'approved',
+  avgRating: '4.8',
+  totalShiftsCompleted: 10,
+  totalNoShows: 0,
+};
 
 const JOB = {
   id: 'job-1',
@@ -49,6 +62,8 @@ describe('InicioPage', () => {
     listNearbyJobsMock.mockReset();
     applyToJobMock.mockReset();
     updateWorkerLocationMock.mockReset();
+    getWorkerProfileMock.mockReset().mockResolvedValue(PROFILE);
+    window.localStorage.clear();
     // Evita vazamento entre testes — cada um define seu próprio mock.
     Object.defineProperty(window.navigator, 'geolocation', { value: undefined, configurable: true });
   });
@@ -58,9 +73,54 @@ describe('InicioPage', () => {
 
     render(<InicioPage />);
 
-    expect(
-      await screen.findByText('Nenhuma vaga disponível perto de você no momento.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Nenhuma vaga disponível com esse filtro.')).toBeInTheDocument();
+  });
+
+  it('mostra saudação, nome e localização do trabalhador', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [] });
+
+    render(<InicioPage />);
+
+    expect(await screen.findByText('Ana Souza')).toBeInTheDocument();
+    expect(screen.getByText('Campolim, Sorocaba')).toBeInTheDocument();
+  });
+
+  it('alterna a disponibilidade e mantém entre remontagens (localStorage)', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [] });
+    const user = userEvent.setup();
+
+    const { unmount } = render(<InicioPage />);
+    await screen.findByText('Disponível para turnos');
+    await user.click(screen.getByText('Disponível para turnos'));
+    expect(await screen.findByText('Indisponível')).toBeInTheDocument();
+    unmount();
+
+    render(<InicioPage />);
+    expect(await screen.findByText('Indisponível')).toBeInTheDocument();
+  });
+
+  it('filtra as vagas por hoje/amanhã', async () => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const jobToday = { ...JOB, id: 'job-today', startsAt: today.toISOString(), endsAt: today.toISOString() };
+    const jobTomorrow = {
+      ...JOB,
+      id: 'job-tomorrow',
+      startsAt: tomorrow.toISOString(),
+      endsAt: tomorrow.toISOString(),
+    };
+    listNearbyJobsMock.mockResolvedValue({ jobs: [jobToday, jobTomorrow] });
+    const user = userEvent.setup();
+
+    render(<InicioPage />);
+    await screen.findByText('2 disponíveis');
+
+    await user.click(screen.getByRole('button', { name: 'Hoje' }));
+    expect(await screen.findByText('1 disponíveis')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Amanhã' }));
+    expect(await screen.findByText('1 disponíveis')).toBeInTheDocument();
   });
 
   it('lista as vagas com categoria, distância e valor', async () => {

@@ -4,22 +4,20 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../app';
 import { db } from '../../db/client';
 import { users } from '../../db/schema';
-import { otpCodeStore } from '../auth/otp-code-store';
 
-const TEST_PHONE = '+5511966660004';
+const TEST_EMAIL = 'company-profile-routes-test@example.com';
+const TEST_PASSWORD = 'senha-de-teste-123';
 const TEST_CNPJ = '11222333000183';
 
 async function loginAgent(app: ReturnType<typeof createApp>) {
   const agent = request.agent(app);
-  await agent.post('/auth/otp/request').send({ phone: TEST_PHONE });
-  const stored = await otpCodeStore.find(TEST_PHONE);
-  await agent.post('/auth/otp/verify').send({ phone: TEST_PHONE, code: stored?.code });
+  await agent.post('/auth/register').send({ email: TEST_EMAIL, password: TEST_PASSWORD, termsAccepted: true });
   return agent;
 }
 
 describe('PUT /company-profile', () => {
   afterEach(async () => {
-    await db.delete(users).where(eq(users.phone, TEST_PHONE));
+    await db.delete(users).where(eq(users.email, TEST_EMAIL));
   });
 
   it('responde 401 sem sessão', async () => {
@@ -48,7 +46,7 @@ describe('PUT /company-profile', () => {
 
 describe('GET /company-profile/me', () => {
   afterEach(async () => {
-    await db.delete(users).where(eq(users.phone, TEST_PHONE));
+    await db.delete(users).where(eq(users.email, TEST_EMAIL));
   });
 
   it('responde 401 sem sessão', async () => {

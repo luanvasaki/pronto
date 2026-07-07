@@ -18,6 +18,7 @@ export interface Job {
 export interface NearbyJob extends Job {
   distanceKm: number;
   companyName: string;
+  companyLogoUrl: string | null;
   companyAvgRating: string | null;
 }
 

@@ -10,9 +10,15 @@ export const paymentStatusEnum = pgEnum('payment_status', [
 ]);
 
 /**
- * Campos mínimos de propósito — cobrança e retenção são feitas pelo
- * split nativo do PSP (Pagar.me/Iugu), não por um ledger próprio.
- * Isto só rastreia em que ponto do processo cada shift está.
+ * Campos mínimos de propósito — cobrança e retenção seriam feitas pelo
+ * split nativo de um PSP (Pagar.me/Iugu), não por um ledger próprio.
+ *
+ * Fase atual (decisão de produto, não dívida técnica): nenhum PSP está
+ * plugado ainda — `status`/`pspChargeId` são preenchidos pelo
+ * `MockPaymentGateway` (ver create-payment-gateway.ts), e o pagamento de
+ * verdade é combinado direto entre empresa e trabalhador. Essa tabela
+ * só registra em que ponto do processo cada shift está; reintegrar um
+ * PSP real depois não muda o schema, só a implementação do gateway.
  */
 export const payments = pgTable(
   'payments',

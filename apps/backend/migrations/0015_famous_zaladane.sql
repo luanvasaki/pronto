@@ -1,0 +1,1 @@
+ALTER TABLE "worker_profiles" ADD COLUMN "home_address_label" varchar(255);

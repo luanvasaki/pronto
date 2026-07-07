@@ -31,6 +31,20 @@ Os testes de rota usam `supertest` contra o `app` exportado de `src/app.ts` (nen
 
 **Cuidado com fixture entre arquivos de teste**: o Vitest roda arquivos em paralelo contra o mesmo banco. Um valor fixo (telefone, CNPJ) reusado em dois arquivos diferentes colide sob concorrência de forma intermitente — cada arquivo de teste precisa dos seus próprios valores únicos, não só únicos dentro do próprio arquivo.
 
+## Armazenamento de documentos (KYC)
+
+Documento de identidade do trabalhador vai pro Vercel Blob (store `shift-documents`, `access: private` — ler exige o token, não só conhecer a URL). `BLOB_READ_WRITE_TOKEN` já está no `.env` local; sem essa variável, `createFileStorage()` cai pro disco (`uploads/`), que é o que os testes usam (a suíte zera essa variável de propósito em `vitest.config.ts` pra nunca depender de rede nem sujar o Blob real).
+
+Provisionar um store novo (outra máquina, outro ambiente):
+
+```bash
+vercel link                                          # uma vez por máquina
+vercel blob create-store shift-documents --access private
+vercel env pull                                       # baixa BLOB_READ_WRITE_TOKEN pro .env.local — copie pro apps/backend/.env
+```
+
+Baixar o arquivo nunca vai direto pelo Blob a partir do cliente — sempre passa pelo proxy autenticado em `GET /admin/documents/:id/file` (`get-document-file.controller.ts`), que é quem decide *quem* pode ver aquele documento.
+
 ## Conceder acesso de admin
 
 Não existe rota nenhuma pra virar admin — é deliberado, já que isso libera aprovar/rejeitar KYC de trabalhador e verificação de empresa. Só via update direto no banco:

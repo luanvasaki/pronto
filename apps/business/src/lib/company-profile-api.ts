@@ -5,6 +5,7 @@ export interface CompanyProfileDetails {
   legalName: string;
   tradeName: string;
   cnpj: string;
+  logoUrl: string | null;
   verificationStatus: string;
   avgRating: string | null;
   totalJobsPosted: number;
@@ -30,5 +31,19 @@ export function upsertCompanyProfile(
   return apiFetch('/company-profile', {
     method: 'PUT',
     body: JSON.stringify({ legalName, tradeName, cnpj }),
+  });
+}
+
+export interface UploadCompanyLogoResponse {
+  logoUrl: string;
+}
+
+export function uploadCompanyLogo(file: File): Promise<UploadCompanyLogoResponse> {
+  const formData = new FormData();
+  formData.append('logo', file);
+
+  return apiFetch('/company-profile/logo', {
+    method: 'POST',
+    body: formData,
   });
 }

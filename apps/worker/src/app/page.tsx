@@ -7,8 +7,8 @@ const PERKS = [
     description: 'Aceita só os turnos que cabem na sua agenda. Sem chefe fixo.',
   },
   {
-    title: 'Pagamento pela plataforma',
-    description: 'A empresa libera o pagamento pela plataforma depois que o turno termina.',
+    title: 'Valor combinado, sem susto',
+    description: 'O valor do turno já aparece antes de você aceitar — o acerto é direto com a empresa.',
   },
   {
     title: 'Constrói fama',
@@ -50,7 +50,7 @@ const FAQ = [
   },
   {
     question: 'Como eu recebo?',
-    answer: 'Depois que o turno termina, a empresa confirma e libera o pagamento pela plataforma.',
+    answer: 'O valor combinado aparece antes de você aceitar a vaga. O acerto do pagamento é feito direto com a empresa, depois que o turno termina.',
   },
 ];
 
@@ -73,7 +73,7 @@ export default function Home() {
         </div>
 
         <Link
-          href="/entrar"
+          href="/cadastro/conta"
           className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-[15px] font-bold text-white shadow-[0_10px_26px_rgba(245,83,30,0.3)] transition hover:brightness-90"
         >
           Criar conta grátis
@@ -128,7 +128,7 @@ export default function Home() {
             Crie sua conta e comece a ver turnos perto de você hoje mesmo.
           </p>
           <Link
-            href="/entrar"
+            href="/cadastro/conta"
             className="mt-6 inline-flex items-center justify-center rounded-xl bg-secondary px-6 py-3 text-[15px] font-bold text-background transition hover:brightness-125"
           >
             Criar conta grátis

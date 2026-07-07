@@ -6,6 +6,8 @@ import { HttpError } from '../../shared/errors/http-error';
 export interface WorkerProfileDetails {
   fullName: string;
   categoryIds: string[];
+  photoUrl: string | null;
+  homeAddressLabel: string | null;
   kycStatus: string;
   avgRating: string | null;
   totalShiftsCompleted: number;
@@ -23,6 +25,8 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
   return {
     fullName: profile.fullName,
     categoryIds: skills.map((skill) => skill.categoryId),
+    photoUrl: profile.photoUrl,
+    homeAddressLabel: profile.homeAddressLabel,
     kycStatus: profile.kycStatus,
     avgRating: profile.avgRating,
     totalShiftsCompleted: profile.totalShiftsCompleted,

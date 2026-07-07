@@ -13,6 +13,7 @@ export interface JobApplicationResponse {
   worker: {
     id: string;
     fullName: string;
+    photoUrl: string | null;
     avgRating: string | null;
   };
   shift: {
@@ -77,7 +78,12 @@ export async function listJobApplications(
         id: row.id,
         status: row.status,
         createdAt: row.createdAt,
-        worker: { id: worker.userId, fullName: worker.fullName, avgRating: worker.avgRating },
+        worker: {
+          id: worker.userId,
+          fullName: worker.fullName,
+          photoUrl: worker.photoUrl,
+          avgRating: worker.avgRating,
+        },
         shift: shift
           ? {
               id: shift.id,

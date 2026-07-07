@@ -1,16 +1,22 @@
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { skillCategories, workerProfiles, workerSkills } from '../../db/schema';
+import { skillCategories, users, workerProfiles, workerSkills } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 
 export interface UpsertWorkerProfileInput {
   fullName: string | undefined;
   categoryIds: string[] | undefined;
+  // Só aceito quando igual ao googlePhotoUrl do próprio usuário (ver
+  // checagem abaixo) — usar a foto do Google sem precisar de upload.
+  // Upload de arquivo próprio sempre passa por POST /worker-profile/photo,
+  // nunca por aqui, já que aquele endpoint gera a URL no servidor.
+  photoUrl: string | undefined;
 }
 
 export interface WorkerProfileResponse {
   fullName: string;
   categoryIds: string[];
+  photoUrl: string | null;
 }
 
 /**
@@ -41,16 +47,26 @@ export async function upsertWorkerProfile(
     throw new HttpError(400, 'Categoria inválida.');
   }
 
-  await db
+  let photoUrl: string | undefined;
+  if (input.photoUrl) {
+    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    if (!user?.googlePhotoUrl || user.googlePhotoUrl !== input.photoUrl) {
+      throw new HttpError(400, 'Foto de perfil inválida.');
+    }
+    photoUrl = input.photoUrl;
+  }
+
+  const [profile] = await db
     .insert(workerProfiles)
-    .values({ userId, fullName })
+    .values({ userId, fullName, photoUrl })
     .onConflictDoUpdate({
       target: workerProfiles.userId,
-      set: { fullName, updatedAt: new Date() },
-    });
+      set: { fullName, updatedAt: new Date(), ...(photoUrl ? { photoUrl } : {}) },
+    })
+    .returning();
 
   await db.delete(workerSkills).where(eq(workerSkills.workerId, userId));
   await db.insert(workerSkills).values(categoryIds.map((categoryId) => ({ workerId: userId, categoryId })));
 
-  return { fullName, categoryIds };
+  return { fullName, categoryIds, photoUrl: profile?.photoUrl ?? null };
 }

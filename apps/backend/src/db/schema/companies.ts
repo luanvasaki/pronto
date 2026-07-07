@@ -32,6 +32,9 @@ export const companies = pgTable(
     legalName: varchar('legal_name', { length: 255 }).notNull(),
     tradeName: varchar('trade_name', { length: 255 }).notNull(),
     cnpj: varchar('cnpj', { length: 14 }).notNull(),
+    // Opcional (diferente da foto do trabalhador, que é obrigatória) —
+    // pública no Blob, mesmo padrão do `photoUrl` de worker_profiles.
+    logoUrl: varchar('logo_url', { length: 500 }),
     verificationStatus: companyVerificationStatusEnum('verification_status')
       .notNull()
       .default('pending'),

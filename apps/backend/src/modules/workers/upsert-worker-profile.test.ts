@@ -27,8 +27,38 @@ describe('upsertWorkerProfile', () => {
     const user = await createTestUser();
 
     await expect(
-      upsertWorkerProfile(user.id, { fullName: undefined, categoryIds: ['x'] }),
+      upsertWorkerProfile(user.id, { fullName: undefined, categoryIds: ['x'], photoUrl: undefined }),
     ).rejects.toThrow('Nome é obrigatório');
+  });
+
+  it('rejeita photoUrl que não é a foto do Google do próprio usuário', async () => {
+    const user = await createTestUser();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+    await expect(
+      upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        photoUrl: 'https://attacker.example.com/foto.jpg',
+      }),
+    ).rejects.toThrow('Foto de perfil inválida');
+  });
+
+  it('aceita photoUrl igual ao googlePhotoUrl do usuário', async () => {
+    const googlePhotoUrl = 'https://lh3.googleusercontent.com/a/foto-teste';
+    const [user] = await db
+      .insert(users)
+      .values({ phone: TEST_PHONE, googlePhotoUrl })
+      .returning();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+    const result = await upsertWorkerProfile(user.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      photoUrl: googlePhotoUrl,
+    });
+
+    expect(result.photoUrl).toBe(googlePhotoUrl);
   });
 
   it('rejeita lista de categorias vazia', async () => {

@@ -5,38 +5,90 @@ vi.mock('./api', () => ({
   apiFetch: (...args: unknown[]) => apiFetchMock(...args),
 }));
 
-const { requestOtp, verifyOtp, getCurrentUser, refreshSession } = await import('./auth-api');
+const { register, login, googleLogin, forgotPassword, resetPassword, getCurrentUser, refreshSession, logout } =
+  await import('./auth-api');
 
-describe('requestOtp', () => {
+describe('register', () => {
   beforeEach(() => {
     apiFetchMock.mockReset();
   });
 
-  it('chama /auth/otp/request com o celular no corpo', async () => {
-    apiFetchMock.mockResolvedValue({ message: 'ok' });
+  it('chama POST /auth/register com email e senha no corpo', async () => {
+    apiFetchMock.mockResolvedValue({ user: { id: '1' } });
 
-    await requestOtp('+5511999990000');
+    await register('pessoa@example.com', 'senha12345');
 
-    expect(apiFetchMock).toHaveBeenCalledWith('/auth/otp/request', {
+    expect(apiFetchMock).toHaveBeenCalledWith('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ phone: '+5511999990000' }),
+      body: JSON.stringify({ email: 'pessoa@example.com', password: 'senha12345' }),
     });
   });
 });
 
-describe('verifyOtp', () => {
+describe('login', () => {
   beforeEach(() => {
     apiFetchMock.mockReset();
   });
 
-  it('chama /auth/otp/verify com celular e código no corpo', async () => {
-    apiFetchMock.mockResolvedValue({ user: { id: '1' }, isNewUser: true });
+  it('chama POST /auth/login com email e senha no corpo', async () => {
+    apiFetchMock.mockResolvedValue({ user: { id: '1' } });
 
-    await verifyOtp('+5511999990000', '123456');
+    await login('pessoa@example.com', 'senha12345');
 
-    expect(apiFetchMock).toHaveBeenCalledWith('/auth/otp/verify', {
+    expect(apiFetchMock).toHaveBeenCalledWith('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ phone: '+5511999990000', code: '123456' }),
+      body: JSON.stringify({ email: 'pessoa@example.com', password: 'senha12345' }),
+    });
+  });
+});
+
+describe('googleLogin', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama POST /auth/google com o idToken no corpo', async () => {
+    apiFetchMock.mockResolvedValue({ user: { id: '1' } });
+
+    await googleLogin('token-do-google');
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken: 'token-do-google' }),
+    });
+  });
+});
+
+describe('forgotPassword', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama POST /auth/forgot-password com o email no corpo', async () => {
+    apiFetchMock.mockResolvedValue({ message: 'ok' });
+
+    await forgotPassword('pessoa@example.com');
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'pessoa@example.com' }),
+    });
+  });
+});
+
+describe('resetPassword', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama POST /auth/reset-password com token e nova senha no corpo', async () => {
+    apiFetchMock.mockResolvedValue({ message: 'ok' });
+
+    await resetPassword('token-abc', 'senha-nova-123');
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token: 'token-abc', newPassword: 'senha-nova-123' }),
     });
   });
 });
@@ -66,5 +118,19 @@ describe('refreshSession', () => {
     await refreshSession();
 
     expect(apiFetchMock).toHaveBeenCalledWith('/auth/refresh', { method: 'POST' });
+  });
+});
+
+describe('logout', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama POST /auth/logout', async () => {
+    apiFetchMock.mockResolvedValue({ message: 'ok' });
+
+    await logout();
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/auth/logout', { method: 'POST' });
   });
 });

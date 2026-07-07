@@ -9,6 +9,6 @@ describe('Home (landing)', () => {
     expect(screen.getByRole('heading', { name: /contrate reforço em minutos/i })).toBeInTheDocument();
     const links = screen.getAllByRole('link', { name: /acessar minha empresa/i });
     expect(links.length).toBeGreaterThan(0);
-    links.forEach((link) => expect(link).toHaveAttribute('href', '/entrar'));
+    links.forEach((link) => expect(link).toHaveAttribute('href', '/cadastro/conta'));
   });
 });

@@ -12,17 +12,17 @@ describe('TabBar', () => {
     usePathnameMock.mockReturnValue('/inicio');
     render(<TabBar />);
 
-    expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('href', '/inicio');
-    expect(screen.getByRole('link', { name: 'Candidaturas' })).toHaveAttribute('href', '/candidaturas');
-    expect(screen.getByRole('link', { name: 'Turnos' })).toHaveAttribute('href', '/turnos');
+    expect(screen.getByRole('link', { name: 'Turnos' })).toHaveAttribute('href', '/inicio');
+    expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('href', '/agenda');
+    expect(screen.getByRole('link', { name: 'Ganhos' })).toHaveAttribute('href', '/ganhos');
     expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('href', '/perfil');
   });
 
   it('marca a aba atual com aria-current', () => {
-    usePathnameMock.mockReturnValue('/turnos');
+    usePathnameMock.mockReturnValue('/agenda');
     render(<TabBar />);
 
-    expect(screen.getByRole('link', { name: 'Turnos' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: 'Início' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Turnos' })).not.toHaveAttribute('aria-current');
   });
 });

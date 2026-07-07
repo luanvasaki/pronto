@@ -8,6 +8,7 @@ import { JobResponse, toJobResponse } from './job-response';
 export interface NearbyJobResponse extends JobResponse {
   distanceKm: number;
   companyName: string;
+  companyLogoUrl: string | null;
   companyAvgRating: string | null;
 }
 
@@ -62,6 +63,7 @@ export async function listNearbyJobs(workerId: string): Promise<NearbyJobRespons
           ...toJobResponse(job),
           distanceKm: Math.round(distanceKm * 10) / 10,
           companyName: company.tradeName,
+          companyLogoUrl: company.logoUrl,
           companyAvgRating: company.avgRating,
         },
       ];

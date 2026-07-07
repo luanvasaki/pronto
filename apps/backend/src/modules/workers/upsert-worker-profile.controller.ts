@@ -13,11 +13,12 @@ export async function upsertWorkerProfileHandler(
       throw new HttpError(401, 'Sessão inválida ou expirada.');
     }
 
-    const { fullName, categoryIds } = req.body as {
+    const { fullName, categoryIds, photoUrl } = req.body as {
       fullName?: string;
       categoryIds?: string[];
+      photoUrl?: string;
     };
-    const result = await upsertWorkerProfile(userId, { fullName, categoryIds });
+    const result = await upsertWorkerProfile(userId, { fullName, categoryIds, photoUrl });
     res.status(200).json(result);
   } catch (error) {
     next(error);

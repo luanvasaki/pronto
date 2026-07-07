@@ -25,6 +25,32 @@ export function listPendingVerifications(): Promise<PendingVerifications> {
   return apiFetch('/admin/verifications');
 }
 
+export interface AdminMetrics {
+  payments: {
+    totalProcessed: string;
+    countByStatus: Record<string, number>;
+  };
+  workers: {
+    total: number;
+    verified: number;
+    active: number;
+  };
+  companies: {
+    total: number;
+    verified: number;
+    jobsPosted: number;
+  };
+  shifts: {
+    completed: number;
+    cancelled: number;
+    noShow: number;
+  };
+}
+
+export function getAdminMetrics(): Promise<AdminMetrics> {
+  return apiFetch('/admin/metrics');
+}
+
 export function reviewDocument(
   documentId: string,
   status: 'approved' | 'rejected',

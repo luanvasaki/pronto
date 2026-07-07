@@ -51,4 +51,15 @@ export const env = {
   databaseUrl: readDatabaseUrl(),
   jwtSecret: readJwtSecret(),
   corsOrigins: readCorsOrigins(),
+  // Sem token, createFileStorage() cai pra disco local — só é obrigatória
+  // quando quisermos de fato usar o Vercel Blob (ver file-storage.ts).
+  blobReadWriteToken: process.env.BLOB_READ_WRITE_TOKEN,
+  // Sem essas duas, createEmailSender() cai pro ConsoleEmailSender (loga o
+  // link em vez de mandar e-mail) — obrigatórias em produção, ver
+  // create-email-sender.ts.
+  resendApiKey: process.env.RESEND_API_KEY,
+  resendFromEmail: process.env.RESEND_FROM_EMAIL ?? 'Pronto <onboarding@resend.dev>',
+  // Sem isso, createGoogleTokenVerifier() cai pra fora do ar em produção —
+  // ver create-google-token-verifier.ts.
+  googleClientId: process.env.GOOGLE_CLIENT_ID,
 };

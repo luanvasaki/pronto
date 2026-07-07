@@ -27,7 +27,7 @@ const STEPS = [
   {
     number: '3',
     title: 'Confirme e acompanhe',
-    description: 'A pessoa faz check-in e check-out pelo turno. Você libera o pagamento depois.',
+    description: 'A pessoa faz check-in e check-out pelo turno. Vocês acertam o pagamento direto, depois.',
   },
 ];
 
@@ -77,7 +77,7 @@ export default function Home() {
         </div>
 
         <Link
-          href="/entrar"
+          href="/cadastro/conta"
           className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-[15px] font-bold text-white shadow-[0_10px_26px_rgba(245,83,30,0.3)] transition hover:brightness-90"
         >
           Acessar minha empresa
@@ -162,7 +162,7 @@ export default function Home() {
             Publique seu primeiro turno hoje e sinta a diferença de resolver em minutos.
           </p>
           <Link
-            href="/entrar"
+            href="/cadastro/conta"
             className="mt-6 inline-flex items-center justify-center rounded-xl bg-secondary px-6 py-3 text-[15px] font-bold text-background transition hover:brightness-125"
           >
             Acessar minha empresa

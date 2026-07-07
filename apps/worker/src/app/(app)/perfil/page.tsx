@@ -1,7 +1,11 @@
 'use client';
 
-import { listSkillCategories } from '@shift/shared';
+import { listSkillCategories, logout } from '@shift/shared';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Avatar } from '../../../components/ui/avatar';
+import { Button } from '../../../components/ui/button';
 import { getWorkerProfile, WorkerProfileDetails } from '../../../lib/worker-profile-api';
 
 const KYC_STATUS_LABEL: Record<string, string> = {
@@ -16,18 +20,22 @@ const KYC_STATUS_CLASS: Record<string, string> = {
   rejected: 'bg-danger/10 text-danger',
 };
 
-function initials(fullName: string): string {
-  const parts = fullName.trim().split(/\s+/);
-  const first = parts[0]?.[0] ?? '';
-  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
-  return (first + last).toUpperCase();
-}
-
 export default function PerfilPage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<WorkerProfileDetails | null>(null);
   const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  async function handleLogout(): Promise<void> {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      router.push('/entrar');
+    }
+  }
 
   useEffect(() => {
     async function load(): Promise<void> {
@@ -67,9 +75,7 @@ export default function PerfilPage() {
   return (
     <main className="flex flex-1 flex-col gap-6 px-5 py-8">
       <div className="flex items-center gap-4">
-        <div className="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-full bg-secondary font-heading text-xl font-bold text-background">
-          {initials(profile.fullName)}
-        </div>
+        <Avatar name={profile.fullName} photoUrl={profile.photoUrl} size="lg" color="bg-secondary" />
         <div>
           <h1 className="font-heading text-xl font-bold text-text">{profile.fullName}</h1>
           <span
@@ -110,6 +116,17 @@ export default function PerfilPage() {
           ))}
         </div>
       </div>
+
+      <Link
+        href="/candidaturas"
+        className="text-center text-sm font-semibold text-primary underline underline-offset-2"
+      >
+        Minhas candidaturas
+      </Link>
+
+      <Button variant="outlined" onClick={handleLogout} isLoading={isLoggingOut}>
+        Sair da conta
+      </Button>
     </main>
   );
 }

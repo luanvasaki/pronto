@@ -3,6 +3,7 @@ import { db } from '../../db/client';
 import { documents, workerProfiles } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { FileStorage } from './file-storage';
+import { detectImageMimeType } from './image-signature';
 
 export interface UploadedFile {
   buffer: Buffer;
@@ -31,7 +32,12 @@ export async function uploadDocument(
     throw new HttpError(400, 'Complete seu cadastro antes de enviar o documento.');
   }
 
-  const key = await storage.save(file.buffer, userId, file.mimetype);
+  const detectedMimeType = detectImageMimeType(file.buffer);
+  if (!detectedMimeType) {
+    throw new HttpError(400, 'Arquivo não é uma imagem JPEG ou PNG válida.');
+  }
+
+  const key = await storage.save(file.buffer, userId, detectedMimeType);
 
   const [document] = await db.insert(documents).values({ workerId: userId, fileUrl: key }).returning();
 

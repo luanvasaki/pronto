@@ -1,12 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { FormEvent, useEffect, useState } from 'react';
-import { ApiError, listSkillCategories, SkillCategory } from '@shift/shared';
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
+import { ApiError, getCurrentUser, listSkillCategories, SkillCategory } from '@shift/shared';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Logo } from '../../components/ui/logo';
-import { upsertWorkerProfile } from '../../lib/worker-profile-api';
+import { upsertWorkerProfile, uploadWorkerPhoto } from '../../lib/worker-profile-api';
 
 export default function CadastroPage() {
   const router = useRouter();
@@ -14,6 +14,9 @@ export default function CadastroPage() {
   const [categories, setCategories] = useState<SkillCategory[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [googlePhotoUrl, setGooglePhotoUrl] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,6 +25,15 @@ export default function CadastroPage() {
       .then((data) => setCategories(data.categories))
       .catch(() => setError('Não foi possível carregar as categorias.'))
       .finally(() => setIsLoadingCategories(false));
+
+    getCurrentUser()
+      .then(({ user }) => {
+        if (user.googlePhotoUrl) {
+          setGooglePhotoUrl(user.googlePhotoUrl);
+          setPhotoPreviewUrl(user.googlePhotoUrl);
+        }
+      })
+      .catch(() => undefined);
   }, []);
 
   function toggleCategory(id: string): void {
@@ -30,7 +42,15 @@ export default function CadastroPage() {
     );
   }
 
-  const isValid = fullName.trim().length >= 2 && selectedIds.length > 0;
+  function handlePhotoChange(event: ChangeEvent<HTMLInputElement>): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setPhotoFile(file);
+    setPhotoPreviewUrl(URL.createObjectURL(file));
+  }
+
+  const isValid = fullName.trim().length >= 2 && selectedIds.length > 0 && Boolean(photoPreviewUrl);
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -40,7 +60,11 @@ export default function CadastroPage() {
     setIsSubmitting(true);
 
     try {
-      await upsertWorkerProfile(fullName, selectedIds);
+      const useGooglePhoto = !photoFile && photoPreviewUrl === googlePhotoUrl;
+      await upsertWorkerProfile(fullName, selectedIds, useGooglePhoto ? googlePhotoUrl! : undefined);
+      if (photoFile) {
+        await uploadWorkerPhoto(photoFile);
+      }
       router.push('/cadastro/documento');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível salvar seu cadastro.');
@@ -68,6 +92,37 @@ export default function CadastroPage() {
           value={fullName}
           onChange={(event) => setFullName(event.target.value)}
         />
+
+        <div>
+          <span className="mb-2 block text-sm font-medium text-text-secondary">Foto de perfil</span>
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-border bg-surface">
+              {photoPreviewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photoPreviewUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-text-secondary">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M4 20c0-4 3.6-6 8-6s8 2 8 6M12 12a4 4 0 100-8 4 4 0 000 8z"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
+            </div>
+            <label className="cursor-pointer text-sm font-semibold text-primary underline underline-offset-2">
+              {photoFile || googlePhotoUrl ? 'Trocar foto' : 'Adicionar foto'}
+              <input type="file" accept="image/jpeg,image/png" onChange={handlePhotoChange} className="sr-only" />
+            </label>
+          </div>
+          <p className="mt-1.5 text-xs text-text-secondary">
+            Empresas veem essa foto ao avaliar sua candidatura — perfis com foto passam mais confiança.
+          </p>
+        </div>
 
         <fieldset>
           <legend className="mb-2 text-sm font-medium text-text-secondary">

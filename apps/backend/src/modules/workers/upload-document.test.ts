@@ -51,7 +51,7 @@ describe('uploadDocument', () => {
   it('grava o arquivo e cria o documento como "pending"', async () => {
     const user = await createTestUser();
     await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Beatriz Nunes' });
-    const file = { buffer: Buffer.from('foto'), mimetype: 'image/jpeg', size: 4 };
+    const file = { buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9]), mimetype: 'image/jpeg', size: 4 };
 
     const result = await uploadDocument(user.id, file, storage);
 

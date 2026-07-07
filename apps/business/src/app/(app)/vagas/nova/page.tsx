@@ -1,0 +1,220 @@
+'use client';
+
+import { ApiError, listSkillCategories, SkillCategory } from '@shift/shared';
+import { useRouter } from 'next/navigation';
+import { FormEvent, useEffect, useState } from 'react';
+import { Button } from '../../../../components/ui/button';
+import { Input } from '../../../../components/ui/input';
+import { createJob } from '../../../../lib/jobs-api';
+
+const PAY_AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
+
+export default function NovaVagaPage() {
+  const router = useRouter();
+
+  const [categories, setCategories] = useState<SkillCategory[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+
+  const [categoryId, setCategoryId] = useState('');
+  const [description, setDescription] = useState('');
+  const [addressLabel, setAddressLabel] = useState('');
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [positionsTotal, setPositionsTotal] = useState('1');
+  const [payAmount, setPayAmount] = useState('');
+  const [startsAt, setStartsAt] = useState('');
+  const [endsAt, setEndsAt] = useState('');
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    listSkillCategories()
+      .then((data) => setCategories(data.categories))
+      .catch(() => setError('Não foi possível carregar as categorias.'))
+      .finally(() => setIsLoadingCategories(false));
+  }, []);
+
+  function handleUseCurrentLocation(): void {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocalização não é suportada nesse navegador.');
+      return;
+    }
+
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLat(position.coords.latitude);
+        setLng(position.coords.longitude);
+      },
+      () => setLocationError('Não foi possível obter sua localização.'),
+    );
+  }
+
+  const positionsTotalNumber = Number(positionsTotal);
+  const payAmountNumber = Number(payAmount);
+  const showEstimate =
+    Number.isInteger(positionsTotalNumber) &&
+    positionsTotalNumber >= 1 &&
+    PAY_AMOUNT_REGEX.test(payAmount) &&
+    payAmountNumber > 0;
+  const estimateTotal = positionsTotalNumber * payAmountNumber;
+  const isValid =
+    categoryId !== '' &&
+    description.trim().length >= 10 &&
+    addressLabel.trim().length >= 2 &&
+    lat !== null &&
+    lng !== null &&
+    Number.isInteger(positionsTotalNumber) &&
+    positionsTotalNumber >= 1 &&
+    PAY_AMOUNT_REGEX.test(payAmount) &&
+    Number(payAmount) > 0 &&
+    startsAt !== '' &&
+    endsAt !== '' &&
+    new Date(endsAt) > new Date(startsAt) &&
+    new Date(startsAt) > new Date();
+
+  async function handleSubmit(event: FormEvent): Promise<void> {
+    event.preventDefault();
+    if (!isValid || isSubmitting || lat === null || lng === null) return;
+
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      await createJob({
+        categoryId,
+        description,
+        addressLabel,
+        locationLat: lat,
+        locationLng: lng,
+        positionsTotal: positionsTotalNumber,
+        payAmount,
+        startsAt: new Date(startsAt).toISOString(),
+        endsAt: new Date(endsAt).toISOString(),
+      });
+      router.push('/painel');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Não foi possível publicar a vaga.');
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <main className="flex flex-1 items-center justify-center px-4 py-8">
+      <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-5">
+        <p className="text-[15px] text-text-secondary">
+          Preencha os detalhes do turno que você precisa cobrir.
+        </p>
+
+        <div>
+          <label htmlFor="categoryId" className="mb-1.5 block text-sm font-medium text-text-secondary">
+            Categoria
+          </label>
+          <select
+            id="categoryId"
+            value={categoryId}
+            onChange={(event) => setCategoryId(event.target.value)}
+            disabled={isLoadingCategories}
+            className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+          >
+            <option value="">
+              {isLoadingCategories ? 'Carregando categorias...' : 'Selecione uma categoria'}
+            </option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="description" className="mb-1.5 block text-sm font-medium text-text-secondary">
+            Descrição
+          </label>
+          <textarea
+            id="description"
+            rows={3}
+            placeholder="Uniforme, experiência necessária, o que a vaga inclui..."
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+          />
+        </div>
+
+        <Input
+          id="addressLabel"
+          label="Endereço"
+          type="text"
+          placeholder="Vila Madalena, São Paulo"
+          value={addressLabel}
+          onChange={(event) => setAddressLabel(event.target.value)}
+        />
+
+        <div>
+          <Button type="button" variant="outlined" onClick={handleUseCurrentLocation}>
+            {lat !== null && lng !== null ? 'Localização definida ✓' : 'Usar minha localização atual'}
+          </Button>
+          {locationError && <p className="mt-1.5 text-sm text-danger">{locationError}</p>}
+        </div>
+
+        <Input
+          id="positionsTotal"
+          label="Número de vagas"
+          type="number"
+          min={1}
+          value={positionsTotal}
+          onChange={(event) => setPositionsTotal(event.target.value)}
+        />
+
+        <Input
+          id="payAmount"
+          label="Valor por pessoa (R$)"
+          type="text"
+          inputMode="decimal"
+          placeholder="130.00"
+          value={payAmount}
+          onChange={(event) => setPayAmount(event.target.value)}
+        />
+
+        <Input
+          id="startsAt"
+          label="Início"
+          type="datetime-local"
+          value={startsAt}
+          onChange={(event) => setStartsAt(event.target.value)}
+        />
+
+        <Input
+          id="endsAt"
+          label="Término"
+          type="datetime-local"
+          value={endsAt}
+          onChange={(event) => setEndsAt(event.target.value)}
+        />
+
+        {showEstimate && (
+          <div className="rounded-2xl bg-secondary p-4 text-background">
+            <p className="text-xs tracking-wide text-text-secondary uppercase">
+              Estimativa · {positionsTotalNumber} vaga(s)
+            </p>
+            <div className="mt-3 flex items-center justify-between">
+              <span className="font-heading text-base font-bold">Total estimado</span>
+              <span className="font-heading text-2xl font-extrabold text-primary">
+                R$ {estimateTotal.toFixed(2)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {error && <p className="text-sm text-danger">{error}</p>}
+
+        <Button type="submit" disabled={!isValid} isLoading={isSubmitting}>
+          Publicar
+        </Button>
+      </form>
+    </main>
+  );
+}

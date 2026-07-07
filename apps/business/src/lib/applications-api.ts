@@ -30,6 +30,7 @@ export interface JobApplication {
   worker: {
     id: string;
     fullName: string;
+    photoUrl: string | null;
     avgRating: string | null;
   };
   shift: {

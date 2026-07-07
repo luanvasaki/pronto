@@ -1,8 +1,16 @@
 export { ApiError, apiFetch } from './api';
-export { getCurrentUser, refreshSession, requestOtp, verifyOtp } from './auth-api';
-export type { UserResponse, VerifyOtpResponse } from './auth-api';
+export {
+  forgotPassword,
+  getCurrentUser,
+  googleLogin,
+  login,
+  logout,
+  refreshSession,
+  register,
+  resetPassword,
+} from './auth-api';
+export type { UserResponse } from './auth-api';
 export { extractDigits } from './digits';
-export { isValidOtpCode } from './otp-code';
-export { isValidBrazilianPhone, toE164 } from './phone';
+export { isValidPassword } from './password';
 export { listSkillCategories } from './skill-categories-api';
 export type { SkillCategory } from './skill-categories-api';

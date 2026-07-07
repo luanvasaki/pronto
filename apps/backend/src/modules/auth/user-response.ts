@@ -2,12 +2,24 @@ import { users } from '../../db/schema';
 
 export interface UserResponse {
   id: string;
-  phone: string;
+  email: string;
   status: string;
   isAdmin: boolean;
+  googlePhotoUrl: string | null;
 }
 
-/** Extraído pra cá porque agora tem dois consumidores (verify-otp e GET /auth/me). */
+/**
+ * `email` é nullable no schema (fixtures de teste de outros domínios
+ * inserem usuário sem email), mas todo usuário que chega até aqui
+ * passou por register/login/google-login — que sempre preenchem esse
+ * campo — daí o non-null assertion.
+ */
 export function toUserResponse(user: typeof users.$inferSelect): UserResponse {
-  return { id: user.id, phone: user.phone, status: user.status, isAdmin: user.isAdmin };
+  return {
+    id: user.id,
+    email: user.email!,
+    status: user.status,
+    isAdmin: user.isAdmin,
+    googlePhotoUrl: user.googlePhotoUrl,
+  };
 }

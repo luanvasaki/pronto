@@ -1,10 +1,11 @@
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { Express } from 'express';
+import path from 'node:path';
 import { env } from './config/env';
 import { adminRoutes } from './modules/admin/admin.routes';
 import { applicationsRoutes } from './modules/applications/applications.routes';
-import { authRoutes } from './modules/auth/auth.routes';
+import { AuthRoutesOptions, createAuthRoutes } from './modules/auth/auth.routes';
 import { companyProfileRoutes } from './modules/companies/company-profile.routes';
 import { jobsRoutes } from './modules/jobs/jobs.routes';
 import { healthRoutes } from './modules/health/health.routes';
@@ -16,13 +17,18 @@ import { workerDocumentRoutes } from './modules/workers/worker-document.routes';
 import { workerProfileRoutes } from './modules/workers/worker-profile.routes';
 import { errorHandler } from './shared/middlewares/error-handler';
 import { notFoundHandler } from './shared/middlewares/not-found';
+import { createGeneralRateLimiter } from './shared/middlewares/rate-limit';
 
 /**
  * Monta a aplicação Express sem chamar `listen`. Isso permite que os
  * testes importem `app` diretamente e usem supertest sem abrir uma
  * porta de rede de verdade.
  */
-export function createApp(): Express {
+export interface CreateAppOptions {
+  authRoutes?: AuthRoutesOptions;
+}
+
+export function createApp(options: CreateAppOptions = {}): Express {
   const app = express();
 
   // origin específica + credentials: true — cookie cross-origin não
@@ -30,10 +36,15 @@ export function createApp(): Express {
   app.use(cors({ origin: env.corsOrigins, credentials: true }));
   app.use(cookieParser());
   app.use(express.json());
+  app.use(createGeneralRateLimiter());
+  // Só serve algo quando o LocalFileStorage é usado (sem BLOB_READ_WRITE_TOKEN
+  // configurado, ou seja, dev/teste local) — em produção, foto/logo público
+  // vêm direto da URL do Vercel Blob, sem passar por esta rota.
+  app.use('/uploads/public', express.static(path.join(process.cwd(), 'uploads', 'public')));
 
   app.use(healthRoutes);
   app.use(skillCategoriesRoutes);
-  app.use(authRoutes);
+  app.use(createAuthRoutes(options.authRoutes));
   app.use(companyProfileRoutes);
   app.use(jobsRoutes);
   app.use(applicationsRoutes);

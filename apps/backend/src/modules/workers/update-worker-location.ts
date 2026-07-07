@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { workerProfiles } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
+import { ReverseGeocoder } from './reverse-geocode';
 
 export interface UpdateWorkerLocationInput {
   lat: number | undefined;
@@ -11,6 +12,7 @@ export interface UpdateWorkerLocationInput {
 export interface WorkerLocationResult {
   homeLat: number;
   homeLng: number;
+  homeAddressLabel: string | null;
 }
 
 /**
@@ -21,6 +23,7 @@ export interface WorkerLocationResult {
 export async function updateWorkerLocation(
   userId: string,
   input: UpdateWorkerLocationInput,
+  geocoder: ReverseGeocoder,
 ): Promise<WorkerLocationResult> {
   const { lat, lng } = input;
 
@@ -38,9 +41,18 @@ export async function updateWorkerLocation(
     throw new HttpError(400, 'Complete seu cadastro antes de definir a localização.');
   }
 
+  // Best-effort — a localização em si já foi validada e deve ser salva
+  // mesmo que a geocodificação reversa falhe (rede, rate limit, etc.).
+  let homeAddressLabel: string | null;
+  try {
+    homeAddressLabel = await geocoder.reverseGeocode(lat, lng);
+  } catch {
+    homeAddressLabel = null;
+  }
+
   const [updated] = await db
     .update(workerProfiles)
-    .set({ homeLat: lat, homeLng: lng, updatedAt: new Date() })
+    .set({ homeLat: lat, homeLng: lng, homeAddressLabel, updatedAt: new Date() })
     .where(eq(workerProfiles.userId, userId))
     .returning();
 
@@ -48,5 +60,5 @@ export async function updateWorkerLocation(
     throw new HttpError(500, 'Não foi possível salvar a localização.');
   }
 
-  return { homeLat: updated.homeLat, homeLng: updated.homeLng };
+  return { homeLat: updated.homeLat, homeLng: updated.homeLng, homeAddressLabel: updated.homeAddressLabel };
 }

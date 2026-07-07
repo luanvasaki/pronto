@@ -1,6 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
 import { HttpError } from '../../shared/errors/http-error';
+import { createReverseGeocoder } from './reverse-geocode';
 import { updateWorkerLocation } from './update-worker-location';
+
+const geocoder = createReverseGeocoder();
 
 export async function updateWorkerLocationHandler(
   req: Request,
@@ -14,7 +17,7 @@ export async function updateWorkerLocationHandler(
     }
 
     const { lat, lng } = req.body as { lat?: number; lng?: number };
-    const result = await updateWorkerLocation(userId, { lat, lng });
+    const result = await updateWorkerLocation(userId, { lat, lng }, geocoder);
     res.status(200).json(result);
   } catch (error) {
     next(error);

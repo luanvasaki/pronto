@@ -8,7 +8,7 @@ export interface IssuedTokens {
   refreshToken: string;
 }
 
-/** Chamado sempre que uma sessão nasce (hoje: só depois de OTP validado). */
+/** Chamado sempre que uma sessão nasce: registro, login ou "Entrar com Google". */
 export async function issueTokens(userId: string): Promise<IssuedTokens> {
   const accessToken = signAccessToken(userId);
   const refreshToken = generateRefreshToken();

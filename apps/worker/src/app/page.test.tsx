@@ -9,6 +9,6 @@ describe('Home (onboarding)', () => {
     expect(screen.getByRole('heading', { name: /renda extra quando você quiser/i })).toBeInTheDocument();
     const links = screen.getAllByRole('link', { name: /criar conta grátis/i });
     expect(links.length).toBeGreaterThan(0);
-    links.forEach((link) => expect(link).toHaveAttribute('href', '/entrar'));
+    links.forEach((link) => expect(link).toHaveAttribute('href', '/cadastro/conta'));
   });
 });

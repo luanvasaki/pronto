@@ -6,28 +6,27 @@ import { usePathname } from 'next/navigation';
 const TABS = [
   {
     href: '/inicio',
-    label: 'Início',
-    icon: (
-      <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor" />
-    ),
-  },
-  {
-    href: '/candidaturas',
-    label: 'Candidaturas',
-    icon: (
-      <>
-        <rect x="4" y="3" width="16" height="18" rx="2.5" stroke="currentColor" strokeWidth="2" />
-        <path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      </>
-    ),
-  },
-  {
-    href: '/turnos',
     label: 'Turnos',
+    icon: <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor" />,
+  },
+  {
+    href: '/agenda',
+    label: 'Agenda',
     icon: (
       <>
         <rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" strokeWidth="2" />
         <path d="M3 9h18M8 3v4M16 3v4" stroke="currentColor" strokeWidth="2" />
+      </>
+    ),
+  },
+  {
+    href: '/ganhos',
+    label: 'Ganhos',
+    icon: (
+      <>
+        <rect x="3" y="6" width="18" height="13" rx="2.5" stroke="currentColor" strokeWidth="2" />
+        <path d="M3 10h18" stroke="currentColor" strokeWidth="2" />
+        <circle cx="15.5" cy="14" r="1.4" fill="currentColor" />
       </>
     ),
   },

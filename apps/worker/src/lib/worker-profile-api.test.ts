@@ -5,9 +5,8 @@ vi.mock('@shift/shared', () => ({
   apiFetch: (...args: unknown[]) => apiFetchMock(...args),
 }));
 
-const { getWorkerProfile, upsertWorkerProfile, uploadWorkerDocument, updateWorkerLocation } = await import(
-  './worker-profile-api'
-);
+const { getWorkerProfile, upsertWorkerProfile, uploadWorkerDocument, uploadWorkerPhoto, updateWorkerLocation } =
+  await import('./worker-profile-api');
 
 describe('getWorkerProfile', () => {
   beforeEach(() => {
@@ -56,6 +55,25 @@ describe('uploadWorkerDocument', () => {
     expect(options.method).toBe('POST');
     expect(options.body).toBeInstanceOf(FormData);
     expect(options.body.get('document')).toBe(file);
+  });
+});
+
+describe('uploadWorkerPhoto', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama POST /worker-profile/photo com o arquivo em FormData', async () => {
+    apiFetchMock.mockResolvedValue({ photoUrl: '/uploads/public/foto.jpg' });
+    const file = new File(['conteúdo'], 'foto.jpg', { type: 'image/jpeg' });
+
+    await uploadWorkerPhoto(file);
+
+    const [path, options] = apiFetchMock.mock.calls[0];
+    expect(path).toBe('/worker-profile/photo');
+    expect(options.method).toBe('POST');
+    expect(options.body).toBeInstanceOf(FormData);
+    expect(options.body.get('photo')).toBe(file);
   });
 });
 

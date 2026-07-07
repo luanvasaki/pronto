@@ -11,11 +11,21 @@ const ACCESS_TOKEN_MAX_AGE_MS = 15 * 60 * 1000;
  * httpOnly nos dois — nenhum JavaScript no navegador consegue ler o
  * valor, é a proteção contra roubo de token via XSS. secure só em
  * produção porque dev local é http, não https.
+ *
+ * sameSite: em dev, frontend e backend são ambos "localhost" (portas
+ * diferentes, mas mesmo site pra fins de SameSite — porta não conta),
+ * então 'lax' já basta. Em produção, frontend (vercel.app) e backend
+ * (railway.app) são domínios de verdade diferentes — cross-site, não só
+ * cross-origin. 'lax' nunca é enviado em fetch/XHR cross-site (só em
+ * navegação de topo com método seguro), então login "entrava e saía"
+ * na hora: o cookie era gravado, mas a checagem seguinte (/auth/me)
+ * não o enviava de volta. 'none' exige secure=true, que já é o caso em
+ * produção.
  */
 const baseCookieOptions = {
   httpOnly: true,
   secure: env.nodeEnv === 'production',
-  sameSite: 'lax' as const,
+  sameSite: (env.nodeEnv === 'production' ? 'none' : 'lax') as 'none' | 'lax',
   path: '/',
 };
 
