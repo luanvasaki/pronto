@@ -19,7 +19,7 @@ const upload = multer({
   },
 });
 
-const fileStorage = createFileStorage();
+const fileStorage = createFileStorage('private');
 
 /**
  * Multer não integra sozinho com o errorHandler global — erro dele

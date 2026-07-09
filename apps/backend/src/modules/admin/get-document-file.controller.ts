@@ -5,7 +5,7 @@ import { documents } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { createFileStorage } from '../workers/file-storage';
 
-const fileStorage = createFileStorage();
+const fileStorage = createFileStorage('private');
 
 /**
  * `document.fileUrl` nunca vem do cliente aqui — é lido do banco a

@@ -53,7 +53,11 @@ export const env = {
   corsOrigins: readCorsOrigins(),
   // Sem token, createFileStorage() cai pra disco local — só é obrigatória
   // quando quisermos de fato usar o Vercel Blob (ver file-storage.ts).
+  // São dois tokens porque são dois stores diferentes na Vercel: um
+  // `public` (foto de perfil, logo) e um `private` (documento de KYC) —
+  // o Blob rejeita gravar com access que não bate com o tipo do store.
   blobReadWriteToken: process.env.BLOB_READ_WRITE_TOKEN,
+  blobDocumentsToken: process.env.BLOB_DOCUMENTS_TOKEN,
   // Sem essas duas, createEmailSender() cai pro ConsoleEmailSender (loga o
   // link em vez de mandar e-mail) — obrigatórias em produção, ver
   // create-email-sender.ts.

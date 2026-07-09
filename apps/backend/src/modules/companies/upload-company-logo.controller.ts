@@ -19,7 +19,7 @@ const upload = multer({
   },
 });
 
-const fileStorage = createFileStorage();
+const fileStorage = createFileStorage('public');
 
 /** Mesmo motivo do document/photo upload: converte MulterError em HttpError. */
 export function uploadCompanyLogoMiddleware(req: Request, res: Response, next: NextFunction): void {

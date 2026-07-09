@@ -107,10 +107,18 @@ export class VercelBlobFileStorage implements FileStorage {
   }
 }
 
-/** Único lugar que decide a implementação — mesmo padrão de createOtpSender. */
-export function createFileStorage(): FileStorage {
-  if (env.blobReadWriteToken) {
-    return new VercelBlobFileStorage(env.blobReadWriteToken);
+/**
+ * Único lugar que decide a implementação — mesmo padrão de createOtpSender.
+ *
+ * `access` escolhe o token certo: `public` (foto/logo) e `private`
+ * (documento de KYC) são stores diferentes na Vercel, cada um só aceita
+ * gravar com o access com que foi criado.
+ */
+export function createFileStorage(access: FileAccess): FileStorage {
+  const token = access === 'public' ? env.blobReadWriteToken : env.blobDocumentsToken;
+
+  if (token) {
+    return new VercelBlobFileStorage(token);
   }
 
   return new LocalFileStorage();
