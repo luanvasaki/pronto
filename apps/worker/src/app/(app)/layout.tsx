@@ -4,9 +4,16 @@ import { ApiError } from '@shift/shared';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { TabBar } from '../../components/ui/tab-bar';
+import { CalledNotification, Topbar } from '../../components/ui/topbar';
+import { listMyApplications } from '../../lib/applications-api';
 import { useRequireAuth } from '../../hooks/use-require-auth';
 import { getWorkerProfile, WorkerProfileDetails } from '../../lib/worker-profile-api';
 import { WorkerProfileProvider } from './worker-profile-context';
+
+// Sem WebSocket/push — reconsultar de tempos em tempos enquanto o app
+// fica aberto é o suficiente pro volume do MVP (mesmo padrão do painel
+// da empresa).
+const NOTIFICATIONS_POLL_INTERVAL_MS = 60_000;
 
 /**
  * Grupo de rotas (parênteses não entram na URL) — só as telas
@@ -34,6 +41,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<WorkerProfileDetails | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [calledCount, setCalledCount] = useState(0);
+  const [calledNotifications, setCalledNotifications] = useState<CalledNotification[]>([]);
 
   useEffect(() => {
     if (isChecking) return;
@@ -56,6 +65,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       .finally(() => setIsLoadingProfile(false));
   }, [isChecking, router]);
 
+  useEffect(() => {
+    if (isChecking || isRedirecting) return;
+
+    let cancelled = false;
+
+    function poll(): void {
+      listMyApplications()
+        .then(({ applications }) => {
+          if (cancelled) return;
+          const called = applications.filter((a) => a.status === 'approved' && a.workerSeenAt === null);
+          setCalledCount(called.length);
+          setCalledNotifications(
+            called.map((a) => ({ applicationId: a.id, companyName: a.companyName || 'uma empresa' })),
+          );
+        })
+        .catch(() => undefined);
+    }
+
+    poll();
+    const intervalId = setInterval(poll, NOTIFICATIONS_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [isChecking, isRedirecting]);
+
   if (isChecking || isLoadingProfile || isRedirecting || !profile) {
     return (
       <main className="flex flex-1 items-center justify-center px-4">
@@ -69,6 +104,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <WorkerProfileProvider initialProfile={profile}>
       <div className="flex flex-1 flex-col">
+        <Topbar calledCount={calledCount} calledNotifications={calledNotifications} />
         <div className="flex flex-1 flex-col">{children}</div>
         {pathname !== '/perfil' && <TabBar />}
       </div>

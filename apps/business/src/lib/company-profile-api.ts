@@ -27,8 +27,16 @@ export function getCompanyProfile(): Promise<CompanyProfileDetails> {
   return apiFetch('/company-profile/me');
 }
 
+export interface PendingApplicationNotification {
+  applicationId: string;
+  jobId: string;
+  workerName: string;
+  categoryName: string;
+}
+
 export interface CompanyNotifications {
   pendingApplicationsCount: number;
+  pendingApplications: PendingApplicationNotification[];
 }
 
 export function getCompanyNotifications(): Promise<CompanyNotifications> {

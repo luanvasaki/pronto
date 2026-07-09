@@ -6,7 +6,12 @@ import { useEffect, useState } from 'react';
 import { Sidebar } from '../../components/ui/sidebar';
 import { Topbar } from '../../components/ui/topbar';
 import { useRequireAuth } from '../../hooks/use-require-auth';
-import { CompanyProfileDetails, getCompanyNotifications, getCompanyProfile } from '../../lib/company-profile-api';
+import {
+  CompanyProfileDetails,
+  getCompanyNotifications,
+  getCompanyProfile,
+  PendingApplicationNotification,
+} from '../../lib/company-profile-api';
 import { CompanyProfileProvider } from './company-profile-context';
 
 // Sem WebSocket/push — reconsultar de tempos em tempos enquanto o
@@ -62,6 +67,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [needsCadastro, setNeedsCadastro] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
+  const [pendingApplications, setPendingApplications] = useState<PendingApplicationNotification[]>([]);
 
   useEffect(() => {
     if (isChecking) return;
@@ -89,7 +95,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     function poll(): void {
       getCompanyNotifications()
         .then((result) => {
-          if (!cancelled) setPendingApplicationsCount(result.pendingApplicationsCount);
+          if (cancelled) return;
+          setPendingApplicationsCount(result.pendingApplicationsCount);
+          setPendingApplications(result.pendingApplications);
         })
         .catch(() => undefined);
     }
@@ -130,6 +138,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             subtitle={subtitle}
             onMenuClick={() => setIsMobileNavOpen(true)}
             pendingApplicationsCount={pendingApplicationsCount}
+            pendingApplications={pendingApplications}
           />
           <div className="flex-1 overflow-y-auto p-4 lg:p-7">{children}</div>
         </div>

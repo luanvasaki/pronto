@@ -30,7 +30,9 @@ describe('AppLayout', () => {
     replaceMock.mockClear();
     useRequireAuthMock.mockReset().mockReturnValue({ isChecking: false });
     getCompanyProfileMock.mockReset();
-    getCompanyNotificationsMock.mockReset().mockResolvedValue({ pendingApplicationsCount: 0 });
+    getCompanyNotificationsMock
+      .mockReset()
+      .mockResolvedValue({ pendingApplicationsCount: 0, pendingApplications: [] });
   });
 
   it('redireciona pro cadastro quando o perfil da empresa ainda não existe (404)', async () => {

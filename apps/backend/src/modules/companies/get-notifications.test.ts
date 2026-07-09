@@ -79,9 +79,10 @@ describe('getCompanyNotifications', () => {
     const result = await getCompanyNotifications(owner.id);
 
     expect(result.pendingApplicationsCount).toBe(0);
+    expect(result.pendingApplications).toEqual([]);
   });
 
-  it('conta candidaturas pendentes de todas as vagas da empresa', async () => {
+  it('conta e lista candidaturas pendentes de todas as vagas da empresa, com nome do worker e categoria', async () => {
     const { owner, job } = await setup();
     const worker = await createWorker(WORKER_PHONE, 'Ana Souza');
     const otherWorker = await createWorker(OTHER_WORKER_PHONE, 'Beatriz Lima');
@@ -91,9 +92,14 @@ describe('getCompanyNotifications', () => {
     const result = await getCompanyNotifications(owner.id);
 
     expect(result.pendingApplicationsCount).toBe(2);
+    expect(result.pendingApplications).toHaveLength(2);
+    const names = result.pendingApplications.map((n) => n.workerName).sort();
+    expect(names).toEqual(['Ana Souza', 'Beatriz Lima']);
+    expect(result.pendingApplications[0].categoryName).toBe(TEST_CATEGORY_NAME);
+    expect(result.pendingApplications[0].jobId).toBe(job.id);
   });
 
-  it('não conta candidaturas já aprovadas ou rejeitadas', async () => {
+  it('não conta nem lista candidaturas já aprovadas ou rejeitadas', async () => {
     const { owner, job } = await setup();
     const worker = await createWorker(WORKER_PHONE, 'Ana Souza');
     const otherWorker = await createWorker(OTHER_WORKER_PHONE, 'Beatriz Lima');
@@ -104,5 +110,7 @@ describe('getCompanyNotifications', () => {
     const result = await getCompanyNotifications(owner.id);
 
     expect(result.pendingApplicationsCount).toBe(1);
+    expect(result.pendingApplications).toHaveLength(1);
+    expect(result.pendingApplications[0].workerName).toBe('Beatriz Lima');
   });
 });

@@ -28,10 +28,20 @@ vi.mock('../../lib/worker-profile-api', async (importOriginal) => {
   };
 });
 
+const listMyApplicationsMock = vi.fn();
+vi.mock('../../lib/applications-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/applications-api')>();
+  return {
+    ...actual,
+    listMyApplications: (...args: unknown[]) => listMyApplicationsMock(...args),
+  };
+});
+
 describe('AppLayout', () => {
   beforeEach(() => {
     getCurrentUserMock.mockReset();
     getWorkerProfileMock.mockReset();
+    listMyApplicationsMock.mockReset().mockResolvedValue({ applications: [] });
     replaceMock.mockClear();
     pathnameMock = '/inicio';
   });
@@ -141,5 +151,38 @@ describe('AppLayout', () => {
 
     await screen.findByText('Conteúdo protegido');
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+  });
+
+  it('mostra o número de candidaturas aprovadas ainda não vistas no sino', async () => {
+    getCurrentUserMock.mockResolvedValue({ user: { id: '1' } });
+    getWorkerProfileMock.mockResolvedValue({
+      fullName: 'Ana Souza',
+      bio: null,
+      cpf: null,
+      categoryIds: ['cat-1'],
+      photoUrl: null,
+      homeAddressLabel: null,
+      kycStatus: 'approved',
+      hasDocument: true,
+      avgRating: null,
+      totalShiftsCompleted: 0,
+      totalHoursWorked: 0,
+    });
+    listMyApplicationsMock.mockResolvedValue({
+      applications: [
+        { id: 'a1', status: 'approved', workerSeenAt: null, createdAt: '2026-07-01T12:00:00.000Z' },
+        { id: 'a2', status: 'pending', workerSeenAt: null, createdAt: '2026-07-01T12:00:00.000Z' },
+        { id: 'a3', status: 'approved', workerSeenAt: '2026-07-02T12:00:00.000Z', createdAt: '2026-07-01T12:00:00.000Z' },
+      ],
+    });
+
+    render(
+      <AppLayout>
+        <p>Conteúdo protegido</p>
+      </AppLayout>,
+    );
+
+    await screen.findByText('Conteúdo protegido');
+    expect(await screen.findByLabelText('1 chamada(s) pra trabalhar')).toBeInTheDocument();
   });
 });
