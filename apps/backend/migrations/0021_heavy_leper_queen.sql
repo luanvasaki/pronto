@@ -1,0 +1,1 @@
+ALTER TYPE "public"."skill_category_status" ADD VALUE 'rejected';

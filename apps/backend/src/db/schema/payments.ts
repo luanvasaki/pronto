@@ -5,6 +5,8 @@ export const paymentStatusEnum = pgEnum('payment_status', [
   'pending',
   'charged',
   'released',
+  'confirmed',
+  'disputed',
   'failed',
   'refunded',
 ]);
@@ -19,6 +21,11 @@ export const paymentStatusEnum = pgEnum('payment_status', [
  * verdade é combinado direto entre empresa e trabalhador. Essa tabela
  * só registra em que ponto do processo cada shift está; reintegrar um
  * PSP real depois não muda o schema, só a implementação do gateway.
+ *
+ * `released` → `confirmed`/`disputed`: depois que a empresa marca como
+ * paga, o trabalhador confirma se recebeu de verdade ou contesta — sem
+ * isso, "pago" era só a palavra da empresa, sem o outro lado confirmar
+ * nada (ver confirm-payment.ts).
  */
 export const payments = pgTable(
   'payments',
@@ -32,6 +39,11 @@ export const payments = pgTable(
     pspChargeId: varchar('psp_charge_id', { length: 100 }),
     chargedAt: timestamp('charged_at', { withTimezone: true }),
     releasedAt: timestamp('released_at', { withTimezone: true }),
+    // Preenchidos pelo próprio trabalhador, depois que a empresa marca
+    // como pago — fecha o ciclo de confiança do acerto informal (sem
+    // PSP real, ver comentário acima) com os dois lados confirmando.
+    confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
+    disputedAt: timestamp('disputed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

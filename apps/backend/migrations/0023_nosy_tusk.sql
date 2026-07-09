@@ -1,0 +1,2 @@
+ALTER TABLE "skill_categories" ADD COLUMN "created_by_worker_id" uuid;--> statement-breakpoint
+ALTER TABLE "skill_categories" ADD CONSTRAINT "skill_categories_created_by_worker_id_worker_profiles_user_id_fk" FOREIGN KEY ("created_by_worker_id") REFERENCES "public"."worker_profiles"("user_id") ON DELETE no action ON UPDATE no action;

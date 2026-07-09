@@ -113,6 +113,76 @@
       "when": 1783390821613,
       "tag": "0015_famous_zaladane",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1783419924267,
+      "tag": "0016_peaceful_firestar",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1783464122222,
+      "tag": "0017_normal_karnak",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1783465625823,
+      "tag": "0018_regular_may_parker",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1783466119522,
+      "tag": "0019_powerful_scream",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1783477523743,
+      "tag": "0020_nervous_red_ghost",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1783477618278,
+      "tag": "0021_heavy_leper_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1783479909680,
+      "tag": "0022_fuzzy_emma_frost",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1783503738502,
+      "tag": "0023_nosy_tusk",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1783505316650,
+      "tag": "0024_soft_misty_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1783607270799,
+      "tag": "0025_right_wendell_vaughn",
+      "breakpoints": true
     }
   ]
 }

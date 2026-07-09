@@ -1,0 +1,1 @@
+ALTER TABLE "worker_skills" ADD COLUMN "has_experience" boolean DEFAULT false NOT NULL;

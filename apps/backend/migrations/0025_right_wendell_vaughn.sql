@@ -1,0 +1,1 @@
+ALTER TABLE "applications" ADD COLUMN "worker_seen_at" timestamp with time zone;
