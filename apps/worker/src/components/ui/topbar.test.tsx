@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { Topbar } from './topbar';
 
 const NOTIFICATIONS = [
-  { applicationId: 'app-1', companyName: 'Buffet Aurora' },
-  { applicationId: 'app-2', companyName: 'Bar do Zé' },
+  { applicationId: 'app-1', message: 'Buffet Aurora aceitou sua candidatura!' },
+  { applicationId: 'app-2', message: 'Bar do Zé removeu você do turno.' },
 ];
 
 describe('Topbar', () => {
@@ -27,9 +27,8 @@ describe('Topbar', () => {
 
     await user.click(screen.getByLabelText('2 chamada(s) pra trabalhar'));
 
-    expect(screen.getByText(/Buffet Aurora/)).toBeInTheDocument();
-    expect(screen.getAllByText(/aceitou sua candidatura/)).toHaveLength(2);
-    expect(screen.getByText(/Bar do Zé/)).toBeInTheDocument();
+    expect(screen.getByText(/Buffet Aurora aceitou sua candidatura/)).toBeInTheDocument();
+    expect(screen.getByText(/Bar do Zé removeu você do turno/)).toBeInTheDocument();
   });
 
   it('mostra mensagem de vazio quando não há chamadas', async () => {

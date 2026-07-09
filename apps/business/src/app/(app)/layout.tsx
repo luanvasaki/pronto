@@ -37,6 +37,9 @@ function pageHeader(pathname: string, tradeName: string): { title: string; subti
   if (pathname === '/perfil') {
     return { title: 'Perfil da empresa' };
   }
+  if (pathname === '/escala') {
+    return { title: 'Escala', subtitle: 'Clique num dia pra publicar um turno' };
+  }
   if (pathname === '/admin') {
     return { title: 'Painel administrativo' };
   }

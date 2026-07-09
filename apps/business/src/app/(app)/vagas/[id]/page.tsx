@@ -10,6 +10,7 @@ import {
   listJobApplications,
   rateShift,
   releasePayment,
+  removeApprovedWorker,
   updateApplicationStatus,
 } from '../../../../lib/applications-api';
 
@@ -26,6 +27,21 @@ const STATUS_CLASS: Record<string, string> = {
   rejected: 'bg-danger/10 text-danger',
   withdrawn: 'bg-border text-text-secondary',
 };
+
+/** "Removido" (empresa desfez a aprovação) é visualmente diferente de uma rejeição comum. */
+function statusLabel(application: JobApplication): string {
+  if (application.status === 'rejected' && application.removedAt) {
+    return 'Removido';
+  }
+  return STATUS_LABEL[application.status] ?? application.status;
+}
+
+function statusClass(application: JobApplication): string {
+  if (application.status === 'rejected' && application.removedAt) {
+    return 'bg-border text-text-secondary';
+  }
+  return STATUS_CLASS[application.status] ?? STATUS_CLASS.pending;
+}
 
 const SHIFT_STATUS_LABEL: Record<string, string> = {
   scheduled: 'Aguardando check-in',
@@ -74,6 +90,10 @@ export default function VagaCandidatosPage() {
   const [releasingShiftId, setReleasingShiftId] = useState<string | null>(null);
   const [releaseError, setReleaseError] = useState<{ shiftId: string; message: string } | null>(null);
 
+  const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [removeError, setRemoveError] = useState<{ id: string; message: string } | null>(null);
+
   useEffect(() => {
     listJobApplications(jobId)
       .then((result) => setApplications(result.applications))
@@ -98,6 +118,25 @@ export default function VagaCandidatosPage() {
       });
     } finally {
       setUpdatingId(null);
+    }
+  }
+
+  async function handleRemove(applicationId: string): Promise<void> {
+    setRemoveError(null);
+    setRemovingId(applicationId);
+
+    try {
+      await removeApprovedWorker(applicationId);
+      const refreshed = await listJobApplications(jobId);
+      setApplications(refreshed.applications);
+      setConfirmingRemoveId(null);
+    } catch (err) {
+      setRemoveError({
+        id: applicationId,
+        message: err instanceof ApiError ? err.message : 'Não foi possível remover esse candidato.',
+      });
+    } finally {
+      setRemovingId(null);
     }
   }
 
@@ -190,14 +229,16 @@ export default function VagaCandidatosPage() {
                   <p className="text-[12.5px] text-text-secondary">★ {application.worker.avgRating}</p>
                 )}
               </div>
-              <span
-                className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  STATUS_CLASS[application.status] ?? STATUS_CLASS.pending
-                }`}
-              >
-                {STATUS_LABEL[application.status] ?? application.status}
+              <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(application)}`}>
+                {statusLabel(application)}
               </span>
             </div>
+
+            {application.worker.previousShiftsWithCompany > 0 && (
+              <p className="mt-2.5 rounded-lg bg-success/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-success">
+                ✓ Já trabalhou {application.worker.previousShiftsWithCompany}x com você
+              </p>
+            )}
 
             {!application.worker.matchesSkills && (
               <p className="mt-2.5 rounded-lg bg-danger/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-danger">
@@ -251,6 +292,43 @@ export default function VagaCandidatosPage() {
                 </Button>
               </div>
             )}
+
+            {application.status === 'approved' &&
+              (!application.shift || application.shift.status === 'scheduled') && (
+                <div className="mt-3">
+                  {removeError?.id === application.id && (
+                    <p className="mb-2 text-sm text-danger">{removeError.message}</p>
+                  )}
+                  {confirmingRemoveId === application.id ? (
+                    <div className="flex flex-col gap-2 rounded-2xl border border-dashed border-danger/40 p-3">
+                      <p className="text-sm text-text">
+                        Tem certeza? A vaga fica aberta de novo pra outro candidato.
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="danger"
+                          isLoading={removingId === application.id}
+                          onClick={() => handleRemove(application.id)}
+                        >
+                          Sim, remover
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingRemoveId(null)}
+                          className="text-sm text-text-secondary underline underline-offset-2"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button type="button" variant="outlined" onClick={() => setConfirmingRemoveId(application.id)}>
+                      Remover candidato
+                    </Button>
+                  )}
+                </div>
+              )}
 
             {application.shift?.payment?.status === 'charged' && (
               <div className="mt-3">

@@ -1,8 +1,8 @@
 'use client';
 
 import { ApiError, createSkillCategory, listSkillCategories, SkillCategory } from '@shift/shared';
-import { useRouter } from 'next/navigation';
-import { FormEvent, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { getCurrentPosition } from '../../../../lib/geolocation';
@@ -11,8 +11,20 @@ import { createJob } from '../../../../lib/jobs-api';
 const PAY_AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
 const NEW_CATEGORY_OPTION = '__new__';
 
+/** yyyy-mm-dd (formato do <input type="date"> e do que a Escala manda na URL) — recusa qualquer outra coisa. */
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
 export default function NovaVagaPage() {
+  return (
+    <Suspense fallback={null}>
+      <NovaVagaForm />
+    </Suspense>
+  );
+}
+
+function NovaVagaForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [categories, setCategories] = useState<SkillCategory[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
@@ -30,7 +42,12 @@ export default function NovaVagaPage() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [positionsTotal, setPositionsTotal] = useState('1');
   const [payAmount, setPayAmount] = useState('');
-  const [startsAt, setStartsAt] = useState('');
+  // Vindo da Escala (clicou num dia do calendário) — pré-preenche a
+  // data com um horário comum de turno; a pessoa ainda ajusta a hora.
+  const prefilledDate = searchParams.get('data');
+  const [startsAt, setStartsAt] = useState(
+    prefilledDate && DATE_ONLY_REGEX.test(prefilledDate) ? `${prefilledDate}T18:00` : '',
+  );
   const [endsAt, setEndsAt] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);

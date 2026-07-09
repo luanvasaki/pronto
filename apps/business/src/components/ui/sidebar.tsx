@@ -41,7 +41,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: '/escala',
     label: 'Escala',
-    available: false,
+    available: true,
     icon: (
       <>
         <rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" strokeWidth="2" />
@@ -51,18 +51,6 @@ const NAV_ITEMS: NavItem[] = [
           strokeWidth="2"
           strokeLinecap="round"
         />
-      </>
-    ),
-  },
-  {
-    href: '/profissionais',
-    label: 'Profissionais',
-    available: false,
-    icon: (
-      <>
-        <circle cx="9" cy="8" r="3.2" stroke="currentColor" strokeWidth="2" />
-        <path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        <path d="M16 5.5a3 3 0 010 5.5M18 20c0-2.4-1-4.2-2.5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       </>
     ),
   },
@@ -81,9 +69,9 @@ export interface SidebarProps {
  * abaixo de `lg`, controlado pelo hambúrguer na Topbar, em vez de
  * ficar sempre fixa ocupando a tela.
  *
- * Turnos/Escala/Profissionais ainda não têm página própria (ver
- * README do handoff) — ficam visíveis no menu pra bater com o
- * mockup, mas desabilitados ("em breve") até existirem de verdade.
+ * Turnos ainda não tem página própria — fica visível no menu, mas
+ * desabilitado ("em breve") até existir de verdade. Escala é o
+ * calendário do mês (ver escala/page.tsx).
  */
 export function Sidebar({ companyName, logoUrl, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();

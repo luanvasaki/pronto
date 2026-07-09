@@ -75,10 +75,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         .then(({ applications }) => {
           if (cancelled) return;
           const called = applications.filter((a) => a.status === 'approved' && a.workerSeenAt === null);
-          setCalledCount(called.length);
-          setCalledNotifications(
-            called.map((a) => ({ applicationId: a.id, companyName: a.companyName || 'uma empresa' })),
-          );
+          const removed = applications.filter((a) => a.removedAt !== null && a.workerSeenRemovalAt === null);
+          setCalledCount(called.length + removed.length);
+          setCalledNotifications([
+            ...called.map((a) => ({
+              applicationId: a.id,
+              message: `${a.companyName || 'Uma empresa'} aceitou sua candidatura!`,
+            })),
+            ...removed.map((a) => ({
+              applicationId: a.id,
+              message: `${a.companyName || 'Uma empresa'} removeu você do turno.`,
+            })),
+          ]);
         })
         .catch(() => undefined);
     }

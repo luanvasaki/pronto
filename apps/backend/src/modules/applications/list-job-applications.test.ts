@@ -131,6 +131,64 @@ describe('listJobApplications', () => {
     expect(result[0].experienceMismatch).toBe(false);
   });
 
+  it('conta turnos concluídos anteriores com a mesma empresa como previousShiftsWithCompany', async () => {
+    const { worker, owner, job } = await setup();
+    const [category] = await db.query.skillCategories.findMany({ where: eq(skillCategories.name, TEST_CATEGORY_NAME) });
+    const [previousJob] = await db
+      .insert(jobs)
+      .values({
+        companyId: job.companyId,
+        categoryId: category.id,
+        description: 'Vaga anterior, já concluída, com descrição detalhada.',
+        addressLabel: 'Endereço de teste',
+        locationLat: -23.55,
+        locationLng: -46.63,
+        positionsTotal: 1,
+        payAmount: '100.00',
+        startsAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
+        endsAt: new Date(Date.now() - 40 * 60 * 60 * 1000),
+      })
+      .returning();
+    const previousApplication = await createApplication(worker.id, previousJob.id);
+    await updateApplicationStatus(owner.id, previousApplication.id, 'approved');
+    const previousShift = await db.query.shifts.findFirst({
+      where: eq(shifts.applicationId, previousApplication.id),
+    });
+    await db.update(shifts).set({ status: 'completed' }).where(eq(shifts.id, previousShift!.id));
+
+    await createApplication(worker.id, job.id);
+    const result = await listJobApplications(owner.id, job.id);
+
+    expect(result[0].worker.previousShiftsWithCompany).toBe(1);
+  });
+
+  it('não conta turno anterior que não foi concluído (ex: apenas agendado)', async () => {
+    const { worker, owner, job } = await setup();
+    const [category] = await db.query.skillCategories.findMany({ where: eq(skillCategories.name, TEST_CATEGORY_NAME) });
+    const [previousJob] = await db
+      .insert(jobs)
+      .values({
+        companyId: job.companyId,
+        categoryId: category.id,
+        description: 'Vaga anterior, ainda agendada, com descrição detalhada.',
+        addressLabel: 'Endereço de teste',
+        locationLat: -23.55,
+        locationLng: -46.63,
+        positionsTotal: 1,
+        payAmount: '100.00',
+        startsAt: TOMORROW,
+        endsAt: TOMORROW_PLUS_5H,
+      })
+      .returning();
+    const previousApplication = await createApplication(worker.id, previousJob.id);
+    await updateApplicationStatus(owner.id, previousApplication.id, 'approved');
+
+    await createApplication(worker.id, job.id);
+    const result = await listJobApplications(owner.id, job.id);
+
+    expect(result[0].worker.previousShiftsWithCompany).toBe(0);
+  });
+
   it('inclui o turno quando a candidatura já foi aprovada', async () => {
     const { worker, owner, job } = await setup();
     const application = await createApplication(worker.id, job.id);

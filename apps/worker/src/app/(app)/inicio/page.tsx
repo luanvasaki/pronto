@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
 import { Chip } from '../../../components/ui/chip';
-import { listMyApplications, markApplicationSeen, MyApplication } from '../../../lib/applications-api';
+import { listMyApplications, markApplicationSeen, markRemovalSeen, MyApplication } from '../../../lib/applications-api';
 import { getCurrentPosition } from '../../../lib/geolocation';
 import { applyToJob, listNearbyJobs, NearbyJob } from '../../../lib/jobs-api';
 import { updateWorkerLocation } from '../../../lib/worker-profile-api';
@@ -97,6 +97,9 @@ export default function InicioPage() {
   const [calledApplications, setCalledApplications] = useState<MyApplication[]>([]);
   const [dismissingId, setDismissingId] = useState<string | null>(null);
 
+  const [removedApplications, setRemovedApplications] = useState<MyApplication[]>([]);
+  const [dismissingRemovalId, setDismissingRemovalId] = useState<string | null>(null);
+
   function toggleAvailable(): void {
     setAvailable((current) => {
       const next = !current;
@@ -120,12 +123,14 @@ export default function InicioPage() {
 
     void load();
 
-    // Alerta de "foi chamado pra trabalhar" é secundário — se essa
-    // chamada falhar, a tela principal de vagas continua funcionando.
+    // Alertas de "foi chamado pra trabalhar" e "foi removido do turno"
+    // são secundários — se essa chamada falhar, a tela principal de
+    // vagas continua funcionando.
     listMyApplications()
-      .then(({ applications }) =>
-        setCalledApplications(applications.filter((a) => a.status === 'approved' && a.workerSeenAt === null)),
-      )
+      .then(({ applications }) => {
+        setCalledApplications(applications.filter((a) => a.status === 'approved' && a.workerSeenAt === null));
+        setRemovedApplications(applications.filter((a) => a.removedAt !== null && a.workerSeenRemovalAt === null));
+      })
       .catch(() => undefined);
   }, []);
 
@@ -138,6 +143,18 @@ export default function InicioPage() {
       // Falhou marcar como visto — deixa o alerta visível, tenta de novo na próxima.
     } finally {
       setDismissingId(null);
+    }
+  }
+
+  async function handleDismissRemoval(applicationId: string): Promise<void> {
+    setDismissingRemovalId(applicationId);
+    try {
+      await markRemovalSeen(applicationId);
+      setRemovedApplications((current) => current.filter((a) => a.id !== applicationId));
+    } catch {
+      // Falhou marcar como visto — deixa o alerta visível, tenta de novo na próxima.
+    } finally {
+      setDismissingRemovalId(null);
     }
   }
 
@@ -209,6 +226,29 @@ export default function InicioPage() {
                 variant="success"
                 isLoading={dismissingId === application.id}
                 onClick={() => handleDismissCalled(application.id)}
+                className="mt-3"
+              >
+                Ok, entendi
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {removedApplications.length > 0 && (
+        <ul className="mb-4 flex flex-col gap-2.5">
+          {removedApplications.map((application) => (
+            <li key={application.id} className="rounded-[18px] border border-danger/30 bg-danger/10 p-4 text-danger">
+              <p className="font-heading text-[15px] font-bold">
+                {application.companyName || 'A empresa'} removeu você do turno de{' '}
+                {categoryNames[application.job.categoryId] ?? CATEGORY_LABEL_FALLBACK}.
+              </p>
+              <p className="mt-1 text-[13px]">{formatDateRange(application.job.startsAt, application.job.endsAt)}</p>
+              <Button
+                type="button"
+                variant="danger"
+                isLoading={dismissingRemovalId === application.id}
+                onClick={() => handleDismissRemoval(application.id)}
                 className="mt-3"
               >
                 Ok, entendi

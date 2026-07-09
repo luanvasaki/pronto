@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, companies, jobs, shifts, workerProfiles, workerSkills } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
@@ -10,6 +10,8 @@ export interface JobApplicationResponse {
   id: string;
   status: string;
   createdAt: Date;
+  /** Só preenchido quando a empresa desfez uma aprovação — distingue de uma rejeição comum. */
+  removedAt: Date | null;
   /** Vaga exige experiência anterior e o candidato não declarou ter — mostra aviso pra quem for aprovar. */
   experienceMismatch: boolean;
   worker: {
@@ -19,6 +21,8 @@ export interface JobApplicationResponse {
     avgRating: string | null;
     /** Não tem a categoria da vaga no perfil — mostra aviso pra quem for aprovar. */
     matchesSkills: boolean;
+    /** Turnos concluídos com ESSA empresa antes (qualquer vaga) — mostra como vantagem pra quem for aprovar. */
+    previousShiftsWithCompany: number;
   };
   shift: {
     id: string;
@@ -78,6 +82,26 @@ export async function listJobApplications(
   });
   const shiftsByApplicationId = new Map(shiftRows.map((shift) => [shift.applicationId, shift]));
 
+  const companyJobs = await db.query.jobs.findMany({ where: eq(jobs.companyId, job.companyId) });
+  const companyJobIds = companyJobs.map((companyJob) => companyJob.id);
+  const previousShiftRows =
+    workerIds.length > 0
+      ? await db.query.shifts.findMany({
+          where: and(
+            inArray(shifts.workerId, workerIds),
+            inArray(shifts.jobId, companyJobIds),
+            eq(shifts.status, 'completed'),
+          ),
+        })
+      : [];
+  const previousShiftsCountByWorkerId = new Map<string, number>();
+  for (const previousShift of previousShiftRows) {
+    previousShiftsCountByWorkerId.set(
+      previousShift.workerId,
+      (previousShiftsCountByWorkerId.get(previousShift.workerId) ?? 0) + 1,
+    );
+  }
+
   const shiftIds = shiftRows.map((shift) => shift.id);
   const [paymentsByShiftId, ratingsByShiftId] = await Promise.all([
     getPaymentsByShiftIds(shiftIds),
@@ -95,6 +119,7 @@ export async function listJobApplications(
         id: row.id,
         status: row.status,
         createdAt: row.createdAt,
+        removedAt: row.removedAt,
         experienceMismatch: job.requiresExperience && !(hasExperienceByWorkerId.get(worker.userId) ?? false),
         worker: {
           id: worker.userId,
@@ -102,6 +127,7 @@ export async function listJobApplications(
           photoUrl: worker.photoUrl,
           avgRating: worker.avgRating,
           matchesSkills: categoryIdsByWorkerId.get(worker.userId)?.has(job.categoryId) ?? false,
+          previousShiftsWithCompany: previousShiftsCountByWorkerId.get(worker.userId) ?? 0,
         },
         shift: shift
           ? {

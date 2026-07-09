@@ -5,6 +5,8 @@ export interface MyApplication {
   id: string;
   status: string;
   workerSeenAt: string | null;
+  removedAt: string | null;
+  workerSeenRemovalAt: string | null;
   createdAt: string;
   job: Job;
   companyName: string;
@@ -20,9 +22,15 @@ export interface ApplicationResponse {
   workerId: string;
   status: string;
   workerSeenAt: string | null;
+  removedAt: string | null;
+  workerSeenRemovalAt: string | null;
   createdAt: string;
 }
 
 export function markApplicationSeen(applicationId: string): Promise<ApplicationResponse> {
   return apiFetch(`/applications/${applicationId}/seen`, { method: 'PATCH' });
+}
+
+export function markRemovalSeen(applicationId: string): Promise<ApplicationResponse> {
+  return apiFetch(`/applications/${applicationId}/removal-seen`, { method: 'PATCH' });
 }

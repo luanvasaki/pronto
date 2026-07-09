@@ -5,8 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import NovaVagaPage from './page';
 
 const pushMock = vi.fn();
+let searchParamsMock = new URLSearchParams();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: pushMock, replace: vi.fn() }),
+  useSearchParams: () => searchParamsMock,
 }));
 
 const listSkillCategoriesMock = vi.fn();
@@ -50,6 +52,7 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
 describe('NovaVagaPage', () => {
   beforeEach(() => {
     pushMock.mockClear();
+    searchParamsMock = new URLSearchParams();
     listSkillCategoriesMock.mockReset().mockResolvedValue({ categories: [{ id: 'cat-1', name: 'Garçom' }] });
     createJobMock.mockReset();
     createSkillCategoryMock.mockReset();
@@ -66,6 +69,22 @@ describe('NovaVagaPage', () => {
 
     await screen.findByText('Garçom');
     expect(screen.getByRole('button', { name: /^publicar$/i })).toBeDisabled();
+  });
+
+  it('pré-preenche o início com a data vinda da Escala (?data=)', async () => {
+    searchParamsMock = new URLSearchParams({ data: '2026-08-15' });
+    render(<NovaVagaPage />);
+
+    await screen.findByText('Garçom');
+    expect(screen.getByLabelText('Início')).toHaveValue('2026-08-15T18:00');
+  });
+
+  it('ignora um ?data= em formato inválido', async () => {
+    searchParamsMock = new URLSearchParams({ data: 'não-é-uma-data' });
+    render(<NovaVagaPage />);
+
+    await screen.findByText('Garçom');
+    expect(screen.getByLabelText('Início')).toHaveValue('');
   });
 
   it('habilita o botão quando o formulário fica completo e válido', async () => {

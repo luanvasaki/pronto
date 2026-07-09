@@ -20,19 +20,22 @@ const listJobApplicationsMock = vi.fn();
 const updateApplicationStatusMock = vi.fn();
 const rateShiftMock = vi.fn();
 const releasePaymentMock = vi.fn();
+const removeApprovedWorkerMock = vi.fn();
 vi.mock('../../../../lib/applications-api', () => ({
   listJobApplications: (...args: unknown[]) => listJobApplicationsMock(...args),
   updateApplicationStatus: (...args: unknown[]) => updateApplicationStatusMock(...args),
   rateShift: (...args: unknown[]) => rateShiftMock(...args),
   releasePayment: (...args: unknown[]) => releasePaymentMock(...args),
+  removeApprovedWorker: (...args: unknown[]) => removeApprovedWorkerMock(...args),
 }));
 
 const PENDING_APPLICATION = {
   id: 'app-1',
   status: 'pending',
   createdAt: '2026-07-01T12:00:00.000Z',
+  removedAt: null,
   experienceMismatch: false,
-  worker: { id: 'worker-1', fullName: 'Ana Souza', avgRating: null, matchesSkills: true },
+  worker: { id: 'worker-1', fullName: 'Ana Souza', avgRating: null, matchesSkills: true, previousShiftsWithCompany: 0 },
   shift: null,
 };
 
@@ -63,6 +66,7 @@ describe('VagaCandidatosPage', () => {
     updateApplicationStatusMock.mockReset();
     rateShiftMock.mockReset();
     releasePaymentMock.mockReset();
+    removeApprovedWorkerMock.mockReset();
   });
 
   it('mostra estado vazio quando não há candidatos', async () => {
@@ -111,6 +115,27 @@ describe('VagaCandidatosPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('mostra quantas vezes o candidato já trabalhou com a empresa', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [
+        { ...PENDING_APPLICATION, worker: { ...PENDING_APPLICATION.worker, previousShiftsWithCompany: 3 } },
+      ],
+    });
+
+    render(<VagaCandidatosPage />);
+
+    expect(await screen.findByText('✓ Já trabalhou 3x com você')).toBeInTheDocument();
+  });
+
+  it('não mostra o selo de "já trabalhou" pra quem nunca trabalhou com a empresa', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [PENDING_APPLICATION] });
+
+    render(<VagaCandidatosPage />);
+
+    await screen.findByText('Ana Souza');
+    expect(screen.queryByText(/já trabalhou/i)).not.toBeInTheDocument();
+  });
+
   it('não mostra botões de decisão pra candidatura já respondida', async () => {
     listJobApplicationsMock.mockResolvedValue({
       applications: [{ ...PENDING_APPLICATION, status: 'approved' }],
@@ -156,6 +181,74 @@ describe('VagaCandidatosPage', () => {
     expect(
       await screen.findByText('Não foi possível atualizar a candidatura.'),
     ).toBeInTheDocument();
+  });
+
+  const APPROVED_SCHEDULED = {
+    ...PENDING_APPLICATION,
+    status: 'approved',
+    shift: { id: 'shift-1', status: 'scheduled', checkInAt: null, checkOutAt: null, payment: null, ratings: { worker: null, company: null } },
+  };
+
+  it('mostra o botão de remover candidato aprovado com turno agendado', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [APPROVED_SCHEDULED] });
+
+    render(<VagaCandidatosPage />);
+
+    expect(await screen.findByRole('button', { name: /remover candidato/i })).toBeInTheDocument();
+  });
+
+  it('não mostra o botão de remover quando o turno já começou', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [{ ...APPROVED_SCHEDULED, shift: { ...APPROVED_SCHEDULED.shift, status: 'checked_in' } }],
+    });
+
+    render(<VagaCandidatosPage />);
+
+    await screen.findByText('Ana Souza');
+    expect(screen.queryByRole('button', { name: /remover candidato/i })).not.toBeInTheDocument();
+  });
+
+  it('pede confirmação antes de remover, e cancelar não chama a API', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [APPROVED_SCHEDULED] });
+    const user = userEvent.setup();
+
+    render(<VagaCandidatosPage />);
+    await user.click(await screen.findByRole('button', { name: /remover candidato/i }));
+
+    expect(screen.getByText(/tem certeza/i)).toBeInTheDocument();
+    await user.click(screen.getByText('Cancelar'));
+
+    expect(screen.queryByText(/tem certeza/i)).not.toBeInTheDocument();
+    expect(removeApprovedWorkerMock).not.toHaveBeenCalled();
+  });
+
+  it('remove o candidato ao confirmar e recarrega a lista como "Removido"', async () => {
+    const removed = { ...APPROVED_SCHEDULED, status: 'rejected', removedAt: '2026-07-03T12:00:00.000Z' };
+    listJobApplicationsMock
+      .mockResolvedValueOnce({ applications: [APPROVED_SCHEDULED] })
+      .mockResolvedValueOnce({ applications: [removed] });
+    removeApprovedWorkerMock.mockResolvedValue({ id: 'app-1', status: 'rejected' });
+    const user = userEvent.setup();
+
+    render(<VagaCandidatosPage />);
+    await user.click(await screen.findByRole('button', { name: /remover candidato/i }));
+    await user.click(screen.getByRole('button', { name: /sim, remover/i }));
+
+    await waitFor(() => expect(screen.getByText('Removido')).toBeInTheDocument());
+    expect(removeApprovedWorkerMock).toHaveBeenCalledWith('app-1');
+    expect(listJobApplicationsMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('mostra a mensagem da API quando remover falha', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [APPROVED_SCHEDULED] });
+    removeApprovedWorkerMock.mockRejectedValue(new Error('falha de rede'));
+    const user = userEvent.setup();
+
+    render(<VagaCandidatosPage />);
+    await user.click(await screen.findByRole('button', { name: /remover candidato/i }));
+    await user.click(screen.getByRole('button', { name: /sim, remover/i }));
+
+    expect(await screen.findByText('Não foi possível remover esse candidato.')).toBeInTheDocument();
   });
 
   it('mostra o botão de marcar como pago quando o turno está concluído', async () => {

@@ -7,6 +7,8 @@ export interface MyApplicationResponse {
   id: string;
   status: string;
   workerSeenAt: Date | null;
+  removedAt: Date | null;
+  workerSeenRemovalAt: Date | null;
   createdAt: Date;
   job: JobResponse;
   companyName: string;
@@ -42,6 +44,8 @@ export async function listMyApplications(workerId: string): Promise<MyApplicatio
         id: row.id,
         status: row.status,
         workerSeenAt: row.workerSeenAt,
+        removedAt: row.removedAt,
+        workerSeenRemovalAt: row.workerSeenRemovalAt,
         createdAt: row.createdAt,
         job: toJobResponse(job),
         companyName: company?.tradeName ?? '',

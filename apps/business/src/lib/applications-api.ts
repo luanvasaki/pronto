@@ -29,6 +29,7 @@ export interface JobApplication {
   id: string;
   status: string;
   createdAt: string;
+  removedAt: string | null;
   experienceMismatch: boolean;
   worker: {
     id: string;
@@ -36,6 +37,7 @@ export interface JobApplication {
     photoUrl: string | null;
     avgRating: string | null;
     matchesSkills: boolean;
+    previousShiftsWithCompany: number;
   };
   shift: {
     id: string;
@@ -67,6 +69,10 @@ export function updateApplicationStatus(
     method: 'PATCH',
     body: JSON.stringify({ status }),
   });
+}
+
+export function removeApprovedWorker(applicationId: string): Promise<ApplicationResponse> {
+  return apiFetch(`/applications/${applicationId}/remove`, { method: 'PATCH' });
 }
 
 export function rateShift(shiftId: string, score: number, comment: string | undefined): Promise<Rating> {

@@ -28,9 +28,11 @@ vi.mock('../../../lib/worker-profile-api', () => ({
 
 const listMyApplicationsMock = vi.fn();
 const markApplicationSeenMock = vi.fn();
+const markRemovalSeenMock = vi.fn();
 vi.mock('../../../lib/applications-api', () => ({
   listMyApplications: (...args: unknown[]) => listMyApplicationsMock(...args),
   markApplicationSeen: (...args: unknown[]) => markApplicationSeenMock(...args),
+  markRemovalSeen: (...args: unknown[]) => markRemovalSeenMock(...args),
 }));
 
 const PROFILE = {
@@ -87,6 +89,7 @@ describe('InicioPage', () => {
     updateWorkerLocationMock.mockReset();
     listMyApplicationsMock.mockReset().mockResolvedValue({ applications: [] });
     markApplicationSeenMock.mockReset();
+    markRemovalSeenMock.mockReset();
     window.localStorage.clear();
     // Evita vazamento entre testes — cada um define seu próprio mock.
     Object.defineProperty(window.navigator, 'geolocation', { value: undefined, configurable: true });
@@ -359,5 +362,86 @@ describe('InicioPage', () => {
 
     await waitFor(() => expect(screen.queryByText(/Você foi chamado\(a\)/)).not.toBeInTheDocument());
     expect(markApplicationSeenMock).toHaveBeenCalledWith('app-1');
+  });
+
+  it('mostra alerta quando o trabalhador foi removido de um turno aprovado e ainda não viu', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [] });
+    listMyApplicationsMock.mockResolvedValue({
+      applications: [
+        {
+          id: 'app-1',
+          status: 'rejected',
+          workerSeenAt: '2026-07-01T12:00:00.000Z',
+          removedAt: '2026-07-02T12:00:00.000Z',
+          workerSeenRemovalAt: null,
+          createdAt: '2026-07-01T12:00:00.000Z',
+          job: JOB,
+          companyName: 'Buffet Aurora',
+        },
+      ],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText(/Buffet Aurora removeu você do turno de Garçom/)).toBeInTheDocument();
+  });
+
+  it('não mostra alerta de remoção já visto', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [] });
+    listMyApplicationsMock.mockResolvedValue({
+      applications: [
+        {
+          id: 'app-1',
+          status: 'rejected',
+          workerSeenAt: '2026-07-01T12:00:00.000Z',
+          removedAt: '2026-07-02T12:00:00.000Z',
+          workerSeenRemovalAt: '2026-07-02T13:00:00.000Z',
+          createdAt: '2026-07-01T12:00:00.000Z',
+          job: JOB,
+          companyName: 'Buffet Aurora',
+        },
+      ],
+    });
+
+    renderPage();
+
+    await screen.findByText('Nenhuma vaga disponível com esse filtro.');
+    expect(screen.queryByText(/removeu você do turno/)).not.toBeInTheDocument();
+  });
+
+  it('dispensa o alerta de remoção e marca como vista', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [] });
+    listMyApplicationsMock.mockResolvedValue({
+      applications: [
+        {
+          id: 'app-1',
+          status: 'rejected',
+          workerSeenAt: '2026-07-01T12:00:00.000Z',
+          removedAt: '2026-07-02T12:00:00.000Z',
+          workerSeenRemovalAt: null,
+          createdAt: '2026-07-01T12:00:00.000Z',
+          job: JOB,
+          companyName: 'Buffet Aurora',
+        },
+      ],
+    });
+    markRemovalSeenMock.mockResolvedValue({
+      id: 'app-1',
+      jobId: 'job-1',
+      workerId: 'worker-1',
+      status: 'rejected',
+      workerSeenAt: '2026-07-01T12:00:00.000Z',
+      removedAt: '2026-07-02T12:00:00.000Z',
+      workerSeenRemovalAt: '2026-07-02T14:00:00.000Z',
+      createdAt: '2026-07-01T12:00:00.000Z',
+    });
+    const user = userEvent.setup();
+
+    renderPage();
+    await screen.findByText(/removeu você do turno/);
+    await user.click(screen.getByRole('button', { name: /ok, entendi/i }));
+
+    await waitFor(() => expect(screen.queryByText(/removeu você do turno/)).not.toBeInTheDocument());
+    expect(markRemovalSeenMock).toHaveBeenCalledWith('app-1');
   });
 });

@@ -4,6 +4,8 @@ import { createApplicationHandler } from './create-application.controller';
 import { listJobApplicationsHandler } from './list-job-applications.controller';
 import { listMyApplicationsHandler } from './list-my-applications.controller';
 import { markApplicationSeenHandler } from './mark-application-seen.controller';
+import { markRemovalSeenHandler } from './mark-removal-seen.controller';
+import { removeApprovedWorkerHandler } from './remove-approved-worker.controller';
 import { updateApplicationStatusHandler } from './update-application-status.controller';
 
 export const applicationsRoutes = Router();
@@ -13,3 +15,5 @@ applicationsRoutes.get('/applications/mine', requireAuth, listMyApplicationsHand
 applicationsRoutes.get('/jobs/:jobId/applications', requireAuth, listJobApplicationsHandler);
 applicationsRoutes.patch('/applications/:id', requireAuth, updateApplicationStatusHandler);
 applicationsRoutes.patch('/applications/:id/seen', requireAuth, markApplicationSeenHandler);
+applicationsRoutes.patch('/applications/:id/removal-seen', requireAuth, markRemovalSeenHandler);
+applicationsRoutes.patch('/applications/:id/remove', requireAuth, removeApprovedWorkerHandler);

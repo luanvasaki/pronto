@@ -84,7 +84,9 @@ export function Topbar({
                 ? `${pendingApplicationsCount} candidatura(s) aguardando resposta`
                 : 'Notificações'
             }
-            className="relative flex h-10 w-10 items-center justify-center rounded-[11px] border border-border"
+            className={`relative flex h-10 w-10 items-center justify-center rounded-[11px] border transition ${
+              pendingApplicationsCount > 0 ? 'border-danger bg-danger/10 text-danger' : 'border-border text-text'
+            }`}
           >
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path

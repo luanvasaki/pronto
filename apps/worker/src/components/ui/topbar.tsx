@@ -6,7 +6,7 @@ import { Logo } from './logo';
 
 export interface CalledNotification {
   applicationId: string;
-  companyName: string;
+  message: string;
 }
 
 export interface TopbarProps {
@@ -15,10 +15,10 @@ export interface TopbarProps {
 }
 
 /**
- * Sino avisa quantas candidaturas aprovadas ainda não foram vistas
- * (mesmo alerta do banner na tela de Início) — clicar abre um
- * dropdown com quem te chamou; cada item leva pro Início, onde dá pra
- * ver o turno completo e confirmar a leitura.
+ * Sino avisa quantas novidades de candidatura ainda não foram vistas
+ * (aprovação ou remoção — mesmos alertas dos banners na tela de
+ * Início) — clicar abre um dropdown; cada item leva pro Início, onde
+ * dá pra ver o turno completo e confirmar a leitura.
  */
 export function Topbar({ calledCount, calledNotifications = [] }: TopbarProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -45,7 +45,9 @@ export function Topbar({ calledCount, calledNotifications = [] }: TopbarProps) {
           type="button"
           onClick={() => setIsNotificationsOpen((current) => !current)}
           aria-label={calledCount > 0 ? `${calledCount} chamada(s) pra trabalhar` : 'Notificações'}
-          className="relative flex h-10 w-10 items-center justify-center rounded-[11px] border border-border"
+          className={`relative flex h-10 w-10 items-center justify-center rounded-[11px] border transition ${
+            calledCount > 0 ? 'border-danger bg-danger/10 text-danger' : 'border-border text-text'
+          }`}
         >
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
@@ -76,7 +78,7 @@ export function Topbar({ calledCount, calledNotifications = [] }: TopbarProps) {
                       onClick={() => setIsNotificationsOpen(false)}
                       className="block p-3.5 text-sm text-text transition hover:bg-background"
                     >
-                      <span className="font-semibold">{notification.companyName}</span> aceitou sua candidatura!
+                      {notification.message}
                     </Link>
                   </li>
                 ))}
