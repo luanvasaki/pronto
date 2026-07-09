@@ -105,6 +105,59 @@ describe('PerfilPage', () => {
     expect(await screen.findByRole('button', { name: 'Garçom ✓' })).toBeInTheDocument();
   });
 
+  it('marca experiência numa função selecionada', async () => {
+    upsertWorkerProfileMock.mockResolvedValue({
+      fullName: 'Ana Souza',
+      categoryIds: ['cat-1'],
+      photoUrl: null,
+      bio: null,
+      cpf: null,
+      experienceByCategory: { 'cat-1': true },
+    });
+    const user = userEvent.setup();
+    renderWithProfile(BASE_PROFILE);
+
+    await user.click(await screen.findByRole('button', { name: 'Experiência em Garçom' }));
+
+    await waitFor(() =>
+      expect(upsertWorkerProfileMock).toHaveBeenCalledWith({
+        fullName: 'Ana Souza',
+        categoryIds: ['cat-1'],
+        experienceByCategory: { 'cat-1': true },
+      }),
+    );
+  });
+
+  it('desmarca experiência já declarada numa função', async () => {
+    upsertWorkerProfileMock.mockResolvedValue({
+      fullName: 'Ana Souza',
+      categoryIds: ['cat-1'],
+      photoUrl: null,
+      bio: null,
+      cpf: null,
+      experienceByCategory: { 'cat-1': false },
+    });
+    const user = userEvent.setup();
+    renderWithProfile({ ...BASE_PROFILE, experienceByCategory: { 'cat-1': true } });
+
+    await user.click(await screen.findByRole('button', { name: 'Experiência em Garçom' }));
+
+    await waitFor(() =>
+      expect(upsertWorkerProfileMock).toHaveBeenCalledWith({
+        fullName: 'Ana Souza',
+        categoryIds: ['cat-1'],
+        experienceByCategory: { 'cat-1': false },
+      }),
+    );
+  });
+
+  it('não mostra o toggle de experiência pra funções não selecionadas', async () => {
+    renderWithProfile(BASE_PROFILE);
+
+    await screen.findByText('Ana Souza');
+    expect(screen.queryByRole('button', { name: 'Experiência em Cozinha' })).not.toBeInTheDocument();
+  });
+
   it('adiciona uma categoria ao clicar', async () => {
     upsertWorkerProfileMock.mockResolvedValue({
       fullName: 'Ana Souza',

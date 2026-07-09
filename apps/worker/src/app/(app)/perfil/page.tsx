@@ -55,6 +55,7 @@ export default function PerfilPage() {
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [savingExperienceCategoryId, setSavingExperienceCategoryId] = useState<string | null>(null);
 
   const [fullName, setFullName] = useState(profile?.fullName ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
@@ -126,6 +127,26 @@ export default function PerfilPage() {
       setCategoriesError(err instanceof ApiError ? err.message : 'Não foi possível atualizar as categorias.');
     } finally {
       setIsSavingCategories(false);
+    }
+  }
+
+  async function toggleExperience(categoryId: string): Promise<void> {
+    if (!profile || savingExperienceCategoryId) return;
+
+    const nextValue = !profile.experienceByCategory[categoryId];
+    setSavingExperienceCategoryId(categoryId);
+    setCategoriesError(null);
+    try {
+      const updated = await upsertWorkerProfile({
+        fullName: profile.fullName,
+        categoryIds: selectedIds,
+        experienceByCategory: { [categoryId]: nextValue },
+      });
+      applyUpdate(updated);
+    } catch (err) {
+      setCategoriesError(err instanceof ApiError ? err.message : 'Não foi possível atualizar a experiência.');
+    } finally {
+      setSavingExperienceCategoryId(null);
     }
   }
 
@@ -261,9 +282,7 @@ export default function PerfilPage() {
 
       <div>
         <h2 className="font-heading text-[17px] font-bold text-text">Minhas funções</h2>
-        <p className="mt-1 text-xs text-text-secondary">
-          Toque pra adicionar ou remover. &ldquo;✓&rdquo; marca onde você já tem experiência.
-        </p>
+        <p className="mt-1 text-xs text-text-secondary">Toque pra adicionar ou remover uma função.</p>
         {categoriesError && <p className="mt-1.5 text-xs text-danger">{categoriesError}</p>}
         <div className="mt-2.5 flex flex-wrap gap-2">
           {isLoadingCategories ? (
@@ -323,6 +342,30 @@ export default function PerfilPage() {
               >
                 Cancelar
               </button>
+            </div>
+          </div>
+        )}
+
+        {selectedIds.length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs text-text-secondary">Você já tem experiência nessas funções?</p>
+            <div className="mt-1.5 flex flex-wrap gap-2">
+              {selectedIds.flatMap((categoryId) => {
+                const category = categories.find((c) => c.id === categoryId);
+                if (!category) return [];
+                const hasExperience = Boolean(profile.experienceByCategory[categoryId]);
+                return [
+                  <Chip
+                    key={categoryId}
+                    active={hasExperience}
+                    onClick={() => toggleExperience(categoryId)}
+                    disabled={savingExperienceCategoryId === categoryId}
+                    aria-label={`Experiência em ${category.name}`}
+                  >
+                    {hasExperience ? `${category.name} ✓` : category.name}
+                  </Chip>,
+                ];
+              })}
             </div>
           </div>
         )}
