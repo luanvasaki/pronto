@@ -76,6 +76,7 @@ const JOB = {
   companyName: 'Buffet Aurora',
   companyAvgRating: '4.8',
   matchesSkills: true,
+  experienceMismatch: false,
 };
 
 describe('InicioPage', () => {
@@ -177,6 +178,37 @@ describe('InicioPage', () => {
     expect(
       await screen.findByText('Você não tem essa especialidade no seu perfil — pode se candidatar mesmo assim.'),
     ).toBeInTheDocument();
+  });
+
+  it('bloqueia candidatura até confirmar o checkbox quando falta experiência exigida', async () => {
+    listNearbyJobsMock.mockResolvedValue({
+      jobs: [{ ...JOB, requiresExperience: true, experienceMismatch: true }],
+    });
+    const user = userEvent.setup();
+
+    renderPage();
+    await screen.findByText('Garçom');
+
+    const applyButton = screen.getByRole('button', { name: /aceitar turno/i });
+    expect(applyButton).toBeDisabled();
+
+    await user.click(screen.getByRole('checkbox'));
+    expect(applyButton).toBeEnabled();
+
+    await user.click(applyButton);
+    expect(applyToJobMock).toHaveBeenCalledWith('job-1');
+  });
+
+  it('não bloqueia a candidatura quando o trabalhador já declarou experiência', async () => {
+    listNearbyJobsMock.mockResolvedValue({
+      jobs: [{ ...JOB, requiresExperience: true, experienceMismatch: false }],
+    });
+
+    renderPage();
+    await screen.findByText('Garçom');
+
+    expect(screen.getByRole('button', { name: /aceitar turno/i })).toBeEnabled();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 
   it('não mostra badges de requisito quando a vaga não exige nada', async () => {

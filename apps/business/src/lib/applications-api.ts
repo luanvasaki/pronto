@@ -29,6 +29,7 @@ export interface JobApplication {
   id: string;
   status: string;
   createdAt: string;
+  experienceMismatch: boolean;
   worker: {
     id: string;
     fullName: string;

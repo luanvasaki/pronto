@@ -92,6 +92,7 @@ export default function InicioPage() {
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const [applyError, setApplyError] = useState<{ jobId: string; message: string } | null>(null);
+  const [confirmedExperienceJobIds, setConfirmedExperienceJobIds] = useState<Set<string>>(new Set());
 
   const [calledApplications, setCalledApplications] = useState<MyApplication[]>([]);
   const [dismissingId, setDismissingId] = useState<string | null>(null);
@@ -138,6 +139,18 @@ export default function InicioPage() {
     } finally {
       setDismissingId(null);
     }
+  }
+
+  function toggleExperienceConfirmation(jobId: string): void {
+    setConfirmedExperienceJobIds((current) => {
+      const next = new Set(current);
+      if (next.has(jobId)) {
+        next.delete(jobId);
+      } else {
+        next.add(jobId);
+      }
+      return next;
+    });
   }
 
   async function handleApply(jobId: string): Promise<void> {
@@ -286,6 +299,7 @@ export default function InicioPage() {
       <ul className="mt-3 flex flex-col gap-3">
         {visibleJobs.map((job) => {
           const applied = appliedJobIds.has(job.id);
+          const experienceConfirmed = confirmedExperienceJobIds.has(job.id);
           return (
             <li
               key={job.id}
@@ -349,6 +363,19 @@ export default function InicioPage() {
                 </p>
               )}
 
+              {job.experienceMismatch && (
+                <label className="mt-2.5 flex items-start gap-2 rounded-lg bg-danger/10 px-2.5 py-2 text-[12.5px] font-semibold text-danger">
+                  <input
+                    type="checkbox"
+                    checked={experienceConfirmed}
+                    onChange={() => toggleExperienceConfirmation(job.id)}
+                    className="mt-0.5 shrink-0"
+                  />
+                  Essa vaga pede experiência anterior e você não tem isso declarado no perfil. Confirmo que
+                  quero me candidatar mesmo assim.
+                </label>
+              )}
+
               <p className="mt-2 text-[13.5px] text-text-secondary">{job.addressLabel}</p>
               {job.dressCode && (
                 <p className="mt-1 text-[13.5px] text-text-secondary">
@@ -368,7 +395,7 @@ export default function InicioPage() {
               <Button
                 type="button"
                 variant={applied ? 'outlined' : 'primary'}
-                disabled={applied}
+                disabled={applied || (job.experienceMismatch && !experienceConfirmed)}
                 isLoading={applyingJobId === job.id}
                 onClick={() => handleApply(job.id)}
                 className="mt-3.5 w-full"

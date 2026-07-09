@@ -31,6 +31,7 @@ const PENDING_APPLICATION = {
   id: 'app-1',
   status: 'pending',
   createdAt: '2026-07-01T12:00:00.000Z',
+  experienceMismatch: false,
   worker: { id: 'worker-1', fullName: 'Ana Souza', avgRating: null, matchesSkills: true },
   shift: null,
 };
@@ -95,6 +96,19 @@ describe('VagaCandidatosPage', () => {
 
     await screen.findByText('Ana Souza');
     expect(screen.getByText('Esse profissional não tem essa especialidade no perfil dele.')).toBeInTheDocument();
+  });
+
+  it('avisa quando a vaga exige experiência e o candidato não declarou ter', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [{ ...PENDING_APPLICATION, experienceMismatch: true }],
+    });
+
+    render(<VagaCandidatosPage />);
+
+    await screen.findByText('Ana Souza');
+    expect(
+      screen.getByText('Essa vaga exige experiência anterior e esse profissional não declarou ter.'),
+    ).toBeInTheDocument();
   });
 
   it('não mostra botões de decisão pra candidatura já respondida', async () => {

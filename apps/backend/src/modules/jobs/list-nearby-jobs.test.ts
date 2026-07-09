@@ -38,11 +38,17 @@ async function createCompanyOwner() {
   return owner;
 }
 
-async function createTestJob(ownerId: string, categoryId: string, lat: number, lng: number) {
+async function createTestJob(
+  ownerId: string,
+  categoryId: string,
+  lat: number,
+  lng: number,
+  requiresExperience = false,
+) {
   return createJob(ownerId, {
     categoryId,
     description: 'Vaga de teste com descrição detalhada o suficiente.',
-    requiresExperience: false,
+    requiresExperience,
     addressLabel: 'Endereço de teste',
     locationLat: lat,
     locationLng: lng,
@@ -131,5 +137,55 @@ describe('listNearbyJobs', () => {
     expect(foundNoMatch?.matchesSkills).toBe(false);
     // A mais próxima (sem match) vem antes da mais distante (com match) — ordenado por distância.
     expect(result.indexOf(foundNoMatch!)).toBeLessThan(result.indexOf(foundNear!));
+  });
+
+  it('sinaliza experienceMismatch quando a vaga exige experiência e o worker não declarou ter', async () => {
+    const worker = await createWorker();
+    await db
+      .insert(workerProfiles)
+      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+    const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
+    await db.insert(workerSkills).values({ workerId: worker.id, categoryId: categoryNear.id, hasExperience: false });
+
+    const owner = await createCompanyOwner();
+    const job = await createTestJob(owner.id, categoryNear.id, NEAR_JOB_LAT, NEAR_JOB_LNG, true);
+
+    const result = await listNearbyJobs(worker.id);
+    const found = result.find((j) => j.id === job.id);
+
+    expect(found?.experienceMismatch).toBe(true);
+  });
+
+  it('não sinaliza experienceMismatch quando o worker declarou experiência na categoria', async () => {
+    const worker = await createWorker();
+    await db
+      .insert(workerProfiles)
+      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+    const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
+    await db.insert(workerSkills).values({ workerId: worker.id, categoryId: categoryNear.id, hasExperience: true });
+
+    const owner = await createCompanyOwner();
+    const job = await createTestJob(owner.id, categoryNear.id, NEAR_JOB_LAT, NEAR_JOB_LNG, true);
+
+    const result = await listNearbyJobs(worker.id);
+    const found = result.find((j) => j.id === job.id);
+
+    expect(found?.experienceMismatch).toBe(false);
+  });
+
+  it('não sinaliza experienceMismatch quando a vaga não exige experiência', async () => {
+    const worker = await createWorker();
+    await db
+      .insert(workerProfiles)
+      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+    const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
+
+    const owner = await createCompanyOwner();
+    const job = await createTestJob(owner.id, categoryNear.id, NEAR_JOB_LAT, NEAR_JOB_LNG, false);
+
+    const result = await listNearbyJobs(worker.id);
+    const found = result.find((j) => j.id === job.id);
+
+    expect(found?.experienceMismatch).toBe(false);
   });
 });

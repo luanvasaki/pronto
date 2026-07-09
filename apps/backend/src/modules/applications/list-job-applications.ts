@@ -10,6 +10,8 @@ export interface JobApplicationResponse {
   id: string;
   status: string;
   createdAt: Date;
+  /** Vaga exige experiência anterior e o candidato não declarou ter — mostra aviso pra quem for aprovar. */
+  experienceMismatch: boolean;
   worker: {
     id: string;
     fullName: string;
@@ -60,10 +62,14 @@ export async function listJobApplications(
   const skillRows =
     workerIds.length > 0 ? await db.query.workerSkills.findMany({ where: inArray(workerSkills.workerId, workerIds) }) : [];
   const categoryIdsByWorkerId = new Map<string, Set<string>>();
+  const hasExperienceByWorkerId = new Map<string, boolean>();
   for (const skill of skillRows) {
     const set = categoryIdsByWorkerId.get(skill.workerId) ?? new Set<string>();
     set.add(skill.categoryId);
     categoryIdsByWorkerId.set(skill.workerId, set);
+    if (skill.categoryId === job.categoryId) {
+      hasExperienceByWorkerId.set(skill.workerId, skill.hasExperience);
+    }
   }
 
   const applicationIds = rows.map((row) => row.id);
@@ -89,6 +95,7 @@ export async function listJobApplications(
         id: row.id,
         status: row.status,
         createdAt: row.createdAt,
+        experienceMismatch: job.requiresExperience && !(hasExperienceByWorkerId.get(worker.userId) ?? false),
         worker: {
           id: worker.userId,
           fullName: worker.fullName,

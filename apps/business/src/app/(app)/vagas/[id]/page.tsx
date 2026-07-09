@@ -205,6 +205,12 @@ export default function VagaCandidatosPage() {
               </p>
             )}
 
+            {application.experienceMismatch && (
+              <p className="mt-2.5 rounded-lg bg-danger/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-danger">
+                Essa vaga exige experiência anterior e esse profissional não declarou ter.
+              </p>
+            )}
+
             {application.shift && (
               <p className="mt-2 text-sm text-text-secondary">
                 Turno: {SHIFT_STATUS_LABEL[application.shift.status] ?? application.shift.status}

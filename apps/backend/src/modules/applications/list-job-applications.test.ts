@@ -16,7 +16,7 @@ const TEST_CATEGORY_NAME = 'Categoria de teste — list-job-applications';
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const TOMORROW_PLUS_5H = new Date(TOMORROW.getTime() + 5 * 60 * 60 * 1000);
 
-async function setup() {
+async function setup(requiresExperience = false) {
   const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
   await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza' });
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
@@ -31,6 +31,7 @@ async function setup() {
       companyId: company.id,
       categoryId: category.id,
       description: 'Vaga de teste com descrição detalhada o suficiente.',
+      requiresExperience,
       addressLabel: 'Endereço de teste',
       locationLat: -23.55,
       locationLng: -46.63,
@@ -99,6 +100,35 @@ describe('listJobApplications', () => {
     const result = await listJobApplications(owner.id, job.id);
 
     expect(result[0].worker.matchesSkills).toBe(true);
+  });
+
+  it('sinaliza experienceMismatch quando a vaga exige experiência e o worker não declarou ter', async () => {
+    const { worker, owner, job } = await setup(true);
+    await db.insert(workerSkills).values({ workerId: worker.id, categoryId: job.categoryId, hasExperience: false });
+    await createApplication(worker.id, job.id);
+
+    const result = await listJobApplications(owner.id, job.id);
+
+    expect(result[0].experienceMismatch).toBe(true);
+  });
+
+  it('não sinaliza experienceMismatch quando o worker declarou experiência', async () => {
+    const { worker, owner, job } = await setup(true);
+    await db.insert(workerSkills).values({ workerId: worker.id, categoryId: job.categoryId, hasExperience: true });
+    await createApplication(worker.id, job.id);
+
+    const result = await listJobApplications(owner.id, job.id);
+
+    expect(result[0].experienceMismatch).toBe(false);
+  });
+
+  it('não sinaliza experienceMismatch quando a vaga não exige experiência', async () => {
+    const { worker, owner, job } = await setup(false);
+    await createApplication(worker.id, job.id);
+
+    const result = await listJobApplications(owner.id, job.id);
+
+    expect(result[0].experienceMismatch).toBe(false);
   });
 
   it('inclui o turno quando a candidatura já foi aprovada', async () => {

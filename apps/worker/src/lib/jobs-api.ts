@@ -24,6 +24,7 @@ export interface NearbyJob extends Job {
   companyLogoUrl: string | null;
   companyAvgRating: string | null;
   matchesSkills: boolean;
+  experienceMismatch: boolean;
 }
 
 export function listNearbyJobs(): Promise<{ jobs: NearbyJob[] }> {
