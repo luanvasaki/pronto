@@ -27,10 +27,12 @@ const PUBLIC_UPLOADS_DIR = path.join(process.cwd(), 'uploads', 'public');
 const EXTENSION_BY_MIME: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
+  'application/pdf': 'pdf',
 };
 const MIME_BY_EXTENSION: Record<string, string> = {
   jpg: 'image/jpeg',
   png: 'image/png',
+  pdf: 'application/pdf',
 };
 
 /**

@@ -21,7 +21,7 @@ const getAdminMetricsMock = vi.fn();
 const reviewDocumentMock = vi.fn();
 const reviewCompanyMock = vi.fn();
 const reviewSkillCategoryMock = vi.fn();
-const fetchDocumentImageUrlMock = vi.fn();
+const fetchDocumentFileMock = vi.fn();
 const deleteDemoDataMock = vi.fn();
 vi.mock('../../../lib/admin-api', () => ({
   listPendingVerifications: (...args: unknown[]) => listPendingVerificationsMock(...args),
@@ -29,7 +29,7 @@ vi.mock('../../../lib/admin-api', () => ({
   reviewDocument: (...args: unknown[]) => reviewDocumentMock(...args),
   reviewCompany: (...args: unknown[]) => reviewCompanyMock(...args),
   reviewSkillCategory: (...args: unknown[]) => reviewSkillCategoryMock(...args),
-  fetchDocumentImageUrl: (...args: unknown[]) => fetchDocumentImageUrlMock(...args),
+  fetchDocumentFile: (...args: unknown[]) => fetchDocumentFileMock(...args),
   deleteDemoData: (...args: unknown[]) => deleteDemoDataMock(...args),
 }));
 
@@ -68,7 +68,7 @@ describe('AdminPage', () => {
     reviewDocumentMock.mockReset();
     reviewCompanyMock.mockReset();
     reviewSkillCategoryMock.mockReset();
-    fetchDocumentImageUrlMock.mockReset().mockResolvedValue('blob:mock-url');
+    fetchDocumentFileMock.mockReset().mockResolvedValue({ url: 'blob:mock-url', contentType: 'image/jpeg' });
     deleteDemoDataMock.mockReset();
   });
 
@@ -94,6 +94,39 @@ describe('AdminPage', () => {
 
     expect(await screen.findByText('Rafael Lima')).toBeInTheDocument();
     expect(screen.getByText('Bar do Zé')).toBeInTheDocument();
+  });
+
+  it('mostra um link "Abrir documento (PDF)" quando o documento é um PDF, em vez de tentar renderizar como imagem', async () => {
+    getCurrentUserMock.mockResolvedValue({ user: { id: '1', isAdmin: true } });
+    listPendingVerificationsMock.mockResolvedValue({
+      documents: [PENDING_DOCUMENT],
+      companies: [],
+      skillCategories: [],
+    });
+    fetchDocumentFileMock.mockResolvedValue({ url: 'blob:mock-pdf', contentType: 'application/pdf' });
+
+    render(<AdminPage />);
+
+    const link = await screen.findByRole('link', { name: 'Abrir documento (PDF)' });
+    expect(link).toHaveAttribute('href', 'blob:mock-pdf');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(screen.queryByAltText(/documento de/i)).not.toBeInTheDocument();
+  });
+
+  it('mostra a imagem quando o documento é JPEG/PNG', async () => {
+    getCurrentUserMock.mockResolvedValue({ user: { id: '1', isAdmin: true } });
+    listPendingVerificationsMock.mockResolvedValue({
+      documents: [PENDING_DOCUMENT],
+      companies: [],
+      skillCategories: [],
+    });
+    fetchDocumentFileMock.mockResolvedValue({ url: 'blob:mock-url', contentType: 'image/jpeg' });
+
+    render(<AdminPage />);
+
+    const image = await screen.findByAltText('Documento de Rafael Lima');
+    expect(image).toHaveAttribute('src', 'blob:mock-url');
+    expect(screen.queryByRole('link', { name: /abrir documento/i })).not.toBeInTheDocument();
   });
 
   it('mostra as métricas gerais pro admin', async () => {

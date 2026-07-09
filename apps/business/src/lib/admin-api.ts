@@ -93,12 +93,20 @@ export function reviewSkillCategory(
   });
 }
 
+export interface DocumentFile {
+  url: string;
+  contentType: string;
+}
+
 /**
- * Não usa apiFetch porque a resposta é a imagem crua, não JSON — o
- * cookie de sessão ainda precisa ir (`credentials: 'include'`), só a
- * leitura da resposta que é diferente.
+ * Não usa apiFetch porque a resposta é o arquivo cru (imagem ou PDF),
+ * não JSON — o cookie de sessão ainda precisa ir (`credentials:
+ * 'include'`), só a leitura da resposta que é diferente.
+ *
+ * `contentType` vem junto pra tela decidir como mostrar: `<img>` pra
+ * imagem, um link/embed pra PDF (documento de identidade aceita os dois).
  */
-export async function fetchDocumentImageUrl(documentId: string): Promise<string> {
+export async function fetchDocumentFile(documentId: string): Promise<DocumentFile> {
   const response = await fetch(`${API_URL}/admin/documents/${documentId}/file`, {
     credentials: 'include',
   });
@@ -106,5 +114,5 @@ export async function fetchDocumentImageUrl(documentId: string): Promise<string>
     throw new Error('Não foi possível carregar o documento.');
   }
   const blob = await response.blob();
-  return URL.createObjectURL(blob);
+  return { url: URL.createObjectURL(blob), contentType: blob.type };
 }

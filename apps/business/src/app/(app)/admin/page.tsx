@@ -6,8 +6,9 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import {
   AdminMetrics,
+  DocumentFile,
   deleteDemoData,
-  fetchDocumentImageUrl,
+  fetchDocumentFile,
   getAdminMetrics,
   listPendingVerifications,
   PendingCompany,
@@ -29,7 +30,7 @@ export default function AdminPage() {
   const [companies, setCompanies] = useState<PendingCompany[]>([]);
   const [skillCategories, setSkillCategories] = useState<PendingSkillCategory[]>([]);
   const [categoryNameDrafts, setCategoryNameDrafts] = useState<Record<string, string>>({});
-  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+  const [documentFiles, setDocumentFiles] = useState<Record<string, DocumentFile>>({});
   const [actingId, setActingId] = useState<string | null>(null);
 
   const [confirmingDemoDelete, setConfirmingDemoDelete] = useState(false);
@@ -69,14 +70,14 @@ export default function AdminPage() {
 
   useEffect(() => {
     documents.forEach((document) => {
-      if (imageUrls[document.id]) return;
-      fetchDocumentImageUrl(document.id)
-        .then((url) => setImageUrls((current) => ({ ...current, [document.id]: url })))
+      if (documentFiles[document.id]) return;
+      fetchDocumentFile(document.id)
+        .then((file) => setDocumentFiles((current) => ({ ...current, [document.id]: file })))
         .catch(() => {
           // Sem preview nesse caso — os botões de aprovar/rejeitar continuam funcionando.
         });
     });
-  }, [documents, imageUrls]);
+  }, [documents, documentFiles]);
 
   async function handleReviewDocument(documentId: string, status: 'approved' | 'rejected'): Promise<void> {
     setError(null);
@@ -224,13 +225,24 @@ export default function AdminPage() {
               className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
             >
               <p className="font-heading text-[15.5px] font-bold text-text">{document.workerFullName}</p>
-              {imageUrls[document.id] && (
-                // eslint-disable-next-line @next/next/no-img-element -- vem de um blob: URL autenticado, next/image não se aplica
-                <img
-                  src={imageUrls[document.id]}
-                  alt={`Documento de ${document.workerFullName}`}
-                  className="mt-2.5 max-h-64 rounded-xl border border-border object-contain"
-                />
+              {documentFiles[document.id] && documentFiles[document.id].contentType === 'application/pdf' ? (
+                <a
+                  href={documentFiles[document.id].url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2.5 inline-block text-sm font-semibold text-primary underline underline-offset-2"
+                >
+                  Abrir documento (PDF)
+                </a>
+              ) : (
+                documentFiles[document.id] && (
+                  // eslint-disable-next-line @next/next/no-img-element -- vem de um blob: URL autenticado, next/image não se aplica
+                  <img
+                    src={documentFiles[document.id].url}
+                    alt={`Documento de ${document.workerFullName}`}
+                    className="mt-2.5 max-h-64 rounded-xl border border-border object-contain"
+                  />
+                )
               )}
               <div className="mt-3.5 flex gap-2">
                 <Button

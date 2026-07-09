@@ -59,4 +59,24 @@ describe('uploadDocument', () => {
     const saved = await db.query.documents.findFirst({ where: eq(documents.id, result.id) });
     expect(saved?.fileUrl).toContain('documents/');
   });
+
+  it('aceita PDF (CNH/RG digitalizado)', async () => {
+    const user = await createTestUser();
+    await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Beatriz Nunes' });
+    const file = { buffer: Buffer.from('%PDF-1.4\n...'), mimetype: 'application/pdf', size: 12 };
+
+    const result = await uploadDocument(user.id, file, storage);
+
+    expect(result.status).toBe('pending');
+    const saved = await db.query.documents.findFirst({ where: eq(documents.id, result.id) });
+    expect(saved?.fileUrl).toMatch(/\.pdf$/);
+  });
+
+  it('rejeita arquivo que não é imagem nem PDF de verdade', async () => {
+    const user = await createTestUser();
+    await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Beatriz Nunes' });
+    const file = { buffer: Buffer.from('não é nada disso'), mimetype: 'application/pdf', size: 20 };
+
+    await expect(uploadDocument(user.id, file, storage)).rejects.toThrow('não é uma imagem');
+  });
 });

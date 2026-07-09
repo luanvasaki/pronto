@@ -36,7 +36,7 @@ export default function DocumentoPage() {
         <div>
           <h1 className="font-heading text-2xl font-bold text-text">Envie seu documento</h1>
           <p className="mt-1 text-[15px] text-text-secondary">
-            Uma foto do seu RG ou CNH, pra confirmarmos sua identidade.
+            Uma foto ou PDF do seu RG ou CNH, pra confirmarmos sua identidade.
           </p>
         </div>
 
@@ -44,11 +44,11 @@ export default function DocumentoPage() {
           htmlFor="document"
           className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary transition hover:border-primary"
         >
-          {file ? file.name : 'Toque para escolher uma foto'}
+          {file ? file.name : 'Toque para escolher uma foto ou PDF'}
           <input
             id="document"
             type="file"
-            accept="image/jpeg,image/png"
+            accept="image/jpeg,image/png,application/pdf"
             className="hidden"
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
           />

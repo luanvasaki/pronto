@@ -5,7 +5,7 @@ vi.mock('@shift/shared', () => ({
   apiFetch: (...args: unknown[]) => apiFetchMock(...args),
 }));
 
-const { listPendingVerifications, reviewDocument, reviewCompany, fetchDocumentImageUrl } = await import(
+const { listPendingVerifications, reviewDocument, reviewCompany, fetchDocumentFile } = await import(
   './admin-api'
 );
 
@@ -57,7 +57,7 @@ describe('reviewCompany', () => {
   });
 });
 
-describe('fetchDocumentImageUrl', () => {
+describe('fetchDocumentFile', () => {
   const originalFetch = global.fetch;
   const originalCreateObjectURL = URL.createObjectURL;
 
@@ -71,16 +71,16 @@ describe('fetchDocumentImageUrl', () => {
     URL.createObjectURL = originalCreateObjectURL;
   });
 
-  it('busca o arquivo com credenciais e retorna uma object URL', async () => {
-    const blob = new Blob(['conteúdo']);
+  it('busca o arquivo com credenciais e retorna a object URL junto com o content-type', async () => {
+    const blob = new Blob(['conteúdo'], { type: 'image/jpeg' });
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       blob: () => Promise.resolve(blob),
     });
 
-    const url = await fetchDocumentImageUrl('doc-1');
+    const result = await fetchDocumentFile('doc-1');
 
-    expect(url).toBe('blob:mock-url');
+    expect(result).toEqual({ url: 'blob:mock-url', contentType: 'image/jpeg' });
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/admin/documents/doc-1/file'),
       expect.objectContaining({ credentials: 'include' }),
@@ -90,6 +90,6 @@ describe('fetchDocumentImageUrl', () => {
   it('lança erro quando a resposta não é ok', async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: false });
 
-    await expect(fetchDocumentImageUrl('doc-1')).rejects.toThrow('Não foi possível carregar o documento.');
+    await expect(fetchDocumentFile('doc-1')).rejects.toThrow('Não foi possível carregar o documento.');
   });
 });
