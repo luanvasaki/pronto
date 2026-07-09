@@ -20,6 +20,8 @@ npm run db:migrate --workspace=apps/backend    # aplica migrações pendentes no
 
 Nunca editar um arquivo em `migrations/` à mão depois de gerado — mudança de schema é sempre um novo `db:generate`.
 
+Em produção, `npm start` já roda `drizzle-kit migrate` antes de subir o servidor (ver script `start` em `package.json`) — não existe passo manual de deploy que precise ser lembrado. `db:migrate` acima serve só pro banco local, durante o desenvolvimento.
+
 ## Testando
 
 ```bash
