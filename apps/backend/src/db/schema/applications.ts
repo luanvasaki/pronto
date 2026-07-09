@@ -30,6 +30,12 @@ export const applications = pgTable(
     // alerta "você foi chamado pra esse turno" na tela dele. Só
     // preenchido quando a candidatura já está aprovada.
     workerSeenAt: timestamp('worker_seen_at', { withTimezone: true }),
+    // Preenchido quando a empresa desfaz uma aprovação (candidato
+    // aceito por engano, por exemplo) — status volta pra 'rejected',
+    // mas isso marca que era uma remoção, não uma rejeição comum.
+    removedAt: timestamp('removed_at', { withTimezone: true }),
+    // Mesmo padrão do workerSeenAt, mas pro alerta de remoção.
+    workerSeenRemovalAt: timestamp('worker_seen_removal_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
