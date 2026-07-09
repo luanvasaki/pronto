@@ -31,6 +31,15 @@ export interface CreateAppOptions {
 export function createApp(options: CreateAppOptions = {}): Express {
   const app = express();
 
+  // Produção roda atrás de um único reverse proxy (Railway) — sem
+  // isso, express-rate-limit não confia no `X-Forwarded-For` que o
+  // proxy define e lança ERR_ERL_UNEXPECTED_X_FORWARDED_FOR a cada
+  // requisição, além de não conseguir identificar o IP de quem chamou
+  // de verdade (toda requisição pareceria vir do proxy).
+  if (env.nodeEnv === 'production') {
+    app.set('trust proxy', 1);
+  }
+
   // origin específica + credentials: true — cookie cross-origin não
   // anda com origin: '*', o navegador bloqueia essa combinação.
   app.use(cors({ origin: env.corsOrigins, credentials: true }));
