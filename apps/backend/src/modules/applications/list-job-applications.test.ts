@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
-import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
+import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles, workerSkills } from '../../db/schema';
 import { createApplication } from './create-application';
 import { listJobApplications } from './list-job-applications';
 import { updateApplicationStatus } from './update-application-status';
@@ -78,7 +78,7 @@ describe('listJobApplications', () => {
     await expect(listJobApplications(otherOwner.id, job.id)).rejects.toThrow('não tem acesso');
   });
 
-  it('lista os candidatos com nome do worker', async () => {
+  it('lista os candidatos com nome do worker, sinalizando que ele não tem a especialidade da vaga', async () => {
     const { worker, owner, job } = await setup();
     await createApplication(worker.id, job.id);
 
@@ -87,7 +87,18 @@ describe('listJobApplications', () => {
     expect(result).toHaveLength(1);
     expect(result[0].status).toBe('pending');
     expect(result[0].worker.fullName).toBe('Ana Souza');
+    expect(result[0].worker.matchesSkills).toBe(false);
     expect(result[0].shift).toBeNull();
+  });
+
+  it('sinaliza quando o worker tem a especialidade da vaga', async () => {
+    const { worker, owner, job } = await setup();
+    await db.insert(workerSkills).values({ workerId: worker.id, categoryId: job.categoryId });
+    await createApplication(worker.id, job.id);
+
+    const result = await listJobApplications(owner.id, job.id);
+
+    expect(result[0].worker.matchesSkills).toBe(true);
   });
 
   it('inclui o turno quando a candidatura já foi aprovada', async () => {

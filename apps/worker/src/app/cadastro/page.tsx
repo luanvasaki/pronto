@@ -2,7 +2,15 @@
 
 import { useRouter } from 'next/navigation';
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
-import { ApiError, getCurrentUser, listSkillCategories, SkillCategory } from '@shift/shared';
+import {
+  ApiError,
+  createSkillCategory,
+  extractDigits,
+  formatCpf,
+  getCurrentUser,
+  listSkillCategories,
+  SkillCategory,
+} from '@shift/shared';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Logo } from '../../components/ui/logo';
@@ -11,6 +19,7 @@ import { upsertWorkerProfile, uploadWorkerPhoto } from '../../lib/worker-profile
 export default function CadastroPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState('');
+  const [cpf, setCpf] = useState('');
   const [categories, setCategories] = useState<SkillCategory[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
@@ -19,6 +28,12 @@ export default function CadastroPage() {
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [experienceByCategory, setExperienceByCategory] = useState<Record<string, boolean>>({});
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [createCategoryError, setCreateCategoryError] = useState<string | null>(null);
 
   useEffect(() => {
     listSkillCategories()
@@ -42,6 +57,31 @@ export default function CadastroPage() {
     );
   }
 
+  function setCategoryExperience(id: string, hasExperience: boolean): void {
+    setExperienceByCategory((current) => ({ ...current, [id]: hasExperience }));
+  }
+
+  async function handleCreateCategory(): Promise<void> {
+    const trimmedName = newCategoryName.trim();
+    if (trimmedName.length < 2 || isCreatingCategory) return;
+
+    setCreateCategoryError(null);
+    setIsCreatingCategory(true);
+    try {
+      const category = await createSkillCategory(trimmedName);
+      setCategories((current) =>
+        current.some((existing) => existing.id === category.id) ? current : [...current, category],
+      );
+      setSelectedIds((current) => (current.includes(category.id) ? current : [...current, category.id]));
+      setNewCategoryName('');
+      setIsAddingCategory(false);
+    } catch (err) {
+      setCreateCategoryError(err instanceof ApiError ? err.message : 'Não foi possível criar a categoria.');
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  }
+
   function handlePhotoChange(event: ChangeEvent<HTMLInputElement>): void {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -50,7 +90,13 @@ export default function CadastroPage() {
     setPhotoPreviewUrl(URL.createObjectURL(file));
   }
 
-  const isValid = fullName.trim().length >= 2 && selectedIds.length > 0 && Boolean(photoPreviewUrl);
+  const missingFields: string[] = [];
+  if (fullName.trim().length < 2) missingFields.push('nome completo');
+  if (cpf.length !== 11) missingFields.push('CPF');
+  if (selectedIds.length === 0) missingFields.push('ao menos uma categoria');
+  if (!photoPreviewUrl) missingFields.push('foto de perfil');
+
+  const isValid = missingFields.length === 0;
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -61,7 +107,13 @@ export default function CadastroPage() {
 
     try {
       const useGooglePhoto = !photoFile && photoPreviewUrl === googlePhotoUrl;
-      await upsertWorkerProfile(fullName, selectedIds, useGooglePhoto ? googlePhotoUrl! : undefined);
+      await upsertWorkerProfile({
+        fullName,
+        categoryIds: selectedIds,
+        photoUrl: useGooglePhoto ? googlePhotoUrl! : undefined,
+        cpf,
+        experienceByCategory,
+      });
       if (photoFile) {
         await uploadWorkerPhoto(photoFile);
       }
@@ -93,8 +145,19 @@ export default function CadastroPage() {
           onChange={(event) => setFullName(event.target.value)}
         />
 
+        <Input
+          id="cpf"
+          label="CPF"
+          type="text"
+          inputMode="numeric"
+          placeholder="000.000.000-00"
+          maxLength={14}
+          value={formatCpf(cpf)}
+          onChange={(event) => setCpf(extractDigits(event.target.value).slice(0, 11))}
+        />
+
         <div>
-          <span className="mb-2 block text-sm font-medium text-text-secondary">Foto de perfil</span>
+          <span className="mb-2 block text-sm font-medium text-text-secondary">Foto de perfil (obrigatória)</span>
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-border bg-surface">
               {photoPreviewUrl ? (
@@ -134,50 +197,135 @@ export default function CadastroPage() {
             <div className="flex flex-col gap-3">
               {categories.map((category) => {
                 const selected = selectedIds.includes(category.id);
+                const hasExperience = experienceByCategory[category.id] ?? false;
                 return (
-                  <label
+                  <div
                     key={category.id}
-                    className={`flex cursor-pointer items-center gap-3.5 rounded-[18px] border p-4 transition ${
+                    className={`rounded-[18px] border p-4 transition ${
                       selected
                         ? 'border-2 border-primary bg-surface shadow-[0_8px_20px_rgba(245,83,30,0.1)]'
                         : 'border-[1.5px] border-border bg-surface'
                     }`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={selected}
-                      onChange={() => toggleCategory(category.id)}
-                      className="sr-only"
-                    />
-                    <span className="flex-1 font-heading text-[17px] font-bold text-text">
-                      {category.name}
-                    </span>
-                    <span
-                      aria-hidden="true"
-                      className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full ${
-                        selected ? 'bg-primary' : 'border-2 border-border'
-                      }`}
-                    >
-                      {selected && (
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                          <path
-                            d="M5 13l4 4L19 7"
-                            stroke="#fff"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      )}
-                    </span>
-                  </label>
+                    <label className="flex cursor-pointer items-center gap-3.5">
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggleCategory(category.id)}
+                        className="sr-only"
+                      />
+                      <span className="flex-1 font-heading text-[17px] font-bold text-text">
+                        {category.name}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full ${
+                          selected ? 'bg-primary' : 'border-2 border-border'
+                        }`}
+                      >
+                        {selected && (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                            <path
+                              d="M5 13l4 4L19 7"
+                              stroke="#fff"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        )}
+                      </span>
+                    </label>
+
+                    {selected && (
+                      <div className="mt-3.5 border-t border-border pt-3.5">
+                        <span className="mb-1.5 block text-sm font-medium text-text-secondary">
+                          Já tem experiência como {category.name.toLowerCase()}?
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setCategoryExperience(category.id, true)}
+                            className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+                              hasExperience
+                                ? 'border-primary bg-primary text-white'
+                                : 'border-border bg-surface text-text-secondary'
+                            }`}
+                          >
+                            Sim
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCategoryExperience(category.id, false)}
+                            className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+                              !hasExperience
+                                ? 'border-primary bg-primary text-white'
+                                : 'border-border bg-surface text-text-secondary'
+                            }`}
+                          >
+                            Não
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
           )}
+
+          {isAddingCategory ? (
+            <div className="mt-3 flex flex-col gap-2 rounded-[18px] border border-dashed border-border p-4">
+              <Input
+                id="newCategoryName"
+                label="Nome da nova categoria"
+                type="text"
+                placeholder="Manobrista, Recepcionista..."
+                value={newCategoryName}
+                onChange={(event) => setNewCategoryName(event.target.value)}
+              />
+              <p className="text-xs text-text-secondary">
+                Já pode usar essa categoria agora — o admin revisa o nome depois.
+              </p>
+              {createCategoryError && <p className="text-sm text-danger">{createCategoryError}</p>}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  isLoading={isCreatingCategory}
+                  disabled={newCategoryName.trim().length < 2}
+                  onClick={handleCreateCategory}
+                >
+                  Adicionar
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingCategory(false);
+                    setNewCategoryName('');
+                    setCreateCategoryError(null);
+                  }}
+                  className="text-sm text-text-secondary underline underline-offset-2"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsAddingCategory(true)}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-[18px] border border-dashed border-border p-4 text-sm font-semibold text-text-secondary transition hover:text-text"
+            >
+              + Criar nova categoria
+            </button>
+          )}
         </fieldset>
 
         {error && <p className="text-sm text-danger">{error}</p>}
+
+        {!isValid && (
+          <p className="text-xs text-text-secondary">Falta preencher: {missingFields.join(', ')}.</p>
+        )}
 
         <Button type="submit" disabled={!isValid} isLoading={isSubmitting}>
           Continuar

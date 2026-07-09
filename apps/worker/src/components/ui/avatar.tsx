@@ -4,6 +4,7 @@ const SIZE_CLASSES = {
   sm: 'h-7 w-7 text-[11px]',
   md: 'h-[46px] w-[46px] text-[15px]',
   lg: 'h-16 w-16 text-xl',
+  xl: 'h-[72px] w-[72px] text-2xl',
 } as const;
 
 export type AvatarSize = keyof typeof SIZE_CLASSES;

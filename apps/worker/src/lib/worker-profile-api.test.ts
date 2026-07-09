@@ -30,11 +30,22 @@ describe('upsertWorkerProfile', () => {
   it('chama PUT /worker-profile com nome e categorias', async () => {
     apiFetchMock.mockResolvedValue({ fullName: 'Ana', categoryIds: ['1'] });
 
-    await upsertWorkerProfile('Ana', ['1']);
+    await upsertWorkerProfile({ fullName: 'Ana', categoryIds: ['1'] });
 
     expect(apiFetchMock).toHaveBeenCalledWith('/worker-profile', {
       method: 'PUT',
       body: JSON.stringify({ fullName: 'Ana', categoryIds: ['1'] }),
+    });
+  });
+
+  it('inclui bio e CPF quando informados', async () => {
+    apiFetchMock.mockResolvedValue({ fullName: 'Ana', categoryIds: ['1'] });
+
+    await upsertWorkerProfile({ fullName: 'Ana', categoryIds: ['1'], bio: 'Bio', cpf: '11122233344' });
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/worker-profile', {
+      method: 'PUT',
+      body: JSON.stringify({ fullName: 'Ana', categoryIds: ['1'], bio: 'Bio', cpf: '11122233344' }),
     });
   });
 });

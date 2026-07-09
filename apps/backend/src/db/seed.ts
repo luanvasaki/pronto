@@ -7,7 +7,21 @@ import { skillCategories } from './schema';
  * migração. Idempotente: rodar de novo não duplica linha (conflito
  * no nome único é ignorado).
  */
-const MVP_CATEGORIES = ['Garçom', 'Cozinha', 'Segurança de evento'];
+const MVP_CATEGORIES = [
+  'Garçom',
+  'Cozinha',
+  'Segurança de evento',
+  'Fotógrafo',
+  'Barman',
+  'Manobrista',
+  'Ajudante geral',
+  'Cozinheiro',
+  'Recepcionista',
+  'Copeiro',
+  'DJ',
+  'Motorista',
+  'Repositor',
+];
 
 async function seed(): Promise<void> {
   await db

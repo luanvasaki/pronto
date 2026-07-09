@@ -81,6 +81,35 @@ describe('upsertCompanyProfile', () => {
     expect(rows).toHaveLength(1);
   });
 
+  it('salva endereço e ramo de atividade quando informados', async () => {
+    const user = await createTestUser(TEST_PHONE);
+
+    const result = await upsertCompanyProfile(user.id, {
+      legalName: 'Bar do Zé Ltda',
+      tradeName: 'Bar do Zé',
+      cnpj: CNPJ_A,
+      addressLabel: 'Vila Madalena, São Paulo',
+      businessSegment: 'bar',
+    });
+
+    expect(result.addressLabel).toBe('Vila Madalena, São Paulo');
+    expect(result.businessSegment).toBe('bar');
+  });
+
+  it('rejeita ramo de atividade inválido', async () => {
+    const user = await createTestUser(TEST_PHONE);
+
+    await expect(
+      upsertCompanyProfile(user.id, {
+        legalName: 'Bar do Zé Ltda',
+        tradeName: 'Bar do Zé',
+        cnpj: CNPJ_A,
+        addressLabel: undefined,
+        businessSegment: 'academia',
+      }),
+    ).rejects.toThrow('Ramo de atividade inválido');
+  });
+
   it('rejeita CNPJ já usado por outro dono', async () => {
     const owner = await createTestUser(TEST_PHONE);
     const otherOwner = await createTestUser(OTHER_PHONE);

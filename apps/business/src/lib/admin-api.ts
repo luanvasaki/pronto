@@ -16,9 +16,16 @@ export interface PendingCompany {
   cnpj: string;
 }
 
+export interface PendingSkillCategory {
+  id: string;
+  name: string;
+  createdByName: string | null;
+}
+
 export interface PendingVerifications {
   documents: PendingDocument[];
   companies: PendingCompany[];
+  skillCategories: PendingSkillCategory[];
 }
 
 export function listPendingVerifications(): Promise<PendingVerifications> {
@@ -68,6 +75,21 @@ export function reviewCompany(
   return apiFetch(`/admin/companies/${companyId}/verification`, {
     method: 'PATCH',
     body: JSON.stringify({ status }),
+  });
+}
+
+export function deleteDemoData(): Promise<{ companiesRemoved: number }> {
+  return apiFetch('/admin/demo-data', { method: 'DELETE' });
+}
+
+export function reviewSkillCategory(
+  categoryId: string,
+  status: 'approved' | 'rejected',
+  name?: string,
+): Promise<{ id: string; name: string; status: string }> {
+  return apiFetch(`/admin/skill-categories/${categoryId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, name }),
   });
 }
 

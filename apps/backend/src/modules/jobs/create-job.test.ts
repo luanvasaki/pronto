@@ -16,6 +16,7 @@ function baseInput(categoryId: string) {
   return {
     categoryId,
     description: 'Uniforme preto próprio, experiência em eventos.',
+    requiresExperience: false,
     addressLabel: 'Vila Madalena, São Paulo',
     locationLat: -23.546,
     locationLng: -46.69,
@@ -113,5 +114,35 @@ describe('createJob', () => {
     expect(result.status).toBe('open');
     expect(result.positionsFilled).toBe(0);
     expect(result.positionsTotal).toBe(4);
+    expect(result.requiresExperience).toBe(false);
+    expect(result.dressCode).toBeNull();
+    expect(result.toolsRequired).toBeNull();
+  });
+
+  it('rejeita quando requiresExperience não é informado', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+
+    await expect(
+      createJob(owner.id, { ...baseInput(category.id), requiresExperience: undefined }),
+    ).rejects.toThrow('Informe se a vaga exige experiência anterior');
+  });
+
+  it('salva vestimenta e ferramentas exigidas quando informadas', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+
+    const result = await createJob(owner.id, {
+      ...baseInput(category.id),
+      requiresExperience: true,
+      dressCode: 'Social completo, preto e branco',
+      toolsRequired: 'Câmera profissional própria',
+    });
+
+    expect(result.requiresExperience).toBe(true);
+    expect(result.dressCode).toBe('Social completo, preto e branco');
+    expect(result.toolsRequired).toBe('Câmera profissional própria');
   });
 });

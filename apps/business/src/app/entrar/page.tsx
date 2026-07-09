@@ -36,12 +36,14 @@ export default function EntrarPage() {
     }
   }
 
+  /**
+   * O backend só exige aceite dos termos pra CRIAR conta — quem já tem
+   * conta via Google faz login direto, sem precisar marcar o checkbox
+   * de novo (ver google-login.ts). Por isso o botão não fica travado
+   * atrás do checkbox: só pedimos pra marcar se o backend responder
+   * que é preciso (ou seja, só na primeira vez, pra conta nova).
+   */
   async function handleGoogleSuccess(idToken: string): Promise<void> {
-    if (!termsAccepted) {
-      setError('Aceite os termos de uso para continuar.');
-      return;
-    }
-
     setError(null);
     setIsSubmitting(true);
 
@@ -67,19 +69,12 @@ export default function EntrarPage() {
           <p className="mt-1 text-[15px] text-text-secondary">Acesse o painel da sua empresa.</p>
         </div>
 
-        <TermsCheckbox checked={termsAccepted} onChange={setTermsAccepted} id="terms-accepted-entrar" />
+        <GoogleLoginButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
 
-        <div className="relative">
-          <div className={termsAccepted ? undefined : 'pointer-events-none opacity-40'}>
-            <GoogleLoginButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
-          </div>
-          {!termsAccepted && (
-            <div
-              className="absolute inset-0 cursor-not-allowed"
-              title="Aceite os termos de uso para entrar com o Google"
-            />
-          )}
-        </div>
+        <TermsCheckbox checked={termsAccepted} onChange={setTermsAccepted} id="terms-accepted-entrar" />
+        <p className="-mt-3 text-xs text-text-secondary">
+          Só necessário se essa for sua primeira vez entrando com o Google.
+        </p>
 
         <div className="flex items-center gap-3 text-xs font-medium text-text-secondary">
           <span className="h-px flex-1 bg-border" />

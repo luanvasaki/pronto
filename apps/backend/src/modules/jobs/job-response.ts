@@ -6,6 +6,9 @@ export interface JobResponse {
   id: string;
   categoryId: string;
   description: string;
+  requiresExperience: boolean;
+  dressCode: string | null;
+  toolsRequired: string | null;
   addressLabel: string;
   locationLat: number;
   locationLng: number;
@@ -22,6 +25,9 @@ export function toJobResponse(job: JobRow): JobResponse {
     id: job.id,
     categoryId: job.categoryId,
     description: job.description,
+    requiresExperience: job.requiresExperience,
+    dressCode: job.dressCode,
+    toolsRequired: job.toolsRequired,
     addressLabel: job.addressLabel,
     locationLat: job.locationLat,
     locationLng: job.locationLng,

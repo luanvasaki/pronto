@@ -5,9 +5,11 @@ import { useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
 import { Chip } from '../../../components/ui/chip';
+import { listMyApplications, markApplicationSeen, MyApplication } from '../../../lib/applications-api';
 import { getCurrentPosition } from '../../../lib/geolocation';
 import { applyToJob, listNearbyJobs, NearbyJob } from '../../../lib/jobs-api';
-import { getWorkerProfile, updateWorkerLocation, WorkerProfileDetails } from '../../../lib/worker-profile-api';
+import { updateWorkerLocation } from '../../../lib/worker-profile-api';
+import { useWorkerProfile } from '../worker-profile-context';
 
 const CATEGORY_LABEL_FALLBACK = 'Categoria';
 const AVAILABILITY_STORAGE_KEY = 'pronto:disponivel';
@@ -70,7 +72,7 @@ async function fetchNearbyJobs(): Promise<{ jobs: NearbyJob[] }> {
 }
 
 export default function InicioPage() {
-  const [profile, setProfile] = useState<WorkerProfileDetails | null>(null);
+  const { profile } = useWorkerProfile();
   const [jobs, setJobs] = useState<NearbyJob[]>([]);
   const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -91,6 +93,9 @@ export default function InicioPage() {
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const [applyError, setApplyError] = useState<{ jobId: string; message: string } | null>(null);
 
+  const [calledApplications, setCalledApplications] = useState<MyApplication[]>([]);
+  const [dismissingId, setDismissingId] = useState<string | null>(null);
+
   function toggleAvailable(): void {
     setAvailable((current) => {
       const next = !current;
@@ -102,14 +107,9 @@ export default function InicioPage() {
   useEffect(() => {
     async function load(): Promise<void> {
       try {
-        const [jobsResult, categoriesResult, profileResult] = await Promise.all([
-          fetchNearbyJobs(),
-          listSkillCategories(),
-          getWorkerProfile(),
-        ]);
+        const [jobsResult, categoriesResult] = await Promise.all([fetchNearbyJobs(), listSkillCategories()]);
         setJobs(jobsResult.jobs);
         setCategoryNames(Object.fromEntries(categoriesResult.categories.map((c) => [c.id, c.name])));
-        setProfile(profileResult);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Não foi possível carregar as vagas.');
       } finally {
@@ -118,7 +118,27 @@ export default function InicioPage() {
     }
 
     void load();
+
+    // Alerta de "foi chamado pra trabalhar" é secundário — se essa
+    // chamada falhar, a tela principal de vagas continua funcionando.
+    listMyApplications()
+      .then(({ applications }) =>
+        setCalledApplications(applications.filter((a) => a.status === 'approved' && a.workerSeenAt === null)),
+      )
+      .catch(() => undefined);
   }, []);
+
+  async function handleDismissCalled(applicationId: string): Promise<void> {
+    setDismissingId(applicationId);
+    try {
+      await markApplicationSeen(applicationId);
+      setCalledApplications((current) => current.filter((a) => a.id !== applicationId));
+    } catch {
+      // Falhou marcar como visto — deixa o alerta visível, tenta de novo na próxima.
+    } finally {
+      setDismissingId(null);
+    }
+  }
 
   async function handleApply(jobId: string): Promise<void> {
     setApplyError(null);
@@ -157,6 +177,34 @@ export default function InicioPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-1 px-5 py-8">
+      {calledApplications.length > 0 && (
+        <ul className="mb-4 flex flex-col gap-2.5">
+          {calledApplications.map((application) => (
+            <li
+              key={application.id}
+              className="rounded-[18px] border border-success/30 bg-success/10 p-4 text-success"
+            >
+              <p className="font-heading text-[15px] font-bold">
+                Você foi chamado(a) pra trabalhar em {application.companyName || 'uma vaga'}! 🎉
+              </p>
+              <p className="mt-1 text-[13px]">
+                {categoryNames[application.job.categoryId] ?? CATEGORY_LABEL_FALLBACK} ·{' '}
+                {formatDateRange(application.job.startsAt, application.job.endsAt)}
+              </p>
+              <Button
+                type="button"
+                variant="success"
+                isLoading={dismissingId === application.id}
+                onClick={() => handleDismissCalled(application.id)}
+                className="mt-3"
+              >
+                Ok, entendi
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-text-secondary">{greeting()}</p>
@@ -177,7 +225,7 @@ export default function InicioPage() {
             </p>
           )}
         </div>
-        {profile && <Avatar name={profile.fullName} photoUrl={profile.photoUrl} size="lg" color="bg-secondary" />}
+        {profile && <Avatar name={profile.fullName} photoUrl={profile.photoUrl} size="md" color="bg-secondary" />}
       </div>
 
       <button
@@ -194,7 +242,7 @@ export default function InicioPage() {
               {available ? 'Disponível para turnos' : 'Indisponível'}
             </p>
             <p className="text-[12.5px] text-text-secondary">
-              {available ? 'Você aparece para empresas perto de você' : 'Ative para voltar a aparecer nas buscas'}
+              {available ? 'Você aparece para empresas perto de você' : 'Toque para voltar a receber turnos'}
             </p>
           </div>
         </div>
@@ -288,9 +336,30 @@ export default function InicioPage() {
                   </svg>
                   {job.distanceKm} km
                 </span>
+                {job.requiresExperience && (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-warning/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-warning">
+                    Experiência necessária
+                  </span>
+                )}
               </div>
 
+              {!job.matchesSkills && (
+                <p className="mt-2.5 rounded-lg bg-danger/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-danger">
+                  Você não tem essa especialidade no seu perfil — pode se candidatar mesmo assim.
+                </p>
+              )}
+
               <p className="mt-2 text-[13.5px] text-text-secondary">{job.addressLabel}</p>
+              {job.dressCode && (
+                <p className="mt-1 text-[13.5px] text-text-secondary">
+                  <span className="font-semibold text-text">Vestimenta:</span> {job.dressCode}
+                </p>
+              )}
+              {job.toolsRequired && (
+                <p className="mt-1 text-[13.5px] text-text-secondary">
+                  <span className="font-semibold text-text">Leve com você:</span> {job.toolsRequired}
+                </p>
+              )}
 
               {applyError?.jobId === job.id && (
                 <p className="mt-2 text-sm text-danger">{applyError.message}</p>

@@ -8,6 +8,8 @@ export interface Payment {
   status: string;
   chargedAt: string | null;
   releasedAt: string | null;
+  confirmedAt: string | null;
+  disputedAt: string | null;
 }
 
 export interface Rating {
@@ -64,5 +66,12 @@ export function rateShift(shiftId: string, score: number, comment: string | unde
   return apiFetch(`/shifts/${shiftId}/rating`, {
     method: 'POST',
     body: JSON.stringify({ score, comment }),
+  });
+}
+
+export function confirmPayment(shiftId: string, received: boolean): Promise<Payment> {
+  return apiFetch(`/shifts/${shiftId}/payment/confirm`, {
+    method: 'POST',
+    body: JSON.stringify({ received }),
   });
 }

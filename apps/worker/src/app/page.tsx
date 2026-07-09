@@ -24,7 +24,7 @@ const TRUST_ITEMS = [
   {
     icon: '✓',
     title: 'Verificação por documento',
-    description: 'Envie seu documento uma vez — ele é conferido antes de você aparecer pras empresas.',
+    description: 'Envie seu documento uma vez — ele é conferido antes de você aparecer para as empresas.',
   },
   {
     icon: '★',

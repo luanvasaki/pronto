@@ -44,13 +44,13 @@ describe('CadastroPage', () => {
     expect(screen.getByRole('button', { name: /continuar/i })).toBeEnabled();
   });
 
-  it('ignora caracteres que não são número no CNPJ', async () => {
+  it('ignora caracteres que não são número e aplica a máscara no CNPJ', async () => {
     const user = userEvent.setup();
     render(<CadastroPage />);
 
-    await user.type(screen.getByLabelText('CNPJ'), '11.222.333/0001-81');
+    await user.type(screen.getByLabelText('CNPJ'), 'ab11222333000181xy');
 
-    expect(screen.getByLabelText('CNPJ')).toHaveValue('11222333000181');
+    expect(screen.getByLabelText('CNPJ')).toHaveValue('11.222.333/0001-81');
   });
 
   it('salva o perfil e navega pro painel quando a API responde bem', async () => {
@@ -62,7 +62,11 @@ describe('CadastroPage', () => {
     await user.click(screen.getByRole('button', { name: /continuar/i }));
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/painel'));
-    expect(upsertCompanyProfileMock).toHaveBeenCalledWith('Bar do Zé Ltda', 'Bar do Zé', '11222333000181');
+    expect(upsertCompanyProfileMock).toHaveBeenCalledWith({
+      legalName: 'Bar do Zé Ltda',
+      tradeName: 'Bar do Zé',
+      cnpj: '11222333000181',
+    });
   });
 
   it('mostra a mensagem da API quando salvar falha', async () => {

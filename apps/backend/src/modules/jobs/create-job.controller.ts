@@ -9,22 +9,40 @@ export async function createJobHandler(req: Request, res: Response, next: NextFu
       throw new HttpError(401, 'Sessão inválida ou expirada.');
     }
 
-    const { categoryId, description, addressLabel, locationLat, locationLng, positionsTotal, payAmount, startsAt, endsAt } =
-      req.body as {
-        categoryId?: string;
-        description?: string;
-        addressLabel?: string;
-        locationLat?: number;
-        locationLng?: number;
-        positionsTotal?: number;
-        payAmount?: string;
-        startsAt?: string;
-        endsAt?: string;
-      };
+    const {
+      categoryId,
+      description,
+      requiresExperience,
+      dressCode,
+      toolsRequired,
+      addressLabel,
+      locationLat,
+      locationLng,
+      positionsTotal,
+      payAmount,
+      startsAt,
+      endsAt,
+    } = req.body as {
+      categoryId?: string;
+      description?: string;
+      requiresExperience?: boolean;
+      dressCode?: string;
+      toolsRequired?: string;
+      addressLabel?: string;
+      locationLat?: number;
+      locationLng?: number;
+      positionsTotal?: number;
+      payAmount?: string;
+      startsAt?: string;
+      endsAt?: string;
+    };
 
     const result = await createJob(userId, {
       categoryId,
       description,
+      requiresExperience,
+      dressCode,
+      toolsRequired,
       addressLabel,
       locationLat,
       locationLng,

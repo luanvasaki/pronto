@@ -49,6 +49,7 @@ describe('listMyJobs', () => {
     const first = await createJob(owner.id, {
       categoryId: category.id,
       description: 'Primeira vaga publicada, descrição bem detalhada.',
+      requiresExperience: false,
       addressLabel: 'Vila Madalena, São Paulo',
       locationLat: -23.546,
       locationLng: -46.69,
@@ -60,6 +61,7 @@ describe('listMyJobs', () => {
     const second = await createJob(owner.id, {
       categoryId: category.id,
       description: 'Segunda vaga publicada, descrição bem detalhada.',
+      requiresExperience: false,
       addressLabel: 'Vila Madalena, São Paulo',
       locationLat: -23.546,
       locationLng: -46.69,

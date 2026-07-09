@@ -10,12 +10,14 @@ vi.mock('next/navigation', () => ({
 }));
 
 const listSkillCategoriesMock = vi.fn();
+const createSkillCategoryMock = vi.fn();
 vi.mock('@shift/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shift/shared')>();
   return {
     ...actual,
     getCurrentUser: vi.fn().mockResolvedValue({ user: { id: '1' } }),
     listSkillCategories: (...args: unknown[]) => listSkillCategoriesMock(...args),
+    createSkillCategory: (...args: unknown[]) => createSkillCategoryMock(...args),
   };
 });
 
@@ -33,7 +35,8 @@ const ENDS_AT = toDateTimeLocal(new Date(Date.now() + 29 * 60 * 60 * 1000));
 
 async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.selectOptions(screen.getByLabelText('Categoria'), 'cat-1');
-  await user.type(screen.getByLabelText('Descrição'), 'Uniforme preto, experiência em eventos.');
+  await user.click(screen.getByRole('button', { name: 'Não' }));
+  await user.type(screen.getByLabelText('Descrição'), 'Detalhes adicionais sobre o turno.');
   await user.type(screen.getByLabelText('Endereço'), 'Vila Madalena, São Paulo');
   await user.click(screen.getByRole('button', { name: /usar minha localização atual/i }));
   await screen.findByText('Localização definida ✓');
@@ -49,6 +52,7 @@ describe('NovaVagaPage', () => {
     pushMock.mockClear();
     listSkillCategoriesMock.mockReset().mockResolvedValue({ categories: [{ id: 'cat-1', name: 'Garçom' }] });
     createJobMock.mockReset();
+    createSkillCategoryMock.mockReset();
     Object.defineProperty(window.navigator, 'geolocation', {
       value: {
         getCurrentPosition: vi.fn((success) => success({ coords: { latitude: -23.55, longitude: -46.63 } })),
@@ -100,5 +104,69 @@ describe('NovaVagaPage', () => {
 
     expect(await screen.findByText('Data de início precisa ser no futuro.')).toBeInTheDocument();
     expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it('envia experiência, vestimenta e ferramentas exigidas', async () => {
+    createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
+    const user = userEvent.setup();
+    render(<NovaVagaPage />);
+    await screen.findByText('Garçom');
+
+    await fillValidForm(user);
+    await user.click(screen.getByRole('button', { name: 'Sim' }));
+    await user.type(screen.getByLabelText(/vestimenta exigida/i), 'Social completo');
+    await user.type(screen.getByLabelText(/ferramentas que o profissional precisa levar/i), 'Câmera própria');
+    await user.click(screen.getByRole('button', { name: /^publicar$/i }));
+
+    await waitFor(() =>
+      expect(createJobMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          requiresExperience: true,
+          dressCode: 'Social completo',
+          toolsRequired: 'Câmera própria',
+        }),
+      ),
+    );
+  });
+
+  it('cria uma categoria nova e usa o id retornado na vaga', async () => {
+    createSkillCategoryMock.mockResolvedValue({ id: 'cat-new', name: 'Manobrista' });
+    createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
+    const user = userEvent.setup();
+    render(<NovaVagaPage />);
+    await screen.findByText('Garçom');
+
+    await user.selectOptions(screen.getByLabelText('Categoria'), '__new__');
+    await user.type(screen.getByLabelText(/nome da nova categoria/i), 'Manobrista');
+    await user.click(screen.getByRole('button', { name: 'Não' }));
+    await user.type(screen.getByLabelText('Descrição'), 'Detalhes adicionais sobre o turno.');
+    await user.type(screen.getByLabelText('Endereço'), 'Vila Madalena, São Paulo');
+    await user.click(screen.getByRole('button', { name: /usar minha localização atual/i }));
+    await screen.findByText('Localização definida ✓');
+    await user.clear(screen.getByLabelText('Número de vagas'));
+    await user.type(screen.getByLabelText('Número de vagas'), '4');
+    await user.type(screen.getByLabelText('Valor por pessoa (R$)'), '130.00');
+    await user.type(screen.getByLabelText('Início'), STARTS_AT);
+    await user.type(screen.getByLabelText('Término'), ENDS_AT);
+    await user.click(screen.getByRole('button', { name: /^publicar$/i }));
+
+    await waitFor(() => expect(createSkillCategoryMock).toHaveBeenCalledWith('Manobrista'));
+    await waitFor(() =>
+      expect(createJobMock).toHaveBeenCalledWith(expect.objectContaining({ categoryId: 'cat-new' })),
+    );
+  });
+
+  it('mostra erro quando a localização falha', async () => {
+    Object.defineProperty(window.navigator, 'geolocation', {
+      value: { getCurrentPosition: vi.fn((_success, failure) => failure()) },
+      configurable: true,
+    });
+    const user = userEvent.setup();
+    render(<NovaVagaPage />);
+    await screen.findByText('Garçom');
+
+    await user.click(screen.getByRole('button', { name: /usar minha localização atual/i }));
+
+    expect(await screen.findByText('Não foi possível obter sua localização.')).toBeInTheDocument();
   });
 });

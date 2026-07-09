@@ -31,10 +31,12 @@ export interface AdminMetrics {
 export async function getAdminMetrics(): Promise<AdminMetrics> {
   const [paymentTotals] = await db
     .select({
-      totalProcessed: sql<string>`coalesce(sum(${payments.amount}) filter (where ${payments.status} in ('charged', 'released')), 0)`,
+      totalProcessed: sql<string>`coalesce(sum(${payments.amount}) filter (where ${payments.status} in ('charged', 'released', 'confirmed', 'disputed')), 0)`,
       pending: sql<number>`count(*) filter (where ${payments.status} = 'pending')`,
       charged: sql<number>`count(*) filter (where ${payments.status} = 'charged')`,
       released: sql<number>`count(*) filter (where ${payments.status} = 'released')`,
+      confirmed: sql<number>`count(*) filter (where ${payments.status} = 'confirmed')`,
+      disputed: sql<number>`count(*) filter (where ${payments.status} = 'disputed')`,
       failed: sql<number>`count(*) filter (where ${payments.status} = 'failed')`,
       refunded: sql<number>`count(*) filter (where ${payments.status} = 'refunded')`,
     })
@@ -76,6 +78,8 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
         pending: Number(paymentTotals?.pending ?? 0),
         charged: Number(paymentTotals?.charged ?? 0),
         released: Number(paymentTotals?.released ?? 0),
+        confirmed: Number(paymentTotals?.confirmed ?? 0),
+        disputed: Number(paymentTotals?.disputed ?? 0),
         failed: Number(paymentTotals?.failed ?? 0),
         refunded: Number(paymentTotals?.refunded ?? 0),
       },

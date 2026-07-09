@@ -55,6 +55,9 @@ export async function updateJob(
     .set({
       categoryId: validated.categoryId,
       description: validated.description,
+      requiresExperience: validated.requiresExperience,
+      dressCode: validated.dressCode,
+      toolsRequired: validated.toolsRequired,
       addressLabel: validated.addressLabel,
       locationLat: validated.locationLat,
       locationLng: validated.locationLng,

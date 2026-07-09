@@ -5,7 +5,7 @@ vi.mock('@shift/shared', () => ({
   apiFetch: (...args: unknown[]) => apiFetchMock(...args),
 }));
 
-const { listMyShifts, checkIn, checkOut, rateShift } = await import('./shifts-api');
+const { listMyShifts, checkIn, checkOut, rateShift, confirmPayment } = await import('./shifts-api');
 
 describe('listMyShifts', () => {
   beforeEach(() => {
@@ -68,6 +68,23 @@ describe('rateShift', () => {
     expect(apiFetchMock).toHaveBeenCalledWith('/shifts/shift-1/rating', {
       method: 'POST',
       body: JSON.stringify({ score: 5, comment: 'Muito bom.' }),
+    });
+  });
+});
+
+describe('confirmPayment', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama POST /shifts/:id/payment/confirm com received', async () => {
+    apiFetchMock.mockResolvedValue({ id: 'payment-1', status: 'confirmed' });
+
+    await confirmPayment('shift-1', true);
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/shifts/shift-1/payment/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ received: true }),
     });
   });
 });

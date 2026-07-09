@@ -11,12 +11,14 @@ vi.mock('next/navigation', () => ({
 
 const listSkillCategoriesMock = vi.fn();
 const getCurrentUserMock = vi.fn();
+const createSkillCategoryMock = vi.fn();
 vi.mock('@shift/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shift/shared')>();
   return {
     ...actual,
     listSkillCategories: (...args: unknown[]) => listSkillCategoriesMock(...args),
     getCurrentUser: (...args: unknown[]) => getCurrentUserMock(...args),
+    createSkillCategory: (...args: unknown[]) => createSkillCategoryMock(...args),
   };
 });
 
@@ -43,6 +45,7 @@ describe('CadastroPage', () => {
     getCurrentUserMock.mockReset().mockResolvedValue({ user: NO_GOOGLE_PHOTO_USER });
     upsertWorkerProfileMock.mockReset();
     uploadWorkerPhotoMock.mockReset();
+    createSkillCategoryMock.mockReset();
     URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
   });
 
@@ -65,7 +68,7 @@ describe('CadastroPage', () => {
     expect(await screen.findByText('Não foi possível carregar as categorias.')).toBeInTheDocument();
   });
 
-  it('começa com o botão desabilitado e só habilita com nome + categoria + foto', async () => {
+  it('começa com o botão desabilitado e só habilita com nome + cpf + categoria + foto', async () => {
     const user = userEvent.setup();
     render(<CadastroPage />);
     await screen.findByLabelText('Garçom');
@@ -75,12 +78,32 @@ describe('CadastroPage', () => {
     await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
     expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
 
+    await user.type(screen.getByLabelText('CPF'), '11122233344');
+    expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
+
     await user.click(screen.getByLabelText('Garçom'));
     expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
 
     const file = new File(['foto'], 'foto.jpg', { type: 'image/jpeg' });
     await user.upload(screen.getByLabelText(/adicionar foto/i), file);
     expect(screen.getByRole('button', { name: /continuar/i })).toBeEnabled();
+  });
+
+  it('mostra o que falta preencher quando o formulário está incompleto', async () => {
+    const user = userEvent.setup();
+    render(<CadastroPage />);
+    await screen.findByLabelText('Garçom');
+
+    expect(screen.getByText(/falta preencher:.*nome completo.*cpf.*categoria.*foto de perfil/i)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
+    await user.type(screen.getByLabelText('CPF'), '11122233344');
+    await user.click(screen.getByLabelText('Garçom'));
+    expect(screen.getByText(/falta preencher: foto de perfil/i)).toBeInTheDocument();
+
+    const file = new File(['foto'], 'foto.jpg', { type: 'image/jpeg' });
+    await user.upload(screen.getByLabelText(/adicionar foto/i), file);
+    expect(screen.queryByText(/falta preencher/i)).not.toBeInTheDocument();
   });
 
   it('pré-seleciona a foto do Google quando disponível, sem forçar upload', async () => {
@@ -94,17 +117,20 @@ describe('CadastroPage', () => {
     await screen.findByText(/trocar foto/i);
 
     await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
+    await user.type(screen.getByLabelText('CPF'), '11122233344');
     await user.click(screen.getByLabelText('Garçom'));
     expect(screen.getByRole('button', { name: /continuar/i })).toBeEnabled();
 
     await user.click(screen.getByRole('button', { name: /continuar/i }));
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/cadastro/documento'));
-    expect(upsertWorkerProfileMock).toHaveBeenCalledWith(
-      'Ana Souza',
-      ['cat-1'],
-      'https://lh3.googleusercontent.com/foto',
-    );
+    expect(upsertWorkerProfileMock).toHaveBeenCalledWith({
+      fullName: 'Ana Souza',
+      categoryIds: ['cat-1'],
+      photoUrl: 'https://lh3.googleusercontent.com/foto',
+      cpf: '11122233344',
+      experienceByCategory: {},
+    });
     expect(uploadWorkerPhotoMock).not.toHaveBeenCalled();
   });
 
@@ -116,13 +142,20 @@ describe('CadastroPage', () => {
     await screen.findByLabelText('Garçom');
 
     await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
+    await user.type(screen.getByLabelText('CPF'), '11122233344');
     await user.click(screen.getByLabelText('Garçom'));
     const file = new File(['foto'], 'foto.jpg', { type: 'image/jpeg' });
     await user.upload(screen.getByLabelText(/adicionar foto/i), file);
     await user.click(screen.getByRole('button', { name: /continuar/i }));
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/cadastro/documento'));
-    expect(upsertWorkerProfileMock).toHaveBeenCalledWith('Ana Souza', ['cat-1'], undefined);
+    expect(upsertWorkerProfileMock).toHaveBeenCalledWith({
+      fullName: 'Ana Souza',
+      categoryIds: ['cat-1'],
+      photoUrl: undefined,
+      cpf: '11122233344',
+      experienceByCategory: {},
+    });
     expect(uploadWorkerPhotoMock).toHaveBeenCalledWith(file);
   });
 
@@ -133,6 +166,7 @@ describe('CadastroPage', () => {
     await screen.findByLabelText('Garçom');
 
     await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
+    await user.type(screen.getByLabelText('CPF'), '11122233344');
     await user.click(screen.getByLabelText('Garçom'));
     const file = new File(['foto'], 'foto.jpg', { type: 'image/jpeg' });
     await user.upload(screen.getByLabelText(/adicionar foto/i), file);
@@ -140,5 +174,69 @@ describe('CadastroPage', () => {
 
     expect(await screen.findByText('Categoria inválida.')).toBeInTheDocument();
     expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it('ignora caracteres que não são número e aplica a máscara no CPF', async () => {
+    const user = userEvent.setup();
+    render(<CadastroPage />);
+    await screen.findByLabelText('Garçom');
+
+    await user.type(screen.getByLabelText('CPF'), 'abc11122233344xyz');
+
+    expect(screen.getByLabelText('CPF')).toHaveValue('111.222.333-44');
+  });
+
+  it('mostra o toggle de experiência só quando a categoria está marcada, e envia a escolha', async () => {
+    upsertWorkerProfileMock.mockResolvedValue({ fullName: 'Ana Souza', categoryIds: ['cat-1'], photoUrl: null });
+    const user = userEvent.setup();
+    render(<CadastroPage />);
+    await screen.findByLabelText('Garçom');
+
+    expect(screen.queryByText(/já tem experiência como garçom/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('Garçom'));
+    expect(await screen.findByText(/já tem experiência como garçom/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Sim' }));
+
+    await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
+    await user.type(screen.getByLabelText('CPF'), '11122233344');
+    const file = new File(['foto'], 'foto.jpg', { type: 'image/jpeg' });
+    await user.upload(screen.getByLabelText(/adicionar foto/i), file);
+    await user.click(screen.getByRole('button', { name: /continuar/i }));
+
+    await waitFor(() =>
+      expect(upsertWorkerProfileMock).toHaveBeenCalledWith(
+        expect.objectContaining({ experienceByCategory: { 'cat-1': true } }),
+      ),
+    );
+  });
+
+  it('cria uma categoria nova e já deixa ela marcada', async () => {
+    createSkillCategoryMock.mockResolvedValue({ id: 'cat-new', name: 'Manobrista' });
+    const user = userEvent.setup();
+    render(<CadastroPage />);
+    await screen.findByLabelText('Garçom');
+
+    await user.click(screen.getByRole('button', { name: /criar nova categoria/i }));
+    await user.type(screen.getByLabelText(/nome da nova categoria/i), 'Manobrista');
+    await user.click(screen.getByRole('button', { name: /^adicionar$/i }));
+
+    expect(await screen.findByLabelText('Manobrista')).toBeChecked();
+    expect(createSkillCategoryMock).toHaveBeenCalledWith('Manobrista');
+  });
+
+  it('mostra erro quando criar categoria falha', async () => {
+    createSkillCategoryMock.mockRejectedValue(new ApiError(400, 'Nome da categoria precisa ter entre 2 e 100 caracteres.'));
+    const user = userEvent.setup();
+    render(<CadastroPage />);
+    await screen.findByLabelText('Garçom');
+
+    await user.click(screen.getByRole('button', { name: /criar nova categoria/i }));
+    await user.type(screen.getByLabelText(/nome da nova categoria/i), 'ok');
+    await user.click(screen.getByRole('button', { name: /^adicionar$/i }));
+
+    expect(
+      await screen.findByText('Nome da categoria precisa ter entre 2 e 100 caracteres.'),
+    ).toBeInTheDocument();
   });
 });

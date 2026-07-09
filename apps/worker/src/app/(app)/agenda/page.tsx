@@ -4,7 +4,7 @@ import { ApiError, listSkillCategories } from '@shift/shared';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { getCurrentPosition } from '../../../lib/geolocation';
-import { checkIn, checkOut, listMyShifts, rateShift, Shift } from '../../../lib/shifts-api';
+import { checkIn, checkOut, confirmPayment, listMyShifts, rateShift, Shift } from '../../../lib/shifts-api';
 
 const CATEGORY_LABEL_FALLBACK = 'Categoria';
 
@@ -32,7 +32,9 @@ const SHIFT_STATUS_CLASS: Record<string, string> = {
 const PAYMENT_STATUS_LABEL: Record<string, string> = {
   pending: 'Aguardando conclusão do turno',
   charged: 'Turno concluído — acerte o pagamento direto com a empresa',
-  released: 'Pagamento confirmado pela empresa',
+  released: 'A empresa marcou como pago — você recebeu?',
+  confirmed: 'Você confirmou o recebimento',
+  disputed: 'Você avisou que não recebeu — em análise',
   failed: 'Não foi possível registrar o acerto',
   refunded: 'Acerto cancelado',
 };
@@ -101,6 +103,9 @@ export default function TurnosPage() {
   const [ratingDrafts, setRatingDrafts] = useState<Record<string, RatingDraft>>({});
   const [ratingSubmittingId, setRatingSubmittingId] = useState<string | null>(null);
   const [ratingError, setRatingError] = useState<{ shiftId: string; message: string } | null>(null);
+
+  const [confirmingShiftId, setConfirmingShiftId] = useState<string | null>(null);
+  const [confirmError, setConfirmError] = useState<{ shiftId: string; message: string } | null>(null);
 
   useEffect(() => {
     async function load(): Promise<void> {
@@ -192,6 +197,24 @@ export default function TurnosPage() {
     }
   }
 
+  async function handleConfirmPayment(shiftId: string, received: boolean): Promise<void> {
+    setConfirmError(null);
+    setConfirmingShiftId(shiftId);
+
+    try {
+      const payment = await confirmPayment(shiftId, received);
+      setShifts((current) => current.map((shift) => (shift.id === shiftId ? { ...shift, payment } : shift)));
+    } catch (err) {
+      setConfirmError({
+        shiftId,
+        message:
+          err instanceof ApiError || err instanceof Error ? err.message : 'Não foi possível registrar sua resposta.',
+      });
+    } finally {
+      setConfirmingShiftId(null);
+    }
+  }
+
   if (isLoading) {
     return (
       <main className="flex flex-1 items-center justify-center px-4">
@@ -239,9 +262,40 @@ export default function TurnosPage() {
               <p className="mt-2 font-heading text-lg font-bold text-primary">R$ {shift.payAmountSnapshot}</p>
 
               {shift.payment && (
-                <p className="mt-1 text-sm text-text-secondary">
+                <p
+                  className={`mt-1 text-sm ${
+                    shift.payment.status === 'disputed' ? 'text-danger' : 'text-text-secondary'
+                  }`}
+                >
                   {PAYMENT_STATUS_LABEL[shift.payment.status] ?? shift.payment.status}
                 </p>
+              )}
+
+              {shift.payment?.status === 'released' && (
+                <div className="mt-2.5 flex gap-2">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    isLoading={confirmingShiftId === shift.id}
+                    onClick={() => handleConfirmPayment(shift.id, true)}
+                    className="flex-1"
+                  >
+                    Recebi o pagamento
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    isLoading={confirmingShiftId === shift.id}
+                    onClick={() => handleConfirmPayment(shift.id, false)}
+                    className="flex-1"
+                  >
+                    Não recebi
+                  </Button>
+                </div>
+              )}
+
+              {confirmError?.shiftId === shift.id && (
+                <p className="mt-2 text-sm text-danger">{confirmError.message}</p>
               )}
 
               {showTimeline && (

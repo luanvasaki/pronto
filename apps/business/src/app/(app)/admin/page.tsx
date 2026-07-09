@@ -3,15 +3,19 @@
 import { getCurrentUser } from '@shift/shared';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
 import {
   AdminMetrics,
+  deleteDemoData,
   fetchDocumentImageUrl,
   getAdminMetrics,
   listPendingVerifications,
   PendingCompany,
   PendingDocument,
+  PendingSkillCategory,
   reviewCompany,
   reviewDocument,
+  reviewSkillCategory,
 } from '../../../lib/admin-api';
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -23,8 +27,15 @@ export default function AdminPage() {
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [documents, setDocuments] = useState<PendingDocument[]>([]);
   const [companies, setCompanies] = useState<PendingCompany[]>([]);
+  const [skillCategories, setSkillCategories] = useState<PendingSkillCategory[]>([]);
+  const [categoryNameDrafts, setCategoryNameDrafts] = useState<Record<string, string>>({});
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [actingId, setActingId] = useState<string | null>(null);
+
+  const [confirmingDemoDelete, setConfirmingDemoDelete] = useState(false);
+  const [isDeletingDemoData, setIsDeletingDemoData] = useState(false);
+  const [demoDeleteMessage, setDemoDeleteMessage] = useState<string | null>(null);
+  const [demoDeleteError, setDemoDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load(): Promise<void> {
@@ -42,6 +53,10 @@ export default function AdminPage() {
         setMetrics(metricsResult);
         setDocuments(verificationsResult.documents);
         setCompanies(verificationsResult.companies);
+        setSkillCategories(verificationsResult.skillCategories);
+        setCategoryNameDrafts(
+          Object.fromEntries(verificationsResult.skillCategories.map((category) => [category.id, category.name])),
+        );
       } catch {
         setError('Não foi possível carregar as verificações pendentes.');
       } finally {
@@ -88,6 +103,46 @@ export default function AdminPage() {
       setError('Não foi possível revisar a empresa.');
     } finally {
       setActingId(null);
+    }
+  }
+
+  async function handleReviewSkillCategory(categoryId: string, status: 'approved' | 'rejected'): Promise<void> {
+    setError(null);
+    setActingId(categoryId);
+
+    try {
+      const name = categoryNameDrafts[categoryId];
+      await reviewSkillCategory(categoryId, status, name);
+      setSkillCategories((current) => current.filter((category) => category.id !== categoryId));
+    } catch {
+      setError('Não foi possível revisar a categoria.');
+    } finally {
+      setActingId(null);
+    }
+  }
+
+  async function handleDeleteDemoData(): Promise<void> {
+    if (!confirmingDemoDelete) {
+      setConfirmingDemoDelete(true);
+      return;
+    }
+
+    setDemoDeleteError(null);
+    setDemoDeleteMessage(null);
+    setIsDeletingDemoData(true);
+
+    try {
+      const result = await deleteDemoData();
+      setDemoDeleteMessage(
+        result.companiesRemoved === 0
+          ? 'Não havia dados de demonstração pra remover.'
+          : `${result.companiesRemoved} empresa(s) de demonstração removida(s).`,
+      );
+    } catch {
+      setDemoDeleteError('Não foi possível remover os dados de demonstração.');
+    } finally {
+      setIsDeletingDemoData(false);
+      setConfirmingDemoDelete(false);
     }
   }
 
@@ -235,6 +290,87 @@ export default function AdminPage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section>
+        <h2 className="font-heading text-lg font-bold text-text">Categorias pendentes</h2>
+        <p className="mt-1 text-sm text-text-secondary">
+          Criadas por empresas na hora de publicar uma vaga, quando nenhuma categoria existente servia. Já
+          estão em uso — corrija o nome se precisar antes de aprovar.
+        </p>
+        {skillCategories.length === 0 && (
+          <p className="mt-2 text-sm text-text-secondary">Nenhuma categoria pendente.</p>
+        )}
+        <ul className="mt-3 flex flex-col gap-3">
+          {skillCategories.map((category) => (
+            <li
+              key={category.id}
+              className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
+            >
+              {category.createdByName && (
+                <p className="text-xs text-text-secondary">Criada por {category.createdByName}</p>
+              )}
+              <Input
+                id={`category-name-${category.id}`}
+                label="Nome da categoria"
+                type="text"
+                value={categoryNameDrafts[category.id] ?? category.name}
+                onChange={(event) =>
+                  setCategoryNameDrafts((current) => ({ ...current, [category.id]: event.target.value }))
+                }
+              />
+              <div className="mt-3.5 flex gap-2">
+                <Button
+                  type="button"
+                  variant="success"
+                  isLoading={actingId === category.id}
+                  onClick={() => handleReviewSkillCategory(category.id, 'approved')}
+                >
+                  Aprovar
+                </Button>
+                <Button
+                  type="button"
+                  variant="outlined"
+                  isLoading={actingId === category.id}
+                  onClick={() => handleReviewSkillCategory(category.id, 'rejected')}
+                >
+                  Rejeitar
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section>
+        <h2 className="font-heading text-lg font-bold text-text">Dados de demonstração</h2>
+        <p className="mt-1 text-sm text-text-secondary">
+          Remove de uma vez todas as empresas e vagas criadas só pra demonstrar o app (e tudo que veio delas —
+          candidaturas, turnos, pagamentos, avaliações). Empresas de verdade não são afetadas.
+        </p>
+
+        {demoDeleteMessage && <p className="mt-2 text-sm text-success">{demoDeleteMessage}</p>}
+        {demoDeleteError && <p className="mt-2 text-sm text-danger">{demoDeleteError}</p>}
+
+        <div className="mt-3 flex items-center gap-3">
+          <Button
+            type="button"
+            variant={confirmingDemoDelete ? 'danger' : 'outlined'}
+            isLoading={isDeletingDemoData}
+            onClick={handleDeleteDemoData}
+          >
+            {confirmingDemoDelete ? 'Confirmar remoção' : 'Remover dados de demonstração'}
+          </Button>
+          {confirmingDemoDelete && !isDeletingDemoData && (
+            <button
+              type="button"
+              onClick={() => setConfirmingDemoDelete(false)}
+              className="text-sm text-text-secondary underline underline-offset-2"
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
       </section>
     </main>
   );

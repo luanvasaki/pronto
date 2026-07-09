@@ -1,13 +1,15 @@
 'use client';
 
-import { ApiError, listSkillCategories, SkillCategory } from '@shift/shared';
+import { ApiError, createSkillCategory, listSkillCategories, SkillCategory } from '@shift/shared';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
+import { getCurrentPosition } from '../../../../lib/geolocation';
 import { createJob } from '../../../../lib/jobs-api';
 
 const PAY_AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
+const NEW_CATEGORY_OPTION = '__new__';
 
 export default function NovaVagaPage() {
   const router = useRouter();
@@ -16,10 +18,15 @@ export default function NovaVagaPage() {
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
   const [categoryId, setCategoryId] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [requiresExperience, setRequiresExperience] = useState<boolean | null>(null);
+  const [dressCode, setDressCode] = useState('');
+  const [toolsRequired, setToolsRequired] = useState('');
   const [description, setDescription] = useState('');
   const [addressLabel, setAddressLabel] = useState('');
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [positionsTotal, setPositionsTotal] = useState('1');
   const [payAmount, setPayAmount] = useState('');
@@ -36,20 +43,18 @@ export default function NovaVagaPage() {
       .finally(() => setIsLoadingCategories(false));
   }, []);
 
-  function handleUseCurrentLocation(): void {
-    if (!navigator.geolocation) {
-      setLocationError('Geolocalização não é suportada nesse navegador.');
-      return;
-    }
-
+  async function handleUseCurrentLocation(): Promise<void> {
     setLocationError(null);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLat(position.coords.latitude);
-        setLng(position.coords.longitude);
-      },
-      () => setLocationError('Não foi possível obter sua localização.'),
-    );
+    setIsLocating(true);
+    try {
+      const position = await getCurrentPosition();
+      setLat(position.coords.latitude);
+      setLng(position.coords.longitude);
+    } catch (err) {
+      setLocationError(err instanceof Error ? err.message : 'Não foi possível obter sua localização.');
+    } finally {
+      setIsLocating(false);
+    }
   }
 
   const positionsTotalNumber = Number(positionsTotal);
@@ -60,8 +65,11 @@ export default function NovaVagaPage() {
     PAY_AMOUNT_REGEX.test(payAmount) &&
     payAmountNumber > 0;
   const estimateTotal = positionsTotalNumber * payAmountNumber;
+  const isNewCategory = categoryId === NEW_CATEGORY_OPTION;
   const isValid =
     categoryId !== '' &&
+    (!isNewCategory || newCategoryName.trim().length >= 2) &&
+    requiresExperience !== null &&
     description.trim().length >= 10 &&
     addressLabel.trim().length >= 2 &&
     lat !== null &&
@@ -77,15 +85,22 @@ export default function NovaVagaPage() {
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
-    if (!isValid || isSubmitting || lat === null || lng === null) return;
+    if (!isValid || isSubmitting || lat === null || lng === null || requiresExperience === null) return;
 
     setError(null);
     setIsSubmitting(true);
 
     try {
+      const resolvedCategoryId = isNewCategory
+        ? (await createSkillCategory(newCategoryName.trim())).id
+        : categoryId;
+
       await createJob({
-        categoryId,
+        categoryId: resolvedCategoryId,
         description,
+        requiresExperience,
+        dressCode: dressCode.trim() || undefined,
+        toolsRequired: toolsRequired.trim() || undefined,
         addressLabel,
         locationLat: lat,
         locationLng: lng,
@@ -127,7 +142,75 @@ export default function NovaVagaPage() {
                 {category.name}
               </option>
             ))}
+            <option value={NEW_CATEGORY_OPTION}>+ Criar nova categoria</option>
           </select>
+          {isNewCategory && (
+            <div className="mt-2.5">
+              <Input
+                id="newCategoryName"
+                label="Nome da nova categoria"
+                type="text"
+                placeholder="Manobrista, Recepcionista..."
+                value={newCategoryName}
+                onChange={(event) => setNewCategoryName(event.target.value)}
+              />
+              <p className="mt-1.5 text-xs text-text-secondary">
+                Já pode usar essa vaga assim que publicar — o admin revisa o nome da categoria depois.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-4">
+          <p className="font-heading text-sm font-bold text-text">O que essa vaga exige?</p>
+
+          <div>
+            <span className="mb-1.5 block text-sm font-medium text-text-secondary">
+              Precisa de experiência anterior?
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setRequiresExperience(true)}
+                className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+                  requiresExperience === true
+                    ? 'border-primary bg-primary text-white'
+                    : 'border-border bg-surface text-text-secondary'
+                }`}
+              >
+                Sim
+              </button>
+              <button
+                type="button"
+                onClick={() => setRequiresExperience(false)}
+                className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+                  requiresExperience === false
+                    ? 'border-primary bg-primary text-white'
+                    : 'border-border bg-surface text-text-secondary'
+                }`}
+              >
+                Não
+              </button>
+            </div>
+          </div>
+
+          <Input
+            id="dressCode"
+            label="Vestimenta exigida (opcional)"
+            type="text"
+            placeholder="Social, uniforme fornecido, traje esportivo..."
+            value={dressCode}
+            onChange={(event) => setDressCode(event.target.value)}
+          />
+
+          <Input
+            id="toolsRequired"
+            label="Ferramentas que o profissional precisa levar (opcional)"
+            type="text"
+            placeholder="Câmera própria, ferramentas de bar..."
+            value={toolsRequired}
+            onChange={(event) => setToolsRequired(event.target.value)}
+          />
         </div>
 
         <div>
@@ -137,7 +220,7 @@ export default function NovaVagaPage() {
           <textarea
             id="description"
             rows={3}
-            placeholder="Uniforme, experiência necessária, o que a vaga inclui..."
+            placeholder="Outros detalhes que o profissional precisa saber..."
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
@@ -154,7 +237,7 @@ export default function NovaVagaPage() {
         />
 
         <div>
-          <Button type="button" variant="outlined" onClick={handleUseCurrentLocation}>
+          <Button type="button" variant="outlined" onClick={handleUseCurrentLocation} isLoading={isLocating}>
             {lat !== null && lng !== null ? 'Localização definida ✓' : 'Usar minha localização atual'}
           </Button>
           {locationError && <p className="mt-1.5 text-sm text-danger">{locationError}</p>}

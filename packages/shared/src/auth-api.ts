@@ -51,9 +51,26 @@ export function getCurrentUser(): Promise<{ user: UserResponse }> {
   return apiFetch('/auth/me');
 }
 
-/** Troca o refresh token por um novo par de tokens — só isso, sem retornar dados do usuário. */
+let inFlightRefresh: Promise<{ success: true }> | null = null;
+
+/**
+ * Troca o refresh token por um novo par de tokens — só isso, sem
+ * retornar dados do usuário.
+ *
+ * O refresh token só serve uma vez (o backend derruba TODAS as sessões
+ * do usuário se detectar reuso — sinal de roubo). Duas chamadas quase
+ * simultâneas (ex: React StrictMode rodando o efeito de checagem de
+ * sessão em dobro) mandariam o mesmo token duas vezes e disparariam
+ * essa detecção à toa, deslogando o usuário sem motivo real. Por isso,
+ * uma chamada em andamento é reaproveitada em vez de disparar outra.
+ */
 export function refreshSession(): Promise<{ success: true }> {
-  return apiFetch('/auth/refresh', { method: 'POST' });
+  if (!inFlightRefresh) {
+    inFlightRefresh = apiFetch<{ success: true }>('/auth/refresh', { method: 'POST' }).finally(() => {
+      inFlightRefresh = null;
+    });
+  }
+  return inFlightRefresh;
 }
 
 export function logout(): Promise<{ message: string }> {

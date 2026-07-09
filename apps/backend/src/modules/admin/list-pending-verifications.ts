@@ -1,6 +1,6 @@
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { companies, documents, workerProfiles } from '../../db/schema';
+import { companies, documents, skillCategories, workerProfiles } from '../../db/schema';
 
 export interface PendingDocument {
   id: string;
@@ -16,9 +16,16 @@ export interface PendingCompany {
   cnpj: string;
 }
 
+export interface PendingSkillCategory {
+  id: string;
+  name: string;
+  createdByName: string | null;
+}
+
 export interface PendingVerifications {
   documents: PendingDocument[];
   companies: PendingCompany[];
+  skillCategories: PendingSkillCategory[];
 }
 
 /** Junta em memória (sem relations() configurado no Drizzle) — mesmo padrão de list-my-shifts. */
@@ -34,6 +41,27 @@ export async function listPendingVerifications(): Promise<PendingVerifications> 
   const pendingCompanies = await db.query.companies.findMany({
     where: eq(companies.verificationStatus, 'pending'),
   });
+
+  const pendingSkillCategories = await db.query.skillCategories.findMany({
+    where: eq(skillCategories.status, 'pending'),
+  });
+  const creatorCompanyIds = pendingSkillCategories.flatMap((category) =>
+    category.createdByCompanyId ? [category.createdByCompanyId] : [],
+  );
+  const creatorCompanies =
+    creatorCompanyIds.length > 0
+      ? await db.query.companies.findMany({ where: inArray(companies.id, creatorCompanyIds) })
+      : [];
+  const creatorCompaniesById = new Map(creatorCompanies.map((company) => [company.id, company]));
+
+  const creatorWorkerIds = pendingSkillCategories.flatMap((category) =>
+    category.createdByWorkerId ? [category.createdByWorkerId] : [],
+  );
+  const creatorWorkers =
+    creatorWorkerIds.length > 0
+      ? await db.query.workerProfiles.findMany({ where: inArray(workerProfiles.userId, creatorWorkerIds) })
+      : [];
+  const creatorWorkersById = new Map(creatorWorkers.map((worker) => [worker.userId, worker]));
 
   return {
     documents: pendingDocuments.flatMap((document) => {
@@ -54,5 +82,13 @@ export async function listPendingVerifications(): Promise<PendingVerifications> 
       tradeName: company.tradeName,
       cnpj: company.cnpj,
     })),
+    skillCategories: pendingSkillCategories.map((category) => {
+      const createdByName = category.createdByCompanyId
+        ? (creatorCompaniesById.get(category.createdByCompanyId)?.tradeName ?? null)
+        : category.createdByWorkerId
+          ? (creatorWorkersById.get(category.createdByWorkerId)?.fullName ?? null)
+          : null;
+      return { id: category.id, name: category.name, createdByName };
+    }),
   };
 }

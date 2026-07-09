@@ -72,5 +72,7 @@ describe('listMyApplications', () => {
     expect(result[0].status).toBe('pending');
     expect(result[0].job.id).toBe(job.id);
     expect(result[0].job.addressLabel).toBe('Endereço de teste');
+    expect(result[0].companyName).toBe('Buffet Aurora');
+    expect(result[0].workerSeenAt).toBeNull();
   });
 });

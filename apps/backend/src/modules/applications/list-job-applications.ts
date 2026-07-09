@@ -1,6 +1,6 @@
 import { desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { applications, companies, jobs, shifts, workerProfiles } from '../../db/schema';
+import { applications, companies, jobs, shifts, workerProfiles, workerSkills } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { getPaymentsByShiftIds } from '../payments/get-payments-by-shift-ids';
 import { PaymentResponse } from '../payments/payment-response';
@@ -15,6 +15,8 @@ export interface JobApplicationResponse {
     fullName: string;
     photoUrl: string | null;
     avgRating: string | null;
+    /** Não tem a categoria da vaga no perfil — mostra aviso pra quem for aprovar. */
+    matchesSkills: boolean;
   };
   shift: {
     id: string;
@@ -55,6 +57,15 @@ export async function listJobApplications(
   });
   const workersById = new Map(workerRows.map((worker) => [worker.userId, worker]));
 
+  const skillRows =
+    workerIds.length > 0 ? await db.query.workerSkills.findMany({ where: inArray(workerSkills.workerId, workerIds) }) : [];
+  const categoryIdsByWorkerId = new Map<string, Set<string>>();
+  for (const skill of skillRows) {
+    const set = categoryIdsByWorkerId.get(skill.workerId) ?? new Set<string>();
+    set.add(skill.categoryId);
+    categoryIdsByWorkerId.set(skill.workerId, set);
+  }
+
   const applicationIds = rows.map((row) => row.id);
   const shiftRows = await db.query.shifts.findMany({
     where: inArray(shifts.applicationId, applicationIds),
@@ -83,6 +94,7 @@ export async function listJobApplications(
           fullName: worker.fullName,
           photoUrl: worker.photoUrl,
           avgRating: worker.avgRating,
+          matchesSkills: categoryIdsByWorkerId.get(worker.userId)?.has(job.categoryId) ?? false,
         },
         shift: shift
           ? {

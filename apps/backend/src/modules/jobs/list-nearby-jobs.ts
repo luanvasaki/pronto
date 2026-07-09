@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies, jobs, workerProfiles, workerSkills } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
@@ -10,6 +10,8 @@ export interface NearbyJobResponse extends JobResponse {
   companyName: string;
   companyLogoUrl: string | null;
   companyAvgRating: string | null;
+  /** Trabalhador não tem essa categoria no perfil — mostra aviso, mas não impede candidatura. */
+  matchesSkills: boolean;
 }
 
 /**
@@ -17,6 +19,10 @@ export interface NearbyJobResponse extends JobResponse {
  * (uma cidade, poucas categorias), então filtrar por categoria no
  * banco e calcular distância em JS é simples e rápido o suficiente.
  * Revisar quando o volume justificar uma busca geoespacial no banco.
+ *
+ * Mostra vagas de QUALQUER categoria (não só as do perfil do
+ * trabalhador) — `matchesSkills` avisa quando ele não tem a
+ * especialidade, mas a decisão de se candidatar é dele.
  */
 export async function listNearbyJobs(workerId: string): Promise<NearbyJobResponse[]> {
   const profile = await db.query.workerProfiles.findFirst({
@@ -30,14 +36,9 @@ export async function listNearbyJobs(workerId: string): Promise<NearbyJobRespons
   }
 
   const skills = await db.query.workerSkills.findMany({ where: eq(workerSkills.workerId, workerId) });
-  const categoryIds = skills.map((skill) => skill.categoryId);
-  if (categoryIds.length === 0) {
-    return [];
-  }
+  const categoryIds = new Set(skills.map((skill) => skill.categoryId));
 
-  const openJobs = await db.query.jobs.findMany({
-    where: and(eq(jobs.status, 'open'), inArray(jobs.categoryId, categoryIds)),
-  });
+  const openJobs = await db.query.jobs.findMany({ where: eq(jobs.status, 'open') });
 
   const companyIds = [...new Set(openJobs.map((job) => job.companyId))];
   const companyRows =
@@ -65,6 +66,7 @@ export async function listNearbyJobs(workerId: string): Promise<NearbyJobRespons
           companyName: company.tradeName,
           companyLogoUrl: company.logoUrl,
           companyAvgRating: company.avgRating,
+          matchesSkills: categoryIds.has(job.categoryId),
         },
       ];
     });

@@ -11,6 +11,7 @@ export {
 } from './auth-api';
 export type { UserResponse } from './auth-api';
 export { extractDigits } from './digits';
+export { formatCnpj, formatCpf } from './masks';
 export { isValidPassword } from './password';
-export { listSkillCategories } from './skill-categories-api';
+export { createSkillCategory, listSkillCategories } from './skill-categories-api';
 export type { SkillCategory } from './skill-categories-api';

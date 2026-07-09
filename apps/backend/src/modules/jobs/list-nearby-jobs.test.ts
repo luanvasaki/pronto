@@ -42,6 +42,7 @@ async function createTestJob(ownerId: string, categoryId: string, lat: number, l
   return createJob(ownerId, {
     categoryId,
     description: 'Vaga de teste com descrição detalhada o suficiente.',
+    requiresExperience: false,
     addressLabel: 'Endereço de teste',
     locationLat: lat,
     locationLng: lng,
@@ -80,18 +81,29 @@ describe('listNearbyJobs', () => {
     await expect(listNearbyJobs(worker.id)).rejects.toThrow('Defina sua localização');
   });
 
-  it('retorna lista vazia quando o worker não tem categorias', async () => {
+  // Sem filtro de categoria, o único isolamento entre arquivos de teste
+  // rodando em paralelo (mesmo banco) é o raio de distância — por isso
+  // as buscas abaixo usam `.find()` pelo id do job criado neste teste
+  // em vez de `toHaveLength`, que quebraria com vagas de outros arquivos
+  // caindo no mesmo raio.
+  it('retorna vagas de qualquer categoria mesmo quando o worker não tem nenhuma cadastrada, sinalizando que não bate', async () => {
     const worker = await createWorker();
     await db
       .insert(workerProfiles)
-      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG });
+      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+    const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
+
+    const owner = await createCompanyOwner();
+    const nearJob = await createTestJob(owner.id, categoryNear.id, NEAR_JOB_LAT, NEAR_JOB_LNG);
 
     const result = await listNearbyJobs(worker.id);
+    const found = result.find((job) => job.id === nearJob.id);
 
-    expect(result).toEqual([]);
+    expect(found).toBeDefined();
+    expect(found?.matchesSkills).toBe(false);
   });
 
-  it('só retorna vagas da categoria do worker, dentro do raio, ordenadas por distância', async () => {
+  it('retorna vagas de qualquer categoria dentro do raio, ordenadas por distância, sinalizando quais batem com o worker', async () => {
     const worker = await createWorker();
     await db
       .insert(workerProfiles)
@@ -102,17 +114,22 @@ describe('listNearbyJobs', () => {
 
     const owner = await createCompanyOwner();
     const nearJob = await createTestJob(owner.id, categoryNear.id, NEAR_JOB_LAT, NEAR_JOB_LNG);
-    // Fora do raio (outra cidade).
-    await createTestJob(owner.id, categoryNear.id, FAR_JOB_LAT, FAR_JOB_LNG);
-    // Categoria que o worker não tem.
-    await createTestJob(owner.id, categoryFar.id, WORKER_LAT, WORKER_LNG);
+    // Fora do raio (outra cidade) — não deve aparecer, mesmo com categoria batendo.
+    const farJob = await createTestJob(owner.id, categoryNear.id, FAR_JOB_LAT, FAR_JOB_LNG);
+    // Categoria que o worker não tem, mas dentro do raio — aparece, só que sinalizada.
+    const noMatchJob = await createTestJob(owner.id, categoryFar.id, WORKER_LAT, WORKER_LNG);
 
     const result = await listNearbyJobs(worker.id);
+    const foundNear = result.find((job) => job.id === nearJob.id);
+    const foundNoMatch = result.find((job) => job.id === noMatchJob.id);
 
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe(nearJob.id);
-    expect(result[0].distanceKm).toBeGreaterThan(0);
-    expect(result[0].distanceKm).toBeLessThan(20);
-    expect(result[0].companyName).toBe('Buffet Aurora');
+    expect(result.find((job) => job.id === farJob.id)).toBeUndefined();
+    expect(foundNear?.matchesSkills).toBe(true);
+    expect(foundNear?.distanceKm).toBeGreaterThan(0);
+    expect(foundNear?.distanceKm).toBeLessThan(20);
+    expect(foundNear?.companyName).toBe('Buffet Aurora');
+    expect(foundNoMatch?.matchesSkills).toBe(false);
+    // A mais próxima (sem match) vem antes da mais distante (com match) — ordenado por distância.
+    expect(result.indexOf(foundNoMatch!)).toBeLessThan(result.indexOf(foundNear!));
   });
 });

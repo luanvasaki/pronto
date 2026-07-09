@@ -7,6 +7,7 @@ export interface ApplicationResponse {
   jobId: string;
   workerId: string;
   status: string;
+  workerSeenAt: Date | null;
   createdAt: Date;
 }
 
@@ -16,6 +17,7 @@ export function toApplicationResponse(application: ApplicationRow): ApplicationR
     jobId: application.jobId,
     workerId: application.workerId,
     status: application.status,
+    workerSeenAt: application.workerSeenAt,
     createdAt: application.createdAt,
   };
 }

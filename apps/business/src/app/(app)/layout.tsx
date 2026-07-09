@@ -6,8 +6,12 @@ import { useEffect, useState } from 'react';
 import { Sidebar } from '../../components/ui/sidebar';
 import { Topbar } from '../../components/ui/topbar';
 import { useRequireAuth } from '../../hooks/use-require-auth';
-import { CompanyProfileDetails, getCompanyProfile } from '../../lib/company-profile-api';
+import { CompanyProfileDetails, getCompanyNotifications, getCompanyProfile } from '../../lib/company-profile-api';
 import { CompanyProfileProvider } from './company-profile-context';
+
+// Sem WebSocket/push — reconsultar de tempos em tempos enquanto o
+// painel fica aberto é o suficiente pro volume do MVP.
+const NOTIFICATIONS_POLL_INTERVAL_MS = 60_000;
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -57,6 +61,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [needsCadastro, setNeedsCadastro] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
 
   useEffect(() => {
     if (isChecking) return;
@@ -75,6 +80,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       })
       .finally(() => setIsLoadingProfile(false));
   }, [isChecking, router]);
+
+  useEffect(() => {
+    if (isChecking || needsCadastro) return;
+
+    let cancelled = false;
+
+    function poll(): void {
+      getCompanyNotifications()
+        .then((result) => {
+          if (!cancelled) setPendingApplicationsCount(result.pendingApplicationsCount);
+        })
+        .catch(() => undefined);
+    }
+
+    poll();
+    const intervalId = setInterval(poll, NOTIFICATIONS_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [isChecking, needsCadastro]);
 
   if (isChecking || isLoadingProfile || needsCadastro) {
     return (
@@ -99,7 +125,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           onClose={() => setIsMobileNavOpen(false)}
         />
         <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar title={title} subtitle={subtitle} onMenuClick={() => setIsMobileNavOpen(true)} />
+          <Topbar
+            title={title}
+            subtitle={subtitle}
+            onMenuClick={() => setIsMobileNavOpen(true)}
+            pendingApplicationsCount={pendingApplicationsCount}
+          />
           <div className="flex-1 overflow-y-auto p-4 lg:p-7">{children}</div>
         </div>
       </div>

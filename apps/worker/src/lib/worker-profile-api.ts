@@ -2,33 +2,45 @@ import { apiFetch } from '@shift/shared';
 
 export interface WorkerProfileDetails {
   fullName: string;
+  bio: string | null;
+  cpf: string | null;
   categoryIds: string[];
+  experienceByCategory: Record<string, boolean>;
   photoUrl: string | null;
   homeAddressLabel: string | null;
   kycStatus: string;
+  hasDocument: boolean;
   avgRating: string | null;
   totalShiftsCompleted: number;
-  totalNoShows: number;
+  totalHoursWorked: number;
 }
 
 export function getWorkerProfile(): Promise<WorkerProfileDetails> {
   return apiFetch('/worker-profile/me');
 }
 
+export interface UpsertWorkerProfileInput {
+  fullName: string;
+  categoryIds: string[];
+  photoUrl?: string;
+  bio?: string;
+  cpf?: string;
+  experienceByCategory?: Record<string, boolean>;
+}
+
 export interface UpsertWorkerProfileResponse {
   fullName: string;
   categoryIds: string[];
   photoUrl: string | null;
+  bio: string | null;
+  cpf: string | null;
+  experienceByCategory: Record<string, boolean>;
 }
 
-export function upsertWorkerProfile(
-  fullName: string,
-  categoryIds: string[],
-  photoUrl?: string,
-): Promise<UpsertWorkerProfileResponse> {
+export function upsertWorkerProfile(input: UpsertWorkerProfileInput): Promise<UpsertWorkerProfileResponse> {
   return apiFetch('/worker-profile', {
     method: 'PUT',
-    body: JSON.stringify({ fullName, categoryIds, photoUrl }),
+    body: JSON.stringify(input),
   });
 }
 

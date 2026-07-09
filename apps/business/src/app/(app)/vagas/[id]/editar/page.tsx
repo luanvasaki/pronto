@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
 import { Button } from '../../../../../components/ui/button';
 import { Input } from '../../../../../components/ui/input';
+import { getCurrentPosition } from '../../../../../lib/geolocation';
 import { listMyJobs, updateJob } from '../../../../../lib/jobs-api';
 
 const PAY_AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
@@ -23,6 +24,9 @@ export default function EditarVagaPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [categoryId, setCategoryId] = useState('');
+  const [requiresExperience, setRequiresExperience] = useState<boolean | null>(null);
+  const [dressCode, setDressCode] = useState('');
+  const [toolsRequired, setToolsRequired] = useState('');
   const [description, setDescription] = useState('');
   const [addressLabel, setAddressLabel] = useState('');
   const [lat, setLat] = useState<number | null>(null);
@@ -34,24 +38,23 @@ export default function EditarVagaPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationJustUpdated, setLocationJustUpdated] = useState(false);
 
-  function handleUseCurrentLocation(): void {
-    if (!navigator.geolocation) {
-      setLocationError('Geolocalização não é suportada nesse navegador.');
-      return;
-    }
-
+  async function handleUseCurrentLocation(): Promise<void> {
     setLocationError(null);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLat(position.coords.latitude);
-        setLng(position.coords.longitude);
-        setLocationJustUpdated(true);
-      },
-      () => setLocationError('Não foi possível obter sua localização.'),
-    );
+    setIsLocating(true);
+    try {
+      const position = await getCurrentPosition();
+      setLat(position.coords.latitude);
+      setLng(position.coords.longitude);
+      setLocationJustUpdated(true);
+    } catch (err) {
+      setLocationError(err instanceof Error ? err.message : 'Não foi possível obter sua localização.');
+    } finally {
+      setIsLocating(false);
+    }
   }
 
   useEffect(() => {
@@ -70,6 +73,9 @@ export default function EditarVagaPage() {
         }
 
         setCategoryId(job.categoryId);
+        setRequiresExperience(job.requiresExperience);
+        setDressCode(job.dressCode ?? '');
+        setToolsRequired(job.toolsRequired ?? '');
         setDescription(job.description);
         setAddressLabel(job.addressLabel);
         setLat(job.locationLat);
@@ -93,6 +99,7 @@ export default function EditarVagaPage() {
   const estimateTotal = positionsTotalNumber * payAmountNumber;
   const isValid =
     categoryId !== '' &&
+    requiresExperience !== null &&
     description.trim().length >= 10 &&
     addressLabel.trim().length >= 2 &&
     lat !== null &&
@@ -108,7 +115,7 @@ export default function EditarVagaPage() {
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
-    if (!isValid || isSubmitting || lat === null || lng === null) return;
+    if (!isValid || isSubmitting || lat === null || lng === null || requiresExperience === null) return;
 
     setError(null);
     setIsSubmitting(true);
@@ -117,6 +124,9 @@ export default function EditarVagaPage() {
       await updateJob(jobId, {
         categoryId,
         description,
+        requiresExperience,
+        dressCode: dressCode.trim() || undefined,
+        toolsRequired: toolsRequired.trim() || undefined,
         addressLabel,
         locationLat: lat,
         locationLng: lng,
@@ -172,6 +182,58 @@ export default function EditarVagaPage() {
           </select>
         </div>
 
+        <div className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-4">
+          <p className="font-heading text-sm font-bold text-text">O que essa vaga exige?</p>
+
+          <div>
+            <span className="mb-1.5 block text-sm font-medium text-text-secondary">
+              Precisa de experiência anterior?
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setRequiresExperience(true)}
+                className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+                  requiresExperience === true
+                    ? 'border-primary bg-primary text-white'
+                    : 'border-border bg-surface text-text-secondary'
+                }`}
+              >
+                Sim
+              </button>
+              <button
+                type="button"
+                onClick={() => setRequiresExperience(false)}
+                className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+                  requiresExperience === false
+                    ? 'border-primary bg-primary text-white'
+                    : 'border-border bg-surface text-text-secondary'
+                }`}
+              >
+                Não
+              </button>
+            </div>
+          </div>
+
+          <Input
+            id="dressCode"
+            label="Vestimenta exigida (opcional)"
+            type="text"
+            placeholder="Social, uniforme fornecido, traje esportivo..."
+            value={dressCode}
+            onChange={(event) => setDressCode(event.target.value)}
+          />
+
+          <Input
+            id="toolsRequired"
+            label="Ferramentas que o profissional precisa levar (opcional)"
+            type="text"
+            placeholder="Câmera própria, ferramentas de bar..."
+            value={toolsRequired}
+            onChange={(event) => setToolsRequired(event.target.value)}
+          />
+        </div>
+
         <div>
           <label htmlFor="description" className="mb-1.5 block text-sm font-medium text-text-secondary">
             Descrição
@@ -194,7 +256,7 @@ export default function EditarVagaPage() {
         />
 
         <div>
-          <Button type="button" variant="outlined" onClick={handleUseCurrentLocation}>
+          <Button type="button" variant="outlined" onClick={handleUseCurrentLocation} isLoading={isLocating}>
             {locationJustUpdated ? 'Localização atualizada ✓' : 'Usar minha localização atual'}
           </Button>
           {locationError && <p className="mt-1.5 text-sm text-danger">{locationError}</p>}

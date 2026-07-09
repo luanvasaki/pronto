@@ -43,7 +43,9 @@ const SHIFT_STATUS_LABEL: Record<string, string> = {
 const PAYMENT_STATUS_LABEL: Record<string, string> = {
   pending: 'Aguardando conclusão do turno',
   charged: 'Turno concluído — combine o pagamento com o profissional',
-  released: 'Marcado como pago',
+  released: 'Marcado como pago — aguardando confirmação do profissional',
+  confirmed: 'Profissional confirmou o recebimento',
+  disputed: 'Profissional avisou que não recebeu',
   failed: 'Não foi possível registrar o acerto',
   refunded: 'Acerto cancelado',
 };
@@ -197,6 +199,12 @@ export default function VagaCandidatosPage() {
               </span>
             </div>
 
+            {!application.worker.matchesSkills && (
+              <p className="mt-2.5 rounded-lg bg-danger/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-danger">
+                Esse profissional não tem essa especialidade no perfil dele.
+              </p>
+            )}
+
             {application.shift && (
               <p className="mt-2 text-sm text-text-secondary">
                 Turno: {SHIFT_STATUS_LABEL[application.shift.status] ?? application.shift.status}
@@ -204,7 +212,11 @@ export default function VagaCandidatosPage() {
             )}
 
             {application.shift?.payment && (
-              <p className="mt-1 text-sm text-text-secondary">
+              <p
+                className={`mt-1 text-sm ${
+                  application.shift.payment.status === 'disputed' ? 'font-semibold text-danger' : 'text-text-secondary'
+                }`}
+              >
                 {PAYMENT_STATUS_LABEL[application.shift.payment.status] ?? application.shift.payment.status}
               </p>
             )}

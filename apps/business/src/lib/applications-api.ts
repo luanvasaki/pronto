@@ -7,6 +7,8 @@ export interface Payment {
   status: string;
   chargedAt: string | null;
   releasedAt: string | null;
+  confirmedAt: string | null;
+  disputedAt: string | null;
 }
 
 export interface Rating {
@@ -32,6 +34,7 @@ export interface JobApplication {
     fullName: string;
     photoUrl: string | null;
     avgRating: string | null;
+    matchesSkills: boolean;
   };
   shift: {
     id: string;

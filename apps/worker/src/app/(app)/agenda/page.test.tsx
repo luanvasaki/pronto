@@ -16,11 +16,13 @@ const listMyShiftsMock = vi.fn();
 const checkInMock = vi.fn();
 const checkOutMock = vi.fn();
 const rateShiftMock = vi.fn();
+const confirmPaymentMock = vi.fn();
 vi.mock('../../../lib/shifts-api', () => ({
   listMyShifts: (...args: unknown[]) => listMyShiftsMock(...args),
   checkIn: (...args: unknown[]) => checkInMock(...args),
   checkOut: (...args: unknown[]) => checkOutMock(...args),
   rateShift: (...args: unknown[]) => rateShiftMock(...args),
+  confirmPayment: (...args: unknown[]) => confirmPaymentMock(...args),
 }));
 
 const JOB = {
@@ -72,6 +74,7 @@ describe('TurnosPage', () => {
     checkInMock.mockReset();
     checkOutMock.mockReset();
     rateShiftMock.mockReset();
+    confirmPaymentMock.mockReset();
     Object.defineProperty(window.navigator, 'geolocation', { value: undefined, configurable: true });
   });
 
@@ -248,5 +251,91 @@ describe('TurnosPage', () => {
 
     expect(await screen.findByText(/acerte o pagamento direto com a empresa/i)).toBeInTheDocument();
     expect(listMyShiftsMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('mostra os botões de confirmar/contestar quando a empresa marca como pago', async () => {
+    listMyShiftsMock.mockResolvedValue({
+      shifts: [
+        makeShift({
+          status: 'completed',
+          payment: { id: 'p1', shiftId: 'shift-1', amount: '130.00', status: 'released', chargedAt: null, releasedAt: null },
+        }),
+      ],
+    });
+
+    render(<TurnosPage />);
+
+    expect(await screen.findByRole('button', { name: /recebi o pagamento/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /não recebi/i })).toBeInTheDocument();
+  });
+
+  it('confirma o recebimento e atualiza o status', async () => {
+    listMyShiftsMock.mockResolvedValue({
+      shifts: [
+        makeShift({
+          status: 'completed',
+          payment: { id: 'p1', shiftId: 'shift-1', amount: '130.00', status: 'released', chargedAt: null, releasedAt: null },
+        }),
+      ],
+    });
+    confirmPaymentMock.mockResolvedValue({
+      id: 'p1',
+      shiftId: 'shift-1',
+      amount: '130.00',
+      status: 'confirmed',
+      chargedAt: null,
+      releasedAt: null,
+    });
+    const user = userEvent.setup();
+
+    render(<TurnosPage />);
+    await user.click(await screen.findByRole('button', { name: /recebi o pagamento/i }));
+
+    expect(confirmPaymentMock).toHaveBeenCalledWith('shift-1', true);
+    expect(await screen.findByText('Você confirmou o recebimento')).toBeInTheDocument();
+  });
+
+  it('contesta o recebimento e mostra o status em disputa', async () => {
+    listMyShiftsMock.mockResolvedValue({
+      shifts: [
+        makeShift({
+          status: 'completed',
+          payment: { id: 'p1', shiftId: 'shift-1', amount: '130.00', status: 'released', chargedAt: null, releasedAt: null },
+        }),
+      ],
+    });
+    confirmPaymentMock.mockResolvedValue({
+      id: 'p1',
+      shiftId: 'shift-1',
+      amount: '130.00',
+      status: 'disputed',
+      chargedAt: null,
+      releasedAt: null,
+    });
+    const user = userEvent.setup();
+
+    render(<TurnosPage />);
+    await user.click(await screen.findByRole('button', { name: /não recebi/i }));
+
+    expect(confirmPaymentMock).toHaveBeenCalledWith('shift-1', false);
+    expect(await screen.findByText(/você avisou que não recebeu/i)).toBeInTheDocument();
+  });
+
+  it('mostra a mensagem da API quando a confirmação falha', async () => {
+    listMyShiftsMock.mockResolvedValue({
+      shifts: [
+        makeShift({
+          status: 'completed',
+          payment: { id: 'p1', shiftId: 'shift-1', amount: '130.00', status: 'released', chargedAt: null, releasedAt: null },
+        }),
+      ],
+    });
+    confirmPaymentMock.mockRejectedValue(new Error('falha de rede'));
+    const user = userEvent.setup();
+
+    render(<TurnosPage />);
+    await user.click(await screen.findByRole('button', { name: /recebi o pagamento/i }));
+
+    expect(await screen.findByText('falha de rede')).toBeInTheDocument();
   });
 });

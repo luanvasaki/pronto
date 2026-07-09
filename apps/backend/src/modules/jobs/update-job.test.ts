@@ -25,6 +25,7 @@ function baseInput(categoryId: string) {
   return {
     categoryId,
     description: 'Uniforme preto próprio, experiência em eventos.',
+    requiresExperience: false,
     addressLabel: 'Vila Madalena, São Paulo',
     locationLat: -23.546,
     locationLng: -46.69,
@@ -132,6 +133,7 @@ describe('updateJob', () => {
     const result = await updateJob(owner.id, job.id, {
       categoryId: otherCategory.id,
       description: 'Descrição atualizada com detalhes suficientes.',
+      requiresExperience: true,
       addressLabel: 'Pinheiros, São Paulo',
       locationLat: -23.56,
       locationLng: -46.7,
@@ -142,6 +144,7 @@ describe('updateJob', () => {
     });
 
     expect(result.categoryId).toBe(otherCategory.id);
+    expect(result.requiresExperience).toBe(true);
     expect(result.addressLabel).toBe('Pinheiros, São Paulo');
     expect(result.payAmount).toBe('150.00');
     expect(result.positionsTotal).toBe(3);

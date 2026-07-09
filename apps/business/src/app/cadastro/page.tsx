@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiError, extractDigits } from '@shift/shared';
+import { ApiError, extractDigits, formatCnpj } from '@shift/shared';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { Button } from '../../components/ui/button';
@@ -27,7 +27,7 @@ export default function CadastroPage() {
     setIsSubmitting(true);
 
     try {
-      await upsertCompanyProfile(legalName, tradeName, cnpj);
+      await upsertCompanyProfile({ legalName, tradeName, cnpj });
       router.push('/painel');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível salvar o cadastro.');
@@ -70,10 +70,10 @@ export default function CadastroPage() {
           label="CNPJ"
           type="text"
           inputMode="numeric"
-          placeholder="00000000000000"
-          maxLength={14}
-          value={cnpj}
-          onChange={(event) => setCnpj(extractDigits(event.target.value))}
+          placeholder="00.000.000/0000-00"
+          maxLength={18}
+          value={formatCnpj(cnpj)}
+          onChange={(event) => setCnpj(extractDigits(event.target.value).slice(0, 14))}
         />
 
         {error && <p className="text-sm text-danger">{error}</p>}

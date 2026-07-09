@@ -23,6 +23,7 @@ function baseInput(categoryId: string, positionsTotal = 2) {
   return {
     categoryId,
     description: 'Uniforme preto próprio, experiência em eventos.',
+    requiresExperience: false,
     addressLabel: 'Vila Madalena, São Paulo',
     locationLat: -23.546,
     locationLng: -46.69,

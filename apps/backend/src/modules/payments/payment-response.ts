@@ -9,6 +9,8 @@ export interface PaymentResponse {
   status: string;
   chargedAt: Date | null;
   releasedAt: Date | null;
+  confirmedAt: Date | null;
+  disputedAt: Date | null;
 }
 
 export function toPaymentResponse(payment: PaymentRow): PaymentResponse {
@@ -19,5 +21,7 @@ export function toPaymentResponse(payment: PaymentRow): PaymentResponse {
     status: payment.status,
     chargedAt: payment.chargedAt,
     releasedAt: payment.releasedAt,
+    confirmedAt: payment.confirmedAt,
+    disputedAt: payment.disputedAt,
   };
 }

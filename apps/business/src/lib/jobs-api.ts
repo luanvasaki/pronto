@@ -4,6 +4,9 @@ export interface Job {
   id: string;
   categoryId: string;
   description: string;
+  requiresExperience: boolean;
+  dressCode: string | null;
+  toolsRequired: string | null;
   addressLabel: string;
   locationLat: number;
   locationLng: number;
@@ -22,6 +25,9 @@ export function listMyJobs(): Promise<{ jobs: Job[] }> {
 export interface CreateJobInput {
   categoryId: string;
   description: string;
+  requiresExperience: boolean;
+  dressCode?: string;
+  toolsRequired?: string;
   addressLabel: string;
   locationLat: number;
   locationLng: number;

@@ -4,6 +4,9 @@ export interface Job {
   id: string;
   categoryId: string;
   description: string;
+  requiresExperience: boolean;
+  dressCode: string | null;
+  toolsRequired: string | null;
   addressLabel: string;
   locationLat: number;
   locationLng: number;
@@ -20,6 +23,7 @@ export interface NearbyJob extends Job {
   companyName: string;
   companyLogoUrl: string | null;
   companyAvgRating: string | null;
+  matchesSkills: boolean;
 }
 
 export function listNearbyJobs(): Promise<{ jobs: NearbyJob[] }> {

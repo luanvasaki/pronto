@@ -9,6 +9,8 @@ export interface CompanyProfileDetails {
   tradeName: string;
   cnpj: string;
   logoUrl: string | null;
+  addressLabel: string | null;
+  businessSegment: string | null;
   verificationStatus: string;
   avgRating: string | null;
   totalJobsPosted: number;
@@ -26,6 +28,8 @@ export async function getCompanyProfile(ownerUserId: string): Promise<CompanyPro
     tradeName: company.tradeName,
     cnpj: company.cnpj,
     logoUrl: company.logoUrl,
+    addressLabel: company.addressLabel,
+    businessSegment: company.businessSegment,
     verificationStatus: company.verificationStatus,
     avgRating: company.avgRating,
     totalJobsPosted: company.totalJobsPosted,

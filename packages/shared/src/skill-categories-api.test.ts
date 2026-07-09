@@ -5,7 +5,7 @@ vi.mock('./api', () => ({
   apiFetch: (...args: unknown[]) => apiFetchMock(...args),
 }));
 
-const { listSkillCategories } = await import('./skill-categories-api');
+const { listSkillCategories, createSkillCategory } = await import('./skill-categories-api');
 
 describe('listSkillCategories', () => {
   beforeEach(() => {
@@ -18,5 +18,22 @@ describe('listSkillCategories', () => {
     await listSkillCategories();
 
     expect(apiFetchMock).toHaveBeenCalledWith('/skill-categories');
+  });
+});
+
+describe('createSkillCategory', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama POST /skill-categories com o nome', async () => {
+    apiFetchMock.mockResolvedValue({ id: 'cat-1', name: 'Manobrista' });
+
+    await createSkillCategory('Manobrista');
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/skill-categories', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Manobrista' }),
+    });
   });
 });

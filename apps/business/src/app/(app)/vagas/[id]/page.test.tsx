@@ -31,7 +31,7 @@ const PENDING_APPLICATION = {
   id: 'app-1',
   status: 'pending',
   createdAt: '2026-07-01T12:00:00.000Z',
-  worker: { id: 'worker-1', fullName: 'Ana Souza', avgRating: null },
+  worker: { id: 'worker-1', fullName: 'Ana Souza', avgRating: null, matchesSkills: true },
   shift: null,
 };
 
@@ -84,6 +84,17 @@ describe('VagaCandidatosPage', () => {
     expect(screen.getByText('Em análise')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /aprovar/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /rejeitar/i })).toBeInTheDocument();
+  });
+
+  it('avisa quando o candidato não tem a especialidade da vaga', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [{ ...PENDING_APPLICATION, worker: { ...PENDING_APPLICATION.worker, matchesSkills: false } }],
+    });
+
+    render(<VagaCandidatosPage />);
+
+    await screen.findByText('Ana Souza');
+    expect(screen.getByText('Esse profissional não tem essa especialidade no perfil dele.')).toBeInTheDocument();
   });
 
   it('não mostra botões de decisão pra candidatura já respondida', async () => {
@@ -170,8 +181,38 @@ describe('VagaCandidatosPage', () => {
     await screen.findByRole('button', { name: /marcar como pago/i });
     await user.click(screen.getByRole('button', { name: /marcar como pago/i }));
 
-    expect(await screen.findByText('Marcado como pago')).toBeInTheDocument();
+    expect(await screen.findByText(/marcado como pago/i)).toBeInTheDocument();
     expect(releasePaymentMock).toHaveBeenCalledWith('shift-1');
+  });
+
+  it('mostra quando o profissional confirmou o recebimento', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [
+        makeCompletedApplication({
+          payment: { id: 'p1', shiftId: 'shift-1', amount: '130.00', status: 'confirmed', chargedAt: null, releasedAt: null },
+        }),
+      ],
+    });
+
+    render(<VagaCandidatosPage />);
+
+    expect(await screen.findByText('Profissional confirmou o recebimento')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /marcar como pago/i })).not.toBeInTheDocument();
+  });
+
+  it('destaca quando o profissional avisa que não recebeu', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [
+        makeCompletedApplication({
+          payment: { id: 'p1', shiftId: 'shift-1', amount: '130.00', status: 'disputed', chargedAt: null, releasedAt: null },
+        }),
+      ],
+    });
+
+    render(<VagaCandidatosPage />);
+
+    const message = await screen.findByText('Profissional avisou que não recebeu');
+    expect(message).toHaveClass('text-danger');
   });
 
   it('mostra o formulário de avaliação pra turno concluído ainda não avaliado', async () => {

@@ -2,6 +2,7 @@ import { ApiError } from '@shift/shared';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { WorkerProfileProvider } from '../worker-profile-context';
 import InicioPage from './page';
 
 const listSkillCategoriesMock = vi.fn();
@@ -21,27 +22,47 @@ vi.mock('../../../lib/jobs-api', () => ({
 }));
 
 const updateWorkerLocationMock = vi.fn();
-const getWorkerProfileMock = vi.fn();
 vi.mock('../../../lib/worker-profile-api', () => ({
   updateWorkerLocation: (...args: unknown[]) => updateWorkerLocationMock(...args),
-  getWorkerProfile: (...args: unknown[]) => getWorkerProfileMock(...args),
+}));
+
+const listMyApplicationsMock = vi.fn();
+const markApplicationSeenMock = vi.fn();
+vi.mock('../../../lib/applications-api', () => ({
+  listMyApplications: (...args: unknown[]) => listMyApplicationsMock(...args),
+  markApplicationSeen: (...args: unknown[]) => markApplicationSeenMock(...args),
 }));
 
 const PROFILE = {
   fullName: 'Ana Souza',
+  bio: null,
+  cpf: null,
   categoryIds: ['cat-1'],
+  experienceByCategory: {},
   photoUrl: null,
   homeAddressLabel: 'Campolim, Sorocaba',
   kycStatus: 'approved',
+  hasDocument: true,
   avgRating: '4.8',
   totalShiftsCompleted: 10,
-  totalNoShows: 0,
+  totalHoursWorked: 34,
 };
+
+function renderPage() {
+  return render(
+    <WorkerProfileProvider initialProfile={PROFILE}>
+      <InicioPage />
+    </WorkerProfileProvider>,
+  );
+}
 
 const JOB = {
   id: 'job-1',
   categoryId: 'cat-1',
   description: 'Vaga de garçom pra evento grande',
+  requiresExperience: false,
+  dressCode: null,
+  toolsRequired: null,
   addressLabel: 'Vila Madalena, São Paulo',
   locationLat: -23.55,
   locationLng: -46.63,
@@ -54,6 +75,7 @@ const JOB = {
   distanceKm: 2.3,
   companyName: 'Buffet Aurora',
   companyAvgRating: '4.8',
+  matchesSkills: true,
 };
 
 describe('InicioPage', () => {
@@ -62,7 +84,8 @@ describe('InicioPage', () => {
     listNearbyJobsMock.mockReset();
     applyToJobMock.mockReset();
     updateWorkerLocationMock.mockReset();
-    getWorkerProfileMock.mockReset().mockResolvedValue(PROFILE);
+    listMyApplicationsMock.mockReset().mockResolvedValue({ applications: [] });
+    markApplicationSeenMock.mockReset();
     window.localStorage.clear();
     // Evita vazamento entre testes — cada um define seu próprio mock.
     Object.defineProperty(window.navigator, 'geolocation', { value: undefined, configurable: true });
@@ -71,7 +94,7 @@ describe('InicioPage', () => {
   it('mostra estado vazio quando não há vagas perto', async () => {
     listNearbyJobsMock.mockResolvedValue({ jobs: [] });
 
-    render(<InicioPage />);
+    renderPage();
 
     expect(await screen.findByText('Nenhuma vaga disponível com esse filtro.')).toBeInTheDocument();
   });
@@ -79,7 +102,7 @@ describe('InicioPage', () => {
   it('mostra saudação, nome e localização do trabalhador', async () => {
     listNearbyJobsMock.mockResolvedValue({ jobs: [] });
 
-    render(<InicioPage />);
+    renderPage();
 
     expect(await screen.findByText('Ana Souza')).toBeInTheDocument();
     expect(screen.getByText('Campolim, Sorocaba')).toBeInTheDocument();
@@ -89,13 +112,13 @@ describe('InicioPage', () => {
     listNearbyJobsMock.mockResolvedValue({ jobs: [] });
     const user = userEvent.setup();
 
-    const { unmount } = render(<InicioPage />);
+    const { unmount } = renderPage();
     await screen.findByText('Disponível para turnos');
     await user.click(screen.getByText('Disponível para turnos'));
     expect(await screen.findByText('Indisponível')).toBeInTheDocument();
     unmount();
 
-    render(<InicioPage />);
+    renderPage();
     expect(await screen.findByText('Indisponível')).toBeInTheDocument();
   });
 
@@ -113,7 +136,7 @@ describe('InicioPage', () => {
     listNearbyJobsMock.mockResolvedValue({ jobs: [jobToday, jobTomorrow] });
     const user = userEvent.setup();
 
-    render(<InicioPage />);
+    renderPage();
     await screen.findByText('2 disponíveis');
 
     await user.click(screen.getByRole('button', { name: 'Hoje' }));
@@ -126,12 +149,43 @@ describe('InicioPage', () => {
   it('lista as vagas com categoria, distância e valor', async () => {
     listNearbyJobsMock.mockResolvedValue({ jobs: [JOB] });
 
-    render(<InicioPage />);
+    renderPage();
 
     expect(await screen.findByText('Garçom')).toBeInTheDocument();
     expect(screen.getByText('2.3 km')).toBeInTheDocument();
     expect(screen.getByText('Vila Madalena, São Paulo')).toBeInTheDocument();
     expect(screen.getByText('R$ 130.00')).toBeInTheDocument();
+  });
+
+  it('mostra experiência, vestimenta e ferramentas exigidas quando presentes', async () => {
+    listNearbyJobsMock.mockResolvedValue({
+      jobs: [{ ...JOB, requiresExperience: true, dressCode: 'Social completo', toolsRequired: 'Câmera própria' }],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('Experiência necessária')).toBeInTheDocument();
+    expect(screen.getByText('Social completo')).toBeInTheDocument();
+    expect(screen.getByText('Câmera própria')).toBeInTheDocument();
+  });
+
+  it('avisa quando a vaga não bate com as especialidades do trabalhador', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [{ ...JOB, matchesSkills: false }] });
+
+    renderPage();
+
+    expect(
+      await screen.findByText('Você não tem essa especialidade no seu perfil — pode se candidatar mesmo assim.'),
+    ).toBeInTheDocument();
+  });
+
+  it('não mostra badges de requisito quando a vaga não exige nada', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [JOB] });
+
+    renderPage();
+
+    await screen.findByText('Garçom');
+    expect(screen.queryByText('Experiência necessária')).not.toBeInTheDocument();
   });
 
   it('pede localização e tenta de novo quando o backend diz que ela falta', async () => {
@@ -146,7 +200,7 @@ describe('InicioPage', () => {
       configurable: true,
     });
 
-    render(<InicioPage />);
+    renderPage();
 
     expect(await screen.findByText('Garçom')).toBeInTheDocument();
     expect(updateWorkerLocationMock).toHaveBeenCalledWith(-23.55, -46.63);
@@ -160,7 +214,7 @@ describe('InicioPage', () => {
       configurable: true,
     });
 
-    render(<InicioPage />);
+    renderPage();
 
     expect(
       await screen.findByText('Precisamos da sua localização pra mostrar vagas perto de você.'),
@@ -170,7 +224,7 @@ describe('InicioPage', () => {
   it('mostra a mensagem da API quando o erro não é sobre localização (não tenta geolocalização)', async () => {
     listNearbyJobsMock.mockRejectedValue(new ApiError(401, 'Sessão inválida ou expirada.'));
 
-    render(<InicioPage />);
+    renderPage();
 
     expect(await screen.findByText('Sessão inválida ou expirada.')).toBeInTheDocument();
     expect(updateWorkerLocationMock).not.toHaveBeenCalled();
@@ -181,7 +235,7 @@ describe('InicioPage', () => {
     applyToJobMock.mockResolvedValue({ id: 'app-1', status: 'pending' });
     const user = userEvent.setup();
 
-    render(<InicioPage />);
+    renderPage();
     await screen.findByText('Garçom');
     await user.click(screen.getByRole('button', { name: /aceitar turno/i }));
 
@@ -194,11 +248,84 @@ describe('InicioPage', () => {
     applyToJobMock.mockRejectedValue(new ApiError(400, 'Você já se candidatou a essa vaga.'));
     const user = userEvent.setup();
 
-    render(<InicioPage />);
+    renderPage();
     await screen.findByText('Garçom');
     await user.click(screen.getByRole('button', { name: /aceitar turno/i }));
 
     expect(await screen.findByText('Você já se candidatou a essa vaga.')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('button', { name: /aceitar turno/i })).toBeEnabled());
+  });
+
+  it('mostra alerta quando o trabalhador foi aprovado e ainda não viu', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [] });
+    listMyApplicationsMock.mockResolvedValue({
+      applications: [
+        {
+          id: 'app-1',
+          status: 'approved',
+          workerSeenAt: null,
+          createdAt: '2026-07-01T12:00:00.000Z',
+          job: JOB,
+          companyName: 'Buffet Aurora',
+        },
+      ],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText(/Você foi chamado\(a\) pra trabalhar em Buffet Aurora/)).toBeInTheDocument();
+  });
+
+  it('não mostra alerta pra candidatura aprovada que já foi vista', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [] });
+    listMyApplicationsMock.mockResolvedValue({
+      applications: [
+        {
+          id: 'app-1',
+          status: 'approved',
+          workerSeenAt: '2026-07-01T12:00:00.000Z',
+          createdAt: '2026-07-01T12:00:00.000Z',
+          job: JOB,
+          companyName: 'Buffet Aurora',
+        },
+      ],
+    });
+
+    renderPage();
+
+    await screen.findByText('Nenhuma vaga disponível com esse filtro.');
+    expect(screen.queryByText(/Você foi chamado\(a\)/)).not.toBeInTheDocument();
+  });
+
+  it('dispensa o alerta e marca a candidatura como vista', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [] });
+    listMyApplicationsMock.mockResolvedValue({
+      applications: [
+        {
+          id: 'app-1',
+          status: 'approved',
+          workerSeenAt: null,
+          createdAt: '2026-07-01T12:00:00.000Z',
+          job: JOB,
+          companyName: 'Buffet Aurora',
+        },
+      ],
+    });
+    markApplicationSeenMock.mockResolvedValue({
+      id: 'app-1',
+      jobId: 'job-1',
+      workerId: 'worker-1',
+      status: 'approved',
+      workerSeenAt: '2026-07-02T12:00:00.000Z',
+      createdAt: '2026-07-01T12:00:00.000Z',
+    });
+    const user = userEvent.setup();
+
+    renderPage();
+    await screen.findByText(/Você foi chamado\(a\)/);
+    await user.click(screen.getByRole('button', { name: /ok, entendi/i }));
+
+    await waitFor(() => expect(screen.queryByText(/Você foi chamado\(a\)/)).not.toBeInTheDocument());
+    expect(markApplicationSeenMock).toHaveBeenCalledWith('app-1');
   });
 });

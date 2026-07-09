@@ -30,6 +30,9 @@ const JOB = {
   id: 'job-1',
   categoryId: 'cat-1',
   description: 'Vaga de garçom pra evento',
+  requiresExperience: false,
+  dressCode: null,
+  toolsRequired: null,
   addressLabel: 'Vila Madalena, São Paulo',
   locationLat: -23.55,
   locationLng: -46.63,
@@ -57,6 +60,19 @@ describe('EditarVagaPage', () => {
     expect(await screen.findByDisplayValue('Vaga de garçom pra evento')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Vila Madalena, São Paulo')).toBeInTheDocument();
     expect(screen.getByDisplayValue('130.00')).toBeInTheDocument();
+  });
+
+  it('pré-preenche experiência, vestimenta e ferramentas exigidas', async () => {
+    listMyJobsMock.mockResolvedValue({
+      jobs: [{ ...JOB, requiresExperience: true, dressCode: 'Social completo', toolsRequired: 'Câmera própria' }],
+    });
+
+    render(<EditarVagaPage />);
+
+    await screen.findByDisplayValue('Vaga de garçom pra evento');
+    expect(screen.getByRole('button', { name: 'Sim' })).toHaveClass('bg-primary');
+    expect(screen.getByDisplayValue('Social completo')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Câmera própria')).toBeInTheDocument();
   });
 
   it('mostra erro quando a vaga não é encontrada', async () => {
