@@ -1,6 +1,7 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { ApiError } from '@shift/shared';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sidebar } from '../../components/ui/sidebar';
 import { Topbar } from '../../components/ui/topbar';
@@ -50,24 +51,36 @@ function pageHeader(pathname: string, tradeName: string): { title: string; subti
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isChecking } = useRequireAuth();
+  const router = useRouter();
   const pathname = usePathname();
   const [profile, setProfile] = useState<CompanyProfileDetails | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [needsCadastro, setNeedsCadastro] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   useEffect(() => {
     if (isChecking) return;
 
     getCompanyProfile()
       .then(setProfile)
-      .catch(() => undefined)
+      .catch((err) => {
+        // Perfil ainda não existe (cadastro nunca completado — comum
+        // logo após entrar pelo Google, que pula direto pro app) — leva
+        // pra completar o cadastro em vez de travar com "sua empresa"
+        // de placeholder pra sempre.
+        if (err instanceof ApiError && err.status === 404) {
+          setNeedsCadastro(true);
+          router.replace('/cadastro');
+        }
+      })
       .finally(() => setIsLoadingProfile(false));
-  }, [isChecking]);
+  }, [isChecking, router]);
 
-  if (isChecking || isLoadingProfile) {
+  if (isChecking || isLoadingProfile || needsCadastro) {
     return (
       <main className="flex flex-1 items-center justify-center px-4">
         <p className="text-sm text-text-secondary">
-          {isChecking ? 'Confirmando sua sessão...' : 'Carregando...'}
+          {isChecking ? 'Confirmando sua sessão...' : needsCadastro ? 'Redirecionando...' : 'Carregando...'}
         </p>
       </main>
     );
@@ -79,10 +92,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <CompanyProfileProvider initialProfile={profile}>
       <div className="flex h-screen overflow-hidden">
-        <Sidebar companyName={tradeName} logoUrl={profile?.logoUrl ?? null} />
+        <Sidebar
+          companyName={tradeName}
+          logoUrl={profile?.logoUrl ?? null}
+          isOpen={isMobileNavOpen}
+          onClose={() => setIsMobileNavOpen(false)}
+        />
         <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar title={title} subtitle={subtitle} />
-          <div className="flex-1 overflow-y-auto p-7">{children}</div>
+          <Topbar title={title} subtitle={subtitle} onMenuClick={() => setIsMobileNavOpen(true)} />
+          <div className="flex-1 overflow-y-auto p-4 lg:p-7">{children}</div>
         </div>
       </div>
     </CompanyProfileProvider>

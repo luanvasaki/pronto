@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 import { Avatar } from './avatar';
 import { Logo } from './logo';
 
@@ -70,72 +71,93 @@ const NAV_ITEMS: NavItem[] = [
 export interface SidebarProps {
   companyName: string;
   logoUrl: string | null;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 /**
+ * Painel desenhado desktop-only no handoff (1280×820), mas empresas
+ * abrem pelo celular na prática — sidebar vira um drawer off-canvas
+ * abaixo de `lg`, controlado pelo hambúrguer na Topbar, em vez de
+ * ficar sempre fixa ocupando a tela.
+ *
  * Turnos/Escala/Profissionais ainda não têm página própria (ver
  * README do handoff) — ficam visíveis no menu pra bater com o
  * mockup, mas desabilitados ("em breve") até existirem de verdade.
  */
-export function Sidebar({ companyName, logoUrl }: SidebarProps) {
+export function Sidebar({ companyName, logoUrl, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
+  useEffect(() => {
+    onClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
   return (
-    <aside className="flex w-[236px] shrink-0 flex-col bg-secondary p-4 text-background">
-      <div className="flex items-end gap-2 px-2 pt-1 pb-6">
-        <Logo />
-        <span className="mb-0.5 text-[10px] font-semibold tracking-[0.14em] text-background/50 uppercase">
-          Empresa
-        </span>
-      </div>
+    <>
+      {isOpen && (
+        <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={onClose} aria-hidden="true" />
+      )}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-[236px] shrink-0 flex-col bg-secondary p-4 text-background transition-transform duration-200 ease-out lg:static lg:z-auto lg:translate-x-0 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex items-end gap-2 px-2 pt-1 pb-6">
+          <Logo />
+          <span className="mb-0.5 text-[10px] font-semibold tracking-[0.14em] text-background/50 uppercase">
+            Empresa
+          </span>
+        </div>
 
-      <nav className="flex flex-col gap-1">
-        {NAV_ITEMS.map((item) => {
-          const active = pathname === item.href;
+        <nav className="flex flex-col gap-1">
+          {NAV_ITEMS.map((item) => {
+            const active = pathname === item.href;
 
-          if (!item.available) {
+            if (!item.available) {
+              return (
+                <div
+                  key={item.href}
+                  className="flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[14.5px] font-semibold text-background/30"
+                  title="Em breve"
+                >
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
+                    {item.icon}
+                  </svg>
+                  {item.label}
+                </div>
+              );
+            }
+
             return (
-              <div
+              <Link
                 key={item.href}
-                className="flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[14.5px] font-semibold text-background/30"
-                title="Em breve"
+                href={item.href}
+                aria-current={active ? 'page' : undefined}
+                className={`flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[14.5px] font-semibold transition ${
+                  active ? 'bg-background/10 text-background' : 'text-background/70 hover:bg-background/5'
+                }`}
               >
                 <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
                   {item.icon}
                 </svg>
                 {item.label}
-              </div>
+              </Link>
             );
-          }
+          })}
+        </nav>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={active ? 'page' : undefined}
-              className={`flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[14.5px] font-semibold transition ${
-                active ? 'bg-background/10 text-background' : 'text-background/70 hover:bg-background/5'
-              }`}
-            >
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
-                {item.icon}
-              </svg>
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <Link
-        href="/perfil"
-        className="mt-auto flex items-center gap-2.5 rounded-xl bg-background/5 p-3 transition hover:bg-background/10"
-      >
-        <Avatar name={companyName} photoUrl={logoUrl} size="sm" shape="square" color="bg-primary" />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-background">{companyName}</p>
-          <p className="text-xs text-background/50">Ver perfil</p>
-        </div>
-      </Link>
-    </aside>
+        <Link
+          href="/perfil"
+          className="mt-auto flex items-center gap-2.5 rounded-xl bg-background/5 p-3 transition hover:bg-background/10"
+        >
+          <Avatar name={companyName} photoUrl={logoUrl} size="sm" shape="square" color="bg-primary" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-background">{companyName}</p>
+            <p className="text-xs text-background/50">Ver perfil</p>
+          </div>
+        </Link>
+      </aside>
+    </>
   );
 }
