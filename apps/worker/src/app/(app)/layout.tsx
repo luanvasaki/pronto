@@ -1,7 +1,7 @@
 'use client';
 
 import { ApiError } from '@shift/shared';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { TabBar } from '../../components/ui/tab-bar';
 import { CalledNotification, Topbar } from '../../components/ui/topbar';
@@ -37,7 +37,6 @@ const NOTIFICATIONS_POLL_INTERVAL_MS = 60_000;
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isChecking } = useRequireAuth();
   const router = useRouter();
-  const pathname = usePathname();
   const [profile, setProfile] = useState<WorkerProfileDetails | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -114,7 +113,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col">
         <Topbar calledCount={calledCount} calledNotifications={calledNotifications} />
         <div className="flex flex-1 flex-col">{children}</div>
-        {pathname !== '/perfil' && <TabBar />}
+        <TabBar />
       </div>
     </WorkerProfileProvider>
   );

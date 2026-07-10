@@ -126,7 +126,7 @@ describe('AppLayout', () => {
     expect(screen.queryByText('Conteúdo protegido')).not.toBeInTheDocument();
   });
 
-  it('esconde a tab bar na tela de perfil', async () => {
+  it('mostra a tab bar também na tela de perfil, pra dar um jeito de voltar pro resto do app', async () => {
     pathnameMock = '/perfil';
     getCurrentUserMock.mockResolvedValue({ user: { id: '1' } });
     getWorkerProfileMock.mockResolvedValue({
@@ -150,7 +150,7 @@ describe('AppLayout', () => {
     );
 
     await screen.findByText('Conteúdo protegido');
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation')).toBeInTheDocument();
   });
 
   it('mostra o número de candidaturas aprovadas ainda não vistas no sino', async () => {
