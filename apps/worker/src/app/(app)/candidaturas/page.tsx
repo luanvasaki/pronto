@@ -3,6 +3,7 @@
 import { ApiError, listSkillCategories } from '@shift/shared';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
+import { MapLink } from '../../../components/ui/map-link';
 import { listMyApplications, MyApplication, withdrawApplication } from '../../../lib/applications-api';
 
 const CATEGORY_LABEL_FALLBACK = 'Categoria';
@@ -114,7 +115,12 @@ export default function CandidaturasPage() {
                 {STATUS_LABEL[application.status] ?? application.status}
               </span>
             </div>
-            <p className="mt-1 text-sm text-text-secondary">{application.job.addressLabel}</p>
+            <MapLink
+              addressLabel={application.job.addressLabel}
+              lat={application.job.locationLat}
+              lng={application.job.locationLng}
+              className="mt-1 text-sm"
+            />
             <p className="mt-1 text-sm text-text-secondary">
               {formatDateRange(application.job.startsAt, application.job.endsAt)}
             </p>

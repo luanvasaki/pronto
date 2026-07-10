@@ -252,13 +252,19 @@ export default function EditarVagaPage() {
           />
         </div>
 
-        <Input
-          id="addressLabel"
-          label="Endereço"
-          type="text"
-          value={addressLabel}
-          onChange={(event) => setAddressLabel(event.target.value)}
-        />
+        <div>
+          <Input
+            id="addressLabel"
+            label="Endereço completo"
+            type="text"
+            placeholder="Rua Augusta, 1200 - Consolação, São Paulo"
+            value={addressLabel}
+            onChange={(event) => setAddressLabel(event.target.value)}
+          />
+          <p className="mt-1.5 text-xs text-text-secondary">
+            Inclua rua, número e bairro — é o endereço que o trabalhador vai usar pra chegar até você.
+          </p>
+        </div>
 
         <div>
           <Button type="button" variant="outlined" onClick={handleUseCurrentLocation} isLoading={isLocating}>

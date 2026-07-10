@@ -399,7 +399,10 @@ export default function PerfilPage() {
           label="Nome completo"
           type="text"
           value={fullName}
-          onChange={(event) => setFullName(event.target.value)}
+          onChange={(event) => {
+            setFullName(event.target.value);
+            setProfileSaved(false);
+          }}
         />
 
         <div>
@@ -411,7 +414,10 @@ export default function PerfilPage() {
             rows={3}
             placeholder="Conte sua experiência pras empresas verem no seu perfil..."
             value={bio}
-            onChange={(event) => setBio(event.target.value)}
+            onChange={(event) => {
+              setBio(event.target.value);
+              setProfileSaved(false);
+            }}
             className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
           />
         </div>
@@ -424,15 +430,26 @@ export default function PerfilPage() {
           placeholder="000.000.000-00"
           maxLength={14}
           value={formatCpf(cpf)}
-          onChange={(event) => setCpf(extractDigits(event.target.value).slice(0, 11))}
+          onChange={(event) => {
+            setCpf(extractDigits(event.target.value).slice(0, 11));
+            setProfileSaved(false);
+          }}
         />
 
         {profileError && <p className="text-sm text-danger">{profileError}</p>}
-        {profileSaved && <p className="text-sm text-success">Perfil salvo.</p>}
 
-        <Button type="submit" disabled={!isProfileFormValid} isLoading={isSavingProfile} className="self-start">
-          Salvar perfil
-        </Button>
+        {profileSaved ? (
+          <div className="flex flex-col gap-2.5">
+            <p className="text-sm text-success">Perfil salvo.</p>
+            <Button type="button" onClick={() => router.push('/inicio')} className="self-start">
+              Concluir
+            </Button>
+          </div>
+        ) : (
+          <Button type="submit" disabled={!isProfileFormValid} isLoading={isSavingProfile} className="self-start">
+            Salvar perfil
+          </Button>
+        )}
       </form>
 
       <Link

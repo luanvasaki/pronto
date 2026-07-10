@@ -3,6 +3,7 @@
 import { ApiError, listSkillCategories } from '@shift/shared';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
+import { MapLink } from '../../../components/ui/map-link';
 import { getCurrentPosition } from '../../../lib/geolocation';
 import { checkIn, checkOut, confirmPayment, listMyShifts, rateShift, Shift } from '../../../lib/shifts-api';
 
@@ -53,6 +54,34 @@ function formatDateRange(startsAt: string, endsAt: string): string {
 
 function formatTime(iso: string): string {
   return new Intl.DateTimeFormat('pt-BR', { timeStyle: 'short' }).format(new Date(iso));
+}
+
+const REMINDER_WINDOW_HOURS = 24;
+const REMINDER_URGENT_HOURS = 2;
+
+interface UpcomingReminder {
+  message: string;
+  urgent: boolean;
+}
+
+/** Aviso pra não perder o turno confirmado — some depois que começa (o
+ * trabalhador já deveria estar fazendo check-in, não esperando um lembrete). */
+function getUpcomingReminder(startsAt: string): UpcomingReminder | null {
+  const hoursUntil = (new Date(startsAt).getTime() - Date.now()) / (1000 * 60 * 60);
+  if (hoursUntil <= 0 || hoursUntil > REMINDER_WINDOW_HOURS) return null;
+
+  const urgent = hoursUntil <= REMINDER_URGENT_HOURS;
+  const time = formatTime(startsAt);
+  const minutesUntil = Math.round(hoursUntil * 60);
+  const countdown =
+    minutesUntil < 60
+      ? `em ${minutesUntil} min`
+      : `em ${Math.round(hoursUntil)}h`;
+  const message = urgent
+    ? `Seu turno começa ${countdown}, às ${time} — não perca o horário!`
+    : `Seu turno começa ${countdown}, às ${time}. Não esqueça!`;
+
+  return { message, urgent };
 }
 
 interface TimelineRowProps {
@@ -237,6 +266,7 @@ export default function TurnosPage() {
         {shifts.map((shift) => {
           const step = shift.status === 'completed' ? 2 : shift.status === 'checked_in' ? 1 : 0;
           const showTimeline = ['scheduled', 'checked_in', 'completed'].includes(shift.status);
+          const reminder = shift.status === 'scheduled' ? getUpcomingReminder(shift.job.startsAt) : null;
 
           return (
             <li
@@ -255,7 +285,21 @@ export default function TurnosPage() {
                   {SHIFT_STATUS_LABEL[shift.status] ?? shift.status}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-text-secondary">{shift.job.addressLabel}</p>
+              {reminder && (
+                <p
+                  className={`mt-2 rounded-lg px-2.5 py-1.5 text-[12.5px] font-semibold ${
+                    reminder.urgent ? 'bg-danger/10 text-danger' : 'bg-warning/10 text-warning'
+                  }`}
+                >
+                  ⏰ {reminder.message}
+                </p>
+              )}
+              <MapLink
+                addressLabel={shift.job.addressLabel}
+                lat={shift.job.locationLat}
+                lng={shift.job.locationLng}
+                className="mt-1 text-sm"
+              />
               <p className="mt-1 text-sm text-text-secondary">
                 {formatDateRange(shift.job.startsAt, shift.job.endsAt)}
               </p>

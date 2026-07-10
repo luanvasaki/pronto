@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
 import { Chip } from '../../../components/ui/chip';
+import { MapLink } from '../../../components/ui/map-link';
 import { listMyApplications, markApplicationSeen, markRemovalSeen, MyApplication } from '../../../lib/applications-api';
 import { getCurrentPosition } from '../../../lib/geolocation';
 import { applyToJob, listNearbyJobs, NearbyJob } from '../../../lib/jobs-api';
@@ -416,7 +417,12 @@ export default function InicioPage() {
                 </label>
               )}
 
-              <p className="mt-2 text-[13.5px] text-text-secondary">{job.addressLabel}</p>
+              <MapLink
+                addressLabel={job.addressLabel}
+                lat={job.locationLat}
+                lng={job.locationLng}
+                className="mt-2 text-[13.5px]"
+              />
               {job.dressCode && (
                 <p className="mt-1 text-[13.5px] text-text-secondary">
                   <span className="font-semibold text-text">Vestimenta:</span> {job.dressCode}

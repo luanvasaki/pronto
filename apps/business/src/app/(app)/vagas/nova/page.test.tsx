@@ -39,7 +39,7 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.selectOptions(screen.getByLabelText('Categoria'), 'cat-1');
   await user.click(screen.getByRole('button', { name: 'Não' }));
   await user.type(screen.getByLabelText('Descrição'), 'Detalhes adicionais sobre o turno.');
-  await user.type(screen.getByLabelText('Endereço'), 'Vila Madalena, São Paulo');
+  await user.type(screen.getByLabelText('Endereço completo'), 'Vila Madalena, São Paulo');
   await user.click(screen.getByRole('button', { name: /usar minha localização atual/i }));
   await screen.findByText('Localização definida ✓');
   await user.clear(screen.getByLabelText('Número de vagas'));
@@ -159,7 +159,7 @@ describe('NovaVagaPage', () => {
     await user.type(screen.getByLabelText(/nome da nova categoria/i), 'Manobrista');
     await user.click(screen.getByRole('button', { name: 'Não' }));
     await user.type(screen.getByLabelText('Descrição'), 'Detalhes adicionais sobre o turno.');
-    await user.type(screen.getByLabelText('Endereço'), 'Vila Madalena, São Paulo');
+    await user.type(screen.getByLabelText('Endereço completo'), 'Vila Madalena, São Paulo');
     await user.click(screen.getByRole('button', { name: /usar minha localização atual/i }));
     await screen.findByText('Localização definida ✓');
     await user.clear(screen.getByLabelText('Número de vagas'));
