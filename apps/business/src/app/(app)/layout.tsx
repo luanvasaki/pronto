@@ -40,9 +40,6 @@ function pageHeader(pathname: string, tradeName: string): { title: string; subti
   if (pathname === '/escala') {
     return { title: 'Escala', subtitle: 'Clique num dia pra publicar um turno' };
   }
-  if (pathname === '/admin') {
-    return { title: 'Painel administrativo' };
-  }
   if (pathname === '/vagas/nova') {
     return { title: 'Publicar turno' };
   }

@@ -6,6 +6,17 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../app';
 import { db } from '../../db/client';
 import { companies, skillCategories, users } from '../../db/schema';
+import { EmailSender } from '../auth/email-sender';
+
+class CapturingEmailSender implements EmailSender {
+  public lastEmail?: string;
+  public lastResetUrl?: string;
+
+  async sendPasswordResetEmail(email: string, resetUrl: string): Promise<void> {
+    this.lastEmail = email;
+    this.lastResetUrl = resetUrl;
+  }
+}
 
 const WORKER_EMAIL = 'admin-routes-worker@example.com';
 const OWNER_EMAIL = 'admin-routes-owner@example.com';
@@ -139,5 +150,86 @@ describe('rotas de admin', () => {
 
     const company = await db.query.companies.findFirst({ where: eq(companies.cnpj, TEST_CNPJ) });
     expect(company?.verificationStatus).toBe('approved');
+  });
+
+  it('GET /admin/companies responde 403 pra quem não é admin', async () => {
+    const app = createApp();
+    const agent = await loginAgent(app, WORKER_EMAIL);
+
+    const response = await agent.get('/admin/companies');
+
+    expect(response.status).toBe(403);
+  });
+
+  it('GET /admin/companies lista a empresa com métricas pro admin', async () => {
+    const app = createApp();
+    const ownerAgent = await loginAgent(app, OWNER_EMAIL);
+    const companyResponse = await ownerAgent
+      .put('/company-profile')
+      .send({ legalName: 'Bar do Zé Ltda', tradeName: 'Bar do Zé', cnpj: TEST_CNPJ });
+
+    const adminAgent = await loginAgent(app, ADMIN_EMAIL);
+    await makeAdmin(ADMIN_EMAIL);
+
+    const response = await adminAgent.get('/admin/companies');
+
+    expect(response.status).toBe(200);
+    const found = response.body.companies.find((company: { id: string }) => company.id === companyResponse.body.id);
+    expect(found).toBeDefined();
+    expect(found.ownerEmail).toBe(OWNER_EMAIL);
+  });
+
+  it('GET /admin/workers responde 403 pra quem não é admin', async () => {
+    const app = createApp();
+    const agent = await loginAgent(app, WORKER_EMAIL);
+
+    const response = await agent.get('/admin/workers');
+
+    expect(response.status).toBe(403);
+  });
+
+  it('GET /admin/workers lista o trabalhador com métricas pro admin', async () => {
+    const app = createApp();
+    const workerAgent = await loginAgent(app, WORKER_EMAIL);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await workerAgent.put('/worker-profile').send({ fullName: 'Rafael Lima', categoryIds: [category.id] });
+    const meResponse = await workerAgent.get('/auth/me');
+
+    const adminAgent = await loginAgent(app, ADMIN_EMAIL);
+    await makeAdmin(ADMIN_EMAIL);
+
+    const response = await adminAgent.get('/admin/workers');
+
+    expect(response.status).toBe(200);
+    const found = response.body.workers.find((worker: { userId: string }) => worker.userId === meResponse.body.user.id);
+    expect(found).toBeDefined();
+    expect(found.email).toBe(WORKER_EMAIL);
+  });
+
+  it('POST /admin/users/:id/reset-password responde 403 pra quem não é admin', async () => {
+    const sender = new CapturingEmailSender();
+    const app = createApp({ adminRoutes: { emailSender: sender } });
+    const agent = await loginAgent(app, WORKER_EMAIL);
+
+    const response = await agent.post('/admin/users/00000000-0000-0000-0000-000000000000/reset-password');
+
+    expect(response.status).toBe(403);
+  });
+
+  it('POST /admin/users/:id/reset-password dispara o e-mail de redefinição pro admin', async () => {
+    const sender = new CapturingEmailSender();
+    const app = createApp({ adminRoutes: { emailSender: sender } });
+    const workerAgent = await loginAgent(app, WORKER_EMAIL);
+    const meResponse = await workerAgent.get('/auth/me');
+
+    const adminAgent = await loginAgent(app, ADMIN_EMAIL);
+    await makeAdmin(ADMIN_EMAIL);
+
+    const response = await adminAgent.post(`/admin/users/${meResponse.body.user.id}/reset-password`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.email).toBe(WORKER_EMAIL);
+    expect(sender.lastEmail).toBe(WORKER_EMAIL);
+    expect(sender.lastResetUrl).toContain('/redefinir-senha?token=');
   });
 });

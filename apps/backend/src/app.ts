@@ -3,7 +3,7 @@ import cors from 'cors';
 import express, { Express } from 'express';
 import path from 'node:path';
 import { env } from './config/env';
-import { adminRoutes } from './modules/admin/admin.routes';
+import { AdminRoutesOptions, createAdminRoutes } from './modules/admin/admin.routes';
 import { applicationsRoutes } from './modules/applications/applications.routes';
 import { AuthRoutesOptions, createAuthRoutes } from './modules/auth/auth.routes';
 import { companyProfileRoutes } from './modules/companies/company-profile.routes';
@@ -26,6 +26,7 @@ import { createGeneralRateLimiter } from './shared/middlewares/rate-limit';
  */
 export interface CreateAppOptions {
   authRoutes?: AuthRoutesOptions;
+  adminRoutes?: AdminRoutesOptions;
 }
 
 export function createApp(options: CreateAppOptions = {}): Express {
@@ -62,7 +63,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
   app.use(paymentsRoutes);
   app.use(workerProfileRoutes);
   app.use(workerDocumentRoutes);
-  app.use(adminRoutes);
+  app.use(createAdminRoutes(options.adminRoutes));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

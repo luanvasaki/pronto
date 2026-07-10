@@ -93,6 +93,43 @@ export function reviewSkillCategory(
   });
 }
 
+export interface AdminCompany {
+  id: string;
+  legalName: string;
+  tradeName: string;
+  cnpj: string;
+  verificationStatus: string;
+  avgRating: string | null;
+  ownerUserId: string;
+  ownerEmail: string | null;
+  jobsPosted: number;
+  shiftsCompleted: number;
+  createdAt: string;
+}
+
+export function listAdminCompanies(): Promise<{ companies: AdminCompany[] }> {
+  return apiFetch('/admin/companies');
+}
+
+export interface AdminWorker {
+  userId: string;
+  fullName: string;
+  email: string | null;
+  kycStatus: string;
+  avgRating: string | null;
+  shiftsCompleted: number;
+  hoursWorked: number;
+  createdAt: string;
+}
+
+export function listAdminWorkers(): Promise<{ workers: AdminWorker[] }> {
+  return apiFetch('/admin/workers');
+}
+
+export function resetUserPassword(userId: string): Promise<{ email: string }> {
+  return apiFetch(`/admin/users/${userId}/reset-password`, { method: 'POST' });
+}
+
 export interface DocumentFile {
   url: string;
   contentType: string;

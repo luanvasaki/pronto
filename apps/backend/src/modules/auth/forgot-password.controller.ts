@@ -10,7 +10,7 @@ const GENERIC_MESSAGE = 'Se este e-mail existir, enviamos um link de redefini√ß√
  * origem se estiver na allowlist de CORS (mesma usada pelo `cors()` em
  * app.ts), com fallback pra primeira origem configurada.
  */
-function resolveResetBaseUrl(req: Request): string {
+export function resolveResetBaseUrl(req: Request): string {
   const origin = req.headers.origin;
   if (origin && env.corsOrigins.includes(origin)) {
     return origin;
