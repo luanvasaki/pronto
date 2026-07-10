@@ -34,3 +34,7 @@ export function markApplicationSeen(applicationId: string): Promise<ApplicationR
 export function markRemovalSeen(applicationId: string): Promise<ApplicationResponse> {
   return apiFetch(`/applications/${applicationId}/removal-seen`, { method: 'PATCH' });
 }
+
+export function withdrawApplication(applicationId: string): Promise<ApplicationResponse> {
+  return apiFetch(`/applications/${applicationId}/withdraw`, { method: 'PATCH' });
+}

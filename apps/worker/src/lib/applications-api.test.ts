@@ -5,7 +5,7 @@ vi.mock('@shift/shared', () => ({
   apiFetch: (...args: unknown[]) => apiFetchMock(...args),
 }));
 
-const { listMyApplications } = await import('./applications-api');
+const { listMyApplications, withdrawApplication } = await import('./applications-api');
 
 describe('listMyApplications', () => {
   beforeEach(() => {
@@ -18,5 +18,19 @@ describe('listMyApplications', () => {
     await listMyApplications();
 
     expect(apiFetchMock).toHaveBeenCalledWith('/applications/mine');
+  });
+});
+
+describe('withdrawApplication', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama PATCH /applications/:id/withdraw', async () => {
+    apiFetchMock.mockResolvedValue({ id: 'app-1', status: 'withdrawn' });
+
+    await withdrawApplication('app-1');
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/applications/app-1/withdraw', { method: 'PATCH' });
   });
 });

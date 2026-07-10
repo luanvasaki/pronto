@@ -1,8 +1,9 @@
 'use client';
 
-import { listSkillCategories } from '@shift/shared';
+import { ApiError, listSkillCategories } from '@shift/shared';
 import { useEffect, useState } from 'react';
-import { listMyApplications, MyApplication } from '../../../lib/applications-api';
+import { Button } from '../../../components/ui/button';
+import { listMyApplications, MyApplication, withdrawApplication } from '../../../lib/applications-api';
 
 const CATEGORY_LABEL_FALLBACK = 'Categoria';
 
@@ -30,6 +31,32 @@ export default function CandidaturasPage() {
   const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingWithdrawId, setConfirmingWithdrawId] = useState<string | null>(null);
+  const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+
+  async function handleWithdraw(applicationId: string): Promise<void> {
+    if (confirmingWithdrawId !== applicationId) {
+      setConfirmingWithdrawId(applicationId);
+      return;
+    }
+
+    setWithdrawError(null);
+    setWithdrawingId(applicationId);
+    try {
+      await withdrawApplication(applicationId);
+      setApplications((current) =>
+        current.map((application) =>
+          application.id === applicationId ? { ...application, status: 'withdrawn' } : application,
+        ),
+      );
+    } catch (err) {
+      setWithdrawError(err instanceof ApiError ? err.message : 'Não foi possível cancelar a candidatura.');
+    } finally {
+      setWithdrawingId(null);
+      setConfirmingWithdrawId(null);
+    }
+  }
 
   useEffect(() => {
     async function load(): Promise<void> {
@@ -63,6 +90,7 @@ export default function CandidaturasPage() {
       <h1 className="font-heading text-2xl font-bold text-text">Minhas candidaturas</h1>
 
       {error && <p className="text-sm text-danger">{error}</p>}
+      {withdrawError && <p className="text-sm text-danger">{withdrawError}</p>}
 
       {applications.length === 0 && !error && (
         <p className="text-sm text-text-secondary">Você ainda não se candidatou a nenhuma vaga.</p>
@@ -91,6 +119,28 @@ export default function CandidaturasPage() {
               {formatDateRange(application.job.startsAt, application.job.endsAt)}
             </p>
             <p className="mt-2 font-heading text-lg font-bold text-primary">R$ {application.job.payAmount}</p>
+
+            {application.status === 'pending' && (
+              <div className="mt-3 flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant={confirmingWithdrawId === application.id ? 'danger' : 'outlined'}
+                  isLoading={withdrawingId === application.id}
+                  onClick={() => handleWithdraw(application.id)}
+                >
+                  {confirmingWithdrawId === application.id ? 'Confirmar cancelamento' : 'Cancelar candidatura'}
+                </Button>
+                {confirmingWithdrawId === application.id && withdrawingId !== application.id && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingWithdrawId(null)}
+                    className="text-sm text-text-secondary underline underline-offset-2"
+                  >
+                    Voltar
+                  </button>
+                )}
+              </div>
+            )}
           </li>
         ))}
       </ul>

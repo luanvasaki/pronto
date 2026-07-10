@@ -7,6 +7,7 @@ import { markApplicationSeenHandler } from './mark-application-seen.controller';
 import { markRemovalSeenHandler } from './mark-removal-seen.controller';
 import { removeApprovedWorkerHandler } from './remove-approved-worker.controller';
 import { updateApplicationStatusHandler } from './update-application-status.controller';
+import { withdrawApplicationHandler } from './withdraw-application.controller';
 
 export const applicationsRoutes = Router();
 
@@ -17,3 +18,4 @@ applicationsRoutes.patch('/applications/:id', requireAuth, updateApplicationStat
 applicationsRoutes.patch('/applications/:id/seen', requireAuth, markApplicationSeenHandler);
 applicationsRoutes.patch('/applications/:id/removal-seen', requireAuth, markRemovalSeenHandler);
 applicationsRoutes.patch('/applications/:id/remove', requireAuth, removeApprovedWorkerHandler);
+applicationsRoutes.patch('/applications/:id/withdraw', requireAuth, withdrawApplicationHandler);
