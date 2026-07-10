@@ -19,7 +19,15 @@ async function createWorker() {
   return user;
 }
 
-async function createJob(overrides: Partial<{ status: 'open' | 'filled' | 'cancelled'; positionsTotal: number; positionsFilled: number }> = {}) {
+async function createJob(
+  overrides: Partial<{
+    status: 'open' | 'filled' | 'cancelled';
+    positionsTotal: number;
+    positionsFilled: number;
+    startsAt: Date;
+    applicationsCloseAt: Date;
+  }> = {},
+) {
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
   const [company] = await db
     .insert(companies)
@@ -118,5 +126,19 @@ describe('createApplication', () => {
     expect(result.status).toBe('pending');
     expect(result.jobId).toBe(job.id);
     expect(result.workerId).toBe(worker.id);
+  });
+
+  it('rejeita quando o prazo de candidatura escolhido pela empresa já passou', async () => {
+    const worker = await createWorker();
+    const job = await createJob({ applicationsCloseAt: new Date(Date.now() - 60 * 1000) });
+
+    await expect(createApplication(worker.id, job.id)).rejects.toThrow('já fecharam');
+  });
+
+  it('rejeita quando o padrão de prazo (1h antes do início) já passou', async () => {
+    const worker = await createWorker();
+    const job = await createJob({ startsAt: new Date(Date.now() + 30 * 60 * 1000) });
+
+    await expect(createApplication(worker.id, job.id)).rejects.toThrow('já fecharam');
   });
 });

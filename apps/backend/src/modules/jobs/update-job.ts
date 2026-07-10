@@ -65,6 +65,7 @@ export async function updateJob(
       payAmount: validated.payAmount,
       startsAt: validated.startsAt,
       endsAt: validated.endsAt,
+      applicationsCloseAt: validated.applicationsCloseAt,
       updatedAt: new Date(),
     })
     .where(and(eq(jobs.id, jobId), eq(jobs.status, 'open')))

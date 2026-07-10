@@ -15,6 +15,7 @@ export interface Job {
   payAmount: string;
   startsAt: string;
   endsAt: string;
+  applicationsCloseAt: string | null;
   status: string;
 }
 
@@ -35,6 +36,8 @@ export interface CreateJobInput {
   payAmount: string;
   startsAt: string;
   endsAt: string;
+  /** Vazio/ausente = fecha automaticamente 1h antes do início. */
+  applicationsCloseAt?: string;
 }
 
 export function createJob(input: CreateJobInput): Promise<Job> {

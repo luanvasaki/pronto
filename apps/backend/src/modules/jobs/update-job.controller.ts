@@ -27,6 +27,7 @@ export async function updateJobHandler(req: Request, res: Response, next: NextFu
       payAmount,
       startsAt,
       endsAt,
+      applicationsCloseAt,
     } = req.body as {
       categoryId?: string;
       description?: string;
@@ -40,6 +41,7 @@ export async function updateJobHandler(req: Request, res: Response, next: NextFu
       payAmount?: string;
       startsAt?: string;
       endsAt?: string;
+      applicationsCloseAt?: string;
     };
 
     const result = await updateJob(userId, jobId, {
@@ -55,6 +57,7 @@ export async function updateJobHandler(req: Request, res: Response, next: NextFu
       payAmount,
       startsAt,
       endsAt,
+      applicationsCloseAt,
     });
     res.status(200).json(result);
   } catch (error) {

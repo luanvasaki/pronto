@@ -15,6 +15,7 @@ export interface Job {
   payAmount: string;
   startsAt: string;
   endsAt: string;
+  applicationsCloseAt: string | null;
   status: string;
 }
 

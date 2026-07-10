@@ -49,6 +49,8 @@ function NovaVagaForm() {
     prefilledDate && DATE_ONLY_REGEX.test(prefilledDate) ? `${prefilledDate}T18:00` : '',
   );
   const [endsAt, setEndsAt] = useState('');
+  // Vazio = fecha automaticamente 1h antes do início (padrão do backend).
+  const [applicationsCloseAt, setApplicationsCloseAt] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +100,8 @@ function NovaVagaForm() {
     startsAt !== '' &&
     endsAt !== '' &&
     new Date(endsAt) > new Date(startsAt) &&
-    new Date(startsAt) > new Date();
+    new Date(startsAt) > new Date() &&
+    (applicationsCloseAt === '' || new Date(applicationsCloseAt) <= new Date(startsAt));
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -125,6 +128,7 @@ function NovaVagaForm() {
         payAmount,
         startsAt: new Date(startsAt).toISOString(),
         endsAt: new Date(endsAt).toISOString(),
+        applicationsCloseAt: applicationsCloseAt ? new Date(applicationsCloseAt).toISOString() : undefined,
       });
       router.push('/painel');
     } catch (err) {
@@ -294,6 +298,23 @@ function NovaVagaForm() {
           value={endsAt}
           onChange={(event) => setEndsAt(event.target.value)}
         />
+
+        <div>
+          <Input
+            id="applicationsCloseAt"
+            label="Fechar candidaturas em (opcional)"
+            type="datetime-local"
+            value={applicationsCloseAt}
+            onChange={(event) => setApplicationsCloseAt(event.target.value)}
+          />
+          <p className="mt-1.5 text-xs text-text-secondary">
+            Depois desse horário a vaga some da busca dos profissionais. Se não escolher, fecha
+            automaticamente 1h antes do início.
+          </p>
+          {applicationsCloseAt !== '' && startsAt !== '' && new Date(applicationsCloseAt) > new Date(startsAt) && (
+            <p className="mt-1.5 text-xs text-danger">Precisa ser até o horário de início do turno.</p>
+          )}
+        </div>
 
         {showEstimate && (
           <div className="rounded-2xl bg-secondary p-4 text-background">

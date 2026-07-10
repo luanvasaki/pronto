@@ -175,6 +175,51 @@ describe('NovaVagaPage', () => {
     );
   });
 
+  it('publica sem applicationsCloseAt quando o campo é deixado em branco (usa o padrão do backend)', async () => {
+    createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
+    const user = userEvent.setup();
+    render(<NovaVagaPage />);
+    await screen.findByText('Garçom');
+
+    await fillValidForm(user);
+    await user.click(screen.getByRole('button', { name: /^publicar$/i }));
+
+    await waitFor(() =>
+      expect(createJobMock).toHaveBeenCalledWith(expect.objectContaining({ applicationsCloseAt: undefined })),
+    );
+  });
+
+  it('envia o applicationsCloseAt escolhido pela empresa', async () => {
+    createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
+    const user = userEvent.setup();
+    render(<NovaVagaPage />);
+    await screen.findByText('Garçom');
+
+    await fillValidForm(user);
+    const closeAt = toDateTimeLocal(new Date(Date.now() + 20 * 60 * 60 * 1000));
+    await user.type(screen.getByLabelText(/fechar candidaturas em/i), closeAt);
+    await user.click(screen.getByRole('button', { name: /^publicar$/i }));
+
+    await waitFor(() =>
+      expect(createJobMock).toHaveBeenCalledWith(
+        expect.objectContaining({ applicationsCloseAt: new Date(closeAt).toISOString() }),
+      ),
+    );
+  });
+
+  it('desabilita o botão quando o prazo de candidatura é depois do início', async () => {
+    const user = userEvent.setup();
+    render(<NovaVagaPage />);
+    await screen.findByText('Garçom');
+
+    await fillValidForm(user);
+    const afterStart = toDateTimeLocal(new Date(Date.now() + 30 * 60 * 60 * 1000));
+    await user.type(screen.getByLabelText(/fechar candidaturas em/i), afterStart);
+
+    expect(screen.getByText('Precisa ser até o horário de início do turno.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^publicar$/i })).toBeDisabled();
+  });
+
   it('mostra erro quando a localização falha', async () => {
     Object.defineProperty(window.navigator, 'geolocation', {
       value: { getCurrentPosition: vi.fn((_success, failure) => failure()) },

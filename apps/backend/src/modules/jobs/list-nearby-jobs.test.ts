@@ -44,6 +44,7 @@ async function createTestJob(
   lat: number,
   lng: number,
   requiresExperience = false,
+  applicationsCloseAt?: string,
 ) {
   return createJob(ownerId, {
     categoryId,
@@ -56,6 +57,7 @@ async function createTestJob(
     payAmount: '100.00',
     startsAt: TOMORROW.toISOString(),
     endsAt: TOMORROW_PLUS_5H.toISOString(),
+    applicationsCloseAt,
   });
 }
 
@@ -187,5 +189,47 @@ describe('listNearbyJobs', () => {
     const found = result.find((j) => j.id === job.id);
 
     expect(found?.experienceMismatch).toBe(false);
+  });
+
+  it('não retorna vaga cujo prazo de candidatura (escolhido pela empresa) já passou', async () => {
+    const worker = await createWorker();
+    await db
+      .insert(workerProfiles)
+      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+    const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
+
+    const owner = await createCompanyOwner();
+    // Só dá pra ter esse estado via insert direto — createJob rejeita
+    // applicationsCloseAt no passado (ver create-job.test.ts).
+    const closedJob = await createTestJob(owner.id, categoryNear.id, NEAR_JOB_LAT, NEAR_JOB_LNG);
+    await db
+      .update(jobs)
+      .set({ applicationsCloseAt: new Date(Date.now() - 60 * 1000) })
+      .where(eq(jobs.id, closedJob.id));
+
+    const result = await listNearbyJobs(worker.id);
+
+    expect(result.find((j) => j.id === closedJob.id)).toBeUndefined();
+  });
+
+  it('não retorna vaga sem prazo escolhido cujo padrão (1h antes do início) já passou', async () => {
+    const worker = await createWorker();
+    await db
+      .insert(workerProfiles)
+      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+    const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
+
+    const owner = await createCompanyOwner();
+    const job = await createTestJob(owner.id, categoryNear.id, NEAR_JOB_LAT, NEAR_JOB_LNG);
+    // Simula o turno começando daqui a 30min sem mexer em startsAt
+    // (que já passou pela validação de "no futuro" na criação).
+    await db
+      .update(jobs)
+      .set({ startsAt: new Date(Date.now() + 30 * 60 * 1000) })
+      .where(eq(jobs.id, job.id));
+
+    const result = await listNearbyJobs(worker.id);
+
+    expect(result.find((j) => j.id === job.id)).toBeUndefined();
   });
 });

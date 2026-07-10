@@ -149,7 +149,13 @@ describe('listJobApplications', () => {
         endsAt: new Date(Date.now() - 40 * 60 * 60 * 1000),
       })
       .returning();
-    const previousApplication = await createApplication(worker.id, previousJob.id);
+    // Insert direto (não createApplication) — a vaga anterior é criada
+    // com startsAt no passado só pra simular histórico, e isso já
+    // fecharia candidaturas de verdade (ver applications-close.ts).
+    const [previousApplication] = await db
+      .insert(applications)
+      .values({ jobId: previousJob.id, workerId: worker.id })
+      .returning();
     await updateApplicationStatus(owner.id, previousApplication.id, 'approved');
     const previousShift = await db.query.shifts.findFirst({
       where: eq(shifts.applicationId, previousApplication.id),

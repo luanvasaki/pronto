@@ -43,6 +43,9 @@ export const jobs = pgTable('jobs', {
   payAmount: numeric('pay_amount', { precision: 10, scale: 2 }).notNull(),
   startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
   endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+  // Nulo = usa o padrão (1h antes de startsAt, ver applications-close.ts)
+  // — só grava aqui quando a empresa escolhe um prazo próprio.
+  applicationsCloseAt: timestamp('applications_close_at', { withTimezone: true }),
   status: jobStatusEnum('status').notNull().default('open'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

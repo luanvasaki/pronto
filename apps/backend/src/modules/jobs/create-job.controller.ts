@@ -22,6 +22,7 @@ export async function createJobHandler(req: Request, res: Response, next: NextFu
       payAmount,
       startsAt,
       endsAt,
+      applicationsCloseAt,
     } = req.body as {
       categoryId?: string;
       description?: string;
@@ -35,6 +36,7 @@ export async function createJobHandler(req: Request, res: Response, next: NextFu
       payAmount?: string;
       startsAt?: string;
       endsAt?: string;
+      applicationsCloseAt?: string;
     };
 
     const result = await createJob(userId, {
@@ -50,6 +52,7 @@ export async function createJobHandler(req: Request, res: Response, next: NextFu
       payAmount,
       startsAt,
       endsAt,
+      applicationsCloseAt,
     });
     res.status(201).json(result);
   } catch (error) {

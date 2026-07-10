@@ -145,4 +145,50 @@ describe('createJob', () => {
     expect(result.dressCode).toBe('Social completo, preto e branco');
     expect(result.toolsRequired).toBe('Câmera profissional própria');
   });
+
+  it('deixa applicationsCloseAt nulo quando não informado (usa o padrão de 1h antes)', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+
+    const result = await createJob(owner.id, baseInput(category.id));
+
+    expect(result.applicationsCloseAt).toBeNull();
+  });
+
+  it('salva applicationsCloseAt quando a empresa escolhe um prazo', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    const closeAt = new Date(TOMORROW.getTime() - 3 * 60 * 60 * 1000);
+
+    const result = await createJob(owner.id, {
+      ...baseInput(category.id),
+      applicationsCloseAt: closeAt.toISOString(),
+    });
+
+    expect(result.applicationsCloseAt?.toISOString()).toBe(closeAt.toISOString());
+  });
+
+  it('rejeita applicationsCloseAt depois do início do turno', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    const afterStart = new Date(TOMORROW.getTime() + 60 * 60 * 1000);
+
+    await expect(
+      createJob(owner.id, { ...baseInput(category.id), applicationsCloseAt: afterStart.toISOString() }),
+    ).rejects.toThrow('até o início do turno');
+  });
+
+  it('rejeita applicationsCloseAt no passado', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    await expect(
+      createJob(owner.id, { ...baseInput(category.id), applicationsCloseAt: yesterday.toISOString() }),
+    ).rejects.toThrow('Prazo pra se candidatar precisa ser no futuro');
+  });
 });

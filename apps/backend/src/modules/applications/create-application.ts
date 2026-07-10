@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, jobs, workerProfiles } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
+import { areApplicationsClosed } from '../jobs/applications-close';
 import { ApplicationResponse, toApplicationResponse } from './application-response';
 
 /**
@@ -34,6 +35,9 @@ export async function createApplication(workerId: string, jobId: string): Promis
   }
   if (job.status !== 'open' || job.positionsFilled >= job.positionsTotal) {
     throw new HttpError(400, 'Essa vaga não está mais aceitando candidaturas.');
+  }
+  if (areApplicationsClosed(job)) {
+    throw new HttpError(400, 'As candidaturas pra essa vaga já fecharam.');
   }
 
   const existing = await db.query.applications.findFirst({

@@ -13,6 +13,8 @@ export interface JobInput {
   payAmount: string | undefined;
   startsAt: string | undefined;
   endsAt: string | undefined;
+  /** Vazio/ausente = usa o padrão (1h antes de startsAt, ver applications-close.ts). */
+  applicationsCloseAt: string | undefined;
 }
 
 export interface ValidatedJobFields {
@@ -28,6 +30,7 @@ export interface ValidatedJobFields {
   payAmount: string;
   startsAt: Date;
   endsAt: Date;
+  applicationsCloseAt: Date | null;
 }
 
 const PAY_AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
@@ -101,6 +104,20 @@ export function validateJobInput(input: JobInput): ValidatedJobFields {
     throw new HttpError(400, 'Data de início precisa ser no futuro.');
   }
 
+  let applicationsCloseAt: Date | null = null;
+  if (input.applicationsCloseAt) {
+    applicationsCloseAt = new Date(input.applicationsCloseAt);
+    if (Number.isNaN(applicationsCloseAt.getTime())) {
+      throw new HttpError(400, 'Prazo pra se candidatar inválido.');
+    }
+    if (applicationsCloseAt.getTime() > startsAt.getTime()) {
+      throw new HttpError(400, 'Prazo pra se candidatar precisa ser até o início do turno.');
+    }
+    if (applicationsCloseAt.getTime() < Date.now()) {
+      throw new HttpError(400, 'Prazo pra se candidatar precisa ser no futuro.');
+    }
+  }
+
   return {
     categoryId: input.categoryId,
     description,
@@ -114,5 +131,6 @@ export function validateJobInput(input: JobInput): ValidatedJobFields {
     payAmount: input.payAmount,
     startsAt,
     endsAt,
+    applicationsCloseAt,
   };
 }

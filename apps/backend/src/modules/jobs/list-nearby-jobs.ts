@@ -2,6 +2,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies, jobs, workerProfiles, workerSkills } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
+import { areApplicationsClosed } from './applications-close';
 import { haversineDistanceKm } from './haversine';
 import { JobResponse, toJobResponse } from './job-response';
 
@@ -25,6 +26,10 @@ export interface NearbyJobResponse extends JobResponse {
  * Mostra vagas de QUALQUER categoria (não só as do perfil do
  * trabalhador) — `matchesSkills` avisa quando ele não tem a
  * especialidade, mas a decisão de se candidatar é dele.
+ *
+ * Some da lista assim que o prazo de candidatura passa (ver
+ * applications-close.ts) — como esse prazo nunca é depois de
+ * startsAt, isso também cobre o caso de a vaga já ter começado.
  */
 export async function listNearbyJobs(workerId: string): Promise<NearbyJobResponse[]> {
   const profile = await db.query.workerProfiles.findFirst({
@@ -53,6 +58,7 @@ export async function listNearbyJobs(workerId: string): Promise<NearbyJobRespons
 
   return openJobs
     .filter((job) => job.positionsFilled < job.positionsTotal)
+    .filter((job) => !areApplicationsClosed(job))
     .map((job) => ({
       job,
       distanceKm: haversineDistanceKm(homeLat, homeLng, job.locationLat, job.locationLng),

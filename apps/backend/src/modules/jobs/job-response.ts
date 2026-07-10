@@ -17,6 +17,7 @@ export interface JobResponse {
   payAmount: string;
   startsAt: Date;
   endsAt: Date;
+  applicationsCloseAt: Date | null;
   status: string;
 }
 
@@ -36,6 +37,7 @@ export function toJobResponse(job: JobRow): JobResponse {
     payAmount: job.payAmount,
     startsAt: job.startsAt,
     endsAt: job.endsAt,
+    applicationsCloseAt: job.applicationsCloseAt,
     status: job.status,
   };
 }

@@ -41,6 +41,7 @@ const JOB = {
   payAmount: '130.00',
   startsAt: '2026-08-01T18:00:00.000Z',
   endsAt: '2026-08-01T23:00:00.000Z',
+  applicationsCloseAt: null,
   status: 'open',
 };
 
@@ -105,7 +106,32 @@ describe('EditarVagaPage', () => {
 
     await waitFor(() => expect(updateJobMock).toHaveBeenCalled());
     expect(updateJobMock.mock.calls[0][0]).toBe('job-1');
-    expect(updateJobMock.mock.calls[0][1]).toMatchObject({ payAmount: '150.00' });
+    expect(updateJobMock.mock.calls[0][1]).toMatchObject({ payAmount: '150.00', applicationsCloseAt: undefined });
     expect(pushMock).toHaveBeenCalledWith('/painel');
+  });
+
+  it('pré-preenche o prazo de candidatura quando a vaga já tem um escolhido', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [{ ...JOB, applicationsCloseAt: '2026-08-01T15:00:00.000Z' }] });
+
+    render(<EditarVagaPage />);
+
+    await screen.findByDisplayValue('Vaga de garçom pra evento');
+    expect(screen.getByLabelText(/fechar candidaturas em/i)).toHaveValue('2026-08-01T15:00');
+  });
+
+  it('envia o novo prazo de candidatura quando alterado', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    updateJobMock.mockResolvedValue(JOB);
+    const user = userEvent.setup();
+
+    render(<EditarVagaPage />);
+    await screen.findByDisplayValue('130.00');
+    await user.type(screen.getByLabelText(/fechar candidaturas em/i), '2026-08-01T16:00');
+    await user.click(screen.getByRole('button', { name: /salvar alterações/i }));
+
+    await waitFor(() => expect(updateJobMock).toHaveBeenCalled());
+    expect(updateJobMock.mock.calls[0][1]).toMatchObject({
+      applicationsCloseAt: new Date('2026-08-01T16:00').toISOString(),
+    });
   });
 });

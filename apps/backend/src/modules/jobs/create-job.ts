@@ -39,6 +39,7 @@ export async function createJob(ownerUserId: string, input: CreateJobInput): Pro
       payAmount: validated.payAmount,
       startsAt: validated.startsAt,
       endsAt: validated.endsAt,
+      applicationsCloseAt: validated.applicationsCloseAt,
     })
     .returning();
 

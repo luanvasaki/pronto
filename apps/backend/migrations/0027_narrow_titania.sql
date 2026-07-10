@@ -1,0 +1,1 @@
+ALTER TABLE "jobs" ADD COLUMN "applications_close_at" timestamp with time zone;
