@@ -192,4 +192,42 @@ describe('PainelPage', () => {
     expect(await screen.findByText('Turnos confirmados')).toBeInTheDocument();
     expect(screen.getByText('Ana Souza')).toBeInTheDocument();
   });
+
+  it('some de "Precisam de gente" quando o horário do evento já passou', async () => {
+    const pastJob = { ...JOB, id: 'job-past', startsAt: '2026-08-01T18:00:00.000Z', endsAt: '2026-08-01T23:00:00.000Z' };
+    listMyJobsMock.mockResolvedValue({ jobs: [pastJob] });
+
+    renderPainel();
+
+    expect(await screen.findByText(/tudo coberto por aqui/i)).toBeInTheDocument();
+  });
+
+  it('some de "Turnos confirmados" quando o evento já aconteceu', async () => {
+    const pastJob = {
+      ...JOB,
+      id: 'job-past',
+      status: 'filled',
+      positionsFilled: 4,
+      startsAt: '2026-08-01T18:00:00.000Z',
+      endsAt: '2026-08-01T23:00:00.000Z',
+    };
+    listMyJobsMock.mockResolvedValue({ jobs: [pastJob] });
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [
+        {
+          id: 'app-1',
+          status: 'approved',
+          createdAt: '2026-07-25T00:00:00.000Z',
+          worker: { id: 'w1', fullName: 'Ana Souza', photoUrl: null, avgRating: '4.9' },
+          shift: null,
+        },
+      ],
+    });
+
+    renderPainel();
+
+    await screen.findByText('Turnos abertos');
+    expect(screen.queryByText('Turnos confirmados')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ana Souza')).not.toBeInTheDocument();
+  });
 });

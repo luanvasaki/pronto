@@ -104,7 +104,12 @@ export default function PainelPage() {
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
-  const openJobs = jobs.filter((job) => job.status === 'open');
+  // Sem status "encerrada" no banco (open/filled/cancelled só) — igual ao
+  // feed do trabalhador, o turno some das listas ativas calculando pela
+  // data em vez de guardar mais um estado.
+  const isPastEvent = (job: Job) => new Date(job.endsAt).getTime() < now.getTime();
+
+  const openJobs = jobs.filter((job) => job.status === 'open' && !isPastEvent(job));
   const pendingCandidates = openJobs.reduce(
     (sum, job) => sum + (applicationsByJobId[job.id] ?? []).filter((a) => a.status === 'pending').length,
     0,
@@ -122,7 +127,7 @@ export default function PainelPage() {
   ).length;
 
   const confirmedRows: ConfirmedRow[] = jobs
-    .filter((job) => job.status !== 'cancelled')
+    .filter((job) => job.status !== 'cancelled' && !isPastEvent(job))
     .flatMap((job) =>
       (applicationsByJobId[job.id] ?? [])
         .filter((application) => application.status === 'approved')
