@@ -1,11 +1,12 @@
 'use client';
 
-import { ApiError, listSkillCategories } from '@shift/shared';
+import { ApiError, COMPANY_RATING_CATEGORIES, listSkillCategories, rateShift } from '@shift/shared';
 import { useEffect, useState } from 'react';
+import { RatingForm, RatingSummary } from '../../../components/rating-form';
 import { Button } from '../../../components/ui/button';
 import { MapLink } from '../../../components/ui/map-link';
 import { getCurrentPosition } from '../../../lib/geolocation';
-import { checkIn, checkOut, confirmPayment, listMyShifts, rateShift, Shift } from '../../../lib/shifts-api';
+import { checkIn, checkOut, confirmPayment, listMyShifts, Shift } from '../../../lib/shifts-api';
 
 const CATEGORY_LABEL_FALLBACK = 'Categoria';
 
@@ -40,10 +41,8 @@ const PAYMENT_STATUS_LABEL: Record<string, string> = {
   refunded: 'Acerto cancelado',
 };
 
-const RATING_SCORES = [1, 2, 3, 4, 5];
-
 interface RatingDraft {
-  score: number;
+  scores: Record<string, number>;
   comment: string;
 }
 
@@ -193,23 +192,33 @@ export default function TurnosPage() {
     }
   }
 
-  function setRatingScore(shiftId: string, score: number): void {
-    setRatingDrafts((current) => ({ ...current, [shiftId]: { score, comment: current[shiftId]?.comment ?? '' } }));
+  function setRatingScore(shiftId: string, categoryId: string, score: number): void {
+    setRatingDrafts((current) => ({
+      ...current,
+      [shiftId]: {
+        scores: { ...current[shiftId]?.scores, [categoryId]: score },
+        comment: current[shiftId]?.comment ?? '',
+      },
+    }));
   }
 
   function setRatingComment(shiftId: string, comment: string): void {
-    setRatingDrafts((current) => ({ ...current, [shiftId]: { score: current[shiftId]?.score ?? 0, comment } }));
+    setRatingDrafts((current) => ({
+      ...current,
+      [shiftId]: { scores: current[shiftId]?.scores ?? {}, comment },
+    }));
   }
 
   async function handleRate(shiftId: string): Promise<void> {
     const draft = ratingDrafts[shiftId];
-    if (!draft?.score) return;
+    const isComplete = COMPANY_RATING_CATEGORIES.every((category) => Boolean(draft?.scores[category.id]));
+    if (!draft || !isComplete) return;
 
     setRatingError(null);
     setRatingSubmittingId(shiftId);
 
     try {
-      const rating = await rateShift(shiftId, draft.score, draft.comment.trim() || undefined);
+      const rating = await rateShift(shiftId, draft.scores, draft.comment.trim() || undefined);
       setShifts((current) =>
         current.map((shift) =>
           shift.id === shiftId ? { ...shift, ratings: { ...shift.ratings, worker: rating } } : shift,
@@ -391,50 +400,21 @@ export default function TurnosPage() {
               )}
 
               {shift.status === 'completed' && shift.ratings.worker && (
-                <p className="mt-3.5 text-sm text-success">Você avaliou: {shift.ratings.worker.score} de 5.</p>
+                <RatingSummary rating={shift.ratings.worker} categories={COMPANY_RATING_CATEGORIES} />
               )}
 
               {shift.status === 'completed' && !shift.ratings.worker && (
-                <div className="mt-3.5 flex flex-col gap-3 rounded-[18px] border border-border p-4">
-                  <p className="font-heading text-[15px] font-bold text-text">Avaliar a empresa</p>
-                  <div className="flex gap-1.5" role="group" aria-label="Nota de 1 a 5">
-                    {RATING_SCORES.map((score) => {
-                      const selected = (ratingDrafts[shift.id]?.score ?? 0) >= score;
-                      return (
-                        <button
-                          key={score}
-                          type="button"
-                          aria-label={`${score} de 5`}
-                          aria-pressed={selected}
-                          onClick={() => setRatingScore(shift.id, score)}
-                          className={`text-4xl leading-none transition ${
-                            selected ? 'text-primary' : 'text-border'
-                          }`}
-                        >
-                          ★
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <textarea
-                    rows={2}
-                    placeholder="Escreva um comentário (opcional)"
-                    value={ratingDrafts[shift.id]?.comment ?? ''}
-                    onChange={(event) => setRatingComment(shift.id, event.target.value)}
-                    className="w-full rounded-[14px] border border-border bg-surface px-3.5 py-3 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
-                  />
-                  {ratingError?.shiftId === shift.id && (
-                    <p className="text-sm text-danger">{ratingError.message}</p>
-                  )}
-                  <Button
-                    type="button"
-                    isLoading={ratingSubmittingId === shift.id}
-                    disabled={!ratingDrafts[shift.id]?.score}
-                    onClick={() => handleRate(shift.id)}
-                  >
-                    Enviar avaliação
-                  </Button>
-                </div>
+                <RatingForm
+                  title="Avaliar a empresa"
+                  categories={COMPANY_RATING_CATEGORIES}
+                  scores={ratingDrafts[shift.id]?.scores ?? {}}
+                  comment={ratingDrafts[shift.id]?.comment ?? ''}
+                  onChangeScore={(categoryId, score) => setRatingScore(shift.id, categoryId, score)}
+                  onChangeComment={(comment) => setRatingComment(shift.id, comment)}
+                  onSubmit={() => handleRate(shift.id)}
+                  isSubmitting={ratingSubmittingId === shift.id}
+                  error={ratingError?.shiftId === shift.id ? ratingError.message : undefined}
+                />
               )}
             </li>
           );

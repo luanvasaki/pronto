@@ -8,11 +8,21 @@ const NOTIFICATIONS = [
   { applicationId: 'app-2', jobId: 'job-2', workerName: 'Beatriz Lima', categoryName: 'Cozinha' },
 ];
 
+const CHECKED_IN_NOTIFICATIONS = [
+  { shiftId: 'shift-1', jobId: 'job-1', workerName: 'Carlos Souza', categoryName: 'Garçom', checkInAt: '2026-07-10T18:57:00.000Z' },
+];
+
 describe('Topbar', () => {
-  it('mostra o contador de candidaturas pendentes no sino', () => {
+  it('mostra o contador de notificações pendentes no sino', () => {
     render(<Topbar title="Painel" onMenuClick={vi.fn()} pendingApplicationsCount={2} />);
 
-    expect(screen.getByLabelText('2 candidatura(s) aguardando resposta')).toBeInTheDocument();
+    expect(screen.getByLabelText('2 notificação(ões) pendente(s)')).toBeInTheDocument();
+  });
+
+  it('soma candidaturas pendentes e check-ins não vistos no contador', () => {
+    render(<Topbar title="Painel" onMenuClick={vi.fn()} pendingApplicationsCount={2} checkedInCount={1} />);
+
+    expect(screen.getByLabelText('3 notificação(ões) pendente(s)')).toBeInTheDocument();
   });
 
   it('não mostra o dropdown até clicar no sino', () => {
@@ -29,20 +39,59 @@ describe('Topbar', () => {
       <Topbar title="Painel" onMenuClick={vi.fn()} pendingApplicationsCount={2} pendingApplications={NOTIFICATIONS} />,
     );
 
-    await user.click(screen.getByLabelText('2 candidatura(s) aguardando resposta'));
+    await user.click(screen.getByLabelText('2 notificação(ões) pendente(s)'));
 
     expect(screen.getByText(/Ana Souza/)).toBeInTheDocument();
     expect(screen.getAllByText(/se inscreveu na vaga de/)).toHaveLength(2);
     expect(screen.getByText(/Beatriz Lima/)).toBeInTheDocument();
   });
 
-  it('mostra mensagem de vazio quando não há candidaturas pendentes', async () => {
+  it('mostra check-ins não vistos junto das candidaturas, e chama onOpenNotifications ao abrir', async () => {
+    const onOpenNotifications = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Topbar
+        title="Painel"
+        onMenuClick={vi.fn()}
+        pendingApplicationsCount={0}
+        checkedInCount={1}
+        checkedInNotifications={CHECKED_IN_NOTIFICATIONS}
+        onOpenNotifications={onOpenNotifications}
+      />,
+    );
+
+    await user.click(screen.getByLabelText('1 notificação(ões) pendente(s)'));
+
+    expect(screen.getByText(/Carlos Souza/)).toBeInTheDocument();
+    expect(screen.getByText(/fez check-in às/)).toBeInTheDocument();
+    expect(onOpenNotifications).toHaveBeenCalled();
+  });
+
+  it('não chama onOpenNotifications quando não há check-in não visto', async () => {
+    const onOpenNotifications = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Topbar
+        title="Painel"
+        onMenuClick={vi.fn()}
+        pendingApplicationsCount={1}
+        pendingApplications={[NOTIFICATIONS[0]]}
+        onOpenNotifications={onOpenNotifications}
+      />,
+    );
+
+    await user.click(screen.getByLabelText('1 notificação(ões) pendente(s)'));
+
+    expect(onOpenNotifications).not.toHaveBeenCalled();
+  });
+
+  it('mostra mensagem de vazio quando não há nenhuma notificação', async () => {
     const user = userEvent.setup();
     render(<Topbar title="Painel" onMenuClick={vi.fn()} pendingApplicationsCount={0} pendingApplications={[]} />);
 
     await user.click(screen.getByLabelText('Notificações'));
 
-    expect(screen.getByText('Nenhuma candidatura aguardando resposta.')).toBeInTheDocument();
+    expect(screen.getByText('Nenhuma notificação por aqui.')).toBeInTheDocument();
   });
 
   it('fecha o dropdown ao clicar fora', async () => {
@@ -54,7 +103,7 @@ describe('Topbar', () => {
       </div>,
     );
 
-    await user.click(screen.getByLabelText('2 candidatura(s) aguardando resposta'));
+    await user.click(screen.getByLabelText('2 notificação(ões) pendente(s)'));
     expect(screen.getByText(/Ana Souza/)).toBeInTheDocument();
 
     await user.click(screen.getByText('fora do dropdown'));

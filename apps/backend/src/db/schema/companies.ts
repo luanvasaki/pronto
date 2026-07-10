@@ -1,6 +1,7 @@
 import {
   boolean,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -55,6 +56,10 @@ export const companies = pgTable(
       .notNull()
       .default('pending'),
     avgRating: numeric('avg_rating', { precision: 2, scale: 1 }),
+    // Média por categoria (pontualidade no pagamento, clareza...) das
+    // avaliações recebidas de trabalhadores — mesmo padrão de
+    // worker_profiles.avgCategoryScores, ver update-rating-aggregates.ts.
+    avgCategoryScores: jsonb('avg_category_scores').$type<Record<string, string>>(),
     totalJobsPosted: integer('total_jobs_posted').notNull().default(0),
     // Empresa criada só pra popular o app com vagas de exemplo em
     // demonstração — nunca aparece diferente pro trabalhador (mesmos

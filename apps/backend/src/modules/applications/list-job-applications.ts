@@ -4,7 +4,7 @@ import { applications, companies, jobs, shifts, workerProfiles, workerSkills } f
 import { HttpError } from '../../shared/errors/http-error';
 import { getPaymentsByShiftIds } from '../payments/get-payments-by-shift-ids';
 import { PaymentResponse } from '../payments/payment-response';
-import { getRatingsByShiftIds, ShiftRatings } from '../ratings/get-ratings-by-shift-ids';
+import { applyRatingVisibility, getRatingsByShiftIds, ShiftRatings } from '../ratings/get-ratings-by-shift-ids';
 
 export interface JobApplicationResponse {
   id: string;
@@ -19,6 +19,7 @@ export interface JobApplicationResponse {
     fullName: string;
     photoUrl: string | null;
     avgRating: string | null;
+    avgCategoryScores: Record<string, string> | null;
     /** Não tem a categoria da vaga no perfil — mostra aviso pra quem for aprovar. */
     matchesSkills: boolean;
     /** Turnos concluídos com ESSA empresa antes (qualquer vaga) — mostra como vantagem pra quem for aprovar. */
@@ -108,7 +109,7 @@ export async function listJobApplications(
     getRatingsByShiftIds(shiftIds),
   ]);
 
-  return rows.flatMap((row) => {
+  const results = rows.flatMap((row) => {
     const worker = workersById.get(row.workerId);
     if (!worker) {
       return [];
@@ -126,6 +127,7 @@ export async function listJobApplications(
           fullName: worker.fullName,
           photoUrl: worker.photoUrl,
           avgRating: worker.avgRating,
+          avgCategoryScores: worker.avgCategoryScores ?? null,
           matchesSkills: categoryIdsByWorkerId.get(worker.userId)?.has(job.categoryId) ?? false,
           previousShiftsWithCompany: previousShiftsCountByWorkerId.get(worker.userId) ?? 0,
         },
@@ -136,10 +138,21 @@ export async function listJobApplications(
               checkInAt: shift.checkInAt,
               checkOutAt: shift.checkOutAt,
               payment: paymentsByShiftId.get(shift.id) ?? null,
-              ratings: ratingsByShiftId.get(shift.id) ?? { worker: null, company: null },
+              ratings: applyRatingVisibility(
+                ratingsByShiftId.get(shift.id) ?? { worker: null, company: null },
+                shift.checkOutAt,
+                'company',
+              ),
             }
           : null,
       },
     ];
   });
+
+  // Candidato mais bem avaliado primeiro — dá vantagem real a quem tem
+  // bom histórico. `sort` é estável, então quem empata (ou não tem nota
+  // ainda) mantém a ordem por data de candidatura de antes.
+  return results.sort(
+    (a, b) => Number(b.worker.avgRating ?? -1) - Number(a.worker.avgRating ?? -1),
+  );
 }

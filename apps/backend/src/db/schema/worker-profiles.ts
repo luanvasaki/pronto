@@ -1,6 +1,7 @@
 import {
   doublePrecision,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -46,6 +47,10 @@ export const workerProfiles = pgTable(
     searchRadiusKm: integer('search_radius_km').notNull().default(10),
     kycStatus: kycStatusEnum('kyc_status').notNull().default('pending'),
     avgRating: numeric('avg_rating', { precision: 2, scale: 1 }),
+    // Média por categoria (pontualidade, educação...) das avaliações
+    // recebidas de empresas — recalculada do zero junto com avgRating,
+    // ver update-rating-aggregates.ts. Mesmo formato (string numérica).
+    avgCategoryScores: jsonb('avg_category_scores').$type<Record<string, string>>(),
     // "Mortos" — nunca incrementados por nenhum código (nem check-out,
     // nem marcação de falta). `getWorkerProfile` calcula os números de
     // verdade ao vivo a partir de `shifts`, não confia nessas colunas.

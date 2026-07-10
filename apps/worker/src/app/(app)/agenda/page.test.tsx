@@ -4,24 +4,24 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TurnosPage from './page';
 
 const listSkillCategoriesMock = vi.fn();
+const rateShiftMock = vi.fn();
 vi.mock('@shift/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shift/shared')>();
   return {
     ...actual,
     listSkillCategories: (...args: unknown[]) => listSkillCategoriesMock(...args),
+    rateShift: (...args: unknown[]) => rateShiftMock(...args),
   };
 });
 
 const listMyShiftsMock = vi.fn();
 const checkInMock = vi.fn();
 const checkOutMock = vi.fn();
-const rateShiftMock = vi.fn();
 const confirmPaymentMock = vi.fn();
 vi.mock('../../../lib/shifts-api', () => ({
   listMyShifts: (...args: unknown[]) => listMyShiftsMock(...args),
   checkIn: (...args: unknown[]) => checkInMock(...args),
   checkOut: (...args: unknown[]) => checkOutMock(...args),
-  rateShift: (...args: unknown[]) => rateShiftMock(...args),
   confirmPayment: (...args: unknown[]) => confirmPaymentMock(...args),
 }));
 
@@ -44,7 +44,20 @@ function makeShift(
   overrides: Partial<{
     status: string;
     payment: { id: string; shiftId: string; amount: string; status: string; chargedAt: string | null; releasedAt: string | null } | null;
-    ratings: { worker: { id: string; shiftId: string; raterRole: string; score: number; comment: string | null; createdAt: string } | null; company: unknown };
+    ratings: {
+      worker:
+        | {
+            id: string;
+            shiftId: string;
+            raterRole: string;
+            score: number;
+            categoryScores: Record<string, number> | null;
+            comment: string | null;
+            createdAt: string;
+          }
+        | null;
+      company: unknown;
+    };
   }> = {},
 ) {
   return {
@@ -135,16 +148,23 @@ describe('TurnosPage', () => {
     render(<TurnosPage />);
 
     expect(await screen.findByText('Avaliar a empresa')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '5 de 5' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pontualidade no pagamento: 5 de 5' })).toBeInTheDocument();
   });
 
-  it('envia a avaliação com a nota escolhida', async () => {
+  it('envia a avaliação só depois de preencher as 5 categorias', async () => {
     listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'completed' })] });
     rateShiftMock.mockResolvedValue({
       id: 'rating-1',
       shiftId: 'shift-1',
       raterRole: 'worker',
       score: 4,
+      categoryScores: {
+        pontualidade_pagamento: 4,
+        clareza_vaga: 4,
+        respeito: 4,
+        comunicacao: 4,
+        ambiente: 4,
+      },
       comment: null,
       createdAt: '2026-08-02T00:00:00.000Z',
     });
@@ -152,10 +172,29 @@ describe('TurnosPage', () => {
 
     render(<TurnosPage />);
     await screen.findByText('Avaliar a empresa');
-    await user.click(screen.getByRole('button', { name: '4 de 5' }));
+
+    expect(screen.getByRole('button', { name: /enviar avaliação/i })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Pontualidade no pagamento: 4 de 5' }));
+    await user.click(screen.getByRole('button', { name: 'Clareza das informações da vaga: 4 de 5' }));
+    await user.click(screen.getByRole('button', { name: 'Respeito no tratamento: 4 de 5' }));
+    await user.click(screen.getByRole('button', { name: 'Comunicação: 4 de 5' }));
+    await user.click(screen.getByRole('button', { name: 'Ambiente e condições de trabalho: 4 de 5' }));
     await user.click(screen.getByRole('button', { name: /enviar avaliação/i }));
 
-    await waitFor(() => expect(rateShiftMock).toHaveBeenCalledWith('shift-1', 4, undefined));
+    await waitFor(() =>
+      expect(rateShiftMock).toHaveBeenCalledWith(
+        'shift-1',
+        {
+          pontualidade_pagamento: 4,
+          clareza_vaga: 4,
+          respeito: 4,
+          comunicacao: 4,
+          ambiente: 4,
+        },
+        undefined,
+      ),
+    );
     expect(await screen.findByText('Você avaliou: 4 de 5.')).toBeInTheDocument();
   });
 
@@ -170,6 +209,7 @@ describe('TurnosPage', () => {
               shiftId: 'shift-1',
               raterRole: 'worker',
               score: 3,
+              categoryScores: null,
               comment: null,
               createdAt: '2026-08-02T00:00:00.000Z',
             },

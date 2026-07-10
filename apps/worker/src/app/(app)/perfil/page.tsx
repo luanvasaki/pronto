@@ -8,6 +8,7 @@ import {
   listSkillCategories,
   logout,
   SkillCategory,
+  WORKER_RATING_CATEGORIES,
 } from '@shift/shared';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -19,10 +20,12 @@ import { Input } from '../../../components/ui/input';
 import { StatCard } from '../../../components/ui/stat-card';
 import { getCurrentPosition } from '../../../lib/geolocation';
 import {
+  listWorkerRatings,
   updateWorkerLocation,
   UpsertWorkerProfileResponse,
   uploadWorkerPhoto,
   upsertWorkerProfile,
+  WorkerRatingHistoryEntry,
 } from '../../../lib/worker-profile-api';
 import { useWorkerProfile } from '../worker-profile-context';
 
@@ -37,6 +40,10 @@ const KYC_STATUS_CLASS: Record<string, string> = {
   approved: 'bg-success/10 text-success',
   rejected: 'bg-danger/10 text-danger',
 };
+
+function formatShiftDate(iso: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(iso));
+}
 
 export default function PerfilPage() {
   const router = useRouter();
@@ -67,11 +74,21 @@ export default function PerfilPage() {
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
+  const [ratingHistory, setRatingHistory] = useState<WorkerRatingHistoryEntry[]>([]);
+  const [isLoadingRatingHistory, setIsLoadingRatingHistory] = useState(true);
+
   useEffect(() => {
     listSkillCategories()
       .then((data) => setCategories(data.categories))
       .catch(() => setCategoriesError('Não foi possível carregar as categorias.'))
       .finally(() => setIsLoadingCategories(false));
+  }, []);
+
+  useEffect(() => {
+    listWorkerRatings()
+      .then((data) => setRatingHistory(data.ratings))
+      .catch(() => undefined)
+      .finally(() => setIsLoadingRatingHistory(false));
   }, []);
 
   async function handleLogout(): Promise<void> {
@@ -279,6 +296,88 @@ export default function PerfilPage() {
         <StatCard label="turnos" value={String(profile.totalShiftsCompleted)} />
         <StatCard label="nota média" value={profile.avgRating ? `★ ${profile.avgRating}` : '—'} />
       </div>
+
+      {profile.avgCategoryScores && (
+        <div>
+          <h2 className="font-heading text-[17px] font-bold text-text">Seus pontos fortes</h2>
+          <p className="mt-1 text-xs text-text-secondary">
+            A média de cada categoria que as empresas avaliaram em você — aparece pra elas quando você se
+            candidata a uma vaga.
+          </p>
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {WORKER_RATING_CATEGORIES.flatMap((category) => {
+              const score = profile.avgCategoryScores?.[category.id];
+              if (!score) return [];
+              return [
+                <span
+                  key={category.id}
+                  className="rounded-full bg-primary/10 px-3 py-1.5 text-[12.5px] font-semibold text-primary"
+                >
+                  ★ {score} {category.label}
+                </span>,
+              ];
+            })}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <h2 className="font-heading text-[17px] font-bold text-text">Seu histórico</h2>
+        <div className="mt-2.5 flex flex-wrap gap-3">
+          <StatCard label="empresas atendidas" value={String(profile.companiesServed)} />
+          <StatCard
+            label="comparecimento"
+            value={profile.attendanceRate !== null ? `${profile.attendanceRate}%` : '—'}
+          />
+          <StatCard label="cancelamentos" value={String(profile.cancellations)} />
+          <StatCard
+            label="taxa de recontratação"
+            value={profile.rehireRate !== null ? `${profile.rehireRate}%` : '—'}
+          />
+        </div>
+      </div>
+
+      {!isLoadingRatingHistory && ratingHistory.length > 0 && (
+        <div>
+          <h2 className="font-heading text-[17px] font-bold text-text">Avaliações recebidas</h2>
+          <ul className="mt-2.5 flex flex-col gap-3">
+            {ratingHistory.map((entry) => {
+              const categoryName = categories.find((category) => category.id === entry.categoryId)?.name;
+              return (
+                <li
+                  key={entry.id}
+                  className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-heading text-[15px] font-bold text-text">{entry.companyName}</p>
+                    <span className="whitespace-nowrap text-sm font-bold text-primary">★ {entry.score}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-text-secondary">
+                    {[categoryName, formatShiftDate(entry.shiftDate)].filter(Boolean).join(' · ')}
+                  </p>
+                  {entry.comment && <p className="mt-2 text-sm text-text">"{entry.comment}"</p>}
+                  {entry.categoryScores && (
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      {WORKER_RATING_CATEGORIES.flatMap((category) => {
+                        const score = entry.categoryScores?.[category.id];
+                        if (!score) return [];
+                        return [
+                          <span
+                            key={category.id}
+                            className="rounded-lg bg-background px-2 py-1 text-[11.5px] font-semibold text-text-secondary"
+                          >
+                            ★{score} {category.label}
+                          </span>,
+                        ];
+                      })}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       <div>
         <h2 className="font-heading text-[17px] font-bold text-text">Minhas funções</h2>

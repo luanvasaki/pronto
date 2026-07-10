@@ -1,14 +1,14 @@
 'use client';
 
-import { ApiError } from '@shift/shared';
+import { ApiError, rateShift, WORKER_RATING_CATEGORIES } from '@shift/shared';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { RatingForm, RatingSummary } from '../../../../components/rating-form';
 import { Avatar } from '../../../../components/ui/avatar';
 import { Button } from '../../../../components/ui/button';
 import {
   JobApplication,
   listJobApplications,
-  rateShift,
   releasePayment,
   removeApprovedWorker,
   updateApplicationStatus,
@@ -66,10 +66,8 @@ const PAYMENT_STATUS_LABEL: Record<string, string> = {
   refunded: 'Acerto cancelado',
 };
 
-const RATING_SCORES = [1, 2, 3, 4, 5];
-
 interface RatingDraft {
-  score: number;
+  scores: Record<string, number>;
   comment: string;
 }
 
@@ -140,23 +138,33 @@ export default function VagaCandidatosPage() {
     }
   }
 
-  function setRatingScore(shiftId: string, score: number): void {
-    setRatingDrafts((current) => ({ ...current, [shiftId]: { score, comment: current[shiftId]?.comment ?? '' } }));
+  function setRatingScore(shiftId: string, categoryId: string, score: number): void {
+    setRatingDrafts((current) => ({
+      ...current,
+      [shiftId]: {
+        scores: { ...current[shiftId]?.scores, [categoryId]: score },
+        comment: current[shiftId]?.comment ?? '',
+      },
+    }));
   }
 
   function setRatingComment(shiftId: string, comment: string): void {
-    setRatingDrafts((current) => ({ ...current, [shiftId]: { score: current[shiftId]?.score ?? 0, comment } }));
+    setRatingDrafts((current) => ({
+      ...current,
+      [shiftId]: { scores: current[shiftId]?.scores ?? {}, comment },
+    }));
   }
 
   async function handleRate(applicationId: string, shiftId: string): Promise<void> {
     const draft = ratingDrafts[shiftId];
-    if (!draft?.score) return;
+    const isComplete = WORKER_RATING_CATEGORIES.every((category) => Boolean(draft?.scores[category.id]));
+    if (!draft || !isComplete) return;
 
     setRatingError(null);
     setRatingSubmittingId(shiftId);
 
     try {
-      const rating = await rateShift(shiftId, draft.score, draft.comment.trim() || undefined);
+      const rating = await rateShift(shiftId, draft.scores, draft.comment.trim() || undefined);
       setApplications((current) =>
         current.map((application) =>
           application.id === applicationId && application.shift
@@ -233,6 +241,23 @@ export default function VagaCandidatosPage() {
                 {statusLabel(application)}
               </span>
             </div>
+
+            {application.worker.avgCategoryScores && (
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {WORKER_RATING_CATEGORIES.flatMap((category) => {
+                  const score = application.worker.avgCategoryScores?.[category.id];
+                  if (!score) return [];
+                  return [
+                    <span
+                      key={category.id}
+                      className="rounded-lg bg-background px-2 py-1 text-[11.5px] font-semibold text-text-secondary"
+                    >
+                      ★{score} {category.label}
+                    </span>,
+                  ];
+                })}
+              </div>
+            )}
 
             {application.worker.previousShiftsWithCompany > 0 && (
               <p className="mt-2.5 rounded-lg bg-success/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-success">
@@ -347,53 +372,21 @@ export default function VagaCandidatosPage() {
             )}
 
             {application.shift?.status === 'completed' && application.shift.ratings.company && (
-              <p className="mt-3 text-sm text-success">
-                Você avaliou: {application.shift.ratings.company.score} de 5.
-              </p>
+              <RatingSummary rating={application.shift.ratings.company} categories={WORKER_RATING_CATEGORIES} />
             )}
 
             {application.shift?.status === 'completed' && !application.shift.ratings.company && (
-              <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-border p-4">
-                <p className="font-heading text-[15px] font-bold text-text">Avaliar o trabalhador</p>
-                <div className="flex gap-1.5" role="group" aria-label="Nota de 1 a 5">
-                  {RATING_SCORES.map((score) => {
-                    const shiftId = application.shift!.id;
-                    const selected = (ratingDrafts[shiftId]?.score ?? 0) >= score;
-                    return (
-                      <button
-                        key={score}
-                        type="button"
-                        aria-label={`${score} de 5`}
-                        aria-pressed={selected}
-                        onClick={() => setRatingScore(shiftId, score)}
-                        className={`text-4xl leading-none transition ${
-                          selected ? 'text-primary' : 'text-border'
-                        }`}
-                      >
-                        ★
-                      </button>
-                    );
-                  })}
-                </div>
-                <textarea
-                  rows={2}
-                  placeholder="Escreva um comentário (opcional)"
-                  value={ratingDrafts[application.shift.id]?.comment ?? ''}
-                  onChange={(event) => setRatingComment(application.shift!.id, event.target.value)}
-                  className="w-full rounded-[14px] border border-border bg-surface px-3.5 py-3 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
-                />
-                {ratingError?.shiftId === application.shift.id && (
-                  <p className="text-sm text-danger">{ratingError.message}</p>
-                )}
-                <Button
-                  type="button"
-                  isLoading={ratingSubmittingId === application.shift.id}
-                  disabled={!ratingDrafts[application.shift.id]?.score}
-                  onClick={() => handleRate(application.id, application.shift!.id)}
-                >
-                  Enviar avaliação
-                </Button>
-              </div>
+              <RatingForm
+                title="Avaliar o trabalhador"
+                categories={WORKER_RATING_CATEGORIES}
+                scores={ratingDrafts[application.shift.id]?.scores ?? {}}
+                comment={ratingDrafts[application.shift.id]?.comment ?? ''}
+                onChangeScore={(categoryId, score) => setRatingScore(application.shift!.id, categoryId, score)}
+                onChangeComment={(comment) => setRatingComment(application.shift!.id, comment)}
+                onSubmit={() => handleRate(application.id, application.shift!.id)}
+                isSubmitting={ratingSubmittingId === application.shift.id}
+                error={ratingError?.shiftId === application.shift.id ? ratingError.message : undefined}
+              />
             )}
           </li>
         ))}

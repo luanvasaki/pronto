@@ -16,6 +16,7 @@ import { createApplication } from '../applications/create-application';
 import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
 import { createRating } from './create-rating';
+import { COMPANY_RATING_CATEGORIES, WORKER_RATING_CATEGORIES } from './rating-categories';
 
 // Fixtures únicas entre arquivos de teste (ver README).
 const WORKER_PHONE = '+5511966660027';
@@ -26,6 +27,16 @@ const TEST_CATEGORY_NAME = 'Categoria de teste — rating';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const TOMORROW_PLUS_5H = new Date(TOMORROW.getTime() + 5 * 60 * 60 * 1000);
+
+/** Trabalhador avaliando a empresa usa as categorias de empresa, todas com a mesma nota. */
+function companyCategoryScores(score: number): Record<string, number> {
+  return Object.fromEntries(COMPANY_RATING_CATEGORIES.map((category) => [category.id, score]));
+}
+
+/** Empresa avaliando o trabalhador usa as categorias de trabalhador, todas com a mesma nota. */
+function workerCategoryScores(score: number): Record<string, number> {
+  return Object.fromEntries(WORKER_RATING_CATEGORIES.map((category) => [category.id, score]));
+}
 
 async function setupCompletedShift() {
   const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
@@ -86,12 +97,41 @@ describe('createRating', () => {
     await db.delete(skillCategories).where(eq(skillCategories.name, TEST_CATEGORY_NAME));
   });
 
-  it('rejeita nota inválida', async () => {
+  it('rejeita categoryScores ausente', async () => {
     const { worker, shift } = await setupCompletedShift();
 
-    await expect(createRating(worker.id, shift.id, { score: 6, comment: undefined })).rejects.toThrow(
-      'Nota inválida',
-    );
+    await expect(
+      createRating(worker.id, shift.id, { categoryScores: undefined, comment: undefined }),
+    ).rejects.toThrow('Avalie todas as categorias');
+  });
+
+  it('rejeita categoryScores incompleto (faltando categoria)', async () => {
+    const { worker, shift } = await setupCompletedShift();
+    const incomplete = companyCategoryScores(4);
+    delete incomplete[COMPANY_RATING_CATEGORIES[0].id];
+
+    await expect(
+      createRating(worker.id, shift.id, { categoryScores: incomplete, comment: undefined }),
+    ).rejects.toThrow('Avalie todas as categorias');
+  });
+
+  it('rejeita categoria que não pertence ao papel de quem avalia', async () => {
+    const { worker, shift } = await setupCompletedShift();
+    // Trabalhador avalia empresa — categorias de trabalhador não se aplicam aqui.
+    const wrongCategories = workerCategoryScores(4);
+
+    await expect(
+      createRating(worker.id, shift.id, { categoryScores: wrongCategories, comment: undefined }),
+    ).rejects.toThrow('Avalie todas as categorias');
+  });
+
+  it('rejeita nota de categoria fora do intervalo 1-5', async () => {
+    const { worker, shift } = await setupCompletedShift();
+    const invalid = { ...companyCategoryScores(4), [COMPANY_RATING_CATEGORIES[0].id]: 6 };
+
+    await expect(
+      createRating(worker.id, shift.id, { categoryScores: invalid, comment: undefined }),
+    ).rejects.toThrow('nota inteira de 1 a 5');
   });
 
   it('rejeita avaliar turno que ainda não foi concluído', async () => {
@@ -122,51 +162,76 @@ describe('createRating', () => {
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
 
-    await expect(createRating(worker.id, shift!.id, { score: 5, comment: undefined })).rejects.toThrow(
-      'turnos concluídos',
-    );
+    await expect(
+      createRating(worker.id, shift!.id, { categoryScores: companyCategoryScores(5), comment: undefined }),
+    ).rejects.toThrow('turnos concluídos');
   });
 
   it('rejeita quem não tem relação com o turno', async () => {
     const { shift } = await setupCompletedShift();
     const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
 
-    await expect(createRating(otherWorker.id, shift.id, { score: 5, comment: undefined })).rejects.toThrow(
-      'não tem acesso',
-    );
+    await expect(
+      createRating(otherWorker.id, shift.id, { categoryScores: companyCategoryScores(5), comment: undefined }),
+    ).rejects.toThrow('não tem acesso');
   });
 
-  it('trabalhador avalia a empresa e atualiza a média da empresa', async () => {
-    const { worker, company, shift } = await setupCompletedShift();
+  it('trabalhador avalia a empresa (todas as categorias) — nota fica registrada mesmo antes de revelada', async () => {
+    const { worker, shift } = await setupCompletedShift();
 
-    const result = await createRating(worker.id, shift.id, { score: 4, comment: 'Ambiente organizado.' });
+    const result = await createRating(worker.id, shift.id, {
+      categoryScores: companyCategoryScores(4),
+      comment: 'Ambiente organizado.',
+    });
 
     expect(result.raterRole).toBe('worker');
     expect(result.score).toBe(4);
-
-    const updatedCompany = await db.query.companies.findFirst({ where: eq(companies.id, company.id) });
-    expect(updatedCompany?.avgRating).toBe('4.0');
+    expect(result.categoryScores).toEqual(companyCategoryScores(4));
   });
 
-  it('empresa avalia o trabalhador e atualiza a média do trabalhador', async () => {
-    const { owner, worker, shift } = await setupCompletedShift();
+  it('avaliação às cegas: a média da empresa só atualiza depois que os dois lados avaliam', async () => {
+    const { worker, owner, company, shift } = await setupCompletedShift();
 
-    const result = await createRating(owner.id, shift.id, { score: 5, comment: undefined });
+    await createRating(worker.id, shift.id, { categoryScores: companyCategoryScores(4), comment: undefined });
+    const afterOnlyWorker = await db.query.companies.findFirst({ where: eq(companies.id, company.id) });
+    expect(afterOnlyWorker?.avgRating).toBeNull();
 
-    expect(result.raterRole).toBe('company');
+    await createRating(owner.id, shift.id, { categoryScores: workerCategoryScores(5), comment: undefined });
+    const afterBoth = await db.query.companies.findFirst({ where: eq(companies.id, company.id) });
+    expect(afterBoth?.avgRating).toBe('4.0');
+    expect(afterBoth?.avgCategoryScores?.[COMPANY_RATING_CATEGORIES[0].id]).toBe('4.0');
+  });
 
-    const updatedWorker = await db.query.workerProfiles.findFirst({
-      where: eq(workerProfiles.userId, worker.id),
-    });
-    expect(updatedWorker?.avgRating).toBe('5.0');
+  it('avaliação às cegas: a média do trabalhador só atualiza depois que os dois lados avaliam', async () => {
+    const { worker, owner, shift } = await setupCompletedShift();
+
+    await createRating(owner.id, shift.id, { categoryScores: workerCategoryScores(5), comment: undefined });
+    const afterOnlyCompany = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
+    expect(afterOnlyCompany?.avgRating).toBeNull();
+
+    await createRating(worker.id, shift.id, { categoryScores: companyCategoryScores(4), comment: undefined });
+    const afterBoth = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
+    expect(afterBoth?.avgRating).toBe('5.0');
+    expect(afterBoth?.avgCategoryScores?.[WORKER_RATING_CATEGORIES[0].id]).toBe('5.0');
+  });
+
+  it('nota geral é a média arredondada das categorias', async () => {
+    const { owner, shift } = await setupCompletedShift();
+    const ids = WORKER_RATING_CATEGORIES.map((category) => category.id);
+    // 3+4+4+5+5 = 21 / 5 = 4.2 -> arredonda pra 4
+    const mixed = { [ids[0]]: 3, [ids[1]]: 4, [ids[2]]: 4, [ids[3]]: 5, [ids[4]]: 5 };
+
+    const result = await createRating(owner.id, shift.id, { categoryScores: mixed, comment: undefined });
+
+    expect(result.score).toBe(4);
   });
 
   it('rejeita segunda avaliação do mesmo papel pro mesmo turno', async () => {
     const { worker, shift } = await setupCompletedShift();
-    await createRating(worker.id, shift.id, { score: 4, comment: undefined });
+    await createRating(worker.id, shift.id, { categoryScores: companyCategoryScores(4), comment: undefined });
 
-    await expect(createRating(worker.id, shift.id, { score: 5, comment: undefined })).rejects.toThrow(
-      'já avaliou',
-    );
+    await expect(
+      createRating(worker.id, shift.id, { categoryScores: companyCategoryScores(5), comment: undefined }),
+    ).rejects.toThrow('já avaliou');
   });
 });

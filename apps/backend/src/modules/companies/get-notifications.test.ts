@@ -4,6 +4,8 @@ import { db } from '../../db/client';
 import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
 import { updateApplicationStatus } from '../applications/update-application-status';
+import { checkIn } from '../shifts/check-in';
+import { markShiftCheckInSeen } from '../shifts/mark-shift-check-in-seen';
 import { getCompanyNotifications } from './get-notifications';
 
 // Fixtures únicas entre arquivos de teste (ver README).
@@ -112,5 +114,27 @@ describe('getCompanyNotifications', () => {
     expect(result.pendingApplicationsCount).toBe(1);
     expect(result.pendingApplications).toHaveLength(1);
     expect(result.pendingApplications[0].workerName).toBe('Beatriz Lima');
+  });
+
+  it('avisa quando um trabalhador faz check-in, e some depois de marcado como visto', async () => {
+    const { owner, job } = await setup();
+    const worker = await createWorker(WORKER_PHONE, 'Ana Souza');
+    const application = await createApplication(worker.id, job.id);
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+    const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
+    if (!shift) throw new Error('Turno não foi criado no setup do teste.');
+    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+
+    const beforeSeen = await getCompanyNotifications(owner.id);
+    expect(beforeSeen.checkedInCount).toBe(1);
+    expect(beforeSeen.checkedInNotifications).toHaveLength(1);
+    expect(beforeSeen.checkedInNotifications[0].workerName).toBe('Ana Souza');
+    expect(beforeSeen.checkedInNotifications[0].categoryName).toBe(TEST_CATEGORY_NAME);
+
+    await markShiftCheckInSeen(owner.id, shift.id);
+
+    const afterSeen = await getCompanyNotifications(owner.id);
+    expect(afterSeen.checkedInCount).toBe(0);
+    expect(afterSeen.checkedInNotifications).toEqual([]);
   });
 });

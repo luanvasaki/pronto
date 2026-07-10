@@ -11,12 +11,32 @@ export interface WorkerProfileDetails {
   kycStatus: string;
   hasDocument: boolean;
   avgRating: string | null;
+  avgCategoryScores: Record<string, string> | null;
   totalShiftsCompleted: number;
   totalHoursWorked: number;
+  companiesServed: number;
+  rehireRate: number | null;
+  attendanceRate: number | null;
+  cancellations: number;
 }
 
 export function getWorkerProfile(): Promise<WorkerProfileDetails> {
   return apiFetch('/worker-profile/me');
+}
+
+export interface WorkerRatingHistoryEntry {
+  id: string;
+  companyName: string;
+  categoryId: string;
+  score: number;
+  categoryScores: Record<string, number> | null;
+  comment: string | null;
+  shiftDate: string;
+  createdAt: string;
+}
+
+export function listWorkerRatings(): Promise<{ ratings: WorkerRatingHistoryEntry[] }> {
+  return apiFetch('/worker-profile/ratings');
 }
 
 export interface UpsertWorkerProfileInput {

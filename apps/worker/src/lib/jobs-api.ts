@@ -24,6 +24,7 @@ export interface NearbyJob extends Job {
   companyName: string;
   companyLogoUrl: string | null;
   companyAvgRating: string | null;
+  companyAvgCategoryScores: Record<string, string> | null;
   matchesSkills: boolean;
   experienceMismatch: boolean;
 }

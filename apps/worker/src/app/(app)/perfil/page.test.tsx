@@ -25,9 +25,11 @@ vi.mock('@shift/shared', async (importOriginal) => {
 
 const uploadWorkerPhotoMock = vi.fn();
 const upsertWorkerProfileMock = vi.fn();
+const listWorkerRatingsMock = vi.fn();
 vi.mock('../../../lib/worker-profile-api', () => ({
   uploadWorkerPhoto: (...args: unknown[]) => uploadWorkerPhotoMock(...args),
   upsertWorkerProfile: (...args: unknown[]) => upsertWorkerProfileMock(...args),
+  listWorkerRatings: (...args: unknown[]) => listWorkerRatingsMock(...args),
 }));
 
 const CATEGORIES = [
@@ -46,8 +48,13 @@ const BASE_PROFILE: WorkerProfileDetails = {
   kycStatus: 'approved',
   hasDocument: true,
   avgRating: '4.5',
+  avgCategoryScores: { pontualidade: '4.7', educacao: '4.3' },
   totalShiftsCompleted: 3,
   totalHoursWorked: 12.5,
+  companiesServed: 2,
+  rehireRate: 50,
+  attendanceRate: 90,
+  cancellations: 1,
 };
 
 function renderWithProfile(profile: WorkerProfileDetails | null) {
@@ -66,6 +73,7 @@ describe('PerfilPage', () => {
     uploadWorkerPhotoMock.mockReset();
     upsertWorkerProfileMock.mockReset();
     createSkillCategoryMock.mockReset();
+    listWorkerRatingsMock.mockReset().mockResolvedValue({ ratings: [] });
   });
 
   it('mostra nome, selo de verificado e estatísticas', async () => {
@@ -76,6 +84,71 @@ describe('PerfilPage', () => {
     expect(screen.getByText('12.5h')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('★ 4.5')).toBeInTheDocument();
+  });
+
+  it('mostra os pontos fortes por categoria quando disponíveis', async () => {
+    renderWithProfile(BASE_PROFILE);
+
+    await screen.findByText('Ana Souza');
+    expect(screen.getByText('Seus pontos fortes')).toBeInTheDocument();
+    expect(screen.getByText('★ 4.7 Pontualidade')).toBeInTheDocument();
+    expect(screen.getByText('★ 4.3 Educação e respeito')).toBeInTheDocument();
+  });
+
+  it('mostra o histórico com empresas atendidas, comparecimento, cancelamentos e recontratação', async () => {
+    renderWithProfile(BASE_PROFILE);
+
+    await screen.findByText('Ana Souza');
+    expect(screen.getByText('Seu histórico')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByText('90%')).toBeInTheDocument();
+    expect(screen.getByText('50%')).toBeInTheDocument();
+  });
+
+  it('mostra travessão pra comparecimento e recontratação quando ainda não há dado', async () => {
+    renderWithProfile({ ...BASE_PROFILE, attendanceRate: null, rehireRate: null });
+
+    await screen.findByText('Ana Souza');
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('mostra avaliações recebidas com empresa, nota, comentário e categorias', async () => {
+    listWorkerRatingsMock.mockResolvedValue({
+      ratings: [
+        {
+          id: 'rating-1',
+          companyName: 'Bar do Zé',
+          categoryId: 'cat-1',
+          score: 5,
+          categoryScores: { pontualidade: 5 },
+          comment: 'Excelente profissional.',
+          shiftDate: '2026-07-01T20:00:00.000Z',
+          createdAt: '2026-07-02T00:00:00.000Z',
+        },
+      ],
+    });
+
+    renderWithProfile(BASE_PROFILE);
+
+    expect(await screen.findByText('Avaliações recebidas')).toBeInTheDocument();
+    expect(screen.getByText('Bar do Zé')).toBeInTheDocument();
+    expect(screen.getByText('★ 5')).toBeInTheDocument();
+    expect(screen.getByText('"Excelente profissional."')).toBeInTheDocument();
+    expect(screen.getByText('★5 Pontualidade')).toBeInTheDocument();
+  });
+
+  it('não mostra a seção de avaliações recebidas quando ainda não há nenhuma', async () => {
+    renderWithProfile(BASE_PROFILE);
+
+    await screen.findByText('Ana Souza');
+    expect(screen.queryByText('Avaliações recebidas')).not.toBeInTheDocument();
+  });
+
+  it('não mostra a seção de pontos fortes sem avaliações por categoria ainda', async () => {
+    renderWithProfile({ ...BASE_PROFILE, avgCategoryScores: null });
+
+    await screen.findByText('Ana Souza');
+    expect(screen.queryByText('Seus pontos fortes')).not.toBeInTheDocument();
   });
 
   it('mostra travessão quando ainda não tem nota', async () => {

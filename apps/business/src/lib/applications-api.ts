@@ -1,4 +1,6 @@
-import { apiFetch } from '@shift/shared';
+import { apiFetch, Rating, ShiftRatings } from '@shift/shared';
+
+export type { Rating, ShiftRatings };
 
 export interface Payment {
   id: string;
@@ -9,20 +11,6 @@ export interface Payment {
   releasedAt: string | null;
   confirmedAt: string | null;
   disputedAt: string | null;
-}
-
-export interface Rating {
-  id: string;
-  shiftId: string;
-  raterRole: string;
-  score: number;
-  comment: string | null;
-  createdAt: string;
-}
-
-export interface ShiftRatings {
-  worker: Rating | null;
-  company: Rating | null;
 }
 
 export interface JobApplication {
@@ -36,6 +24,7 @@ export interface JobApplication {
     fullName: string;
     photoUrl: string | null;
     avgRating: string | null;
+    avgCategoryScores: Record<string, string> | null;
     matchesSkills: boolean;
     previousShiftsWithCompany: number;
   };
@@ -73,13 +62,6 @@ export function updateApplicationStatus(
 
 export function removeApprovedWorker(applicationId: string): Promise<ApplicationResponse> {
   return apiFetch(`/applications/${applicationId}/remove`, { method: 'PATCH' });
-}
-
-export function rateShift(shiftId: string, score: number, comment: string | undefined): Promise<Rating> {
-  return apiFetch(`/shifts/${shiftId}/rating`, {
-    method: 'POST',
-    body: JSON.stringify({ score, comment }),
-  });
 }
 
 export function releasePayment(shiftId: string): Promise<Payment> {

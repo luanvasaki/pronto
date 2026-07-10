@@ -8,23 +8,23 @@ vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'job-1' }),
 }));
 
+const rateShiftMock = vi.fn();
 vi.mock('@shift/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shift/shared')>();
   return {
     ...actual,
     getCurrentUser: vi.fn().mockResolvedValue({ user: { id: '1' } }),
+    rateShift: (...args: unknown[]) => rateShiftMock(...args),
   };
 });
 
 const listJobApplicationsMock = vi.fn();
 const updateApplicationStatusMock = vi.fn();
-const rateShiftMock = vi.fn();
 const releasePaymentMock = vi.fn();
 const removeApprovedWorkerMock = vi.fn();
 vi.mock('../../../../lib/applications-api', () => ({
   listJobApplications: (...args: unknown[]) => listJobApplicationsMock(...args),
   updateApplicationStatus: (...args: unknown[]) => updateApplicationStatusMock(...args),
-  rateShift: (...args: unknown[]) => rateShiftMock(...args),
   releasePayment: (...args: unknown[]) => releasePaymentMock(...args),
   removeApprovedWorker: (...args: unknown[]) => removeApprovedWorkerMock(...args),
 }));
@@ -35,14 +35,34 @@ const PENDING_APPLICATION = {
   createdAt: '2026-07-01T12:00:00.000Z',
   removedAt: null,
   experienceMismatch: false,
-  worker: { id: 'worker-1', fullName: 'Ana Souza', avgRating: null, matchesSkills: true, previousShiftsWithCompany: 0 },
+  worker: {
+    id: 'worker-1',
+    fullName: 'Ana Souza',
+    avgRating: null,
+    avgCategoryScores: null,
+    matchesSkills: true,
+    previousShiftsWithCompany: 0,
+  },
   shift: null,
 };
 
 function makeCompletedApplication(
   overrides: Partial<{
     payment: { id: string; shiftId: string; amount: string; status: string; chargedAt: string | null; releasedAt: string | null } | null;
-    ratings: { worker: unknown; company: { id: string; shiftId: string; raterRole: string; score: number; comment: string | null; createdAt: string } | null };
+    ratings: {
+      worker: unknown;
+      company:
+        | {
+            id: string;
+            shiftId: string;
+            raterRole: string;
+            score: number;
+            categoryScores: Record<string, number> | null;
+            comment: string | null;
+            createdAt: string;
+          }
+        | null;
+    };
   }> = {},
 ) {
   return {
@@ -330,13 +350,14 @@ describe('VagaCandidatosPage', () => {
     expect(await screen.findByText('Avaliar o trabalhador')).toBeInTheDocument();
   });
 
-  it('envia a avaliação do trabalhador', async () => {
+  it('envia a avaliação só depois de preencher as 5 categorias', async () => {
     listJobApplicationsMock.mockResolvedValue({ applications: [makeCompletedApplication()] });
     rateShiftMock.mockResolvedValue({
       id: 'rating-1',
       shiftId: 'shift-1',
       raterRole: 'company',
       score: 5,
+      categoryScores: { pontualidade: 5, educacao: 5, proatividade: 5, comunicacao: 5, qualidade: 5 },
       comment: null,
       createdAt: '2026-07-02T00:00:00.000Z',
     });
@@ -344,10 +365,23 @@ describe('VagaCandidatosPage', () => {
 
     render(<VagaCandidatosPage />);
     await screen.findByText('Avaliar o trabalhador');
-    await user.click(screen.getByRole('button', { name: '5 de 5' }));
+
+    expect(screen.getByRole('button', { name: /enviar avaliação/i })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Pontualidade: 5 de 5' }));
+    await user.click(screen.getByRole('button', { name: 'Educação e respeito: 5 de 5' }));
+    await user.click(screen.getByRole('button', { name: 'Proatividade: 5 de 5' }));
+    await user.click(screen.getByRole('button', { name: 'Comunicação: 5 de 5' }));
+    await user.click(screen.getByRole('button', { name: 'Qualidade do trabalho: 5 de 5' }));
     await user.click(screen.getByRole('button', { name: /enviar avaliação/i }));
 
-    await waitFor(() => expect(rateShiftMock).toHaveBeenCalledWith('shift-1', 5, undefined));
+    await waitFor(() =>
+      expect(rateShiftMock).toHaveBeenCalledWith(
+        'shift-1',
+        { pontualidade: 5, educacao: 5, proatividade: 5, comunicacao: 5, qualidade: 5 },
+        undefined,
+      ),
+    );
     expect(await screen.findByText('Você avaliou: 5 de 5.')).toBeInTheDocument();
   });
 
@@ -357,7 +391,15 @@ describe('VagaCandidatosPage', () => {
         makeCompletedApplication({
           ratings: {
             worker: null,
-            company: { id: 'rating-1', shiftId: 'shift-1', raterRole: 'company', score: 4, comment: null, createdAt: '2026-07-02T00:00:00.000Z' },
+            company: {
+              id: 'rating-1',
+              shiftId: 'shift-1',
+              raterRole: 'company',
+              score: 4,
+              categoryScores: null,
+              comment: null,
+              createdAt: '2026-07-02T00:00:00.000Z',
+            },
           },
         }),
       ],

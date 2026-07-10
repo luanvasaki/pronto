@@ -1,4 +1,4 @@
-import { check, pgEnum, pgTable, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { check, jsonb, pgEnum, pgTable, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { shifts } from './shifts';
 
@@ -19,6 +19,10 @@ export const ratings = pgTable(
       .references(() => shifts.id),
     raterRole: raterRoleEnum('rater_role').notNull(),
     score: smallint('score').notNull(),
+    // Nota geral (`score`) é derivada da média destas 5 — ver
+    // create-rating.ts. Nulo pra avaliações antigas de antes dessa
+    // coluna existir (continuam mostrando só a nota geral).
+    categoryScores: jsonb('category_scores').$type<Record<string, number>>(),
     comment: text('comment'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

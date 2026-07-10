@@ -14,8 +14,11 @@ export async function createRatingHandler(req: Request, res: Response, next: Nex
       throw new HttpError(404, 'Turno não encontrado.');
     }
 
-    const { score, comment } = req.body as { score?: number; comment?: string };
-    const result = await createRating(userId, shiftId, { score, comment });
+    const { categoryScores, comment } = req.body as {
+      categoryScores?: Record<string, number>;
+      comment?: string;
+    };
+    const result = await createRating(userId, shiftId, { categoryScores, comment });
     res.status(201).json(result);
   } catch (error) {
     next(error);

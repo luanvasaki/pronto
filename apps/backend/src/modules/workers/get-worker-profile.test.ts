@@ -13,16 +13,59 @@ import {
 } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
 import { updateApplicationStatus } from '../applications/update-application-status';
+import { withdrawApplication } from '../applications/withdraw-application';
 import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
 import { getWorkerProfile } from './get-worker-profile';
 import { upsertWorkerProfile } from './upsert-worker-profile';
 
+async function createJobForCompany(companyId: string, categoryId: string) {
+  const [job] = await db
+    .insert(jobs)
+    .values({
+      companyId,
+      categoryId,
+      description: 'Vaga de teste com descrição detalhada o suficiente.',
+      addressLabel: 'Endereço de teste',
+      locationLat: -23.55,
+      locationLng: -46.63,
+      positionsTotal: 3,
+      payAmount: '100.00',
+      startsAt: TOMORROW,
+      endsAt: TOMORROW_PLUS_5H,
+    })
+    .returning();
+  return job;
+}
+
+/** Candidatura é única por (jobId, workerId) — turnos extras da mesma empresa pro mesmo trabalhador precisam de vagas separadas. */
+async function createCompanyAndJob(ownerPhone: string, cnpj: string, categoryId: string) {
+  const [owner] = await db.insert(users).values({ phone: ownerPhone }).returning();
+  const [company] = await db
+    .insert(companies)
+    .values({ ownerUserId: owner.id, legalName: `Empresa ${cnpj}`, tradeName: `Empresa ${cnpj}`, cnpj })
+    .returning();
+  const job = await createJobForCompany(company.id, categoryId);
+  return { owner, company, job };
+}
+
+async function completeShift(workerId: string, ownerId: string, jobId: string) {
+  const application = await createApplication(workerId, jobId);
+  await updateApplicationStatus(ownerId, application.id, 'approved');
+  const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
+  if (!shift) throw new Error('Turno não foi criado no setup do teste.');
+  await checkIn(workerId, shift.id, { lat: -23.55, lng: -46.63 });
+  await checkOut(workerId, shift.id, { lat: -23.55, lng: -46.63 });
+  return shift;
+}
+
 // Fixtures únicas entre arquivos de teste (ver README).
 const TEST_PHONE = '+5511966660035';
 const OWNER_PHONE = '+5511966660036';
+const OWNER2_PHONE = '+5511966661094';
 const TEST_CATEGORY_NAME = 'Categoria de teste — get-worker-profile';
 const TEST_CNPJ = '11222333000397';
+const TEST_CNPJ2 = '11222333000702';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const TOMORROW_PLUS_5H = new Date(TOMORROW.getTime() + 5 * 60 * 60 * 1000);
@@ -31,20 +74,22 @@ describe('getWorkerProfile', () => {
   afterEach(async () => {
     // jobs/shifts não têm cascade a partir de companies (de propósito,
     // ver schema) — apaga turno e vaga antes da empresa/usuário.
-    const owner = await db.query.users.findFirst({ where: eq(users.phone, OWNER_PHONE) });
-    if (owner) {
-      const [company] = await db.query.companies.findMany({ where: eq(companies.ownerUserId, owner.id) });
-      if (company) {
-        const companyJobs = await db.query.jobs.findMany({ where: eq(jobs.companyId, company.id) });
-        for (const job of companyJobs) {
-          await db.delete(shifts).where(eq(shifts.jobId, job.id));
-          await db.delete(applications).where(eq(applications.jobId, job.id));
+    for (const ownerPhone of [OWNER_PHONE, OWNER2_PHONE]) {
+      const owner = await db.query.users.findFirst({ where: eq(users.phone, ownerPhone) });
+      if (owner) {
+        const [company] = await db.query.companies.findMany({ where: eq(companies.ownerUserId, owner.id) });
+        if (company) {
+          const companyJobs = await db.query.jobs.findMany({ where: eq(jobs.companyId, company.id) });
+          for (const job of companyJobs) {
+            await db.delete(shifts).where(eq(shifts.jobId, job.id));
+            await db.delete(applications).where(eq(applications.jobId, job.id));
+          }
+          await db.delete(jobs).where(eq(jobs.companyId, company.id));
         }
-        await db.delete(jobs).where(eq(jobs.companyId, company.id));
       }
+      await db.delete(users).where(eq(users.phone, ownerPhone));
     }
     await db.delete(users).where(eq(users.phone, TEST_PHONE));
-    await db.delete(users).where(eq(users.phone, OWNER_PHONE));
     await db.delete(skillCategories).where(eq(skillCategories.name, TEST_CATEGORY_NAME));
   });
 
@@ -159,5 +204,123 @@ describe('getWorkerProfile', () => {
     const result = await getWorkerProfile(user.id);
 
     expect(result.avgRating).toBe('4.5');
+  });
+
+  it('conta empresas atendidas e calcula taxa de recontratação (0% com 1 turno só numa empresa)', async () => {
+    const [worker] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await upsertWorkerProfile(worker.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      photoUrl: undefined,
+      bio: undefined,
+      cpf: undefined,
+    });
+    const { owner, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
+    await completeShift(worker.id, owner.id, job.id);
+
+    const result = await getWorkerProfile(worker.id);
+
+    expect(result.companiesServed).toBe(1);
+    expect(result.rehireRate).toBe(0);
+  });
+
+  it('taxa de recontratação vai a 100% quando a mesma empresa contrata de novo', async () => {
+    const [worker] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await upsertWorkerProfile(worker.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      photoUrl: undefined,
+      bio: undefined,
+      cpf: undefined,
+    });
+    const { owner, company, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
+    await completeShift(worker.id, owner.id, job.id);
+    const secondJob = await createJobForCompany(company.id, category.id);
+    await completeShift(worker.id, owner.id, secondJob.id);
+
+    const result = await getWorkerProfile(worker.id);
+
+    expect(result.companiesServed).toBe(1);
+    expect(result.rehireRate).toBe(100);
+  });
+
+  it('taxa de recontratação considera cada empresa separadamente (2 empresas, 1 recontratou)', async () => {
+    const [worker] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await upsertWorkerProfile(worker.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      photoUrl: undefined,
+      bio: undefined,
+      cpf: undefined,
+    });
+    const first = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
+    await completeShift(worker.id, first.owner.id, first.job.id);
+    const firstSecondJob = await createJobForCompany(first.company.id, category.id);
+    await completeShift(worker.id, first.owner.id, firstSecondJob.id);
+    const second = await createCompanyAndJob(OWNER2_PHONE, TEST_CNPJ2, category.id);
+    await completeShift(worker.id, second.owner.id, second.job.id);
+
+    const result = await getWorkerProfile(worker.id);
+
+    expect(result.companiesServed).toBe(2);
+    expect(result.rehireRate).toBe(50);
+  });
+
+  it('comparecimento sem nenhum turno ainda vem nulo, e cancelamentos conta candidatura retirada', async () => {
+    const [worker] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await upsertWorkerProfile(worker.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      photoUrl: undefined,
+      bio: undefined,
+      cpf: undefined,
+    });
+    const { job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
+    const application = await createApplication(worker.id, job.id);
+    await withdrawApplication(worker.id, application.id);
+
+    const result = await getWorkerProfile(worker.id);
+
+    expect(result.attendanceRate).toBeNull();
+    expect(result.companiesServed).toBe(0);
+    expect(result.rehireRate).toBeNull();
+    expect(result.cancellations).toBe(1);
+  });
+
+  it('comparecimento conta completed a favor e no_show contra, ignorando turno cancelado pela empresa', async () => {
+    const [worker] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await upsertWorkerProfile(worker.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      photoUrl: undefined,
+      bio: undefined,
+      cpf: undefined,
+    });
+    const { owner, company, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
+    await completeShift(worker.id, owner.id, job.id);
+
+    const noShowJob = await createJobForCompany(company.id, category.id);
+    const noShowApplication = await createApplication(worker.id, noShowJob.id);
+    await updateApplicationStatus(owner.id, noShowApplication.id, 'approved');
+    const noShowShift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, noShowApplication.id) });
+    await db.update(shifts).set({ status: 'no_show' }).where(eq(shifts.id, noShowShift!.id));
+
+    const cancelledJob = await createJobForCompany(company.id, category.id);
+    const cancelledApplication = await createApplication(worker.id, cancelledJob.id);
+    await updateApplicationStatus(owner.id, cancelledApplication.id, 'approved');
+    const cancelledShift = await db.query.shifts.findFirst({
+      where: eq(shifts.applicationId, cancelledApplication.id),
+    });
+    await db.update(shifts).set({ status: 'cancelled' }).where(eq(shifts.id, cancelledShift!.id));
+
+    const result = await getWorkerProfile(worker.id);
+
+    // 1 completed / (1 completed + 1 no_show) = 50% — o cancelado não entra na conta.
+    expect(result.attendanceRate).toBe(50);
   });
 });

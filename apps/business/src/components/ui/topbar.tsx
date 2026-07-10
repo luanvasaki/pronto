@@ -10,12 +10,27 @@ export interface PendingApplicationNotification {
   categoryName: string;
 }
 
+export interface CheckedInNotification {
+  shiftId: string;
+  jobId: string;
+  workerName: string;
+  categoryName: string;
+  checkInAt: string;
+}
+
 export interface TopbarProps {
   title: string;
   subtitle?: string;
   onMenuClick: () => void;
   pendingApplicationsCount?: number;
   pendingApplications?: PendingApplicationNotification[];
+  checkedInCount?: number;
+  checkedInNotifications?: CheckedInNotification[];
+  onOpenNotifications?: () => void;
+}
+
+function formatCheckInTime(iso: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { timeStyle: 'short' }).format(new Date(iso));
 }
 
 /**
@@ -37,9 +52,13 @@ export function Topbar({
   onMenuClick,
   pendingApplicationsCount = 0,
   pendingApplications = [],
+  checkedInCount = 0,
+  checkedInNotifications = [],
+  onOpenNotifications,
 }: TopbarProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const totalCount = pendingApplicationsCount + checkedInCount;
 
   useEffect(() => {
     if (!isNotificationsOpen) return;
@@ -78,14 +97,16 @@ export function Topbar({
         <div ref={notificationsRef} className="relative hidden sm:block">
           <button
             type="button"
-            onClick={() => setIsNotificationsOpen((current) => !current)}
-            aria-label={
-              pendingApplicationsCount > 0
-                ? `${pendingApplicationsCount} candidatura(s) aguardando resposta`
-                : 'Notificações'
-            }
+            onClick={() => {
+              const nextOpen = !isNotificationsOpen;
+              setIsNotificationsOpen(nextOpen);
+              if (nextOpen && checkedInCount > 0) {
+                onOpenNotifications?.();
+              }
+            }}
+            aria-label={totalCount > 0 ? `${totalCount} notificação(ões) pendente(s)` : 'Notificações'}
             className={`relative flex h-10 w-10 items-center justify-center rounded-[11px] border transition ${
-              pendingApplicationsCount > 0 ? 'border-danger bg-danger/10 text-danger' : 'border-border text-text'
+              totalCount > 0 ? 'border-danger bg-danger/10 text-danger' : 'border-border text-text'
             }`}
           >
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -97,17 +118,33 @@ export function Topbar({
               />
               <path d="M10 20a2 2 0 004 0" stroke="currentColor" strokeWidth="2" />
             </svg>
-            {pendingApplicationsCount > 0 && (
+            {totalCount > 0 && (
               <span className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
-                {pendingApplicationsCount > 9 ? '9+' : pendingApplicationsCount}
+                {totalCount > 9 ? '9+' : totalCount}
               </span>
             )}
           </button>
 
           {isNotificationsOpen && (
             <div className="absolute top-12 right-0 z-50 max-h-80 w-80 overflow-y-auto rounded-2xl border border-border bg-surface shadow-[0_8px_24px_rgba(0,0,0,0.16)]">
-              {pendingApplications.length === 0 ? (
-                <p className="p-4 text-sm text-text-secondary">Nenhuma candidatura aguardando resposta.</p>
+              {checkedInNotifications.length > 0 && (
+                <ul>
+                  {checkedInNotifications.map((notification) => (
+                    <li key={notification.shiftId} className="border-b border-border bg-success/5 last:border-b-0">
+                      <Link
+                        href={`/vagas/${notification.jobId}`}
+                        onClick={() => setIsNotificationsOpen(false)}
+                        className="block p-3.5 text-sm text-text transition hover:bg-background"
+                      >
+                        <span className="font-semibold">{notification.workerName}</span> fez check-in às{' '}
+                        {formatCheckInTime(notification.checkInAt)}.
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {pendingApplications.length === 0 && checkedInNotifications.length === 0 ? (
+                <p className="p-4 text-sm text-text-secondary">Nenhuma notificação por aqui.</p>
               ) : (
                 <ul>
                   {pendingApplications.map((notification) => (

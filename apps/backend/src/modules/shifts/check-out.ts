@@ -1,7 +1,9 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { shifts } from '../../db/schema';
+import { jobs, shifts } from '../../db/schema';
+import { haversineDistanceKm } from '../jobs/haversine';
 import { HttpError } from '../../shared/errors/http-error';
+import { CHECK_IN_RADIUS_METERS } from './check-in-radius';
 import { ShiftResponse, toShiftResponse } from './shift-response';
 
 export interface CheckOutInput {
@@ -31,6 +33,15 @@ export async function checkOut(
   }
   if (shift.status !== 'checked_in') {
     throw new HttpError(400, 'Esse turno não está esperando check-out.');
+  }
+
+  const job = await db.query.jobs.findFirst({ where: eq(jobs.id, shift.jobId) });
+  if (!job) {
+    throw new HttpError(404, 'Vaga não encontrada.');
+  }
+  const distanceMeters = haversineDistanceKm(input.lat, input.lng, job.locationLat, job.locationLng) * 1000;
+  if (distanceMeters > CHECK_IN_RADIUS_METERS) {
+    throw new HttpError(400, 'Você precisa estar no local do turno pra fazer check-out.');
   }
 
   const [updated] = await db

@@ -116,11 +116,22 @@ describe('checkOut', () => {
   it('faz check-out e muda o status pra "completed"', async () => {
     const { worker, shift } = await setupCheckedInShift();
 
-    const result = await checkOut(worker.id, shift.id, { lat: -23.551, lng: -46.631 });
+    const result = await checkOut(worker.id, shift.id, { lat: -23.5501, lng: -46.6301 });
 
     expect(result.status).toBe('completed');
-    expect(result.checkOutLat).toBe(-23.551);
+    expect(result.checkOutLat).toBe(-23.5501);
     expect(result.checkOutAt).not.toBeNull();
+  });
+
+  it('rejeita check-out longe do local da vaga', async () => {
+    const { worker, shift } = await setupCheckedInShift();
+
+    await expect(checkOut(worker.id, shift.id, { lat: -23.56, lng: -46.64 })).rejects.toThrow(
+      'Você precisa estar no local do turno',
+    );
+
+    const unchanged = await db.query.shifts.findFirst({ where: eq(shifts.id, shift.id) });
+    expect(unchanged?.status).toBe('checked_in');
   });
 
   it('rejeita segundo check-out do mesmo turno', async () => {

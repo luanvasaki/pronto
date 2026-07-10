@@ -7,6 +7,7 @@ export interface RatingResponse {
   shiftId: string;
   raterRole: string;
   score: number;
+  categoryScores: Record<string, number> | null;
   comment: string | null;
   createdAt: Date;
 }
@@ -17,6 +18,7 @@ export function toRatingResponse(rating: RatingRow): RatingResponse {
     shiftId: rating.shiftId,
     raterRole: rating.raterRole,
     score: rating.score,
+    categoryScores: rating.categoryScores ?? null,
     comment: rating.comment,
     createdAt: rating.createdAt,
   };

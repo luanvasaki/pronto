@@ -4,7 +4,7 @@ import { jobs, shifts } from '../../db/schema';
 import { JobResponse, toJobResponse } from '../jobs/job-response';
 import { getPaymentsByShiftIds } from '../payments/get-payments-by-shift-ids';
 import { PaymentResponse } from '../payments/payment-response';
-import { getRatingsByShiftIds, ShiftRatings } from '../ratings/get-ratings-by-shift-ids';
+import { applyRatingVisibility, getRatingsByShiftIds, ShiftRatings } from '../ratings/get-ratings-by-shift-ids';
 import { ShiftResponse, toShiftResponse } from './shift-response';
 
 export interface MyShiftResponse extends ShiftResponse {
@@ -43,7 +43,11 @@ export async function listMyShifts(workerId: string): Promise<MyShiftResponse[]>
         ...toShiftResponse(row),
         job: toJobResponse(job),
         payment: paymentsByShiftId.get(row.id) ?? null,
-        ratings: ratingsByShiftId.get(row.id) ?? { worker: null, company: null },
+        ratings: applyRatingVisibility(
+          ratingsByShiftId.get(row.id) ?? { worker: null, company: null },
+          row.checkOutAt,
+          'worker',
+        ),
       },
     ];
   });

@@ -1,18 +1,33 @@
 'use client';
 
-import { ApiError, extractDigits, formatCnpj, isValidPassword, logout } from '@shift/shared';
+import {
+  ApiError,
+  COMPANY_RATING_CATEGORIES,
+  extractDigits,
+  formatCnpj,
+  isValidPassword,
+  listSkillCategories,
+  logout,
+  SkillCategory,
+} from '@shift/shared';
 import { useRouter } from 'next/navigation';
-import { ChangeEvent, FormEvent, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import {
   BUSINESS_SEGMENTS,
   changePassword,
+  CompanyRatingHistoryEntry,
+  listCompanyRatings,
   uploadCompanyLogo,
   upsertCompanyProfile,
 } from '../../../lib/company-profile-api';
 import { useCompanyProfile } from '../company-profile-context';
+
+function formatShiftDate(iso: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(iso));
+}
 
 const VERIFICATION_STATUS_LABEL: Record<string, string> = {
   pending: 'Verificação em análise',
@@ -48,6 +63,23 @@ export default function PerfilPage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordChanged, setPasswordChanged] = useState(false);
+
+  const [categories, setCategories] = useState<SkillCategory[]>([]);
+  const [ratingHistory, setRatingHistory] = useState<CompanyRatingHistoryEntry[]>([]);
+  const [isLoadingRatingHistory, setIsLoadingRatingHistory] = useState(true);
+
+  useEffect(() => {
+    listSkillCategories()
+      .then((data) => setCategories(data.categories))
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    listCompanyRatings()
+      .then((data) => setRatingHistory(data.ratings))
+      .catch(() => undefined)
+      .finally(() => setIsLoadingRatingHistory(false));
+  }, []);
 
   async function handleLogout(): Promise<void> {
     setIsLoggingOut(true);
@@ -171,13 +203,88 @@ export default function PerfilPage() {
       <div className="grid grid-cols-2 gap-4">
         <div className="rounded-2xl border border-border bg-surface p-5 text-center">
           <p className="font-heading text-2xl font-bold text-text">★ {profile.avgRating ?? '—'}</p>
-          <p className="mt-1 text-xs text-text-secondary">Nota média</p>
+          <p className="mt-1 text-xs text-text-secondary">Nota média recebida</p>
         </div>
         <div className="rounded-2xl border border-border bg-surface p-5 text-center">
-          <p className="font-heading text-2xl font-bold text-text">{profile.totalJobsPosted}</p>
-          <p className="mt-1 text-xs text-text-secondary">Vagas publicadas</p>
+          <p className="font-heading text-2xl font-bold text-text">{profile.jobsPosted}</p>
+          <p className="mt-1 text-xs text-text-secondary">Trabalhos publicados</p>
+        </div>
+        <div className="rounded-2xl border border-border bg-surface p-5 text-center">
+          <p className="font-heading text-2xl font-bold text-text">{profile.shiftsCompleted}</p>
+          <p className="mt-1 text-xs text-text-secondary">Trabalhos concluídos</p>
+        </div>
+        <div className="rounded-2xl border border-border bg-surface p-5 text-center">
+          <p className="font-heading text-2xl font-bold text-text">
+            {profile.rehireRate !== null ? `${profile.rehireRate}%` : '—'}
+          </p>
+          <p className="mt-1 text-xs text-text-secondary">Taxa de recontratação</p>
         </div>
       </div>
+
+      {profile.avgCategoryScores && (
+        <div>
+          <h2 className="font-heading text-[17px] font-bold text-text">Pontos fortes da empresa</h2>
+          <p className="mt-1 text-xs text-text-secondary">
+            A média de cada categoria que os trabalhadores avaliaram em você.
+          </p>
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {COMPANY_RATING_CATEGORIES.flatMap((category) => {
+              const score = profile.avgCategoryScores?.[category.id];
+              if (!score) return [];
+              return [
+                <span
+                  key={category.id}
+                  className="rounded-full bg-primary/10 px-3 py-1.5 text-[12.5px] font-semibold text-primary"
+                >
+                  ★ {score} {category.label}
+                </span>,
+              ];
+            })}
+          </div>
+        </div>
+      )}
+
+      {!isLoadingRatingHistory && ratingHistory.length > 0 && (
+        <div>
+          <h2 className="font-heading text-[17px] font-bold text-text">Avaliações recebidas</h2>
+          <ul className="mt-2.5 flex flex-col gap-3">
+            {ratingHistory.map((entry) => {
+              const categoryName = categories.find((category) => category.id === entry.categoryId)?.name;
+              return (
+                <li
+                  key={entry.id}
+                  className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-heading text-[15px] font-bold text-text">{entry.workerName}</p>
+                    <span className="whitespace-nowrap text-sm font-bold text-primary">★ {entry.score}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-text-secondary">
+                    {[categoryName, formatShiftDate(entry.shiftDate)].filter(Boolean).join(' · ')}
+                  </p>
+                  {entry.comment && <p className="mt-2 text-sm text-text">"{entry.comment}"</p>}
+                  {entry.categoryScores && (
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      {COMPANY_RATING_CATEGORIES.flatMap((category) => {
+                        const score = entry.categoryScores?.[category.id];
+                        if (!score) return [];
+                        return [
+                          <span
+                            key={category.id}
+                            className="rounded-lg bg-background px-2 py-1 text-[11.5px] font-semibold text-text-secondary"
+                          >
+                            ★{score} {category.label}
+                          </span>,
+                        ];
+                      })}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       <form onSubmit={handleSaveProfile} className="flex flex-col gap-4 border-t border-border pt-6">
         <h2 className="font-heading text-lg font-bold text-text">Dados da empresa</h2>

@@ -11,18 +11,21 @@ vi.mock('next/navigation', () => ({
 }));
 
 const logoutMock = vi.fn();
+const listSkillCategoriesMock = vi.fn();
 vi.mock('@shift/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shift/shared')>();
   return {
     ...actual,
     getCurrentUser: vi.fn().mockResolvedValue({ user: { id: '1' } }),
     logout: (...args: unknown[]) => logoutMock(...args),
+    listSkillCategories: (...args: unknown[]) => listSkillCategoriesMock(...args),
   };
 });
 
 const uploadCompanyLogoMock = vi.fn();
 const upsertCompanyProfileMock = vi.fn();
 const changePasswordMock = vi.fn();
+const listCompanyRatingsMock = vi.fn();
 vi.mock('../../../lib/company-profile-api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/company-profile-api')>();
   return {
@@ -30,6 +33,7 @@ vi.mock('../../../lib/company-profile-api', async (importOriginal) => {
     uploadCompanyLogo: (...args: unknown[]) => uploadCompanyLogoMock(...args),
     upsertCompanyProfile: (...args: unknown[]) => upsertCompanyProfileMock(...args),
     changePassword: (...args: unknown[]) => changePasswordMock(...args),
+    listCompanyRatings: (...args: unknown[]) => listCompanyRatingsMock(...args),
   };
 });
 
@@ -43,7 +47,11 @@ const BASE_PROFILE: CompanyProfileDetails = {
   businessSegment: null,
   verificationStatus: 'approved',
   avgRating: '4.2',
+  avgCategoryScores: { pontualidade_pagamento: '4.5', clareza_vaga: '4.0' },
   totalJobsPosted: 5,
+  jobsPosted: 5,
+  shiftsCompleted: 8,
+  rehireRate: 40,
 };
 
 function renderWithProfile(profile: CompanyProfileDetails | null) {
@@ -61,6 +69,8 @@ describe('PerfilPage', () => {
     upsertCompanyProfileMock.mockReset();
     changePasswordMock.mockReset();
     logoutMock.mockReset().mockResolvedValue({ message: 'ok' });
+    listSkillCategoriesMock.mockReset().mockResolvedValue({ categories: [] });
+    listCompanyRatingsMock.mockReset().mockResolvedValue({ ratings: [] });
   });
 
   it('mostra os dados e as estatísticas da empresa', async () => {
@@ -71,6 +81,54 @@ describe('PerfilPage', () => {
     expect(screen.getByText('Empresa verificada')).toBeInTheDocument();
     expect(screen.getByText('★ 4.2')).toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getByText('8')).toBeInTheDocument();
+    expect(screen.getByText('40%')).toBeInTheDocument();
+  });
+
+  it('mostra avaliações recebidas com trabalhador, nota, comentário e categorias', async () => {
+    listCompanyRatingsMock.mockResolvedValue({
+      ratings: [
+        {
+          id: 'rating-1',
+          workerName: 'Rafael Lima',
+          categoryId: 'cat-1',
+          score: 4,
+          categoryScores: { pontualidade_pagamento: 4 },
+          comment: 'Endereço claro e pagamento em dia.',
+          shiftDate: '2026-07-01T20:00:00.000Z',
+          createdAt: '2026-07-02T00:00:00.000Z',
+        },
+      ],
+    });
+
+    renderWithProfile(BASE_PROFILE);
+
+    expect(await screen.findByText('Avaliações recebidas')).toBeInTheDocument();
+    expect(screen.getByText('Rafael Lima')).toBeInTheDocument();
+    expect(screen.getByText('★ 4')).toBeInTheDocument();
+    expect(screen.getByText('"Endereço claro e pagamento em dia."')).toBeInTheDocument();
+    expect(screen.getByText('★4 Pontualidade no pagamento')).toBeInTheDocument();
+  });
+
+  it('não mostra a seção de avaliações recebidas quando ainda não há nenhuma', async () => {
+    renderWithProfile(BASE_PROFILE);
+
+    await waitFor(() => expect(listCompanyRatingsMock).toHaveBeenCalled());
+    expect(screen.queryByText('Avaliações recebidas')).not.toBeInTheDocument();
+  });
+
+  it('mostra os pontos fortes por categoria quando disponíveis', async () => {
+    renderWithProfile(BASE_PROFILE);
+
+    expect(screen.getByText('Pontos fortes da empresa')).toBeInTheDocument();
+    expect(screen.getByText('★ 4.5 Pontualidade no pagamento')).toBeInTheDocument();
+    expect(screen.getByText('★ 4.0 Clareza das informações da vaga')).toBeInTheDocument();
+  });
+
+  it('não mostra a seção de pontos fortes sem avaliações por categoria ainda', async () => {
+    renderWithProfile({ ...BASE_PROFILE, avgCategoryScores: null });
+
+    expect(screen.queryByText('Pontos fortes da empresa')).not.toBeInTheDocument();
   });
 
   it('mostra travessão quando ainda não tem nota', async () => {

@@ -11,6 +11,7 @@ export interface NearbyJobResponse extends JobResponse {
   companyName: string;
   companyLogoUrl: string | null;
   companyAvgRating: string | null;
+  companyAvgCategoryScores: Record<string, string> | null;
   /** Trabalhador não tem essa categoria no perfil — mostra aviso, mas não impede candidatura. */
   matchesSkills: boolean;
   /** Vaga exige experiência anterior e o trabalhador não declarou ter nessa categoria. */
@@ -75,6 +76,7 @@ export async function listNearbyJobs(workerId: string): Promise<NearbyJobRespons
           companyName: company.tradeName,
           companyLogoUrl: company.logoUrl,
           companyAvgRating: company.avgRating,
+          companyAvgCategoryScores: company.avgCategoryScores ?? null,
           matchesSkills: categoryIds.has(job.categoryId),
           experienceMismatch: job.requiresExperience && !(hasExperienceByCategoryId.get(job.categoryId) ?? false),
         },

@@ -46,8 +46,13 @@ const PROFILE = {
   kycStatus: 'approved',
   hasDocument: true,
   avgRating: '4.8',
+  avgCategoryScores: null,
   totalShiftsCompleted: 10,
   totalHoursWorked: 34,
+  companiesServed: 3,
+  rehireRate: 33,
+  attendanceRate: 95,
+  cancellations: 0,
 };
 
 function renderPage() {

@@ -45,6 +45,10 @@ export const shifts = pgTable(
     checkInAt: timestamp('check_in_at', { withTimezone: true }),
     checkInLat: doublePrecision('check_in_lat'),
     checkInLng: doublePrecision('check_in_lng'),
+    // Nulo = empresa ainda não viu que o trabalhador chegou — alimenta o
+    // alerta "Fulano fez check-in" no sino da empresa (mesmo padrão de
+    // applications.workerSeenAt, ver get-notifications.ts).
+    companySeenCheckInAt: timestamp('company_seen_check_in_at', { withTimezone: true }),
     checkOutAt: timestamp('check_out_at', { withTimezone: true }),
     checkOutLat: doublePrecision('check_out_lat'),
     checkOutLng: doublePrecision('check_out_lng'),

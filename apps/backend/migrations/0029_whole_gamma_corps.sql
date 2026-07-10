@@ -1,0 +1,1 @@
+ALTER TABLE "shifts" ADD COLUMN "company_seen_check_in_at" timestamp with time zone;

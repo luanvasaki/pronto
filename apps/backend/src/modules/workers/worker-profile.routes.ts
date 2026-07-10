@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../auth/require-auth';
+import { listWorkerRatingsHandler } from '../ratings/list-worker-ratings.controller';
 import { getWorkerProfileHandler } from './get-worker-profile.controller';
 import { updateWorkerLocationHandler } from './update-worker-location.controller';
 import { upsertWorkerProfileHandler } from './upsert-worker-profile.controller';
@@ -8,6 +9,7 @@ import { uploadWorkerPhotoHandler, uploadWorkerPhotoMiddleware } from './upload-
 export const workerProfileRoutes = Router();
 
 workerProfileRoutes.get('/worker-profile/me', requireAuth, getWorkerProfileHandler);
+workerProfileRoutes.get('/worker-profile/ratings', requireAuth, listWorkerRatingsHandler);
 workerProfileRoutes.put('/worker-profile', requireAuth, upsertWorkerProfileHandler);
 workerProfileRoutes.patch('/worker-profile/location', requireAuth, updateWorkerLocationHandler);
 workerProfileRoutes.post(

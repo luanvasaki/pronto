@@ -86,7 +86,7 @@ describe('cancelJob', () => {
     const application = await createApplication(worker.id, job.id);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
-    await checkIn(worker.id, shift!.id, { lat: -23.55, lng: -46.63 });
+    await checkIn(worker.id, shift!.id, { lat: -23.546, lng: -46.69 });
 
     await expect(cancelJob(owner.id, job.id)).rejects.toThrow('turno em andamento ou concluído');
   });

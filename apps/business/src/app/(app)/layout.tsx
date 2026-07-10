@@ -7,9 +7,11 @@ import { Sidebar } from '../../components/ui/sidebar';
 import { Topbar } from '../../components/ui/topbar';
 import { useRequireAuth } from '../../hooks/use-require-auth';
 import {
+  CheckedInNotification,
   CompanyProfileDetails,
   getCompanyNotifications,
   getCompanyProfile,
+  markShiftCheckInSeen,
   PendingApplicationNotification,
 } from '../../lib/company-profile-api';
 import { CompanyProfileProvider } from './company-profile-context';
@@ -68,6 +70,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
   const [pendingApplications, setPendingApplications] = useState<PendingApplicationNotification[]>([]);
+  const [checkedInCount, setCheckedInCount] = useState(0);
+  const [checkedInNotifications, setCheckedInNotifications] = useState<CheckedInNotification[]>([]);
 
   useEffect(() => {
     if (isChecking) return;
@@ -98,6 +102,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           if (cancelled) return;
           setPendingApplicationsCount(result.pendingApplicationsCount);
           setPendingApplications(result.pendingApplications);
+          setCheckedInCount(result.checkedInCount);
+          setCheckedInNotifications(result.checkedInNotifications);
         })
         .catch(() => undefined);
     }
@@ -123,6 +129,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const tradeName = profile?.tradeName ?? 'sua empresa';
   const { title, subtitle } = pageHeader(pathname, tradeName);
 
+  // Marca como vista em segundo plano — o sino/lista continuam mostrando
+  // o que já estava ali até o próximo poll (60s) confirmar que sumiu, pra
+  // não sumir a lista debaixo do usuário logo depois de abrir o dropdown.
+  function handleOpenNotifications(): void {
+    checkedInNotifications.forEach((notification) => {
+      markShiftCheckInSeen(notification.shiftId).catch(() => undefined);
+    });
+  }
+
   return (
     <CompanyProfileProvider initialProfile={profile}>
       <div className="flex h-screen overflow-hidden">
@@ -139,6 +154,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onMenuClick={() => setIsMobileNavOpen(true)}
             pendingApplicationsCount={pendingApplicationsCount}
             pendingApplications={pendingApplications}
+            checkedInCount={checkedInCount}
+            checkedInNotifications={checkedInNotifications}
+            onOpenNotifications={handleOpenNotifications}
           />
           <div className="flex-1 overflow-y-auto p-4 lg:p-7">{children}</div>
         </div>

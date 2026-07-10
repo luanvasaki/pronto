@@ -197,6 +197,20 @@
       "when": 1783650954785,
       "tag": "0027_narrow_titania",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1783717416684,
+      "tag": "0028_silent_blizzard",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1783723759863,
+      "tag": "0029_whole_gamma_corps",
+      "breakpoints": true
     }
   ]
 }

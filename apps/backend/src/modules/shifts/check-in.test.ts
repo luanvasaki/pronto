@@ -102,6 +102,27 @@ describe('checkIn', () => {
     expect(result.checkInAt).not.toBeNull();
   });
 
+  it('aceita check-in dentro do raio de tolerância do local da vaga', async () => {
+    const { worker, shift } = await setupScheduledShift();
+
+    // ~11m de distância do local da vaga — bem dentro dos 150m de tolerância.
+    const result = await checkIn(worker.id, shift.id, { lat: -23.5501, lng: -46.6301 });
+
+    expect(result.status).toBe('checked_in');
+  });
+
+  it('rejeita check-in longe do local da vaga', async () => {
+    const { worker, shift } = await setupScheduledShift();
+
+    // ~1.5km de distância do local da vaga (0.0001 vs 0.01 de diferença).
+    await expect(checkIn(worker.id, shift.id, { lat: -23.56, lng: -46.64 })).rejects.toThrow(
+      'Você precisa estar no local do turno',
+    );
+
+    const unchanged = await db.query.shifts.findFirst({ where: eq(shifts.id, shift.id) });
+    expect(unchanged?.status).toBe('scheduled');
+  });
+
   it('rejeita segundo check-in do mesmo turno', async () => {
     const { worker, shift } = await setupScheduledShift();
     await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });

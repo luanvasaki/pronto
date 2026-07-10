@@ -37,9 +37,15 @@ const PROFILE: CompanyProfileDetails = {
   tradeName: 'Bar do Zé',
   cnpj: '11222333000181',
   logoUrl: null,
+  addressLabel: null,
+  businessSegment: null,
   verificationStatus: 'approved',
   avgRating: '4.8',
+  avgCategoryScores: null,
   totalJobsPosted: 3,
+  jobsPosted: 3,
+  shiftsCompleted: 5,
+  rehireRate: 20,
 };
 
 // Quarta-feira, dentro da semana e do mês usados nas vagas de teste.

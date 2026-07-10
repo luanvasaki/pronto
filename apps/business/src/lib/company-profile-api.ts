@@ -20,11 +20,30 @@ export interface CompanyProfileDetails {
   businessSegment: string | null;
   verificationStatus: string;
   avgRating: string | null;
+  avgCategoryScores: Record<string, string> | null;
   totalJobsPosted: number;
+  jobsPosted: number;
+  shiftsCompleted: number;
+  rehireRate: number | null;
 }
 
 export function getCompanyProfile(): Promise<CompanyProfileDetails> {
   return apiFetch('/company-profile/me');
+}
+
+export interface CompanyRatingHistoryEntry {
+  id: string;
+  workerName: string;
+  categoryId: string;
+  score: number;
+  categoryScores: Record<string, number> | null;
+  comment: string | null;
+  shiftDate: string;
+  createdAt: string;
+}
+
+export function listCompanyRatings(): Promise<{ ratings: CompanyRatingHistoryEntry[] }> {
+  return apiFetch('/company-profile/ratings');
 }
 
 export interface PendingApplicationNotification {
@@ -34,13 +53,27 @@ export interface PendingApplicationNotification {
   categoryName: string;
 }
 
+export interface CheckedInNotification {
+  shiftId: string;
+  jobId: string;
+  workerName: string;
+  categoryName: string;
+  checkInAt: string;
+}
+
 export interface CompanyNotifications {
   pendingApplicationsCount: number;
   pendingApplications: PendingApplicationNotification[];
+  checkedInCount: number;
+  checkedInNotifications: CheckedInNotification[];
 }
 
 export function getCompanyNotifications(): Promise<CompanyNotifications> {
   return apiFetch('/company-profile/notifications');
+}
+
+export function markShiftCheckInSeen(shiftId: string): Promise<{ id: string; status: string }> {
+  return apiFetch(`/shifts/${shiftId}/check-in/seen`, { method: 'PATCH' });
 }
 
 export interface CompanyProfileResponse {
