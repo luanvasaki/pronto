@@ -41,11 +41,11 @@ describe('createJob', () => {
     };
     apiFetchMock.mockResolvedValue({ id: '1', ...input, positionsFilled: 0, status: 'open' });
 
-    await createJob(input);
+    await createJob(input, true);
 
     expect(apiFetchMock).toHaveBeenCalledWith('/jobs', {
       method: 'POST',
-      body: JSON.stringify(input),
+      body: JSON.stringify({ ...input, termsAccepted: true }),
     });
   });
 });

@@ -62,7 +62,7 @@ async function createTestJob(
     applicationsCloseAt,
     cnhCategory,
     cnhRequired,
-  });
+  }, true);
 }
 
 describe('listNearbyJobs', () => {

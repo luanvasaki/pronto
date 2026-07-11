@@ -44,10 +44,10 @@ export interface CreateJobInput {
   applicationsCloseAt?: string;
 }
 
-export function createJob(input: CreateJobInput): Promise<Job> {
+export function createJob(input: CreateJobInput, termsAccepted: boolean): Promise<Job> {
   return apiFetch('/jobs', {
     method: 'POST',
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, termsAccepted }),
   });
 }
 

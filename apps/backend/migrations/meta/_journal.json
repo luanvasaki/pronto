@@ -253,6 +253,13 @@
       "when": 1783741194358,
       "tag": "0035_curious_photon",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1783800200851,
+      "tag": "0036_majestic_storm",
+      "breakpoints": true
     }
   ]
 }

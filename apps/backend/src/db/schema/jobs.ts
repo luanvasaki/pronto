@@ -53,6 +53,12 @@ export const jobs = pgTable('jobs', {
   // Nulo = usa o padrão (1h antes de startsAt, ver applications-close.ts)
   // — só grava aqui quando a empresa escolhe um prazo próprio.
   applicationsCloseAt: timestamp('applications_close_at', { withTimezone: true }),
+  // Aceite explícito de que essa vaga/escala é intermediação avulsa, sem
+  // vínculo empregatício — exigido só na criação (ver create-job.ts),
+  // nunca alterado numa edição posterior. Mesmo padrão de
+  // users.termsAcceptedAt, mas por vaga: dá respaldo jurídico de que a
+  // empresa confirmou isso pra cada escala publicada, não só uma vez no cadastro.
+  termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
   status: jobStatusEnum('status').notNull().default('open'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

@@ -66,7 +66,7 @@ describe('createJob', () => {
     const owner = await createTestCompanyOwner();
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
-    await expect(createJob(owner.id, baseInput(category.id))).rejects.toThrow(
+    await expect(createJob(owner.id, baseInput(category.id), true)).rejects.toThrow(
       'Complete o cadastro da empresa',
     );
   });
@@ -76,7 +76,7 @@ describe('createJob', () => {
     await createTestCompany(owner.id, { verificationStatus: 'pending' });
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
-    await expect(createJob(owner.id, baseInput(category.id))).rejects.toThrow(
+    await expect(createJob(owner.id, baseInput(category.id), true)).rejects.toThrow(
       'Complete a verificação da empresa',
     );
   });
@@ -86,7 +86,7 @@ describe('createJob', () => {
     await createTestCompany(owner.id);
 
     await expect(
-      createJob(owner.id, baseInput('00000000-0000-0000-0000-000000000000')),
+      createJob(owner.id, baseInput('00000000-0000-0000-0000-000000000000'), true),
     ).rejects.toThrow('Categoria inválida');
   });
 
@@ -96,7 +96,7 @@ describe('createJob', () => {
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), description: 'curta' }),
+      createJob(owner.id, { ...baseInput(category.id), description: 'curta' }, true),
     ).rejects.toThrow('Descrição precisa');
   });
 
@@ -106,7 +106,7 @@ describe('createJob', () => {
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), startsAt: TOMORROW_PLUS_5H.toISOString(), endsAt: TOMORROW.toISOString() }),
+      createJob(owner.id, { ...baseInput(category.id), startsAt: TOMORROW_PLUS_5H.toISOString(), endsAt: TOMORROW.toISOString() }, true),
     ).rejects.toThrow('Data de término precisa ser depois do início');
   });
 
@@ -117,8 +117,34 @@ describe('createJob', () => {
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), startsAt: yesterday.toISOString() }),
+      createJob(owner.id, { ...baseInput(category.id), startsAt: yesterday.toISOString() }, true),
     ).rejects.toThrow('Data de início precisa ser no futuro');
+  });
+
+  it('rejeita quando a empresa não confirma o aceite da vaga', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+
+    await expect(createJob(owner.id, baseInput(category.id), false)).rejects.toThrow(
+      'preciso confirmar que essa escala',
+    );
+    await expect(createJob(owner.id, baseInput(category.id), undefined)).rejects.toThrow(
+      'preciso confirmar que essa escala',
+    );
+  });
+
+  it('grava o momento do aceite da vaga ao criar', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+
+    const before = new Date();
+    const result = await createJob(owner.id, baseInput(category.id), true);
+
+    const [row] = await db.query.jobs.findMany({ where: eq(jobs.id, result.id) });
+    expect(row.termsAcceptedAt).not.toBeNull();
+    expect(row.termsAcceptedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
   });
 
   it('cria a vaga com status "open" por padrão', async () => {
@@ -126,7 +152,7 @@ describe('createJob', () => {
     await createTestCompany(owner.id);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
-    const result = await createJob(owner.id, baseInput(category.id));
+    const result = await createJob(owner.id, baseInput(category.id), true);
 
     expect(result.status).toBe('open');
     expect(result.positionsFilled).toBe(0);
@@ -142,7 +168,7 @@ describe('createJob', () => {
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), requiresExperience: undefined }),
+      createJob(owner.id, { ...baseInput(category.id), requiresExperience: undefined }, true),
     ).rejects.toThrow('Informe se a vaga exige experiência anterior');
   });
 
@@ -151,12 +177,16 @@ describe('createJob', () => {
     await createTestCompany(owner.id);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
-    const result = await createJob(owner.id, {
-      ...baseInput(category.id),
-      requiresExperience: true,
-      dressCode: 'Social completo, preto e branco',
-      toolsRequired: 'Câmera profissional própria',
-    });
+    const result = await createJob(
+      owner.id,
+      {
+        ...baseInput(category.id),
+        requiresExperience: true,
+        dressCode: 'Social completo, preto e branco',
+        toolsRequired: 'Câmera profissional própria',
+      },
+      true,
+    );
 
     expect(result.requiresExperience).toBe(true);
     expect(result.dressCode).toBe('Social completo, preto e branco');
@@ -168,7 +198,7 @@ describe('createJob', () => {
     await createTestCompany(owner.id);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
-    const result = await createJob(owner.id, baseInput(category.id));
+    const result = await createJob(owner.id, baseInput(category.id), true);
 
     expect(result.applicationsCloseAt).toBeNull();
   });
@@ -179,10 +209,14 @@ describe('createJob', () => {
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
     const closeAt = new Date(TOMORROW.getTime() - 3 * 60 * 60 * 1000);
 
-    const result = await createJob(owner.id, {
-      ...baseInput(category.id),
-      applicationsCloseAt: closeAt.toISOString(),
-    });
+    const result = await createJob(
+      owner.id,
+      {
+        ...baseInput(category.id),
+        applicationsCloseAt: closeAt.toISOString(),
+      },
+      true,
+    );
 
     expect(result.applicationsCloseAt?.toISOString()).toBe(closeAt.toISOString());
   });
@@ -194,7 +228,7 @@ describe('createJob', () => {
     const afterStart = new Date(TOMORROW.getTime() + 60 * 60 * 1000);
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), applicationsCloseAt: afterStart.toISOString() }),
+      createJob(owner.id, { ...baseInput(category.id), applicationsCloseAt: afterStart.toISOString() }, true),
     ).rejects.toThrow('até o início do turno');
   });
 
@@ -205,7 +239,7 @@ describe('createJob', () => {
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), applicationsCloseAt: yesterday.toISOString() }),
+      createJob(owner.id, { ...baseInput(category.id), applicationsCloseAt: yesterday.toISOString() }, true),
     ).rejects.toThrow('Prazo pra se candidatar precisa ser no futuro');
   });
 
@@ -215,7 +249,7 @@ describe('createJob', () => {
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), cnhCategory: 'Z' }),
+      createJob(owner.id, { ...baseInput(category.id), cnhCategory: 'Z' }, true),
     ).rejects.toThrow('Categoria de CNH inválida');
   });
 
@@ -225,7 +259,7 @@ describe('createJob', () => {
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), cnhRequired: true }),
+      createJob(owner.id, { ...baseInput(category.id), cnhRequired: true }, true),
     ).rejects.toThrow('Escolha a categoria de CNH exigida');
   });
 
@@ -234,11 +268,15 @@ describe('createJob', () => {
     await createTestCompany(owner.id);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
-    const result = await createJob(owner.id, {
-      ...baseInput(category.id),
-      cnhCategory: 'B',
-      cnhRequired: true,
-    });
+    const result = await createJob(
+      owner.id,
+      {
+        ...baseInput(category.id),
+        cnhCategory: 'B',
+        cnhRequired: true,
+      },
+      true,
+    );
 
     expect(result.cnhCategory).toBe('B');
     expect(result.cnhRequired).toBe(true);
@@ -249,7 +287,7 @@ describe('createJob', () => {
     await createTestCompany(owner.id);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
-    const result = await createJob(owner.id, { ...baseInput(category.id), cnhCategory: 'B' });
+    const result = await createJob(owner.id, { ...baseInput(category.id), cnhCategory: 'B' }, true);
 
     expect(result.cnhCategory).toBe('B');
     expect(result.cnhRequired).toBe(false);

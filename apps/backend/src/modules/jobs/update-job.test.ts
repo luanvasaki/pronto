@@ -42,7 +42,7 @@ async function setup() {
     .insert(companies)
     .values({ verificationStatus: 'approved', ownerUserId: owner.id, legalName: 'Buffet Aurora Ltda', tradeName: 'Buffet Aurora', cnpj: TEST_CNPJ });
   const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
-  const job = await createJob(owner.id, baseInput(category.id));
+  const job = await createJob(owner.id, baseInput(category.id), true);
   return { owner, category, job };
 }
 

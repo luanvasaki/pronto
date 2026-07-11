@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
+import { JobTermsCheckbox } from '../../../../components/ui/job-terms-checkbox';
 import { getCurrentPosition } from '../../../../lib/geolocation';
 import { createJob, Job, listMyJobs } from '../../../../lib/jobs-api';
 import { useCompanyProfile } from '../../company-profile-context';
@@ -66,6 +67,7 @@ function NovaVagaForm() {
   const [endsAt, setEndsAt] = useState('');
   // Vazio = fecha automaticamente 1h antes do início (padrão do backend).
   const [applicationsCloseAt, setApplicationsCloseAt] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -154,6 +156,7 @@ function NovaVagaForm() {
   if (applicationsCloseAt !== '' && startsAt !== '' && new Date(applicationsCloseAt) > new Date(startsAt)) {
     missingFields.push('prazo de candidatura até o início');
   }
+  if (!termsAccepted) missingFields.push('confirmação de que a escala é intermediação avulsa');
 
   const isValid = missingFields.length === 0;
 
@@ -169,23 +172,26 @@ function NovaVagaForm() {
         ? (await createSkillCategory(newCategoryName.trim())).id
         : categoryId;
 
-      await createJob({
-        categoryId: resolvedCategoryId,
-        description,
-        requiresExperience,
-        dressCode: dressCode.trim() || undefined,
-        toolsRequired: toolsRequired.trim() || undefined,
-        cnhCategory: cnhCategory || undefined,
-        cnhRequired,
-        addressLabel,
-        locationLat: lat,
-        locationLng: lng,
-        positionsTotal: positionsTotalNumber,
-        payAmount,
-        startsAt: new Date(startsAt).toISOString(),
-        endsAt: new Date(endsAt).toISOString(),
-        applicationsCloseAt: applicationsCloseAt ? new Date(applicationsCloseAt).toISOString() : undefined,
-      });
+      await createJob(
+        {
+          categoryId: resolvedCategoryId,
+          description,
+          requiresExperience,
+          dressCode: dressCode.trim() || undefined,
+          toolsRequired: toolsRequired.trim() || undefined,
+          cnhCategory: cnhCategory || undefined,
+          cnhRequired,
+          addressLabel,
+          locationLat: lat,
+          locationLng: lng,
+          positionsTotal: positionsTotalNumber,
+          payAmount,
+          startsAt: new Date(startsAt).toISOString(),
+          endsAt: new Date(endsAt).toISOString(),
+          applicationsCloseAt: applicationsCloseAt ? new Date(applicationsCloseAt).toISOString() : undefined,
+        },
+        termsAccepted,
+      );
       router.push('/painel');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível publicar a vaga.');
@@ -481,6 +487,8 @@ function NovaVagaForm() {
             </div>
           </div>
         )}
+
+        <JobTermsCheckbox checked={termsAccepted} onChange={setTermsAccepted} />
 
         {error && <p className="text-sm text-danger">{error}</p>}
 

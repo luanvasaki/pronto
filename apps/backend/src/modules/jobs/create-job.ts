@@ -7,14 +7,27 @@ import { JobResponse, toJobResponse } from './job-response';
 
 export type CreateJobInput = JobInput;
 
-/** companyId sempre vem do dono autenticado, nunca do corpo da requisição. */
-export async function createJob(ownerUserId: string, input: CreateJobInput): Promise<JobResponse> {
+/**
+ * companyId sempre vem do dono autenticado, nunca do corpo da requisição.
+ *
+ * `termsAccepted` fica fora de `CreateJobInput`/`validateJobInput` de
+ * propósito: é exigido só na criação, não faz sentido reenviado a cada
+ * edição (ver updateJob, que reusa o mesmo validador de campos).
+ */
+export async function createJob(
+  ownerUserId: string,
+  input: CreateJobInput,
+  termsAccepted: boolean | undefined,
+): Promise<JobResponse> {
   const company = await db.query.companies.findFirst({ where: eq(companies.ownerUserId, ownerUserId) });
   if (!company) {
     throw new HttpError(400, 'Complete o cadastro da empresa antes de publicar uma vaga.');
   }
   if (company.verificationStatus !== 'approved') {
     throw new HttpError(403, 'Complete a verificação da empresa antes de publicar vagas.');
+  }
+  if (!termsAccepted) {
+    throw new HttpError(400, 'É preciso confirmar que essa escala é intermediação avulsa antes de publicar.');
   }
 
   const validated = validateJobInput(input);
@@ -45,6 +58,7 @@ export async function createJob(ownerUserId: string, input: CreateJobInput): Pro
       startsAt: validated.startsAt,
       endsAt: validated.endsAt,
       applicationsCloseAt: validated.applicationsCloseAt,
+      termsAcceptedAt: new Date(),
     })
     .returning();
 

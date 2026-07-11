@@ -83,6 +83,7 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Valor por pessoa (R$)'), '130.00');
   await user.type(screen.getByLabelText('Início'), STARTS_AT);
   await user.type(screen.getByLabelText('Término'), ENDS_AT);
+  await user.click(screen.getByRole('checkbox'));
 }
 
 describe('NovaVagaPage', () => {
@@ -175,6 +176,7 @@ describe('NovaVagaPage', () => {
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/painel'));
     expect(createJobMock).toHaveBeenCalledWith(
       expect.objectContaining({ categoryId: 'cat-1', positionsTotal: 4, payAmount: '130.00' }),
+      true,
     );
   });
 
@@ -210,6 +212,7 @@ describe('NovaVagaPage', () => {
           dressCode: 'Social completo',
           toolsRequired: 'Câmera própria',
         }),
+        true,
       ),
     );
   });
@@ -228,6 +231,7 @@ describe('NovaVagaPage', () => {
     await waitFor(() =>
       expect(createJobMock).toHaveBeenCalledWith(
         expect.objectContaining({ cnhCategory: 'B', cnhRequired: true }),
+        true,
       ),
     );
   });
@@ -327,11 +331,12 @@ describe('NovaVagaPage', () => {
     await user.type(screen.getByLabelText('Valor por pessoa (R$)'), '130.00');
     await user.type(screen.getByLabelText('Início'), STARTS_AT);
     await user.type(screen.getByLabelText('Término'), ENDS_AT);
+    await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: /^publicar$/i }));
 
     await waitFor(() => expect(createSkillCategoryMock).toHaveBeenCalledWith('Manobrista'));
     await waitFor(() =>
-      expect(createJobMock).toHaveBeenCalledWith(expect.objectContaining({ categoryId: 'cat-new' })),
+      expect(createJobMock).toHaveBeenCalledWith(expect.objectContaining({ categoryId: 'cat-new' }), true),
     );
   });
 
@@ -345,7 +350,7 @@ describe('NovaVagaPage', () => {
     await user.click(screen.getByRole('button', { name: /^publicar$/i }));
 
     await waitFor(() =>
-      expect(createJobMock).toHaveBeenCalledWith(expect.objectContaining({ applicationsCloseAt: undefined })),
+      expect(createJobMock).toHaveBeenCalledWith(expect.objectContaining({ applicationsCloseAt: undefined }), true),
     );
   });
 
@@ -363,6 +368,7 @@ describe('NovaVagaPage', () => {
     await waitFor(() =>
       expect(createJobMock).toHaveBeenCalledWith(
         expect.objectContaining({ applicationsCloseAt: new Date(closeAt).toISOString() }),
+        true,
       ),
     );
   });

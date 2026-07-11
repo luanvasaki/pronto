@@ -57,7 +57,7 @@ describe('listMyJobs', () => {
       payAmount: '100.00',
       startsAt: TOMORROW.toISOString(),
       endsAt: TOMORROW_PLUS_5H.toISOString(),
-    });
+    }, true);
     const second = await createJob(owner.id, {
       categoryId: category.id,
       description: 'Segunda vaga publicada, descrição bem detalhada.',
@@ -69,7 +69,7 @@ describe('listMyJobs', () => {
       payAmount: '150.00',
       startsAt: TOMORROW.toISOString(),
       endsAt: TOMORROW_PLUS_5H.toISOString(),
-    });
+    }, true);
 
     const result = await listMyJobs(owner.id);
 

@@ -25,6 +25,7 @@ export async function createJobHandler(req: Request, res: Response, next: NextFu
       startsAt,
       endsAt,
       applicationsCloseAt,
+      termsAccepted,
     } = req.body as {
       categoryId?: string;
       description?: string;
@@ -41,25 +42,30 @@ export async function createJobHandler(req: Request, res: Response, next: NextFu
       startsAt?: string;
       endsAt?: string;
       applicationsCloseAt?: string;
+      termsAccepted?: boolean;
     };
 
-    const result = await createJob(userId, {
-      categoryId,
-      description,
-      requiresExperience,
-      dressCode,
-      toolsRequired,
-      cnhCategory,
-      cnhRequired,
-      addressLabel,
-      locationLat,
-      locationLng,
-      positionsTotal,
-      payAmount,
-      startsAt,
-      endsAt,
-      applicationsCloseAt,
-    });
+    const result = await createJob(
+      userId,
+      {
+        categoryId,
+        description,
+        requiresExperience,
+        dressCode,
+        toolsRequired,
+        cnhCategory,
+        cnhRequired,
+        addressLabel,
+        locationLat,
+        locationLng,
+        positionsTotal,
+        payAmount,
+        startsAt,
+        endsAt,
+        applicationsCloseAt,
+      },
+      termsAccepted,
+    );
     res.status(201).json(result);
   } catch (error) {
     next(error);
