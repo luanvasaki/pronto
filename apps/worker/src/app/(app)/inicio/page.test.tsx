@@ -2,6 +2,7 @@ import { ApiError } from '@shift/shared';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { NOTIFICATIONS_POLL_INTERVAL_MS } from '../layout';
 import { WorkerProfileProvider } from '../worker-profile-context';
 import InicioPage from './page';
 
@@ -163,20 +164,6 @@ describe('InicioPage', () => {
     await screen.findByText('Ana Souza');
     expect(screen.queryByText(/documento em análise/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/documento recusado/i)).not.toBeInTheDocument();
-  });
-
-  it('alterna a disponibilidade e mantém entre remontagens (localStorage)', async () => {
-    listNearbyJobsMock.mockResolvedValue({ jobs: [] });
-    const user = userEvent.setup();
-
-    const { unmount } = renderPage();
-    await screen.findByText('Disponível para escalas');
-    await user.click(screen.getByText('Disponível para escalas'));
-    expect(await screen.findByText('Indisponível')).toBeInTheDocument();
-    unmount();
-
-    renderPage();
-    expect(await screen.findByText('Indisponível')).toBeInTheDocument();
   });
 
   it('filtra as vagas por hoje/amanhã', async () => {
@@ -560,5 +547,38 @@ describe('InicioPage', () => {
 
     await screen.findByText('Nenhuma vaga disponível com esse filtro.');
     expect(screen.queryByText(/esperando sua avaliação/)).not.toBeInTheDocument();
+  });
+
+  it('atualiza os avisos periodicamente (mesmo intervalo do sino), sem depender do usuário sair e voltar', async () => {
+    vi.useFakeTimers();
+    try {
+      listNearbyJobsMock.mockResolvedValue({ jobs: [] });
+      listMyApplicationsMock.mockResolvedValue({ applications: [] });
+      listMyShiftsMock.mockResolvedValue({ shifts: [] });
+
+      renderPage();
+      await vi.waitFor(() => expect(listMyApplicationsMock).toHaveBeenCalledTimes(1));
+
+      listMyApplicationsMock.mockResolvedValue({
+        applications: [
+          {
+            id: 'app-1',
+            status: 'approved',
+            workerSeenAt: null,
+            createdAt: '2026-07-01T12:00:00.000Z',
+            job: JOB,
+            companyName: 'Buffet Aurora',
+          },
+        ],
+      });
+
+      await vi.advanceTimersByTimeAsync(NOTIFICATIONS_POLL_INTERVAL_MS);
+
+      expect(listMyApplicationsMock).toHaveBeenCalledTimes(2);
+      expect(listMyShiftsMock).toHaveBeenCalledTimes(2);
+      expect(screen.getByText(/Você foi chamado\(a\) pra trabalhar em Buffet Aurora/)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

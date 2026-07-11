@@ -179,7 +179,12 @@ export default function AgendaPage() {
   const [ratingSubmittingId, setRatingSubmittingId] = useState<string | null>(null);
   const [ratingError, setRatingError] = useState<{ shiftId: string; message: string } | null>(null);
 
-  const [confirmingShiftId, setConfirmingShiftId] = useState<string | null>(null);
+  // Guarda também qual ação foi clicada (não só o turno) — senão os
+  // botões "Recebi o pagamento" e "Não recebi" do mesmo turno
+  // compartilhavam o mesmo indicador de loading e giravam juntos.
+  const [confirmingAction, setConfirmingAction] = useState<{ shiftId: string; action: 'confirm' | 'dispute' } | null>(
+    null,
+  );
   const [confirmError, setConfirmError] = useState<{ shiftId: string; message: string } | null>(null);
 
   useEffect(() => {
@@ -284,7 +289,7 @@ export default function AgendaPage() {
 
   async function handleConfirmPayment(shiftId: string, received: boolean): Promise<void> {
     setConfirmError(null);
-    setConfirmingShiftId(shiftId);
+    setConfirmingAction({ shiftId, action: received ? 'confirm' : 'dispute' });
 
     try {
       const payment = await confirmPayment(shiftId, received);
@@ -296,7 +301,7 @@ export default function AgendaPage() {
           err instanceof ApiError || err instanceof Error ? err.message : 'Não foi possível registrar sua resposta.',
       });
     } finally {
-      setConfirmingShiftId(null);
+      setConfirmingAction(null);
     }
   }
 
@@ -557,7 +562,8 @@ export default function AgendaPage() {
                   <Button
                     type="button"
                     variant="primary"
-                    isLoading={confirmingShiftId === shift.id}
+                    isLoading={confirmingAction?.shiftId === shift.id && confirmingAction.action === 'confirm'}
+                    disabled={confirmingAction?.shiftId === shift.id && confirmingAction.action === 'dispute'}
                     onClick={() => handleConfirmPayment(shift.id, true)}
                     className="flex-1"
                   >
@@ -566,7 +572,8 @@ export default function AgendaPage() {
                   <Button
                     type="button"
                     variant="outlined"
-                    isLoading={confirmingShiftId === shift.id}
+                    isLoading={confirmingAction?.shiftId === shift.id && confirmingAction.action === 'dispute'}
+                    disabled={confirmingAction?.shiftId === shift.id && confirmingAction.action === 'confirm'}
                     onClick={() => handleConfirmPayment(shift.id, false)}
                     className="flex-1"
                   >

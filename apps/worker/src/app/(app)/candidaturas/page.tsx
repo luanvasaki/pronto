@@ -22,6 +22,23 @@ const STATUS_CLASS: Record<string, string> = {
   withdrawn: 'bg-border text-text-secondary',
 };
 
+/**
+ * `status === 'rejected'` cobre dois casos bem diferentes pro
+ * trabalhador: nunca ter sido aceito, ou ter sido aceito e depois
+ * removido da escala pela empresa (bem mais grave). `removedAt` (já
+ * vem do backend) diferencia os dois — mesmo padrão visual que a tela
+ * de Início já usa pro alerta de remoção.
+ */
+function statusLabel(application: MyApplication): string {
+  if (application.removedAt !== null) return 'Removida';
+  return STATUS_LABEL[application.status] ?? application.status;
+}
+
+function statusClass(application: MyApplication): string {
+  if (application.removedAt !== null) return 'bg-danger/10 text-danger';
+  return STATUS_CLASS[application.status] ?? STATUS_CLASS.pending;
+}
+
 function formatDateRange(startsAt: string, endsAt: string): string {
   const formatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
   return `${formatter.format(new Date(startsAt))} até ${formatter.format(new Date(endsAt))}`;
@@ -111,11 +128,9 @@ export default function CandidaturasPage() {
                 <p className="text-[13px] font-semibold text-text-secondary">{application.companyName}</p>
               </div>
               <span
-                className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  STATUS_CLASS[application.status] ?? STATUS_CLASS.pending
-                }`}
+                className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(application)}`}
               >
-                {STATUS_LABEL[application.status] ?? application.status}
+                {statusLabel(application)}
               </span>
             </div>
             <MapLink

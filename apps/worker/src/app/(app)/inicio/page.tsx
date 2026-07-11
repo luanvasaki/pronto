@@ -12,10 +12,10 @@ import { getCurrentPosition } from '../../../lib/geolocation';
 import { applyToJob, listNearbyJobs, NearbyJob } from '../../../lib/jobs-api';
 import { listMyShifts } from '../../../lib/shifts-api';
 import { updateWorkerLocation } from '../../../lib/worker-profile-api';
+import { NOTIFICATIONS_POLL_INTERVAL_MS } from '../layout';
 import { useWorkerProfile } from '../worker-profile-context';
 
 const CATEGORY_LABEL_FALLBACK = 'Categoria';
-const AVAILABILITY_STORAGE_KEY = 'pronto:disponivel';
 
 type DateFilter = 'todos' | 'hoje' | 'amanha' | 'fds';
 
@@ -82,16 +82,6 @@ export default function InicioPage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<DateFilter>('todos');
 
-  // Só visual/local por enquanto — nenhuma empresa "navega" trabalhadores
-  // hoje, então não há regra de negócio consumindo isso ainda. Lido de
-  // forma preguiçosa (lazy initializer) em vez de um efeito, pra não
-  // disparar uma renderização em cascata logo após o mount.
-  const [available, setAvailable] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const stored = window.localStorage.getItem(AVAILABILITY_STORAGE_KEY);
-    return stored === null ? true : stored === 'true';
-  });
-
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const [applyError, setApplyError] = useState<{ jobId: string; message: string } | null>(null);
@@ -104,14 +94,6 @@ export default function InicioPage() {
   const [dismissingRemovalId, setDismissingRemovalId] = useState<string | null>(null);
 
   const [pendingRatingsCount, setPendingRatingsCount] = useState(0);
-
-  function toggleAvailable(): void {
-    setAvailable((current) => {
-      const next = !current;
-      window.localStorage.setItem(AVAILABILITY_STORAGE_KEY, String(next));
-      return next;
-    });
-  }
 
   useEffect(() => {
     async function load(): Promise<void> {
@@ -127,24 +109,40 @@ export default function InicioPage() {
     }
 
     void load();
+  }, []);
 
-    // Alertas de "foi chamado pra trabalhar" e "foi removido da escala"
-    // são secundários — se essa chamada falhar, a tela principal de
-    // vagas continua funcionando.
-    listMyApplications()
-      .then(({ applications }) => {
-        setCalledApplications(applications.filter((a) => a.status === 'approved' && a.workerSeenAt === null));
-        setRemovedApplications(applications.filter((a) => a.removedAt !== null && a.workerSeenRemovalAt === null));
-      })
-      .catch(() => undefined);
+  useEffect(() => {
+    let cancelled = false;
 
-    // Escala concluída esperando avaliação — mesmo espírito "secundário"
-    // acima: não trava a tela principal se falhar.
-    listMyShifts()
-      .then(({ shifts }) => {
-        setPendingRatingsCount(shifts.filter((shift) => shift.status === 'completed' && !shift.ratings.worker).length);
-      })
-      .catch(() => undefined);
+    // Alertas de "foi chamado pra trabalhar", "foi removido da escala" e
+    // "escala concluída esperando avaliação" são secundários — se essa
+    // busca falhar, a tela principal de vagas continua funcionando.
+    // Faz polling no mesmo intervalo que o sino do layout (ver
+    // NOTIFICATIONS_POLL_INTERVAL_MS em ../layout.tsx) pra não deixar o
+    // banner desatualizado enquanto o sino já mostra a notificação nova.
+    function poll(): void {
+      listMyApplications()
+        .then(({ applications }) => {
+          if (cancelled) return;
+          setCalledApplications(applications.filter((a) => a.status === 'approved' && a.workerSeenAt === null));
+          setRemovedApplications(applications.filter((a) => a.removedAt !== null && a.workerSeenRemovalAt === null));
+        })
+        .catch(() => undefined);
+
+      listMyShifts()
+        .then(({ shifts }) => {
+          if (cancelled) return;
+          setPendingRatingsCount(shifts.filter((shift) => shift.status === 'completed' && !shift.ratings.worker).length);
+        })
+        .catch(() => undefined);
+    }
+
+    poll();
+    const intervalId = setInterval(poll, NOTIFICATIONS_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
   }, []);
 
   async function handleDismissCalled(applicationId: string): Promise<void> {
@@ -329,37 +327,6 @@ export default function InicioPage() {
         </div>
         {profile && <Avatar name={profile.fullName} photoUrl={profile.photoUrl} size="md" color="bg-secondary" />}
       </div>
-
-      <button
-        type="button"
-        onClick={toggleAvailable}
-        className={`mt-4 flex items-center justify-between rounded-[18px] p-4 text-left shadow-[0_6px_18px_rgba(26,23,18,0.06)] transition ${
-          available ? 'bg-success/10' : 'bg-surface'
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <span className={`h-2.5 w-2.5 rounded-full ${available ? 'bg-success' : 'bg-text-secondary'}`} />
-          <div>
-            <p className={`text-[16px] font-bold ${available ? 'text-success' : 'text-text'}`}>
-              {available ? 'Disponível para escalas' : 'Indisponível'}
-            </p>
-            <p className="text-[12.5px] text-text-secondary">
-              {available ? 'Você aparece para empresas perto de você' : 'Toque para voltar a receber escalas'}
-            </p>
-          </div>
-        </div>
-        <span
-          className={`relative h-[30px] w-[50px] shrink-0 rounded-full transition-colors ${
-            available ? 'bg-success' : 'bg-border'
-          }`}
-        >
-          <span
-            className={`absolute top-[3px] h-6 w-6 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] transition-all ${
-              available ? 'left-[23px]' : 'left-[3px]'
-            }`}
-          />
-        </span>
-      </button>
 
       <div className="scrollbar-none mt-5 flex gap-2.5 overflow-x-auto pb-1">
         <Chip active={filter === 'todos'} onClick={() => setFilter('todos')}>

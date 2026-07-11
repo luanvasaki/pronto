@@ -13,8 +13,9 @@ import { WorkerProfileProvider } from './worker-profile-context';
 
 // Sem WebSocket/push — reconsultar de tempos em tempos enquanto o app
 // fica aberto é o suficiente pro volume do MVP (mesmo padrão do painel
-// da empresa).
-const NOTIFICATIONS_POLL_INTERVAL_MS = 60_000;
+// da empresa). Exportada porque a tela de Início faz o mesmo polling
+// pros avisos que mostra em banner (ver src/app/(app)/inicio/page.tsx).
+export const NOTIFICATIONS_POLL_INTERVAL_MS = 60_000;
 
 /**
  * Grupo de rotas (parênteses não entram na URL) — só as telas
