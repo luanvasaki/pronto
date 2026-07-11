@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { StatCard } from '../../../components/ui/stat-card';
-import { JobApplication, listJobApplications } from '../../../lib/applications-api';
+import { JobApplication } from '../../../lib/applications-api';
+import { fetchApplicationsByJobId } from '../../../lib/job-applications-summary';
 import { Job, listMyJobs } from '../../../lib/jobs-api';
 import { useCompanyProfile } from '../company-profile-context';
 
@@ -71,10 +72,7 @@ export default function PainelPage() {
         setCategoryNames(Object.fromEntries(categoriesResult.categories.map((c) => [c.id, c.name])));
 
         const relevantJobs = jobsResult.jobs.filter((job) => job.status !== 'cancelled');
-        const applicationsResults = await Promise.all(
-          relevantJobs.map((job) => listJobApplications(job.id).then((result) => [job.id, result.applications] as const)),
-        );
-        setApplicationsByJobId(Object.fromEntries(applicationsResults));
+        setApplicationsByJobId(await fetchApplicationsByJobId(relevantJobs));
       } catch {
         setError('Não foi possível carregar suas escalas.');
       } finally {

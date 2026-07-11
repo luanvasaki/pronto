@@ -27,6 +27,21 @@ interface WorkerDocumentGroup {
   documents: PendingDocument[];
 }
 
+/**
+ * Aprovar/rejeitar aqui é definitivo (rejeitar bloqueia a conta,
+ * aprovar libera na hora) — pede um segundo clique antes de chamar a
+ * API, igual "Resetar senha" em admin/trabalhadores e admin/empresas: o
+ * próprio botão vira o de confirmar em vez de abrir algo novo.
+ */
+interface ConfirmTarget {
+  id: string;
+  status: 'approved' | 'rejected';
+}
+
+function isConfirming(target: ConfirmTarget | null, id: string, status: 'approved' | 'rejected'): boolean {
+  return target?.id === id && target.status === status;
+}
+
 /** Identidade e selfie do mesmo trabalhador lado a lado, pra comparar antes de aprovar. */
 function groupDocumentsByWorker(documents: PendingDocument[]): WorkerDocumentGroup[] {
   const groups = new Map<string, WorkerDocumentGroup>();
@@ -55,6 +70,9 @@ export default function AdminVerificacoesPage() {
   const [documentFiles, setDocumentFiles] = useState<Record<string, DocumentFile>>({});
   const [companyDocumentFiles, setCompanyDocumentFiles] = useState<Record<string, DocumentFile>>({});
   const [actingId, setActingId] = useState<string | null>(null);
+  const [confirmingDocument, setConfirmingDocument] = useState<ConfirmTarget | null>(null);
+  const [confirmingCompany, setConfirmingCompany] = useState<ConfirmTarget | null>(null);
+  const [confirmingSkillCategory, setConfirmingSkillCategory] = useState<ConfirmTarget | null>(null);
 
   useEffect(() => {
     listPendingVerifications()
@@ -93,6 +111,11 @@ export default function AdminVerificacoesPage() {
   const documentsByWorker = groupDocumentsByWorker(documents);
 
   async function handleReviewDocument(documentId: string, status: 'approved' | 'rejected'): Promise<void> {
+    if (!isConfirming(confirmingDocument, documentId, status)) {
+      setConfirmingDocument({ id: documentId, status });
+      return;
+    }
+
     setError(null);
     setActingId(documentId);
 
@@ -103,10 +126,16 @@ export default function AdminVerificacoesPage() {
       setError('Não foi possível revisar o documento.');
     } finally {
       setActingId(null);
+      setConfirmingDocument(null);
     }
   }
 
   async function handleReviewCompany(companyId: string, status: 'approved' | 'rejected'): Promise<void> {
+    if (!isConfirming(confirmingCompany, companyId, status)) {
+      setConfirmingCompany({ id: companyId, status });
+      return;
+    }
+
     setError(null);
     setActingId(companyId);
 
@@ -117,10 +146,16 @@ export default function AdminVerificacoesPage() {
       setError('Não foi possível revisar a empresa.');
     } finally {
       setActingId(null);
+      setConfirmingCompany(null);
     }
   }
 
   async function handleReviewSkillCategory(categoryId: string, status: 'approved' | 'rejected'): Promise<void> {
+    if (!isConfirming(confirmingSkillCategory, categoryId, status)) {
+      setConfirmingSkillCategory({ id: categoryId, status });
+      return;
+    }
+
     setError(null);
     setActingId(categoryId);
 
@@ -132,6 +167,7 @@ export default function AdminVerificacoesPage() {
       setError('Não foi possível revisar a categoria.');
     } finally {
       setActingId(null);
+      setConfirmingSkillCategory(null);
     }
   }
 
@@ -187,23 +223,32 @@ export default function AdminVerificacoesPage() {
                         />
                       )
                     )}
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Button
                         type="button"
-                        variant="success"
+                        variant={isConfirming(confirmingDocument, document.id, 'approved') ? 'danger' : 'success'}
                         isLoading={actingId === document.id}
                         onClick={() => handleReviewDocument(document.id, 'approved')}
                       >
-                        Aprovar
+                        {isConfirming(confirmingDocument, document.id, 'approved') ? 'Confirmar aprovação' : 'Aprovar'}
                       </Button>
                       <Button
                         type="button"
-                        variant="outlined"
+                        variant={isConfirming(confirmingDocument, document.id, 'rejected') ? 'danger' : 'outlined'}
                         isLoading={actingId === document.id}
                         onClick={() => handleReviewDocument(document.id, 'rejected')}
                       >
-                        Rejeitar
+                        {isConfirming(confirmingDocument, document.id, 'rejected') ? 'Confirmar rejeição' : 'Rejeitar'}
                       </Button>
+                      {confirmingDocument?.id === document.id && actingId !== document.id && (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingDocument(null)}
+                          className="text-sm text-text-secondary underline underline-offset-2"
+                        >
+                          Cancelar
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -263,24 +308,33 @@ export default function AdminVerificacoesPage() {
                   )}
                 </div>
               )}
-              <div className="mt-3.5 flex items-center gap-2">
+              <div className="mt-3.5 flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
-                  variant="success"
+                  variant={isConfirming(confirmingCompany, company.id, 'approved') ? 'danger' : 'success'}
                   isLoading={actingId === company.id}
                   disabled={cannotApprove}
                   onClick={() => handleReviewCompany(company.id, 'approved')}
                 >
-                  Aprovar
+                  {isConfirming(confirmingCompany, company.id, 'approved') ? 'Confirmar aprovação' : 'Aprovar'}
                 </Button>
                 <Button
                   type="button"
-                  variant="outlined"
+                  variant={isConfirming(confirmingCompany, company.id, 'rejected') ? 'danger' : 'outlined'}
                   isLoading={actingId === company.id}
                   onClick={() => handleReviewCompany(company.id, 'rejected')}
                 >
-                  Rejeitar
+                  {isConfirming(confirmingCompany, company.id, 'rejected') ? 'Confirmar rejeição' : 'Rejeitar'}
                 </Button>
+                {confirmingCompany?.id === company.id && actingId !== company.id && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingCompany(null)}
+                    className="text-sm text-text-secondary underline underline-offset-2"
+                  >
+                    Cancelar
+                  </button>
+                )}
                 {cannotApprove && (
                   <span className="text-xs text-danger">Sem documento enviado — não é possível aprovar.</span>
                 )}
@@ -318,23 +372,32 @@ export default function AdminVerificacoesPage() {
                   setCategoryNameDrafts((current) => ({ ...current, [category.id]: event.target.value }))
                 }
               />
-              <div className="mt-3.5 flex gap-2">
+              <div className="mt-3.5 flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
-                  variant="success"
+                  variant={isConfirming(confirmingSkillCategory, category.id, 'approved') ? 'danger' : 'success'}
                   isLoading={actingId === category.id}
                   onClick={() => handleReviewSkillCategory(category.id, 'approved')}
                 >
-                  Aprovar
+                  {isConfirming(confirmingSkillCategory, category.id, 'approved') ? 'Confirmar aprovação' : 'Aprovar'}
                 </Button>
                 <Button
                   type="button"
-                  variant="outlined"
+                  variant={isConfirming(confirmingSkillCategory, category.id, 'rejected') ? 'danger' : 'outlined'}
                   isLoading={actingId === category.id}
                   onClick={() => handleReviewSkillCategory(category.id, 'rejected')}
                 >
-                  Rejeitar
+                  {isConfirming(confirmingSkillCategory, category.id, 'rejected') ? 'Confirmar rejeição' : 'Rejeitar'}
                 </Button>
+                {confirmingSkillCategory?.id === category.id && actingId !== category.id && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingSkillCategory(null)}
+                    className="text-sm text-text-secondary underline underline-offset-2"
+                  >
+                    Cancelar
+                  </button>
+                )}
               </div>
             </li>
           ))}

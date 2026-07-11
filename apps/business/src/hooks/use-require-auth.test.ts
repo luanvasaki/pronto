@@ -1,3 +1,4 @@
+import { ApiError } from '@shift/shared';
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useRequireAuth } from './use-require-auth';
@@ -44,9 +45,9 @@ describe('useRequireAuth', () => {
   });
 
   it('renova a sessão quando o access token expirou', async () => {
-    getCurrentUserMock.mockRejectedValueOnce(new Error('401')).mockResolvedValueOnce({
-      user: { id: '1' },
-    });
+    getCurrentUserMock
+      .mockRejectedValueOnce(new ApiError(401, 'Sessão inválida ou expirada.'))
+      .mockResolvedValueOnce({ user: { id: '1' } });
     refreshSessionMock.mockResolvedValue({ success: true });
 
     const { result } = renderHook(() => useRequireAuth());
@@ -57,12 +58,32 @@ describe('useRequireAuth', () => {
     expect(replaceMock).not.toHaveBeenCalled();
   });
 
-  it('redireciona pra /entrar quando não há sessão válida', async () => {
-    getCurrentUserMock.mockRejectedValue(new Error('401'));
-    refreshSessionMock.mockRejectedValue(new Error('sem refresh token'));
+  it('redireciona pra /entrar quando não há sessão válida (401 mesmo depois de tentar renovar)', async () => {
+    getCurrentUserMock.mockRejectedValue(new ApiError(401, 'Sessão inválida ou expirada.'));
+    refreshSessionMock.mockRejectedValue(new ApiError(401, 'Sessão inválida ou expirada.'));
 
     renderHook(() => useRequireAuth());
 
     await waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/entrar'));
+  });
+
+  it('não desloga em erro de rede na primeira checagem, e nem tenta renovar a sessão', async () => {
+    getCurrentUserMock.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const { result } = renderHook(() => useRequireAuth());
+
+    await waitFor(() => expect(result.current.isChecking).toBe(false));
+    expect(refreshSessionMock).not.toHaveBeenCalled();
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
+
+  it('não desloga quando renovar a sessão falha por erro de rede (em vez de sessão inválida)', async () => {
+    getCurrentUserMock.mockRejectedValue(new ApiError(401, 'Sessão inválida ou expirada.'));
+    refreshSessionMock.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const { result } = renderHook(() => useRequireAuth());
+
+    await waitFor(() => expect(result.current.isChecking).toBe(false));
+    expect(replaceMock).not.toHaveBeenCalled();
   });
 });

@@ -128,27 +128,53 @@ describe('AdminVerificacoesPage', () => {
     expect(screen.getByText('Selfie')).toBeInTheDocument();
   });
 
-  it('aprova um documento e remove ele da lista', async () => {
+  it('pede confirmação antes de aprovar um documento, e só chama a API no segundo clique', async () => {
     listPendingVerificationsMock.mockResolvedValue({ documents: [PENDING_DOCUMENT], companies: [], skillCategories: [] });
     reviewDocumentMock.mockResolvedValue({ id: 'doc-1', status: 'approved' });
     const user = userEvent.setup();
 
     render(<AdminVerificacoesPage />);
     await screen.findByText('Rafael Lima');
-    await user.click(screen.getByRole('button', { name: /aprovar/i }));
+    await user.click(screen.getByRole('button', { name: /^aprovar$/i }));
+
+    expect(reviewDocumentMock).not.toHaveBeenCalled();
+    const confirmButton = await screen.findByRole('button', { name: /confirmar aprovação/i });
+
+    await user.click(confirmButton);
 
     await waitFor(() => expect(reviewDocumentMock).toHaveBeenCalledWith('doc-1', 'approved'));
     await waitFor(() => expect(screen.queryByText('Rafael Lima')).not.toBeInTheDocument());
   });
 
-  it('rejeita uma empresa e remove ela da lista', async () => {
+  it('cancela a confirmação de aprovar um documento sem chamar a API', async () => {
+    listPendingVerificationsMock.mockResolvedValue({ documents: [PENDING_DOCUMENT], companies: [], skillCategories: [] });
+    const user = userEvent.setup();
+
+    render(<AdminVerificacoesPage />);
+    await screen.findByText('Rafael Lima');
+    await user.click(screen.getByRole('button', { name: /^aprovar$/i }));
+    await screen.findByRole('button', { name: /confirmar aprovação/i });
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(screen.queryByRole('button', { name: /confirmar aprovação/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^aprovar$/i })).toBeInTheDocument();
+    expect(reviewDocumentMock).not.toHaveBeenCalled();
+  });
+
+  it('pede confirmação antes de rejeitar uma empresa, e só chama a API no segundo clique', async () => {
     listPendingVerificationsMock.mockResolvedValue({ documents: [], companies: [PENDING_COMPANY], skillCategories: [] });
     reviewCompanyMock.mockResolvedValue({ id: 'company-1', verificationStatus: 'rejected' });
     const user = userEvent.setup();
 
     render(<AdminVerificacoesPage />);
     await screen.findByText('Bar do Zé');
-    await user.click(screen.getByRole('button', { name: /rejeitar/i }));
+    await user.click(screen.getByRole('button', { name: /^rejeitar$/i }));
+
+    expect(reviewCompanyMock).not.toHaveBeenCalled();
+    const confirmButton = await screen.findByRole('button', { name: /confirmar rejeição/i });
+
+    await user.click(confirmButton);
 
     await waitFor(() => expect(reviewCompanyMock).toHaveBeenCalledWith('company-1', 'rejected'));
     await waitFor(() => expect(screen.queryByText('Bar do Zé')).not.toBeInTheDocument());
@@ -217,7 +243,7 @@ describe('AdminVerificacoesPage', () => {
     expect(screen.getByDisplayValue('Manobrista')).toBeInTheDocument();
   });
 
-  it('aprova uma categoria corrigindo o nome', async () => {
+  it('aprova uma categoria corrigindo o nome, depois de confirmar', async () => {
     listPendingVerificationsMock.mockResolvedValue({ documents: [], companies: [], skillCategories: [PENDING_CATEGORY] });
     reviewSkillCategoryMock.mockResolvedValue({ id: 'cat-1', name: 'Manobrista de Evento', status: 'approved' });
     const user = userEvent.setup();
@@ -227,7 +253,10 @@ describe('AdminVerificacoesPage', () => {
     const nameInput = screen.getByLabelText('Nome da categoria');
     await user.clear(nameInput);
     await user.type(nameInput, 'Manobrista de Evento');
-    await user.click(screen.getByRole('button', { name: /aprovar/i }));
+    await user.click(screen.getByRole('button', { name: /^aprovar$/i }));
+
+    expect(reviewSkillCategoryMock).not.toHaveBeenCalled();
+    await user.click(await screen.findByRole('button', { name: /confirmar aprovação/i }));
 
     await waitFor(() =>
       expect(reviewSkillCategoryMock).toHaveBeenCalledWith('cat-1', 'approved', 'Manobrista de Evento'),
@@ -235,14 +264,17 @@ describe('AdminVerificacoesPage', () => {
     await waitFor(() => expect(screen.queryByDisplayValue('Manobrista de Evento')).not.toBeInTheDocument());
   });
 
-  it('rejeita uma categoria pendente', async () => {
+  it('rejeita uma categoria pendente, depois de confirmar', async () => {
     listPendingVerificationsMock.mockResolvedValue({ documents: [], companies: [], skillCategories: [PENDING_CATEGORY] });
     reviewSkillCategoryMock.mockResolvedValue({ id: 'cat-1', name: 'Manobrista', status: 'rejected' });
     const user = userEvent.setup();
 
     render(<AdminVerificacoesPage />);
     await screen.findByDisplayValue('Manobrista');
-    await user.click(screen.getByRole('button', { name: /rejeitar/i }));
+    await user.click(screen.getByRole('button', { name: /^rejeitar$/i }));
+
+    expect(reviewSkillCategoryMock).not.toHaveBeenCalled();
+    await user.click(await screen.findByRole('button', { name: /confirmar rejeição/i }));
 
     await waitFor(() => expect(reviewSkillCategoryMock).toHaveBeenCalledWith('cat-1', 'rejected', 'Manobrista'));
     await waitFor(() => expect(screen.queryByDisplayValue('Manobrista')).not.toBeInTheDocument());
