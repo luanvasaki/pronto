@@ -41,7 +41,9 @@ const BASE_PROFILE: CompanyProfileDetails = {
   id: '1',
   legalName: 'Bar do Zé Ltda',
   tradeName: 'Bar do Zé',
+  personType: 'juridica',
   cnpj: '11222333000181',
+  cpf: null,
   logoUrl: null,
   addressLabel: null,
   businessSegment: null,
@@ -187,6 +189,7 @@ describe('PerfilPage', () => {
       expect(upsertCompanyProfileMock).toHaveBeenCalledWith({
         legalName: 'Bar do Zé Eventos Ltda',
         tradeName: 'Bar do Zé',
+        personType: 'juridica',
         cnpj: '11222333000181',
         addressLabel: 'Vila Madalena, São Paulo',
         businessSegment: 'bar',

@@ -9,6 +9,8 @@ const TEST_PHONE = '+5511966660002';
 const OTHER_PHONE = '+5511966660003';
 const CNPJ_A = '11222333000181';
 const CNPJ_B = '11222333000182';
+const CPF_A = '11122233344';
+const CPF_B = '55566677788';
 
 async function createTestUser(phone: string) {
   const [user] = await db.insert(users).values({ phone }).returning();
@@ -151,5 +153,76 @@ describe('upsertCompanyProfile', () => {
         cnpj: CNPJ_B,
       }),
     ).rejects.toThrow('Esse CNPJ já está cadastrado');
+  });
+
+  it('trata personType ausente como "juridica" por padrão', async () => {
+    const user = await createTestUser(TEST_PHONE);
+
+    const result = await upsertCompanyProfile(user.id, { legalName: 'Bar do Zé Ltda', tradeName: 'Bar do Zé', cnpj: CNPJ_A });
+
+    expect(result.personType).toBe('juridica');
+    expect(result.cnpj).toBe(CNPJ_A);
+    expect(result.cpf).toBeNull();
+  });
+
+  it('rejeita personType desconhecido', async () => {
+    const user = await createTestUser(TEST_PHONE);
+
+    await expect(
+      upsertCompanyProfile(user.id, {
+        legalName: 'Ana Souza',
+        tradeName: 'Ana Freelas',
+        personType: 'empresa',
+        cpf: CPF_A,
+      }),
+    ).rejects.toThrow('Tipo de cadastro inválido');
+  });
+
+  it('pessoa física exige CPF, não CNPJ', async () => {
+    const user = await createTestUser(TEST_PHONE);
+
+    await expect(
+      upsertCompanyProfile(user.id, {
+        legalName: 'Ana Souza',
+        tradeName: 'Ana Freelas',
+        personType: 'fisica',
+        cnpj: CNPJ_A,
+      }),
+    ).rejects.toThrow('CPF inválido');
+  });
+
+  it('cria cadastro de pessoa física com CPF, sem exigir CNPJ', async () => {
+    const user = await createTestUser(TEST_PHONE);
+
+    const result = await upsertCompanyProfile(user.id, {
+      legalName: 'Ana Souza',
+      tradeName: 'Ana Freelas',
+      personType: 'fisica',
+      cpf: CPF_A,
+    });
+
+    expect(result.personType).toBe('fisica');
+    expect(result.cpf).toBe(CPF_A);
+    expect(result.cnpj).toBeNull();
+  });
+
+  it('rejeita CPF já usado por outro dono', async () => {
+    const owner = await createTestUser(TEST_PHONE);
+    const otherOwner = await createTestUser(OTHER_PHONE);
+    await upsertCompanyProfile(owner.id, {
+      legalName: 'Ana Souza',
+      tradeName: 'Ana Freelas',
+      personType: 'fisica',
+      cpf: CPF_B,
+    });
+
+    await expect(
+      upsertCompanyProfile(otherOwner.id, {
+        legalName: 'Outra Pessoa',
+        tradeName: 'Outra Freelas',
+        personType: 'fisica',
+        cpf: CPF_B,
+      }),
+    ).rejects.toThrow('Esse CPF já está cadastrado');
   });
 });

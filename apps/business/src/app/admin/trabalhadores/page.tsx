@@ -2,6 +2,7 @@
 
 import { ApiError } from '@shift/shared';
 import { useEffect, useMemo, useState } from 'react';
+import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { AdminWorker, listAdminWorkers, resetUserPassword } from '../../../lib/admin-api';
@@ -137,7 +138,10 @@ export default function AdminTrabalhadoresPage() {
             className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
           >
             <div className="flex items-start justify-between gap-3">
-              <p className="font-heading text-[15.5px] font-bold text-text">{worker.fullName}</p>
+              <div className="flex items-center gap-3">
+                <Avatar name={worker.fullName} photoUrl={worker.photoUrl} size="sm" />
+                <p className="font-heading text-[15.5px] font-bold text-text">{worker.fullName}</p>
+              </div>
               <span
                 className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
                   KYC_CLASS[worker.kycStatus] ?? KYC_CLASS.pending

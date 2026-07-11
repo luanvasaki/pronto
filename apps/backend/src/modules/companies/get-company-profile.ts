@@ -8,7 +8,9 @@ export interface CompanyProfileDetails {
   id: string;
   legalName: string;
   tradeName: string;
-  cnpj: string;
+  personType: string;
+  cnpj: string | null;
+  cpf: string | null;
   logoUrl: string | null;
   addressLabel: string | null;
   businessSegment: string | null;
@@ -103,7 +105,9 @@ export async function getCompanyProfile(ownerUserId: string): Promise<CompanyPro
     id: company.id,
     legalName: company.legalName,
     tradeName: company.tradeName,
+    personType: company.personType,
     cnpj: company.cnpj,
+    cpf: company.cpf,
     logoUrl: company.logoUrl,
     addressLabel: company.addressLabel,
     businessSegment: company.businessSegment,

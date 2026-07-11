@@ -5,6 +5,7 @@ import {
   COMPANY_RATING_CATEGORIES,
   extractDigits,
   formatCnpj,
+  formatCpf,
   isValidPassword,
   listSkillCategories,
   logout,
@@ -50,7 +51,9 @@ export default function PerfilPage() {
 
   const [legalName, setLegalName] = useState(profile?.legalName ?? '');
   const [tradeName, setTradeName] = useState(profile?.tradeName ?? '');
+  const isIndividual = profile?.personType === 'fisica';
   const [cnpj, setCnpj] = useState(profile?.cnpj ?? '');
+  const [cpf, setCpf] = useState(profile?.cpf ?? '');
   const [addressLabel, setAddressLabel] = useState(profile?.addressLabel ?? '');
   const [businessSegment, setBusinessSegment] = useState(profile?.businessSegment ?? '');
   const [businessSegmentOther, setBusinessSegmentOther] = useState(profile?.businessSegmentOther ?? '');
@@ -110,7 +113,7 @@ export default function PerfilPage() {
   const isProfileValid =
     legalName.trim().length >= 2 &&
     tradeName.trim().length >= 2 &&
-    cnpj.trim().length === 14 &&
+    (isIndividual ? cpf.trim().length === 11 : cnpj.trim().length === 14) &&
     (businessSegment !== 'outro' || businessSegmentOther.trim().length >= 2);
 
   async function handleSaveProfile(event: FormEvent): Promise<void> {
@@ -125,7 +128,9 @@ export default function PerfilPage() {
       const updated = await upsertCompanyProfile({
         legalName,
         tradeName,
-        cnpj,
+        personType: profile.personType,
+        cnpj: isIndividual ? undefined : cnpj,
+        cpf: isIndividual ? cpf : undefined,
         addressLabel: addressLabel.trim() || undefined,
         businessSegment: businessSegment || undefined,
         businessSegmentOther: businessSegment === 'outro' ? businessSegmentOther.trim() : undefined,
@@ -297,28 +302,41 @@ export default function PerfilPage() {
 
         <Input
           id="legalName"
-          label="Razão social"
+          label={isIndividual ? 'Nome completo' : 'Razão social'}
           type="text"
           value={legalName}
           onChange={(event) => setLegalName(event.target.value)}
         />
         <Input
           id="tradeName"
-          label="Nome fantasia"
+          label={isIndividual ? 'Como quer aparecer' : 'Nome fantasia'}
           type="text"
           value={tradeName}
           onChange={(event) => setTradeName(event.target.value)}
         />
-        <Input
-          id="cnpj"
-          label="CNPJ"
-          type="text"
-          inputMode="numeric"
-          placeholder="00.000.000/0000-00"
-          maxLength={18}
-          value={formatCnpj(cnpj)}
-          onChange={(event) => setCnpj(extractDigits(event.target.value).slice(0, 14))}
-        />
+        {isIndividual ? (
+          <Input
+            id="cpf"
+            label="CPF"
+            type="text"
+            inputMode="numeric"
+            placeholder="000.000.000-00"
+            maxLength={14}
+            value={formatCpf(cpf)}
+            onChange={(event) => setCpf(extractDigits(event.target.value).slice(0, 11))}
+          />
+        ) : (
+          <Input
+            id="cnpj"
+            label="CNPJ"
+            type="text"
+            inputMode="numeric"
+            placeholder="00.000.000/0000-00"
+            maxLength={18}
+            value={formatCnpj(cnpj)}
+            onChange={(event) => setCnpj(extractDigits(event.target.value).slice(0, 14))}
+          />
+        )}
         <Input
           id="addressLabel"
           label="Endereço (opcional)"

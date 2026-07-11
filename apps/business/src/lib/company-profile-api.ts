@@ -14,7 +14,9 @@ export interface CompanyProfileDetails {
   id: string;
   legalName: string;
   tradeName: string;
-  cnpj: string;
+  personType: string;
+  cnpj: string | null;
+  cpf: string | null;
   logoUrl: string | null;
   addressLabel: string | null;
   businessSegment: string | null;
@@ -85,7 +87,9 @@ export interface CompanyProfileResponse {
   id: string;
   legalName: string;
   tradeName: string;
-  cnpj: string;
+  personType: string;
+  cnpj: string | null;
+  cpf: string | null;
   addressLabel: string | null;
   businessSegment: string | null;
   businessSegmentOther: string | null;
@@ -95,7 +99,10 @@ export interface CompanyProfileResponse {
 export interface UpsertCompanyProfileInput {
   legalName: string;
   tradeName: string;
-  cnpj: string;
+  /** Ausente = 'juridica' (padrão). */
+  personType?: string;
+  cnpj?: string;
+  cpf?: string;
   addressLabel?: string;
   businessSegment?: string;
   businessSegmentOther?: string;
@@ -105,6 +112,20 @@ export function upsertCompanyProfile(input: UpsertCompanyProfileInput): Promise<
   return apiFetch('/company-profile', {
     method: 'PUT',
     body: JSON.stringify(input),
+  });
+}
+
+export interface UploadCompanyDocumentResponse {
+  id: string;
+}
+
+export function uploadCompanyDocument(file: File): Promise<UploadCompanyDocumentResponse> {
+  const formData = new FormData();
+  formData.append('document', file);
+
+  return apiFetch('/company-profile/document', {
+    method: 'POST',
+    body: formData,
   });
 }
 

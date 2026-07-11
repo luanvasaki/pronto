@@ -6,6 +6,7 @@ export interface AdminWorker {
   userId: string;
   fullName: string;
   email: string | null;
+  photoUrl: string | null;
   kycStatus: string;
   avgRating: string | null;
   shiftsCompleted: number;
@@ -24,6 +25,7 @@ export async function listAdminWorkers(): Promise<AdminWorker[]> {
       userId: workerProfiles.userId,
       fullName: workerProfiles.fullName,
       email: users.email,
+      photoUrl: workerProfiles.photoUrl,
       kycStatus: workerProfiles.kycStatus,
       avgRating: workerProfiles.avgRating,
       createdAt: workerProfiles.createdAt,

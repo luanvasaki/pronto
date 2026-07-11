@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiError } from '@shift/shared';
+import { ApiError, getCurrentUser } from '@shift/shared';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sidebar } from '../../components/ui/sidebar';
@@ -75,6 +75,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [pendingApplications, setPendingApplications] = useState<PendingApplicationNotification[]>([]);
   const [checkedInCount, setCheckedInCount] = useState(0);
   const [checkedInNotifications, setCheckedInNotifications] = useState<CheckedInNotification[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (isChecking) return;
+
+    getCurrentUser()
+      .then(({ user }) => setIsAdmin(user.isAdmin))
+      .catch(() => undefined);
+  }, [isChecking]);
 
   useEffect(() => {
     if (isChecking) return;
@@ -149,6 +158,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           logoUrl={profile?.logoUrl ?? null}
           isOpen={isMobileNavOpen}
           onClose={() => setIsMobileNavOpen(false)}
+          isAdmin={isAdmin}
         />
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar

@@ -48,6 +48,7 @@ describe('listAdminCompanies', () => {
         legalName: 'Espaço de Eventos Beta Ltda',
         tradeName: 'Espaço Beta',
         cnpj: TEST_CNPJ,
+        logoUrl: '/uploads/public/beta-logo.jpg',
         verificationStatus: 'approved',
       })
       .returning();
@@ -79,6 +80,7 @@ describe('listAdminCompanies', () => {
     const found = result.find((row) => row.id === company.id);
     expect(found).toBeDefined();
     expect(found?.ownerEmail).toBe(OWNER_EMAIL);
+    expect(found?.logoUrl).toBe('/uploads/public/beta-logo.jpg');
     expect(found?.jobsPosted).toBeGreaterThanOrEqual(1);
     expect(found?.shiftsCompleted).toBeGreaterThanOrEqual(1);
   });

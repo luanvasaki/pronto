@@ -13,18 +13,23 @@ export async function upsertCompanyProfileHandler(
       throw new HttpError(401, 'Sessão inválida ou expirada.');
     }
 
-    const { legalName, tradeName, cnpj, addressLabel, businessSegment, businessSegmentOther } = req.body as {
-      legalName?: string;
-      tradeName?: string;
-      cnpj?: string;
-      addressLabel?: string;
-      businessSegment?: string;
-      businessSegmentOther?: string;
-    };
+    const { legalName, tradeName, personType, cnpj, cpf, addressLabel, businessSegment, businessSegmentOther } =
+      req.body as {
+        legalName?: string;
+        tradeName?: string;
+        personType?: string;
+        cnpj?: string;
+        cpf?: string;
+        addressLabel?: string;
+        businessSegment?: string;
+        businessSegmentOther?: string;
+      };
     const result = await upsertCompanyProfile(userId, {
       legalName,
       tradeName,
+      personType,
       cnpj,
+      cpf,
       addressLabel,
       businessSegment,
       businessSegmentOther,

@@ -8,12 +8,14 @@ const reviewDocumentMock = vi.fn();
 const reviewCompanyMock = vi.fn();
 const reviewSkillCategoryMock = vi.fn();
 const fetchDocumentFileMock = vi.fn();
+const fetchCompanyDocumentFileMock = vi.fn();
 vi.mock('../../../lib/admin-api', () => ({
   listPendingVerifications: (...args: unknown[]) => listPendingVerificationsMock(...args),
   reviewDocument: (...args: unknown[]) => reviewDocumentMock(...args),
   reviewCompany: (...args: unknown[]) => reviewCompanyMock(...args),
   reviewSkillCategory: (...args: unknown[]) => reviewSkillCategoryMock(...args),
   fetchDocumentFile: (...args: unknown[]) => fetchDocumentFileMock(...args),
+  fetchCompanyDocumentFile: (...args: unknown[]) => fetchCompanyDocumentFileMock(...args),
 }));
 
 const PENDING_DOCUMENT = {
@@ -36,7 +38,20 @@ const PENDING_COMPANY = {
   id: 'company-1',
   legalName: 'Bar do Zé Ltda',
   tradeName: 'Bar do Zé',
+  personType: 'juridica',
   cnpj: '11222333000181',
+  cpf: null,
+  documentId: null,
+};
+
+const PENDING_INDIVIDUAL_COMPANY = {
+  id: 'company-2',
+  legalName: 'Ana Souza',
+  tradeName: 'Ana Freelas',
+  personType: 'fisica',
+  cnpj: null,
+  cpf: '11122233344',
+  documentId: 'company-doc-1',
 };
 
 const PENDING_CATEGORY = {
@@ -52,6 +67,7 @@ describe('AdminVerificacoesPage', () => {
     reviewCompanyMock.mockReset();
     reviewSkillCategoryMock.mockReset();
     fetchDocumentFileMock.mockReset().mockResolvedValue({ url: 'blob:mock-url', contentType: 'image/jpeg' });
+    fetchCompanyDocumentFileMock.mockReset().mockResolvedValue({ url: 'blob:mock-company-doc', contentType: 'image/jpeg' });
   });
 
   it('lista documentos e empresas pendentes', async () => {
@@ -136,6 +152,42 @@ describe('AdminVerificacoesPage', () => {
 
     await waitFor(() => expect(reviewCompanyMock).toHaveBeenCalledWith('company-1', 'rejected'));
     await waitFor(() => expect(screen.queryByText('Bar do Zé')).not.toBeInTheDocument());
+  });
+
+  it('mostra CNPJ pra empresa jurídica', async () => {
+    listPendingVerificationsMock.mockResolvedValue({ documents: [], companies: [PENDING_COMPANY], skillCategories: [] });
+
+    render(<AdminVerificacoesPage />);
+
+    expect(await screen.findByText('CNPJ 11222333000181')).toBeInTheDocument();
+  });
+
+  it('mostra CPF e o documento enviado pra empresa pessoa física', async () => {
+    listPendingVerificationsMock.mockResolvedValue({
+      documents: [],
+      companies: [PENDING_INDIVIDUAL_COMPANY],
+      skillCategories: [],
+    });
+
+    render(<AdminVerificacoesPage />);
+
+    expect(await screen.findByText('CPF 11122233344')).toBeInTheDocument();
+    expect(fetchCompanyDocumentFileMock).toHaveBeenCalledWith('company-doc-1');
+    const image = await screen.findByAltText('Documento de Ana Freelas');
+    expect(image).toHaveAttribute('src', 'blob:mock-company-doc');
+  });
+
+  it('avisa quando a empresa pessoa física não enviou documento', async () => {
+    listPendingVerificationsMock.mockResolvedValue({
+      documents: [],
+      companies: [{ ...PENDING_INDIVIDUAL_COMPANY, documentId: null }],
+      skillCategories: [],
+    });
+
+    render(<AdminVerificacoesPage />);
+
+    expect(await screen.findByText('Nenhum documento enviado.')).toBeInTheDocument();
+    expect(fetchCompanyDocumentFileMock).not.toHaveBeenCalled();
   });
 
   it('lista categoria pendente com o nome pré-preenchido e a empresa criadora', async () => {

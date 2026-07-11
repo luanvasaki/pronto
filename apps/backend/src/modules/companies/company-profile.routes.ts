@@ -5,6 +5,10 @@ import { getCompanyNotificationsHandler } from './get-notifications.controller';
 import { getCompanyProfileHandler } from './get-company-profile.controller';
 import { upsertCompanyProfileHandler } from './upsert-company-profile.controller';
 import { uploadCompanyLogoHandler, uploadCompanyLogoMiddleware } from './upload-company-logo.controller';
+import {
+  uploadCompanyDocumentHandler,
+  uploadCompanyDocumentMiddleware,
+} from './upload-company-document.controller';
 
 export const companyProfileRoutes = Router();
 
@@ -17,4 +21,10 @@ companyProfileRoutes.post(
   requireAuth,
   uploadCompanyLogoMiddleware,
   uploadCompanyLogoHandler,
+);
+companyProfileRoutes.post(
+  '/company-profile/document',
+  requireAuth,
+  uploadCompanyDocumentMiddleware,
+  uploadCompanyDocumentHandler,
 );

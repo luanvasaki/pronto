@@ -3,6 +3,7 @@ import { requireAuth } from '../auth/require-auth';
 import { createEmailSender } from '../auth/create-email-sender';
 import { EmailSender } from '../auth/email-sender';
 import { deleteDemoDataHandler } from './delete-demo-data.controller';
+import { getCompanyDocumentFileHandler } from './get-company-document-file.controller';
 import { getDocumentFileHandler } from './get-document-file.controller';
 import { getMetricsHandler } from './get-metrics.controller';
 import { listCompaniesHandler } from './list-companies.controller';
@@ -29,6 +30,7 @@ export function createAdminRoutes(options: AdminRoutesOptions = {}): Router {
   adminRoutes.get('/admin/metrics', requireAuth, requireAdmin, getMetricsHandler);
   adminRoutes.get('/admin/verifications', requireAuth, requireAdmin, listPendingVerificationsHandler);
   adminRoutes.get('/admin/documents/:id/file', requireAuth, requireAdmin, getDocumentFileHandler);
+  adminRoutes.get('/admin/company-documents/:id/file', requireAuth, requireAdmin, getCompanyDocumentFileHandler);
   adminRoutes.patch('/admin/documents/:id', requireAuth, requireAdmin, reviewDocumentHandler);
   adminRoutes.patch('/admin/companies/:id/verification', requireAuth, requireAdmin, reviewCompanyHandler);
   adminRoutes.patch('/admin/skill-categories/:id', requireAuth, requireAdmin, reviewSkillCategoryHandler);

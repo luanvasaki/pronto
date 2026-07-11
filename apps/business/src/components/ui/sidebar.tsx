@@ -56,11 +56,30 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+const ADMIN_NAV_ITEM: NavItem = {
+  href: '/admin',
+  label: 'Administrador',
+  available: true,
+  icon: (
+    <>
+      <circle cx="12" cy="8" r="3.2" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M4.5 20c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path d="M17.5 5.5l1 1 2-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+};
+
 export interface SidebarProps {
   companyName: string;
   logoUrl: string | null;
   isOpen: boolean;
   onClose: () => void;
+  isAdmin?: boolean;
 }
 
 /**
@@ -73,9 +92,14 @@ export interface SidebarProps {
  * "Calendário" é o calendário do mês com quem trabalhou em cada dia
  * (ver app/(app)/escala/page.tsx — rota continua singular, só o label
  * mudou).
+ *
+ * "Administrador" só aparece pra quem tem `isAdmin` na conta — leva pro
+ * painel em /admin, que tem layout e checagem próprios (ver
+ * app/admin/layout.tsx), então esse link é só um atalho de navegação.
  */
-export function Sidebar({ companyName, logoUrl, isOpen, onClose }: SidebarProps) {
+export function Sidebar({ companyName, logoUrl, isOpen, onClose, isAdmin = false }: SidebarProps) {
   const pathname = usePathname();
+  const navItems = isAdmin ? [...NAV_ITEMS, ADMIN_NAV_ITEM] : NAV_ITEMS;
 
   useEffect(() => {
     onClose();
@@ -100,8 +124,8 @@ export function Sidebar({ companyName, logoUrl, isOpen, onClose }: SidebarProps)
         </div>
 
         <nav className="flex flex-col gap-1">
-          {NAV_ITEMS.map((item) => {
-            const active = pathname === item.href;
+          {navItems.map((item) => {
+            const active = item.href === '/admin' ? pathname.startsWith('/admin') : pathname === item.href;
 
             if (!item.available) {
               return (

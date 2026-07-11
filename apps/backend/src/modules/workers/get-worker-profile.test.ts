@@ -215,6 +215,65 @@ describe('getWorkerProfile', () => {
     expect(result.totalHoursWorked).toBe(3);
   });
 
+  it('soma as horas de vários turnos concluídos, em empresas diferentes', async () => {
+    const [worker] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await upsertWorkerProfile(worker.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      photoUrl: undefined,
+      bio: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
+    });
+
+    const first = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
+    const firstShift = await completeShift(worker.id, first.owner.id, first.job.id);
+    const firstCheckIn = new Date();
+    await db
+      .update(shifts)
+      .set({ checkInAt: firstCheckIn, checkOutAt: new Date(firstCheckIn.getTime() + 2 * 60 * 60 * 1000) })
+      .where(eq(shifts.id, firstShift.id));
+
+    const second = await createCompanyAndJob(OWNER2_PHONE, TEST_CNPJ2, category.id);
+    const secondShift = await completeShift(worker.id, second.owner.id, second.job.id);
+    const secondCheckIn = new Date();
+    await db
+      .update(shifts)
+      .set({ checkInAt: secondCheckIn, checkOutAt: new Date(secondCheckIn.getTime() + 4 * 60 * 60 * 1000) })
+      .where(eq(shifts.id, secondShift.id));
+
+    const result = await getWorkerProfile(worker.id);
+
+    expect(result.totalShiftsCompleted).toBe(2);
+    expect(result.totalHoursWorked).toBe(6);
+  });
+
+  it('não conta horas de turno ainda em andamento (checked_in sem check-out)', async () => {
+    const [worker] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await upsertWorkerProfile(worker.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      photoUrl: undefined,
+      bio: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
+    });
+
+    const { owner, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
+    const application = await createApplication(worker.id, job.id);
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+    const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
+    if (!shift) throw new Error('Turno não foi criado no setup do teste.');
+    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+
+    const result = await getWorkerProfile(worker.id);
+
+    expect(result.totalShiftsCompleted).toBe(0);
+    expect(result.totalHoursWorked).toBe(0);
+  });
+
   it('reflete avgRating quando já existe', async () => {
     const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();

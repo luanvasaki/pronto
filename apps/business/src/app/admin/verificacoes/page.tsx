@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import {
   DocumentFile,
+  fetchCompanyDocumentFile,
   fetchDocumentFile,
   listPendingVerifications,
   PendingCompany,
@@ -52,6 +53,7 @@ export default function AdminVerificacoesPage() {
   const [skillCategories, setSkillCategories] = useState<PendingSkillCategory[]>([]);
   const [categoryNameDrafts, setCategoryNameDrafts] = useState<Record<string, string>>({});
   const [documentFiles, setDocumentFiles] = useState<Record<string, DocumentFile>>({});
+  const [companyDocumentFiles, setCompanyDocumentFiles] = useState<Record<string, DocumentFile>>({});
   const [actingId, setActingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,6 +78,17 @@ export default function AdminVerificacoesPage() {
         });
     });
   }, [documents, documentFiles]);
+
+  useEffect(() => {
+    companies.forEach((company) => {
+      if (!company.documentId || companyDocumentFiles[company.documentId]) return;
+      fetchCompanyDocumentFile(company.documentId)
+        .then((file) => setCompanyDocumentFiles((current) => ({ ...current, [company.documentId!]: file })))
+        .catch(() => {
+          // Sem preview nesse caso — os botões de aprovar/rejeitar continuam funcionando.
+        });
+    });
+  }, [companies, companyDocumentFiles]);
 
   const documentsByWorker = groupDocumentsByWorker(documents);
 
@@ -213,7 +226,41 @@ export default function AdminVerificacoesPage() {
             >
               <p className="font-heading text-[15.5px] font-bold text-text">{company.tradeName}</p>
               <p className="text-sm text-text-secondary">{company.legalName}</p>
-              <p className="font-mono text-sm text-text-secondary">CNPJ {company.cnpj}</p>
+              <p className="font-mono text-sm text-text-secondary">
+                {company.personType === 'fisica' ? `CPF ${company.cpf}` : `CNPJ ${company.cnpj}`}
+              </p>
+              {company.personType === 'fisica' && (
+                <div className="mt-2.5">
+                  <span className="text-xs font-semibold text-text-secondary uppercase">
+                    Documento (pessoa física)
+                  </span>
+                  {company.documentId ? (
+                    (() => {
+                      const file = companyDocumentFiles[company.documentId];
+                      if (!file) return null;
+                      return file.contentType === 'application/pdf' ? (
+                        <a
+                          href={file.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-1 block text-sm font-semibold text-primary underline underline-offset-2"
+                        >
+                          Abrir documento (PDF)
+                        </a>
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element -- vem de um blob: URL autenticado, next/image não se aplica
+                        <img
+                          src={file.url}
+                          alt={`Documento de ${company.tradeName}`}
+                          className="mt-1 max-h-64 rounded-xl border border-border object-contain"
+                        />
+                      );
+                    })()
+                  ) : (
+                    <p className="mt-1 text-sm text-danger">Nenhum documento enviado.</p>
+                  )}
+                </div>
+              )}
               <div className="mt-3.5 flex gap-2">
                 <Button
                   type="button"

@@ -297,7 +297,7 @@ export default function PerfilPage() {
       {photoError && <p className="-mt-4 text-xs text-danger">{photoError}</p>}
 
       <div className="flex gap-3">
-        <StatCard label="horas voadas" value={`${profile.totalHoursWorked}h`} />
+        <StatCard label="horas trabalhadas" value={`${profile.totalHoursWorked}h`} />
         <StatCard label="turnos" value={String(profile.totalShiftsCompleted)} />
         <StatCard label="nota média" value={profile.avgRating ? `★ ${profile.avgRating}` : '—'} />
       </div>

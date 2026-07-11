@@ -6,7 +6,10 @@ export interface AdminCompany {
   id: string;
   legalName: string;
   tradeName: string;
-  cnpj: string;
+  personType: string;
+  cnpj: string | null;
+  cpf: string | null;
+  logoUrl: string | null;
   verificationStatus: string;
   avgRating: string | null;
   ownerUserId: string;
@@ -29,7 +32,10 @@ export async function listAdminCompanies(): Promise<AdminCompany[]> {
       id: companies.id,
       legalName: companies.legalName,
       tradeName: companies.tradeName,
+      personType: companies.personType,
       cnpj: companies.cnpj,
+      cpf: companies.cpf,
+      logoUrl: companies.logoUrl,
       verificationStatus: companies.verificationStatus,
       avgRating: companies.avgRating,
       ownerUserId: companies.ownerUserId,

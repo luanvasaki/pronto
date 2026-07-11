@@ -14,7 +14,10 @@ export interface PendingCompany {
   id: string;
   legalName: string;
   tradeName: string;
-  cnpj: string;
+  personType: string;
+  cnpj: string | null;
+  cpf: string | null;
+  documentId: string | null;
 }
 
 export interface PendingSkillCategory {
@@ -98,7 +101,10 @@ export interface AdminCompany {
   id: string;
   legalName: string;
   tradeName: string;
-  cnpj: string;
+  personType: string;
+  cnpj: string | null;
+  cpf: string | null;
+  logoUrl: string | null;
   verificationStatus: string;
   avgRating: string | null;
   ownerUserId: string;
@@ -116,6 +122,7 @@ export interface AdminWorker {
   userId: string;
   fullName: string;
   email: string | null;
+  photoUrl: string | null;
   kycStatus: string;
   avgRating: string | null;
   shiftsCompleted: number;
@@ -146,6 +153,18 @@ export interface DocumentFile {
  */
 export async function fetchDocumentFile(documentId: string): Promise<DocumentFile> {
   const response = await fetch(`${API_URL}/admin/documents/${documentId}/file`, {
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error('Não foi possível carregar o documento.');
+  }
+  const blob = await response.blob();
+  return { url: URL.createObjectURL(blob), contentType: blob.type };
+}
+
+/** Mesmo padrão de fetchDocumentFile, pro documento de identidade da empresa pessoa física. */
+export async function fetchCompanyDocumentFile(documentId: string): Promise<DocumentFile> {
+  const response = await fetch(`${API_URL}/admin/company-documents/${documentId}/file`, {
     credentials: 'include',
   });
   if (!response.ok) {

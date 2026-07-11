@@ -10,8 +10,10 @@ vi.mock('next/navigation', () => ({
 }));
 
 const upsertCompanyProfileMock = vi.fn();
+const uploadCompanyDocumentMock = vi.fn();
 vi.mock('../../lib/company-profile-api', () => ({
   upsertCompanyProfile: (...args: unknown[]) => upsertCompanyProfileMock(...args),
+  uploadCompanyDocument: (...args: unknown[]) => uploadCompanyDocumentMock(...args),
 }));
 
 async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
@@ -24,6 +26,7 @@ describe('CadastroPage', () => {
   beforeEach(() => {
     pushMock.mockClear();
     upsertCompanyProfileMock.mockReset();
+    uploadCompanyDocumentMock.mockReset();
   });
 
   it('começa com o botão desabilitado', () => {
@@ -65,8 +68,11 @@ describe('CadastroPage', () => {
     expect(upsertCompanyProfileMock).toHaveBeenCalledWith({
       legalName: 'Bar do Zé Ltda',
       tradeName: 'Bar do Zé',
+      personType: 'juridica',
       cnpj: '11222333000181',
+      cpf: undefined,
     });
+    expect(uploadCompanyDocumentMock).not.toHaveBeenCalled();
   });
 
   it('mostra a mensagem da API quando salvar falha', async () => {
@@ -79,5 +85,63 @@ describe('CadastroPage', () => {
 
     expect(await screen.findByText('Esse CNPJ já está cadastrado.')).toBeInTheDocument();
     expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  describe('pessoa física', () => {
+    async function switchToPessoaFisica(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByRole('button', { name: /pessoa física \(cpf\)/i }));
+    }
+
+    it('troca os campos pra Nome completo, Como quer aparecer e CPF', async () => {
+      const user = userEvent.setup();
+      render(<CadastroPage />);
+
+      await switchToPessoaFisica(user);
+
+      expect(screen.getByLabelText('Nome completo')).toBeInTheDocument();
+      expect(screen.getByLabelText('Como quer aparecer')).toBeInTheDocument();
+      expect(screen.getByLabelText('CPF')).toBeInTheDocument();
+      expect(screen.queryByLabelText('CNPJ')).not.toBeInTheDocument();
+    });
+
+    it('exige o documento pra habilitar o botão', async () => {
+      const user = userEvent.setup();
+      render(<CadastroPage />);
+
+      await switchToPessoaFisica(user);
+      await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
+      await user.type(screen.getByLabelText('Como quer aparecer'), 'Ana Freelas');
+      await user.type(screen.getByLabelText('CPF'), '11122233344');
+      expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
+
+      const file = new File(['doc'], 'rg.jpg', { type: 'image/jpeg' });
+      await user.upload(screen.getByLabelText(/toque para escolher uma foto/i), file);
+      expect(screen.getByRole('button', { name: /continuar/i })).toBeEnabled();
+    });
+
+    it('salva o perfil como pessoa física e envia o documento', async () => {
+      upsertCompanyProfileMock.mockResolvedValue({ id: '1', verificationStatus: 'pending' });
+      uploadCompanyDocumentMock.mockResolvedValue({ id: 'doc-1' });
+      const user = userEvent.setup();
+      render(<CadastroPage />);
+
+      await switchToPessoaFisica(user);
+      await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
+      await user.type(screen.getByLabelText('Como quer aparecer'), 'Ana Freelas');
+      await user.type(screen.getByLabelText('CPF'), '11122233344');
+      const file = new File(['doc'], 'rg.jpg', { type: 'image/jpeg' });
+      await user.upload(screen.getByLabelText(/toque para escolher uma foto/i), file);
+      await user.click(screen.getByRole('button', { name: /continuar/i }));
+
+      await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/painel'));
+      expect(upsertCompanyProfileMock).toHaveBeenCalledWith({
+        legalName: 'Ana Souza',
+        tradeName: 'Ana Freelas',
+        personType: 'fisica',
+        cnpj: undefined,
+        cpf: '11122233344',
+      });
+      expect(uploadCompanyDocumentMock).toHaveBeenCalledWith(file);
+    });
   });
 });

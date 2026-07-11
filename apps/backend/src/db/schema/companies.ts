@@ -18,6 +18,12 @@ export const companyVerificationStatusEnum = pgEnum('company_verification_status
   'rejected',
 ]);
 
+// 'juridica' (padrão) = empresa de verdade, respaldada por CNPJ.
+// 'fisica' = pessoa física contratando freelancer avulso, sem CNPJ —
+// usa CPF no lugar e precisa enviar documento de identidade (ver
+// company-documents.ts), já que não tem registro de CNPJ pra verificar.
+export const companyPersonTypeEnum = pgEnum('company_person_type', ['juridica', 'fisica']);
+
 export const businessSegmentEnum = pgEnum('business_segment', [
   'bar',
   'restaurante',
@@ -43,7 +49,11 @@ export const companies = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     legalName: varchar('legal_name', { length: 255 }).notNull(),
     tradeName: varchar('trade_name', { length: 255 }).notNull(),
-    cnpj: varchar('cnpj', { length: 14 }).notNull(),
+    personType: companyPersonTypeEnum('person_type').notNull().default('juridica'),
+    // Exatamente um dos dois preenchido, de acordo com personType —
+    // validado na camada de aplicação (ver upsert-company-profile.ts).
+    cnpj: varchar('cnpj', { length: 14 }),
+    cpf: varchar('cpf', { length: 11 }),
     // Opcional (diferente da foto do trabalhador, que é obrigatória) —
     // pública no Blob, mesmo padrão do `photoUrl` de worker_profiles.
     logoUrl: varchar('logo_url', { length: 500 }),
@@ -74,6 +84,10 @@ export const companies = pgTable(
   },
   (table) => ({
     ownerUnique: uniqueIndex('companies_owner_user_id_unique').on(table.ownerUserId),
+    // Nulos não colidem entre si num índice único do Postgres — cada
+    // empresa só preenche a coluna do seu personType, então a outra
+    // fica null sem violar o índice.
     cnpjUnique: uniqueIndex('companies_cnpj_unique').on(table.cnpj),
+    cpfUnique: uniqueIndex('companies_cpf_unique').on(table.cpf),
   }),
 );

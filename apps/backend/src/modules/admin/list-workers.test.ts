@@ -39,7 +39,12 @@ describe('listAdminWorkers', () => {
 
   it('inclui o trabalhador com turnos concluídos e horas trabalhadas', async () => {
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE, email: WORKER_EMAIL }).returning();
-    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Camila Souza', kycStatus: 'approved' });
+    await db.insert(workerProfiles).values({
+      userId: worker.id,
+      fullName: 'Camila Souza',
+      kycStatus: 'approved',
+      photoUrl: '/uploads/public/camila.jpg',
+    });
     const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
     const [company] = await db
       .insert(companies)
@@ -79,6 +84,7 @@ describe('listAdminWorkers', () => {
     const found = result.find((row) => row.userId === worker.id);
     expect(found).toBeDefined();
     expect(found?.email).toBe(WORKER_EMAIL);
+    expect(found?.photoUrl).toBe('/uploads/public/camila.jpg');
     expect(found?.shiftsCompleted).toBeGreaterThanOrEqual(1);
     expect(found?.hoursWorked).toBeGreaterThanOrEqual(0);
   });

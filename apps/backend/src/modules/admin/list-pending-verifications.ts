@@ -1,6 +1,6 @@
-import { eq, inArray } from 'drizzle-orm';
+import { desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { companies, documents, skillCategories, workerProfiles } from '../../db/schema';
+import { companies, companyDocuments, documents, skillCategories, workerProfiles } from '../../db/schema';
 
 export interface PendingDocument {
   id: string;
@@ -14,7 +14,11 @@ export interface PendingCompany {
   id: string;
   legalName: string;
   tradeName: string;
-  cnpj: string;
+  personType: string;
+  cnpj: string | null;
+  cpf: string | null;
+  /** Só preenchido pra empresa pessoa física que já enviou documento (ver company-documents.ts). */
+  documentId: string | null;
 }
 
 export interface PendingSkillCategory {
@@ -42,6 +46,22 @@ export async function listPendingVerifications(): Promise<PendingVerifications> 
   const pendingCompanies = await db.query.companies.findMany({
     where: eq(companies.verificationStatus, 'pending'),
   });
+  const pendingCompanyIds = pendingCompanies.map((company) => company.id);
+  const pendingCompanyDocuments =
+    pendingCompanyIds.length > 0
+      ? await db.query.companyDocuments.findMany({
+          where: inArray(companyDocuments.companyId, pendingCompanyIds),
+          orderBy: desc(companyDocuments.createdAt),
+        })
+      : [];
+  // Mais recente primeiro (orderBy acima) — o primeiro `set` por
+  // companyId já é o documento mais novo enviado por aquela empresa.
+  const latestDocumentIdByCompanyId = new Map<string, string>();
+  for (const document of pendingCompanyDocuments) {
+    if (!latestDocumentIdByCompanyId.has(document.companyId)) {
+      latestDocumentIdByCompanyId.set(document.companyId, document.id);
+    }
+  }
 
   const pendingSkillCategories = await db.query.skillCategories.findMany({
     where: eq(skillCategories.status, 'pending'),
@@ -82,7 +102,10 @@ export async function listPendingVerifications(): Promise<PendingVerifications> 
       id: company.id,
       legalName: company.legalName,
       tradeName: company.tradeName,
+      personType: company.personType,
       cnpj: company.cnpj,
+      cpf: company.cpf,
+      documentId: latestDocumentIdByCompanyId.get(company.id) ?? null,
     })),
     skillCategories: pendingSkillCategories.map((category) => {
       const createdByName = category.createdByCompanyId

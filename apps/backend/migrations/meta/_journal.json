@@ -239,6 +239,13 @@
       "when": 1783735404837,
       "tag": "0033_mute_dazzler",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1783739753116,
+      "tag": "0034_worried_starfox",
+      "breakpoints": true
     }
   ]
 }

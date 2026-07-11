@@ -2,6 +2,7 @@
 
 import { ApiError } from '@shift/shared';
 import { useEffect, useMemo, useState } from 'react';
+import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { AdminCompany, listAdminCompanies, resetUserPassword } from '../../../lib/admin-api';
@@ -46,7 +47,8 @@ export default function AdminEmpresasPage() {
           (company) =>
             company.tradeName.toLowerCase().includes(term) ||
             company.legalName.toLowerCase().includes(term) ||
-            company.cnpj.includes(term),
+            (company.cnpj?.includes(term) ?? false) ||
+            (company.cpf?.includes(term) ?? false),
         )
       : companies;
 
@@ -102,7 +104,7 @@ export default function AdminEmpresasPage() {
             id="search-empresas"
             label="Buscar"
             type="text"
-            placeholder="Nome, razão social ou CNPJ..."
+            placeholder="Nome, razão social, CNPJ ou CPF..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -134,9 +136,12 @@ export default function AdminEmpresasPage() {
             className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
           >
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="font-heading text-[15.5px] font-bold text-text">{company.tradeName}</p>
-                <p className="text-sm text-text-secondary">{company.legalName}</p>
+              <div className="flex items-center gap-3">
+                <Avatar name={company.tradeName} photoUrl={company.logoUrl} size="sm" shape="square" />
+                <div>
+                  <p className="font-heading text-[15.5px] font-bold text-text">{company.tradeName}</p>
+                  <p className="text-sm text-text-secondary">{company.legalName}</p>
+                </div>
               </div>
               <span
                 className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -146,7 +151,9 @@ export default function AdminEmpresasPage() {
                 {VERIFICATION_LABEL[company.verificationStatus] ?? company.verificationStatus}
               </span>
             </div>
-            <p className="mt-1 font-mono text-sm text-text-secondary">CNPJ {company.cnpj}</p>
+            <p className="mt-1 font-mono text-sm text-text-secondary">
+              {company.personType === 'fisica' ? `CPF ${company.cpf}` : `CNPJ ${company.cnpj}`}
+            </p>
             {company.ownerEmail && <p className="mt-1 text-sm text-text-secondary">{company.ownerEmail}</p>}
 
             <div className="mt-2.5 flex flex-wrap gap-2 text-[12.5px] font-semibold text-text-secondary">
