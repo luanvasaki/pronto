@@ -22,6 +22,8 @@ vi.mock('../../../lib/applications-api', () => ({
 const APPLICATION = {
   id: 'app-1',
   status: 'pending',
+  removedAt: null,
+  workerSeenRemovalAt: null,
   createdAt: '2026-07-01T12:00:00.000Z',
   companyName: 'Buffet Aurora',
   job: {
@@ -77,6 +79,34 @@ describe('CandidaturasPage', () => {
     render(<CandidaturasPage />);
 
     expect(await screen.findByText('Aprovada')).toBeInTheDocument();
+  });
+
+  it('mostra rótulo "Rejeitada" pra candidatura que nunca foi aceita', async () => {
+    listMyApplicationsMock.mockResolvedValue({
+      applications: [{ ...APPLICATION, status: 'rejected', removedAt: null }],
+    });
+
+    render(<CandidaturasPage />);
+
+    expect(await screen.findByText('Rejeitada')).toBeInTheDocument();
+  });
+
+  it('mostra rótulo "Removida" (mais grave) quando a empresa aceitou e depois removeu o trabalhador', async () => {
+    listMyApplicationsMock.mockResolvedValue({
+      applications: [
+        {
+          ...APPLICATION,
+          status: 'rejected',
+          removedAt: '2026-07-05T12:00:00.000Z',
+          workerSeenRemovalAt: null,
+        },
+      ],
+    });
+
+    render(<CandidaturasPage />);
+
+    expect(await screen.findByText('Removida')).toBeInTheDocument();
+    expect(screen.queryByText('Rejeitada')).not.toBeInTheDocument();
   });
 
   it('mostra mensagem de erro quando a listagem falha', async () => {

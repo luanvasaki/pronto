@@ -407,6 +407,50 @@ describe('AgendaPage', () => {
     expect(await screen.findByText(/você avisou que não recebeu/i)).toBeInTheDocument();
   });
 
+  it('só o botão clicado entra em loading — o outro continua clicável', async () => {
+    listMyShiftsMock.mockResolvedValue({
+      shifts: [
+        makeShift({
+          status: 'completed',
+          payment: { id: 'p1', shiftId: 'shift-1', amount: '130.00', status: 'released', chargedAt: null, releasedAt: null },
+        }),
+      ],
+    });
+    let resolveConfirm: (value: {
+      id: string;
+      shiftId: string;
+      amount: string;
+      status: string;
+      chargedAt: string | null;
+      releasedAt: string | null;
+    }) => void = () => {};
+    confirmPaymentMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveConfirm = resolve;
+        }),
+    );
+    const user = userEvent.setup();
+
+    render(<AgendaPage />);
+    const confirmButton = await screen.findByRole('button', { name: /recebi o pagamento/i });
+    const disputeButton = screen.getByRole('button', { name: /não recebi/i });
+
+    await user.click(confirmButton);
+
+    // O botão clicado mostra loading (fica desabilitado por causa disso).
+    expect(confirmButton).toBeDisabled();
+    // O outro botão fica desabilitado pra evitar clique duplo enquanto a
+    // primeira ação está em andamento, mas não deveria mostrar spinner —
+    // spinner é um <span aria-hidden> renderizado só quando isLoading é true.
+    expect(disputeButton).toBeDisabled();
+    expect(disputeButton.querySelector('[aria-hidden="true"]')).not.toBeInTheDocument();
+    expect(confirmButton.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
+
+    resolveConfirm({ id: 'p1', shiftId: 'shift-1', amount: '130.00', status: 'confirmed', chargedAt: null, releasedAt: null });
+    expect(await screen.findByText('Você confirmou o recebimento')).toBeInTheDocument();
+  });
+
   it('mostra a mensagem da API quando a confirmação falha', async () => {
     listMyShiftsMock.mockResolvedValue({
       shifts: [
