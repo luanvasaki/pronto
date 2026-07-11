@@ -2,9 +2,9 @@ import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { skillCategories, users, workerProfiles, workerSkills } from '../../db/schema';
 import { CnhCategory, isCnhCategory } from '../jobs/cnh';
+import { isValidCpf } from '../../shared/cpf-cnpj';
 import { HttpError } from '../../shared/errors/http-error';
 
-const CPF_REGEX = /^\d{11}$/;
 const PHONE_REGEX = /^\d{10,11}$/;
 
 export interface UpsertWorkerProfileInput {
@@ -95,7 +95,7 @@ export async function upsertWorkerProfile(
     throw new HttpError(400, 'CPF é obrigatório.');
   }
   if (cpf) {
-    if (!CPF_REGEX.test(cpf)) {
+    if (!isValidCpf(cpf)) {
       throw new HttpError(400, 'CPF inválido — envie só os 11 números.');
     }
     const cpfOwner = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.cpf, cpf) });

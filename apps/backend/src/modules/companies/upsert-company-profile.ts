@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies } from '../../db/schema';
+import { isValidCnpj, isValidCpf } from '../../shared/cpf-cnpj';
 import { HttpError } from '../../shared/errors/http-error';
 
 const BUSINESS_SEGMENTS = ['bar', 'restaurante', 'buffet', 'hotel', 'eventos', 'casa_noturna', 'outro'] as const;
@@ -43,9 +44,6 @@ export interface CompanyProfileResponse {
   verificationStatus: string;
 }
 
-const CNPJ_REGEX = /^\d{14}$/;
-const CPF_REGEX = /^\d{11}$/;
-
 /**
  * Cria ou atualiza numa chamada só, igual ao perfil do trabalhador.
  * `ownerUserId` tem índice único (uma empresa por dono no MVP), então
@@ -84,12 +82,12 @@ export async function upsertCompanyProfile(
   let cpf: string | undefined;
   if (personType === 'juridica') {
     cnpj = input.cnpj?.trim();
-    if (!cnpj || !CNPJ_REGEX.test(cnpj)) {
+    if (!cnpj || !isValidCnpj(cnpj)) {
       throw new HttpError(400, 'CNPJ inválido — envie só os 14 números.');
     }
   } else {
     cpf = input.cpf?.trim();
-    if (!cpf || !CPF_REGEX.test(cpf)) {
+    if (!cpf || !isValidCpf(cpf)) {
       throw new HttpError(400, 'CPF inválido — envie só os 11 números.');
     }
   }

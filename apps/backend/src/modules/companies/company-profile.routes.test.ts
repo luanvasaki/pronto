@@ -7,7 +7,7 @@ import { users } from '../../db/schema';
 
 const TEST_EMAIL = 'company-profile-routes-test@example.com';
 const TEST_PASSWORD = 'senha-de-teste-123';
-const TEST_CNPJ = '11222333000183';
+const TEST_CNPJ = '11222333001820';
 
 async function loginAgent(app: ReturnType<typeof createApp>) {
   const agent = request.agent(app);

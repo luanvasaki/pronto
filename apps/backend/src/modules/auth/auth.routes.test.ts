@@ -283,6 +283,23 @@ describe('POST /auth/forgot-password + POST /auth/reset-password', () => {
 
     expect(response.status).toBe(401);
   });
+
+  it('aplica o rate limiter estrito de autenticação (não só o geral do site)', async () => {
+    const app = createApp();
+
+    // O limite estrito é 20 por janela — a 21ª requisição do mesmo IP
+    // deve ser barrada, o que só acontece se essa rota usar o
+    // `authRateLimiter`, não o limite geral (300).
+    let lastStatus = 0;
+    for (let i = 0; i < 21; i += 1) {
+      const response = await request(app)
+        .post('/auth/reset-password')
+        .send({ token: 'token-que-nao-existe', newPassword: 'senha-nova-123' });
+      lastStatus = response.status;
+    }
+
+    expect(lastStatus).toBe(429);
+  });
 });
 
 describe('GET /auth/me', () => {
@@ -348,6 +365,21 @@ describe('POST /auth/refresh', () => {
     // simulando alguém com uma cópia antiga do token.
     const reuse = await request(app).post('/auth/refresh').set('Cookie', oldRefreshCookie);
     expect(reuse.status).toBe(401);
+  });
+
+  it('aplica o rate limiter estrito de autenticação (não só o geral do site)', async () => {
+    const app = createApp();
+
+    // O limite estrito é 20 por janela — a 21ª requisição do mesmo IP
+    // deve ser barrada, o que só acontece se essa rota usar o
+    // `authRateLimiter`, não o limite geral (300).
+    let lastStatus = 0;
+    for (let i = 0; i < 21; i += 1) {
+      const response = await request(app).post('/auth/refresh');
+      lastStatus = response.status;
+    }
+
+    expect(lastStatus).toBe(429);
   });
 });
 

@@ -23,8 +23,8 @@ const OWNER_EMAIL = 'admin-routes-owner@example.com';
 const ADMIN_EMAIL = 'admin-routes-admin@example.com';
 const TEST_PASSWORD = 'senha-de-teste-123';
 const TEST_CATEGORY_NAME = 'Categoria de teste — admin-routes';
-const TEST_CNPJ = '11222333000300';
-const TEST_CPF = '11122233377';
+const TEST_CNPJ = '11222333003016';
+const TEST_CPF = '11122233477';
 const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
 const TEST_WORKER_PHONE = '11912345678';
 

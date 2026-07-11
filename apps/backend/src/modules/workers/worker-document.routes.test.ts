@@ -10,7 +10,7 @@ import { skillCategories, users } from '../../db/schema';
 const TEST_EMAIL = 'worker-document-routes-test@example.com';
 const TEST_PASSWORD = 'senha-de-teste-123';
 const TEST_CATEGORY_NAME = 'Categoria de teste — worker-document-routes';
-const TEST_CPF = '11122233366';
+const TEST_CPF = '11122233710';
 const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
 const TEST_WORKER_PHONE = '11912345678';
 

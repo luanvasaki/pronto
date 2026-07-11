@@ -10,7 +10,7 @@ import { uploadCompanyDocument } from './upload-company-document';
 
 // Fixture única entre arquivos de teste (ver README).
 const TEST_PHONE = '+5511955550030';
-const TEST_CPF = '11122233355';
+const TEST_CPF = '11122233639';
 
 async function createTestUser() {
   const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();

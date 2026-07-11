@@ -35,10 +35,10 @@ export function createAuthRoutes(options: AuthRoutesOptions = {}): Router {
   authRoutes.post('/auth/login', authRateLimiter, loginHandler);
   authRoutes.post('/auth/google', authRateLimiter, createGoogleLoginHandler(googleTokenVerifier));
   authRoutes.post('/auth/forgot-password', authRateLimiter, createForgotPasswordHandler(emailSender));
-  authRoutes.post('/auth/reset-password', resetPasswordHandler);
+  authRoutes.post('/auth/reset-password', authRateLimiter, resetPasswordHandler);
   authRoutes.get('/auth/me', requireAuth, getMeHandler);
   authRoutes.post('/auth/change-password', requireAuth, changePasswordHandler);
-  authRoutes.post('/auth/refresh', refreshSessionHandler);
+  authRoutes.post('/auth/refresh', authRateLimiter, refreshSessionHandler);
   authRoutes.post('/auth/logout', logoutHandler);
 
   return authRoutes;
