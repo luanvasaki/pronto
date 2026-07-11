@@ -109,8 +109,8 @@ export function Topbar({
           {subtitle && <p className="mt-0.5 truncate text-[12.5px] text-text-secondary">{subtitle}</p>}
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-3.5">
-        <div ref={notificationsRef} className="relative hidden sm:block">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3.5">
+        <div ref={notificationsRef} className="relative">
           <button
             type="button"
             onClick={() => {
@@ -142,7 +142,7 @@ export function Topbar({
           </button>
 
           {isNotificationsOpen && (
-            <div className="absolute top-12 right-0 z-50 max-h-80 w-80 overflow-y-auto rounded-2xl border border-border bg-surface shadow-[0_8px_24px_rgba(0,0,0,0.16)]">
+            <div className="absolute top-12 right-0 z-50 max-h-80 w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-border bg-surface shadow-[0_8px_24px_rgba(0,0,0,0.16)]">
               {checkedInNotifications.length > 0 && (
                 <ul>
                   {checkedInNotifications.map((notification) => (

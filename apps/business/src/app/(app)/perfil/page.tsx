@@ -72,6 +72,15 @@ export default function PerfilPage() {
   const [ratingHistory, setRatingHistory] = useState<CompanyRatingHistoryEntry[]>([]);
   const [isLoadingRatingHistory, setIsLoadingRatingHistory] = useState(true);
 
+  // "Dados salvos." é sobre o último save — mexer em qualquer campo
+  // depois disso já é uma edição não salva, então o aviso não vale
+  // mais. Sem isso, a mensagem de sucesso ficava na tela mesmo depois
+  // de o usuário mudar algo e ainda não ter salvo de novo.
+  useEffect(() => {
+    setProfileSaved(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legalName, tradeName, cnpj, cpf, addressLabel, businessSegment, businessSegmentOther]);
+
   useEffect(() => {
     listSkillCategories()
       .then((data) => setCategories(data.categories))

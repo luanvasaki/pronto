@@ -3,7 +3,8 @@
 import { listSkillCategories, SkillCategory } from '@shift/shared';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { JobApplication, listJobApplications } from '../../../lib/applications-api';
+import { JobApplication } from '../../../lib/applications-api';
+import { fetchApplicationsByJobId } from '../../../lib/job-applications-summary';
 import { Job, listMyJobs } from '../../../lib/jobs-api';
 
 const WEEKDAY_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -63,10 +64,7 @@ export default function EscalaPage() {
         // que já tiveram alguma aprovação, pra não pedir candidatos de
         // toda vaga aberta sem necessidade.
         const relevantJobs = jobsResult.jobs.filter((job) => job.status !== 'cancelled');
-        const applicationsResults = await Promise.all(
-          relevantJobs.map((job) => listJobApplications(job.id).then((result) => [job.id, result.applications] as const)),
-        );
-        setApplicationsByJobId(Object.fromEntries(applicationsResults));
+        setApplicationsByJobId(await fetchApplicationsByJobId(relevantJobs));
       } catch {
         setError('Não foi possível carregar suas escalas.');
       } finally {

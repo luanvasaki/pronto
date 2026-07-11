@@ -80,6 +80,7 @@ export default function VagaCandidatosPage() {
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<{ id: string; message: string } | null>(null);
+  const [confirmingApproveId, setConfirmingApproveId] = useState<string | null>(null);
 
   const [ratingDrafts, setRatingDrafts] = useState<Record<string, RatingDraft>>({});
   const [ratingSubmittingId, setRatingSubmittingId] = useState<string | null>(null);
@@ -109,6 +110,7 @@ export default function VagaCandidatosPage() {
       // turno no backend, e só um refetch traz esse dado novo.
       const refreshed = await listJobApplications(jobId);
       setApplications(refreshed.applications);
+      setConfirmingApproveId(null);
     } catch (err) {
       setActionError({
         id: applicationId,
@@ -298,23 +300,49 @@ export default function VagaCandidatosPage() {
             )}
 
             {application.status === 'pending' && (
-              <div className="mt-3 flex gap-2">
-                <Button
-                  type="button"
-                  variant="success"
-                  isLoading={updatingId === application.id}
-                  onClick={() => handleDecision(application.id, 'approved')}
-                >
-                  Aprovar
-                </Button>
-                <Button
-                  type="button"
-                  variant="outlined"
-                  isLoading={updatingId === application.id}
-                  onClick={() => handleDecision(application.id, 'rejected')}
-                >
-                  Rejeitar
-                </Button>
+              <div className="mt-3">
+                {confirmingApproveId === application.id ? (
+                  <div className="flex flex-col gap-2 rounded-2xl border border-dashed border-success/40 p-3">
+                    <p className="text-sm text-text">
+                      Aprovar cria a escala de verdade pra {application.worker.fullName}. Confirma?
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="success"
+                        isLoading={updatingId === application.id}
+                        onClick={() => handleDecision(application.id, 'approved')}
+                      >
+                        Sim, aprovar
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingApproveId(null)}
+                        className="text-sm text-text-secondary underline underline-offset-2"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="success"
+                      onClick={() => setConfirmingApproveId(application.id)}
+                    >
+                      Aprovar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      isLoading={updatingId === application.id}
+                      onClick={() => handleDecision(application.id, 'rejected')}
+                    >
+                      Rejeitar
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 

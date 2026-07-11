@@ -198,6 +198,29 @@ describe('PerfilPage', () => {
     expect(await screen.findByText('Dados salvos.')).toBeInTheDocument();
   });
 
+  it('esconde "Dados salvos." assim que o usuário edita um campo depois de salvar', async () => {
+    upsertCompanyProfileMock.mockResolvedValue({
+      id: '1',
+      legalName: 'Bar do Zé Eventos Ltda',
+      tradeName: 'Bar do Zé',
+      cnpj: '11222333000181',
+      verificationStatus: 'approved',
+    });
+    const user = userEvent.setup();
+    renderWithProfile(BASE_PROFILE);
+
+    const legalNameInput = screen.getByLabelText('Razão social');
+    await user.clear(legalNameInput);
+    await user.type(legalNameInput, 'Bar do Zé Eventos Ltda');
+    await user.click(screen.getByRole('button', { name: /salvar dados da empresa/i }));
+
+    expect(await screen.findByText('Dados salvos.')).toBeInTheDocument();
+
+    await user.type(legalNameInput, ' Ltda');
+
+    expect(screen.queryByText('Dados salvos.')).not.toBeInTheDocument();
+  });
+
   it('pede pra digitar o ramo quando escolhe "Outro" e envia o texto', async () => {
     upsertCompanyProfileMock.mockResolvedValue({
       id: '1',

@@ -17,6 +17,15 @@ const PENDING_RATINGS_NOTIFICATIONS = [
 ];
 
 describe('Topbar', () => {
+  it('não esconde o sino em telas pequenas (sem classe "hidden" no container)', () => {
+    render(<Topbar title="Painel" onMenuClick={vi.fn()} pendingApplicationsCount={0} />);
+
+    const bellButton = screen.getByLabelText('Notificações');
+    const bellContainer = bellButton.parentElement;
+
+    expect(bellContainer?.className ?? '').not.toMatch(/\bhidden\b/);
+  });
+
   it('mostra o contador de notificações pendentes no sino', () => {
     render(<Topbar title="Painel" onMenuClick={vi.fn()} pendingApplicationsCount={2} />);
 

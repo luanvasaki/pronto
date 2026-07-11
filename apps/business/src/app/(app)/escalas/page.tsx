@@ -4,7 +4,8 @@ import { ApiError, listSkillCategories } from '@shift/shared';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
-import { JobApplication, listJobApplications } from '../../../lib/applications-api';
+import { JobApplication } from '../../../lib/applications-api';
+import { fetchApplicationsByJobId } from '../../../lib/job-applications-summary';
 import { cancelJob, Job, listMyJobs } from '../../../lib/jobs-api';
 
 const DAY_LABEL = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
@@ -56,10 +57,7 @@ export default function EscalasPage() {
         setCategoryNames(Object.fromEntries(categoriesResult.categories.map((c) => [c.id, c.name])));
 
         const openJobs = jobsResult.jobs.filter((job) => job.status === 'open');
-        const applicationsResults = await Promise.all(
-          openJobs.map((job) => listJobApplications(job.id).then((result) => [job.id, result.applications] as const)),
-        );
-        setApplicationsByJobId(Object.fromEntries(applicationsResults));
+        setApplicationsByJobId(await fetchApplicationsByJobId(openJobs));
       } catch {
         setError('Não foi possível carregar suas escalas.');
       } finally {

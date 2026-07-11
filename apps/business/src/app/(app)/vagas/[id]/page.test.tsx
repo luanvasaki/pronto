@@ -167,7 +167,21 @@ describe('VagaCandidatosPage', () => {
     expect(screen.queryByRole('button', { name: /aprovar/i })).not.toBeInTheDocument();
   });
 
-  it('aprova um candidato, recarrega a lista e mostra o turno criado', async () => {
+  it('pede confirmação antes de aprovar, e cancelar não chama a API', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [PENDING_APPLICATION] });
+    const user = userEvent.setup();
+
+    render(<VagaCandidatosPage />);
+    await user.click(await screen.findByRole('button', { name: /^aprovar$/i }));
+
+    expect(screen.getByText(/aprovar cria a escala de verdade/i)).toBeInTheDocument();
+    await user.click(screen.getByText('Cancelar'));
+
+    expect(screen.queryByText(/aprovar cria a escala de verdade/i)).not.toBeInTheDocument();
+    expect(updateApplicationStatusMock).not.toHaveBeenCalled();
+  });
+
+  it('aprova um candidato ao confirmar, recarrega a lista e mostra o turno criado', async () => {
     const approvedWithShift = {
       ...PENDING_APPLICATION,
       status: 'approved',
@@ -181,7 +195,8 @@ describe('VagaCandidatosPage', () => {
 
     render(<VagaCandidatosPage />);
     await screen.findByText('Ana Souza');
-    await user.click(screen.getByRole('button', { name: /aprovar/i }));
+    await user.click(screen.getByRole('button', { name: /^aprovar$/i }));
+    await user.click(screen.getByRole('button', { name: /sim, aprovar/i }));
 
     await waitFor(() => expect(screen.getByText('Aprovado')).toBeInTheDocument());
     expect(screen.getByText('Escala: Aguardando check-in')).toBeInTheDocument();
