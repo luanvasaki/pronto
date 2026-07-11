@@ -15,5 +15,13 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // Todo teste bate no mesmo Postgres (sem schema isolado por
+    // arquivo) — rodar os arquivos em paralelo deixava alguns poucos
+    // testes instáveis: fixture com o mesmo telefone/CNPJ reaproveitada
+    // sem querer entre dois arquivos diferentes, ou uma métrica global
+    // (ex.: getAdminMetrics) lendo uma linha que outro arquivo ainda
+    // não tinha limpado no afterEach. Sequencial é mais lento, mas sem
+    // esse tipo de falso-negativo no CI.
+    fileParallelism: false,
   },
 });

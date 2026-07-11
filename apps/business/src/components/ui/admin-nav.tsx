@@ -60,6 +60,7 @@ const NAV_ITEMS: AdminNavItem[] = [
 export interface AdminNavProps {
   isOpen: boolean;
   onClose: () => void;
+  pendingVerificationsCount?: number;
 }
 
 /**
@@ -71,8 +72,13 @@ export interface AdminNavProps {
  * é admin E dono de empresa. Quem não tem empresa cadastrada acaba
  * caindo em /cadastro sozinho (checagem já existe no layout do grupo
  * `(app)`), não precisa de tratamento especial aqui.
+ *
+ * Badge em "Verificações" repete o mesmo número do sino no topo — dois
+ * lugares pro mesmo aviso, de propósito: o sino chama atenção assim que
+ * a tela abre, o badge continua visível enquanto o admin navega por
+ * outras telas do painel.
  */
-export function AdminNav({ isOpen, onClose }: AdminNavProps) {
+export function AdminNav({ isOpen, onClose, pendingVerificationsCount = 0 }: AdminNavProps) {
   const pathname = usePathname();
 
   useEffect(() => {
@@ -100,6 +106,7 @@ export function AdminNav({ isOpen, onClose }: AdminNavProps) {
         <nav className="flex flex-col gap-1">
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.href;
+            const showBadge = item.href === '/admin/verificacoes' && pendingVerificationsCount > 0;
 
             return (
               <Link
@@ -114,6 +121,11 @@ export function AdminNav({ isOpen, onClose }: AdminNavProps) {
                   {item.icon}
                 </svg>
                 {item.label}
+                {showBadge && (
+                  <span className="ml-auto flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-white">
+                    {pendingVerificationsCount > 9 ? '9+' : pendingVerificationsCount}
+                  </span>
+                )}
               </Link>
             );
           })}
