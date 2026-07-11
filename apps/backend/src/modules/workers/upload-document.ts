@@ -57,5 +57,16 @@ export async function uploadDocument(
     throw new HttpError(500, 'Falha ao registrar documento.');
   }
 
+  // Reenviar depois de recusado volta o trabalhador pra fila de revisão
+  // — sem isso, kycStatus fica "rejected" até um admin revisar o
+  // documento novo (ver review-document.ts), sem sinalizar em lugar
+  // nenhum que já tem algo novo esperando revisão.
+  if (profile.kycStatus === 'rejected') {
+    await db
+      .update(workerProfiles)
+      .set({ kycStatus: 'pending', updatedAt: new Date() })
+      .where(eq(workerProfiles.userId, userId));
+  }
+
   return { id: document.id, status: document.status, type: document.type };
 }

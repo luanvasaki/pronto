@@ -2,6 +2,8 @@ import { ApiError } from '@shift/shared';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CompanyProfileDetails } from '../../../../lib/company-profile-api';
+import { CompanyProfileProvider } from '../../company-profile-context';
 import NovaVagaPage from './page';
 
 const pushMock = vi.fn();
@@ -37,6 +39,38 @@ function toDateTimeLocal(date: Date): string {
 const STARTS_AT = toDateTimeLocal(new Date(Date.now() + 24 * 60 * 60 * 1000));
 const ENDS_AT = toDateTimeLocal(new Date(Date.now() + 29 * 60 * 60 * 1000));
 
+const PROFILE: CompanyProfileDetails = {
+  id: 'company-1',
+  legalName: 'Bar do Zé Ltda',
+  tradeName: 'Bar do Zé',
+  personType: 'juridica',
+  cnpj: '11222333000181',
+  cpf: null,
+  logoUrl: null,
+  addressLabel: null,
+  businessSegment: null,
+  businessSegmentOther: null,
+  verificationStatus: 'approved',
+  avgRating: null,
+  avgCategoryScores: null,
+  totalJobsPosted: 0,
+  jobsPosted: 0,
+  shiftsCompleted: 0,
+  rehireRate: null,
+  jobsOpenedThisMonth: 0,
+  workersHiredThisMonth: 0,
+  topHiredWorkerName: null,
+  topHiredWorkerCount: 0,
+};
+
+function renderPage(profile: CompanyProfileDetails | null = PROFILE) {
+  return render(
+    <CompanyProfileProvider initialProfile={profile}>
+      <NovaVagaPage />
+    </CompanyProfileProvider>,
+  );
+}
+
 async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.selectOptions(screen.getByLabelText('Categoria'), 'cat-1');
   await user.click(screen.getByRole('button', { name: 'Não' }));
@@ -68,7 +102,7 @@ describe('NovaVagaPage', () => {
   });
 
   it('começa com o botão desabilitado', async () => {
-    render(<NovaVagaPage />);
+    renderPage();
 
     await screen.findByText('Garçom');
     expect(screen.getByRole('button', { name: /^publicar$/i })).toBeDisabled();
@@ -76,7 +110,7 @@ describe('NovaVagaPage', () => {
 
   it('pré-preenche o início com a data vinda da Escala (?data=)', async () => {
     searchParamsMock = new URLSearchParams({ data: '2026-08-15' });
-    render(<NovaVagaPage />);
+    renderPage();
 
     await screen.findByText('Garçom');
     expect(screen.getByLabelText('Início')).toHaveValue('2026-08-15T18:00');
@@ -84,7 +118,7 @@ describe('NovaVagaPage', () => {
 
   it('ignora um ?data= em formato inválido', async () => {
     searchParamsMock = new URLSearchParams({ data: 'não-é-uma-data' });
-    render(<NovaVagaPage />);
+    renderPage();
 
     await screen.findByText('Garçom');
     expect(screen.getByLabelText('Início')).toHaveValue('');
@@ -92,7 +126,7 @@ describe('NovaVagaPage', () => {
 
   it('habilita o botão quando o formulário fica completo e válido', async () => {
     const user = userEvent.setup();
-    render(<NovaVagaPage />);
+    renderPage();
     await screen.findByText('Garçom');
 
     await fillValidForm(user);
@@ -102,7 +136,7 @@ describe('NovaVagaPage', () => {
 
   it('mostra o que falta preencher quando o botão está desabilitado, incluindo a localização', async () => {
     const user = userEvent.setup();
-    render(<NovaVagaPage />);
+    renderPage();
     await screen.findByText('Garçom');
 
     await user.selectOptions(screen.getByLabelText('Categoria'), 'cat-1');
@@ -114,10 +148,25 @@ describe('NovaVagaPage', () => {
     expect(screen.getByText(/falta preencher:/i)).toHaveTextContent(/localização/i);
   });
 
+  it('avisa de verificação pendente antes de preencher o formulário, quando a empresa ainda não foi aprovada', async () => {
+    renderPage({ ...PROFILE, verificationStatus: 'pending' });
+
+    await screen.findByText('Garçom');
+    expect(screen.getByText('Verificação pendente')).toBeInTheDocument();
+    expect(screen.getByText(/não é possível publicar vagas até um admin aprovar/i)).toBeInTheDocument();
+  });
+
+  it('não avisa de verificação pendente quando a empresa já foi aprovada', async () => {
+    renderPage({ ...PROFILE, verificationStatus: 'approved' });
+
+    await screen.findByText('Garçom');
+    expect(screen.queryByText('Verificação pendente')).not.toBeInTheDocument();
+  });
+
   it('publica a vaga e navega pro painel quando a API responde bem', async () => {
     createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
     const user = userEvent.setup();
-    render(<NovaVagaPage />);
+    renderPage();
     await screen.findByText('Garçom');
 
     await fillValidForm(user);
@@ -132,7 +181,7 @@ describe('NovaVagaPage', () => {
   it('mostra a mensagem da API quando publicar falha', async () => {
     createJobMock.mockRejectedValue(new ApiError(400, 'Data de início precisa ser no futuro.'));
     const user = userEvent.setup();
-    render(<NovaVagaPage />);
+    renderPage();
     await screen.findByText('Garçom');
 
     await fillValidForm(user);
@@ -145,7 +194,7 @@ describe('NovaVagaPage', () => {
   it('envia experiência, vestimenta e ferramentas exigidas', async () => {
     createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
     const user = userEvent.setup();
-    render(<NovaVagaPage />);
+    renderPage();
     await screen.findByText('Garçom');
 
     await fillValidForm(user);
@@ -168,7 +217,7 @@ describe('NovaVagaPage', () => {
   it('envia a exigência de CNH quando escolhida como obrigatória', async () => {
     createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
     const user = userEvent.setup();
-    render(<NovaVagaPage />);
+    renderPage();
     await screen.findByText('Garçom');
 
     await fillValidForm(user);
@@ -209,7 +258,7 @@ describe('NovaVagaPage', () => {
       ],
     });
     const user = userEvent.setup();
-    render(<NovaVagaPage />);
+    renderPage();
     await screen.findByText('Garçom');
 
     await user.selectOptions(screen.getByLabelText(/usar vaga anterior como base/i), 'job-old');
@@ -247,7 +296,7 @@ describe('NovaVagaPage', () => {
       status: 'open',
     }));
     listMyJobsMock.mockResolvedValue({ jobs });
-    render(<NovaVagaPage />);
+    renderPage();
     await screen.findByText('Garçom');
 
     await screen.findByText('Garçom');
@@ -263,7 +312,7 @@ describe('NovaVagaPage', () => {
     createSkillCategoryMock.mockResolvedValue({ id: 'cat-new', name: 'Manobrista' });
     createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
     const user = userEvent.setup();
-    render(<NovaVagaPage />);
+    renderPage();
     await screen.findByText('Garçom');
 
     await user.selectOptions(screen.getByLabelText('Categoria'), '__new__');
@@ -289,7 +338,7 @@ describe('NovaVagaPage', () => {
   it('publica sem applicationsCloseAt quando o campo é deixado em branco (usa o padrão do backend)', async () => {
     createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
     const user = userEvent.setup();
-    render(<NovaVagaPage />);
+    renderPage();
     await screen.findByText('Garçom');
 
     await fillValidForm(user);
@@ -303,7 +352,7 @@ describe('NovaVagaPage', () => {
   it('envia o applicationsCloseAt escolhido pela empresa', async () => {
     createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
     const user = userEvent.setup();
-    render(<NovaVagaPage />);
+    renderPage();
     await screen.findByText('Garçom');
 
     await fillValidForm(user);
@@ -320,7 +369,7 @@ describe('NovaVagaPage', () => {
 
   it('desabilita o botão quando o prazo de candidatura é depois do início', async () => {
     const user = userEvent.setup();
-    render(<NovaVagaPage />);
+    renderPage();
     await screen.findByText('Garçom');
 
     await fillValidForm(user);
@@ -337,7 +386,7 @@ describe('NovaVagaPage', () => {
       configurable: true,
     });
     const user = userEvent.setup();
-    render(<NovaVagaPage />);
+    renderPage();
     await screen.findByText('Garçom');
 
     await user.click(screen.getByRole('button', { name: /usar minha localização atual/i }));

@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { documents, workerProfiles } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
@@ -23,8 +23,15 @@ export interface ReviewDocumentResult {
  *
  * Trabalhador manda dois documentos (identidade + selfie, ver
  * upload-document.ts) — rejeitar qualquer um dos dois já reprova a
- * verificação; aprovar só marca o perfil como aprovado quando TODOS
- * os documentos dele já estiverem aprovados.
+ * verificação; aprovar só marca o perfil como aprovado quando o MAIS
+ * RECENTE de cada tipo estiver aprovado.
+ *
+ * "Mais recente de cada tipo", não "todos os documentos já enviados":
+ * upload-document.ts nunca atualiza uma linha existente, sempre insere
+ * uma nova — reenviar um documento depois de rejeitado deixa a linha
+ * antiga rejeitada no banco pra sempre. Considerar o histórico inteiro
+ * faria um trabalhador rejeitado uma vez nunca mais conseguir chegar
+ * a "approved", mesmo reenviando e sendo aprovado depois.
  */
 export async function reviewDocument(
   adminUserId: string,
@@ -52,13 +59,23 @@ export async function reviewDocument(
     throw new HttpError(400, 'Esse documento já foi revisado.');
   }
 
-  const workerDocuments = await db.query.documents.findMany({ where: eq(documents.workerId, document.workerId) });
-  const newKycStatus =
-    status === 'rejected'
-      ? 'rejected'
-      : workerDocuments.every((workerDocument) => workerDocument.status === 'approved')
-        ? 'approved'
-        : 'pending';
+  const workerDocuments = await db.query.documents.findMany({
+    where: eq(documents.workerId, document.workerId),
+    orderBy: desc(documents.createdAt),
+  });
+  const latestByType = new Map<string, (typeof workerDocuments)[number]>();
+  for (const workerDocument of workerDocuments) {
+    if (!latestByType.has(workerDocument.type)) {
+      latestByType.set(workerDocument.type, workerDocument);
+    }
+  }
+  const latestDocuments = [...latestByType.values()];
+  const hasBothTypes = latestByType.has('identity') && latestByType.has('selfie');
+  const anyLatestRejected = latestDocuments.some((workerDocument) => workerDocument.status === 'rejected');
+  const allLatestApproved =
+    hasBothTypes && latestDocuments.every((workerDocument) => workerDocument.status === 'approved');
+
+  const newKycStatus = anyLatestRejected ? 'rejected' : allLatestApproved ? 'approved' : 'pending';
 
   await db
     .update(workerProfiles)

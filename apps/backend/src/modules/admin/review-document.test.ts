@@ -36,14 +36,17 @@ describe('reviewDocument', () => {
     ).rejects.toThrow('não encontrado');
   });
 
-  it('aprova o documento e sincroniza o kycStatus do trabalhador', async () => {
+  it('aprova o documento, mas só sincroniza o kycStatus como aprovado quando a selfie também estiver', async () => {
     const { admin, document, worker } = await setupPendingDocument();
 
     const result = await reviewDocument(admin.id, document.id, 'approved');
 
     expect(result.status).toBe('approved');
+    // Só a identidade foi enviada — falta a selfie, então o perfil não
+    // pode virar "approved" ainda (bug antigo: um array de 1 documento
+    // passava no every() sozinho e marcava aprovado sem selfie nenhuma).
     const profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
-    expect(profile?.kycStatus).toBe('approved');
+    expect(profile?.kycStatus).toBe('pending');
   });
 
   it('rejeita revisar o mesmo documento duas vezes', async () => {
@@ -81,5 +84,27 @@ describe('reviewDocument', () => {
 
     const profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
     expect(profile?.kycStatus).toBe('rejected');
+  });
+
+  it('chega a aprovado depois de reenviar o documento rejeitado, mesmo com a linha antiga rejeitada no banco', async () => {
+    const { admin, document: identityDocument, worker } = await setupPendingDocument();
+    const [selfieDocument] = await db
+      .insert(documents)
+      .values({ workerId: worker.id, fileUrl: 'documents/x/selfie.jpg', type: 'selfie' })
+      .returning();
+
+    // Documento de identidade rejeitado — trabalhador reenvia (nova
+    // linha, upload-document.ts nunca atualiza a antiga).
+    await reviewDocument(admin.id, identityDocument.id, 'rejected');
+    const [resentIdentityDocument] = await db
+      .insert(documents)
+      .values({ workerId: worker.id, fileUrl: 'documents/x/y-v2.jpg', type: 'identity' })
+      .returning();
+
+    await reviewDocument(admin.id, resentIdentityDocument.id, 'approved');
+    await reviewDocument(admin.id, selfieDocument.id, 'approved');
+
+    const profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
+    expect(profile?.kycStatus).toBe('approved');
   });
 });

@@ -11,9 +11,11 @@ vi.mock('next/navigation', () => ({
 
 const uploadWorkerDocumentMock = vi.fn();
 const uploadWorkerSelfieMock = vi.fn();
+const getWorkerProfileMock = vi.fn();
 vi.mock('../../../lib/worker-profile-api', () => ({
   uploadWorkerDocument: (...args: unknown[]) => uploadWorkerDocumentMock(...args),
   uploadWorkerSelfie: (...args: unknown[]) => uploadWorkerSelfieMock(...args),
+  getWorkerProfile: (...args: unknown[]) => getWorkerProfileMock(...args),
 }));
 
 function createTestFile(name = 'rg.jpg'): File {
@@ -30,6 +32,7 @@ describe('DocumentoPage', () => {
     pushMock.mockClear();
     uploadWorkerDocumentMock.mockReset();
     uploadWorkerSelfieMock.mockReset();
+    getWorkerProfileMock.mockReset().mockResolvedValue({ hasDocument: false, hasSelfie: false });
   });
 
   it('começa com o botão desabilitado', () => {
@@ -104,5 +107,22 @@ describe('DocumentoPage', () => {
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/inicio'));
     expect(uploadWorkerDocumentMock).toHaveBeenCalledTimes(1);
     expect(uploadWorkerSelfieMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('não reenvia o documento se a tela recarregou depois dele já ter subido', async () => {
+    // Estado local zerou (recarregou a página), mas o perfil no servidor
+    // já tem o documento — a checagem inicial evita reenviar e duplicar.
+    getWorkerProfileMock.mockResolvedValue({ hasDocument: true, hasSelfie: false });
+    uploadWorkerSelfieMock.mockResolvedValue({ id: '2', status: 'pending', type: 'selfie' });
+    const user = userEvent.setup();
+    render(<DocumentoPage />);
+
+    await uploadBoth(user);
+    await waitFor(() => expect(screen.getByRole('button', { name: /enviar/i })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: /enviar/i }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/inicio'));
+    expect(uploadWorkerDocumentMock).not.toHaveBeenCalled();
+    expect(uploadWorkerSelfieMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -42,5 +42,16 @@ export async function uploadCompanyDocument(
     throw new HttpError(500, 'Falha ao registrar documento.');
   }
 
+  // Reenviar depois de recusado volta a empresa pra fila de revisão —
+  // sem isso, uma empresa rejeitada uma vez nunca mais aparece pro
+  // admin revisar, mesmo corrigindo o documento (e agora, com
+  // create-job.ts exigindo aprovação, ficaria travada pra sempre).
+  if (company.verificationStatus === 'rejected') {
+    await db
+      .update(companies)
+      .set({ verificationStatus: 'pending', updatedAt: new Date() })
+      .where(eq(companies.id, company.id));
+  }
+
   return { id: document.id };
 }

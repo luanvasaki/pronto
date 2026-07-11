@@ -95,6 +95,19 @@ describe('EditarVagaPage', () => {
     expect(screen.getByDisplayValue('Câmera própria')).toBeInTheDocument();
   });
 
+  it('mostra o que falta preencher quando o botão de salvar está desabilitado', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    const user = userEvent.setup();
+
+    render(<EditarVagaPage />);
+    await screen.findByDisplayValue('Vaga de garçom pra evento');
+
+    await user.clear(screen.getByLabelText('Descrição'));
+
+    expect(screen.getByText(/falta preencher:/i)).toHaveTextContent(/descrição/i);
+    expect(screen.getByRole('button', { name: /salvar alterações/i })).toBeDisabled();
+  });
+
   it('mostra erro quando a vaga não é encontrada', async () => {
     listMyJobsMock.mockResolvedValue({ jobs: [] });
 

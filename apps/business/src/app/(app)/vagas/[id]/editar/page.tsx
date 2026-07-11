@@ -114,22 +114,28 @@ export default function EditarVagaPage() {
     PAY_AMOUNT_REGEX.test(payAmount) &&
     payAmountNumber > 0;
   const estimateTotal = positionsTotalNumber * payAmountNumber;
-  const isValid =
-    categoryId !== '' &&
-    requiresExperience !== null &&
-    description.trim().length >= 10 &&
-    addressLabel.trim().length >= 2 &&
-    lat !== null &&
-    lng !== null &&
-    Number.isInteger(positionsTotalNumber) &&
-    positionsTotalNumber >= 1 &&
-    PAY_AMOUNT_REGEX.test(payAmount) &&
-    Number(payAmount) > 0 &&
-    startsAt !== '' &&
-    endsAt !== '' &&
-    new Date(endsAt) > new Date(startsAt) &&
-    new Date(startsAt) > new Date() &&
-    (applicationsCloseAt === '' || new Date(applicationsCloseAt) <= new Date(startsAt));
+  // Mesmo motivo de vagas/nova: sem isso o botão "Salvar" fica cinza sem
+  // nenhuma pista de qual campo falta (localização é a mais fácil de
+  // esquecer, já que fica num botão separado do campo de endereço).
+  const missingFields: string[] = [];
+  if (categoryId === '') missingFields.push('categoria');
+  if (requiresExperience === null) missingFields.push('exigência de experiência');
+  if (description.trim().length < 10) missingFields.push('descrição');
+  if (addressLabel.trim().length < 2) missingFields.push('endereço');
+  if (lat === null || lng === null) missingFields.push('localização (clique em "Usar minha localização atual")');
+  if (!Number.isInteger(positionsTotalNumber) || positionsTotalNumber < 1) missingFields.push('número de vagas');
+  if (!PAY_AMOUNT_REGEX.test(payAmount) || Number(payAmount) <= 0) missingFields.push('valor por pessoa');
+  if (startsAt === '') missingFields.push('início');
+  if (endsAt === '') missingFields.push('término');
+  if (startsAt !== '' && endsAt !== '' && !(new Date(endsAt) > new Date(startsAt))) {
+    missingFields.push('término depois do início');
+  }
+  if (startsAt !== '' && !(new Date(startsAt) > new Date())) missingFields.push('início no futuro');
+  if (applicationsCloseAt !== '' && startsAt !== '' && new Date(applicationsCloseAt) > new Date(startsAt)) {
+    missingFields.push('prazo de candidatura até o início');
+  }
+
+  const isValid = missingFields.length === 0;
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -410,6 +416,8 @@ export default function EditarVagaPage() {
         )}
 
         {error && <p className="text-sm text-danger">{error}</p>}
+
+        {!isValid && <p className="text-xs text-text-secondary">Falta preencher: {missingFields.join(', ')}.</p>}
 
         <Button type="submit" disabled={!isValid} isLoading={isSubmitting}>
           Salvar alterações

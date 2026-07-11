@@ -107,4 +107,26 @@ describe('uploadDocument', () => {
 
     await expect(uploadDocument(user.id, file, storage, 'selfie')).rejects.toThrow('precisa ser uma foto');
   });
+
+  it('volta o kycStatus pra "pending" ao reenviar depois de rejeitado', async () => {
+    const user = await createTestUser();
+    await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Beatriz Nunes', kycStatus: 'rejected' });
+    const file = { buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9]), mimetype: 'image/jpeg', size: 4 };
+
+    await uploadDocument(user.id, file, storage);
+
+    const profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, user.id) });
+    expect(profile?.kycStatus).toBe('pending');
+  });
+
+  it('não mexe no kycStatus quando ele já está "pending"', async () => {
+    const user = await createTestUser();
+    await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Beatriz Nunes' });
+    const file = { buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9]), mimetype: 'image/jpeg', size: 4 };
+
+    await uploadDocument(user.id, file, storage);
+
+    const profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, user.id) });
+    expect(profile?.kycStatus).toBe('pending');
+  });
 });

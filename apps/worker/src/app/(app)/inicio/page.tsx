@@ -285,6 +285,28 @@ export default function InicioPage() {
         </Link>
       )}
 
+      {profile && profile.kycStatus !== 'approved' && (
+        <Link
+          href="/perfil"
+          className={`mb-4 block rounded-[18px] border p-4 ${
+            profile.kycStatus === 'rejected'
+              ? 'border-danger/30 bg-danger/10 text-danger'
+              : 'border-warning/30 bg-warning/10 text-warning'
+          }`}
+        >
+          <p className="font-heading text-[15px] font-bold">
+            {profile.kycStatus === 'rejected'
+              ? 'Documento recusado — você ainda não pode se candidatar'
+              : 'Documento em análise — você ainda não pode se candidatar'}
+          </p>
+          <p className="mt-1 text-[13px]">
+            {profile.kycStatus === 'rejected'
+              ? 'Toque pra ver o status no seu perfil.'
+              : 'Assim que for aprovado, as vagas ficam liberadas pra você.'}
+          </p>
+        </Link>
+      )}
+
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-text-secondary">{greeting()}</p>

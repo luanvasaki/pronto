@@ -89,4 +89,38 @@ describe('uploadCompanyDocument', () => {
 
     await expect(uploadCompanyDocument(user.id, file, storage)).rejects.toThrow('não é uma imagem');
   });
+
+  it('reenviar documento depois de recusado volta a empresa pra fila de revisão', async () => {
+    const user = await createTestUser();
+    const company = await upsertCompanyProfile(user.id, {
+      legalName: 'Ana Souza',
+      tradeName: 'Ana Freelas',
+      personType: 'fisica',
+      cpf: TEST_CPF,
+    });
+    await db.update(companies).set({ verificationStatus: 'rejected' }).where(eq(companies.id, company.id));
+    const file = { buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9]), mimetype: 'image/jpeg', size: 4 };
+
+    await uploadCompanyDocument(user.id, file, storage);
+
+    const updated = await db.query.companies.findFirst({ where: eq(companies.id, company.id) });
+    expect(updated?.verificationStatus).toBe('pending');
+  });
+
+  it('não mexe no status quando a empresa já está aprovada', async () => {
+    const user = await createTestUser();
+    const company = await upsertCompanyProfile(user.id, {
+      legalName: 'Ana Souza',
+      tradeName: 'Ana Freelas',
+      personType: 'fisica',
+      cpf: TEST_CPF,
+    });
+    await db.update(companies).set({ verificationStatus: 'approved' }).where(eq(companies.id, company.id));
+    const file = { buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9]), mimetype: 'image/jpeg', size: 4 };
+
+    await uploadCompanyDocument(user.id, file, storage);
+
+    const updated = await db.query.companies.findFirst({ where: eq(companies.id, company.id) });
+    expect(updated?.verificationStatus).toBe('approved');
+  });
 });

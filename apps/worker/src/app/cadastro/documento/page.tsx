@@ -1,11 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { ApiError } from '@shift/shared';
 import { Button } from '../../../components/ui/button';
 import { Logo } from '../../../components/ui/logo';
-import { uploadWorkerDocument, uploadWorkerSelfie } from '../../../lib/worker-profile-api';
+import { getWorkerProfile, uploadWorkerDocument, uploadWorkerSelfie } from '../../../lib/worker-profile-api';
 
 export default function DocumentoPage() {
   const router = useRouter();
@@ -15,6 +15,21 @@ export default function DocumentoPage() {
   const [error, setError] = useState<string | null>(null);
   const [documentUploaded, setDocumentUploaded] = useState(false);
   const [selfieUploaded, setSelfieUploaded] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+
+  // Cobre não só "tentar de novo depois de um erro" (mesmo carregamento
+  // de página) mas também "recarregou ou saiu e voltou no meio do
+  // caminho" — sem isso, um documento já enviado com sucesso seria
+  // reenviado (e duplicado) só porque o estado local zerou.
+  useEffect(() => {
+    getWorkerProfile()
+      .then((profile) => {
+        setDocumentUploaded(profile.hasDocument);
+        setSelfieUploaded(profile.hasSelfie);
+      })
+      .catch(() => undefined)
+      .finally(() => setIsCheckingStatus(false));
+  }, []);
 
   const isValid = Boolean(documentFile && selfieFile);
 
@@ -23,7 +38,7 @@ export default function DocumentoPage() {
   // upsert), e reenviar duplicaria o documento pendente de revisão.
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
-    if (!isValid || isSubmitting) return;
+    if (!isValid || isSubmitting || isCheckingStatus) return;
 
     setError(null);
     setIsSubmitting(true);
@@ -94,7 +109,7 @@ export default function DocumentoPage() {
 
         {error && <p className="text-sm text-danger">{error}</p>}
 
-        <Button type="submit" disabled={!isValid} isLoading={isSubmitting}>
+        <Button type="submit" disabled={!isValid || isCheckingStatus} isLoading={isSubmitting}>
           Enviar
         </Button>
       </form>

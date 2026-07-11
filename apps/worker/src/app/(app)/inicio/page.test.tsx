@@ -130,6 +130,41 @@ describe('InicioPage', () => {
     expect(screen.getByText('Campolim, Sorocaba')).toBeInTheDocument();
   });
 
+  it('avisa que o documento está em análise e ainda não pode se candidatar', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [] });
+
+    render(
+      <WorkerProfileProvider initialProfile={{ ...PROFILE, kycStatus: 'pending' }}>
+        <InicioPage />
+      </WorkerProfileProvider>,
+    );
+
+    expect(await screen.findByText(/documento em análise/i)).toBeInTheDocument();
+    expect(screen.getByText(/ainda não pode se candidatar/i)).toBeInTheDocument();
+  });
+
+  it('avisa que o documento foi recusado, com aviso diferente do de análise', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [] });
+
+    render(
+      <WorkerProfileProvider initialProfile={{ ...PROFILE, kycStatus: 'rejected' }}>
+        <InicioPage />
+      </WorkerProfileProvider>,
+    );
+
+    expect(await screen.findByText(/documento recusado/i)).toBeInTheDocument();
+  });
+
+  it('não mostra aviso de documento quando já está aprovado', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [] });
+
+    renderPage();
+
+    await screen.findByText('Ana Souza');
+    expect(screen.queryByText(/documento em análise/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/documento recusado/i)).not.toBeInTheDocument();
+  });
+
   it('alterna a disponibilidade e mantém entre remontagens (localStorage)', async () => {
     listNearbyJobsMock.mockResolvedValue({ jobs: [] });
     const user = userEvent.setup();

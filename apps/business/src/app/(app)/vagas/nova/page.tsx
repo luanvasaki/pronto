@@ -7,6 +7,7 @@ import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { getCurrentPosition } from '../../../../lib/geolocation';
 import { createJob, Job, listMyJobs } from '../../../../lib/jobs-api';
+import { useCompanyProfile } from '../../company-profile-context';
 
 const PAY_AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
 const NEW_CATEGORY_OPTION = '__new__';
@@ -30,6 +31,7 @@ export default function NovaVagaPage() {
 function NovaVagaForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { profile } = useCompanyProfile();
 
   const [categories, setCategories] = useState<SkillCategory[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
@@ -197,6 +199,16 @@ function NovaVagaForm() {
         <p className="text-[15px] text-text-secondary">
           Preencha os detalhes da escala que você precisa cobrir.
         </p>
+
+        {profile && profile.verificationStatus !== 'approved' && (
+          <div className="rounded-[18px] border border-warning/30 bg-warning/10 p-4">
+            <p className="font-heading text-[15px] font-bold text-warning">Verificação pendente</p>
+            <p className="mt-1 text-[13.5px] text-warning">
+              Sua empresa ainda não foi verificada — não é possível publicar vagas até um admin aprovar o
+              cadastro. Você pode preencher o formulário, mas a publicação vai ser recusada até lá.
+            </p>
+          </div>
+        )}
 
         {previousJobs.length > 0 && (
           <div>
