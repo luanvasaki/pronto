@@ -11,7 +11,7 @@ import { getCompanyProfile } from './get-company-profile';
 
 // Fixtures únicas entre arquivos de teste (ver README).
 const TEST_PHONE = '+5511966661095';
-const TEST_CNPJ = '11222333000703';
+const TEST_CNPJ = '11222333007003';
 const WORKER_PHONE = '+5511966661096';
 const SECOND_WORKER_PHONE = '+5511966661097';
 const TEST_CATEGORY_NAME = 'Categoria de teste — get-company-profile';

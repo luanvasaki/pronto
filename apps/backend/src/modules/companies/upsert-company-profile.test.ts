@@ -8,9 +8,9 @@ import { upsertCompanyProfile } from './upsert-company-profile';
 const TEST_PHONE = '+5511966660002';
 const OTHER_PHONE = '+5511966660003';
 const CNPJ_A = '11222333000181';
-const CNPJ_B = '11222333000182';
-const CPF_A = '11122233344';
-const CPF_B = '55566677788';
+const CNPJ_B = '11222333000262';
+const CPF_A = '11122233396';
+const CPF_B = '55566677720';
 
 async function createTestUser(phone: string) {
   const [user] = await db.insert(users).values({ phone }).returning();
@@ -45,6 +45,14 @@ describe('upsertCompanyProfile', () => {
 
     await expect(
       upsertCompanyProfile(user.id, { legalName: 'Bar Ltda', tradeName: 'Bar', cnpj: '123' }),
+    ).rejects.toThrow('CNPJ inválido');
+  });
+
+  it('rejeita CNPJ com 14 dígitos mas dígito verificador inválido', async () => {
+    const user = await createTestUser(TEST_PHONE);
+
+    await expect(
+      upsertCompanyProfile(user.id, { legalName: 'Bar Ltda', tradeName: 'Bar', cnpj: '11111111111111' }),
     ).rejects.toThrow('CNPJ inválido');
   });
 
@@ -187,6 +195,19 @@ describe('upsertCompanyProfile', () => {
         tradeName: 'Ana Freelas',
         personType: 'fisica',
         cnpj: CNPJ_A,
+      }),
+    ).rejects.toThrow('CPF inválido');
+  });
+
+  it('rejeita CPF com 11 dígitos mas dígito verificador inválido', async () => {
+    const user = await createTestUser(TEST_PHONE);
+
+    await expect(
+      upsertCompanyProfile(user.id, {
+        legalName: 'Ana Souza',
+        tradeName: 'Ana Freelas',
+        personType: 'fisica',
+        cpf: '11111111111',
       }),
     ).rejects.toThrow('CPF inválido');
   });

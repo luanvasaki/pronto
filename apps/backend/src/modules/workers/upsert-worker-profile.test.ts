@@ -9,8 +9,8 @@ const TEST_PHONE = '+5511966660001';
 const OTHER_PHONE = '+5511966660071';
 const CATEGORY_A = 'Categoria de teste — upsert A';
 const CATEGORY_B = 'Categoria de teste — upsert B';
-const TEST_CPF = '11122233344';
-const OTHER_CPF = '55566677788';
+const TEST_CPF = '11122233396';
+const OTHER_CPF = '55566677720';
 const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
 const TEST_WORKER_PHONE = '11912345678';
 
@@ -208,6 +208,15 @@ describe('upsertWorkerProfile', () => {
 
     await expect(
       upsertWorkerProfile(user.id, { fullName: 'Ana Souza', categoryIds: [category.id], cpf: '123' }),
+    ).rejects.toThrow('CPF inválido');
+  });
+
+  it('rejeita CPF com 11 dígitos mas dígito verificador inválido', async () => {
+    const user = await createTestUser();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+    await expect(
+      upsertWorkerProfile(user.id, { fullName: 'Ana Souza', categoryIds: [category.id], cpf: '11111111111' }),
     ).rejects.toThrow('CPF inválido');
   });
 
