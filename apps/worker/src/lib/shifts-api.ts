@@ -28,6 +28,7 @@ export interface Shift {
   checkOutLat: number | null;
   checkOutLng: number | null;
   job: Job;
+  companyName: string;
   payment: Payment | null;
   ratings: ShiftRatings;
 }

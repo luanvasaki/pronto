@@ -225,4 +225,48 @@ describe('upsertCompanyProfile', () => {
       }),
     ).rejects.toThrow('Esse CPF já está cadastrado');
   });
+
+  it('volta pra "pending" quando a razão social muda numa empresa já aprovada', async () => {
+    const user = await createTestUser(TEST_PHONE);
+    await upsertCompanyProfile(user.id, { legalName: 'Bar do Zé Ltda', tradeName: 'Bar do Zé', cnpj: CNPJ_A });
+    await db.update(companies).set({ verificationStatus: 'approved' }).where(eq(companies.ownerUserId, user.id));
+
+    const updated = await upsertCompanyProfile(user.id, {
+      legalName: 'Bar do Zé Eventos Ltda',
+      tradeName: 'Bar do Zé',
+      cnpj: CNPJ_A,
+    });
+
+    expect(updated.verificationStatus).toBe('pending');
+  });
+
+  it('volta pra "pending" quando o CNPJ muda numa empresa já aprovada', async () => {
+    const user = await createTestUser(TEST_PHONE);
+    await upsertCompanyProfile(user.id, { legalName: 'Bar do Zé Ltda', tradeName: 'Bar do Zé', cnpj: CNPJ_A });
+    await db.update(companies).set({ verificationStatus: 'approved' }).where(eq(companies.ownerUserId, user.id));
+
+    const updated = await upsertCompanyProfile(user.id, {
+      legalName: 'Bar do Zé Ltda',
+      tradeName: 'Bar do Zé',
+      cnpj: CNPJ_B,
+    });
+
+    expect(updated.verificationStatus).toBe('pending');
+  });
+
+  it('não mexe na verificação quando só endereço/ramo mudam numa empresa já aprovada', async () => {
+    const user = await createTestUser(TEST_PHONE);
+    await upsertCompanyProfile(user.id, { legalName: 'Bar do Zé Ltda', tradeName: 'Bar do Zé', cnpj: CNPJ_A });
+    await db.update(companies).set({ verificationStatus: 'approved' }).where(eq(companies.ownerUserId, user.id));
+
+    const updated = await upsertCompanyProfile(user.id, {
+      legalName: 'Bar do Zé Ltda',
+      tradeName: 'Bar do Zé',
+      cnpj: CNPJ_A,
+      addressLabel: 'Vila Madalena, São Paulo',
+      businessSegment: 'bar',
+    });
+
+    expect(updated.verificationStatus).toBe('approved');
+  });
 });

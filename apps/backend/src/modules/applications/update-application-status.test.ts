@@ -18,7 +18,7 @@ const TOMORROW_PLUS_5H = new Date(TOMORROW.getTime() + 5 * 60 * 60 * 1000);
 
 async function setup(positionsTotal = 2) {
   const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-  await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza' });
+  await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
   const [company] = await db
     .insert(companies)
@@ -144,7 +144,7 @@ describe('updateApplicationStatus', () => {
   it('rejeita aprovar candidatura pra vaga que já está preenchida', async () => {
     const { owner, job, application } = await setup(1);
     const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: otherWorker.id, fullName: 'Beatriz Lima' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: otherWorker.id, fullName: 'Beatriz Lima' });
     const otherApplication = await createApplication(otherWorker.id, job.id);
 
     await updateApplicationStatus(owner.id, application.id, 'approved');
@@ -163,10 +163,43 @@ describe('updateApplicationStatus', () => {
     expect(refreshedOtherApplication?.status).toBe('pending');
   });
 
+  it('em corrida de duas aprovações pra 1 vaga, a que perde fica "pending" (não "approved" sem turno)', async () => {
+    const { owner, job, application } = await setup(1);
+    const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: otherWorker.id, fullName: 'Beatriz Lima' });
+    const otherApplication = await createApplication(otherWorker.id, job.id);
+
+    const results = await Promise.allSettled([
+      updateApplicationStatus(owner.id, application.id, 'approved'),
+      updateApplicationStatus(owner.id, otherApplication.id, 'approved'),
+    ]);
+
+    const fulfilled = results.filter((r) => r.status === 'fulfilled');
+    const rejected = results.filter((r) => r.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+
+    const updatedJob = await db.query.jobs.findFirst({ where: eq(jobs.id, job.id) });
+    expect(updatedJob?.positionsFilled).toBe(1);
+
+    // A que perdeu a corrida não pode ter ficado "approved" sem turno —
+    // ou ela reverteu pra "pending" (transação desfeita) ou nunca chegou
+    // a mudar de status; o que não pode acontecer é "approved" órfã.
+    const [losingApplication] = await Promise.all(
+      [application, otherApplication].map((a) =>
+        db.query.applications.findFirst({ where: eq(applications.id, a.id) }),
+      ),
+    ).then((rows) => rows.filter((row) => row?.status === 'pending'));
+    expect(losingApplication?.status).toBe('pending');
+
+    const shiftsForJob = await db.query.shifts.findMany({ where: eq(shifts.jobId, job.id) });
+    expect(shiftsForJob).toHaveLength(1);
+  });
+
   it('ainda permite rejeitar uma candidatura mesmo com a vaga já preenchida', async () => {
     const { owner, job, application } = await setup(1);
     const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: otherWorker.id, fullName: 'Beatriz Lima' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: otherWorker.id, fullName: 'Beatriz Lima' });
     const otherApplication = await createApplication(otherWorker.id, job.id);
 
     await updateApplicationStatus(owner.id, application.id, 'approved');

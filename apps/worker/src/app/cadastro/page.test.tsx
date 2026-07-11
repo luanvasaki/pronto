@@ -38,6 +38,8 @@ const NO_GOOGLE_PHOTO_USER = { id: 'u1', email: 'ana@example.com', status: 'acti
 
 describe('CadastroPage', () => {
   const originalCreateObjectURL = URL.createObjectURL;
+  const originalRevokeObjectURL = URL.revokeObjectURL;
+  let createObjectURLCallCount = 0;
 
   beforeEach(() => {
     pushMock.mockClear();
@@ -46,11 +48,14 @@ describe('CadastroPage', () => {
     upsertWorkerProfileMock.mockReset();
     uploadWorkerPhotoMock.mockReset();
     createSkillCategoryMock.mockReset();
-    URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
+    createObjectURLCallCount = 0;
+    URL.createObjectURL = vi.fn().mockImplementation(() => `blob:mock-url-${createObjectURLCallCount++}`);
+    URL.revokeObjectURL = vi.fn();
   });
 
   afterEach(() => {
     URL.createObjectURL = originalCreateObjectURL;
+    URL.revokeObjectURL = originalRevokeObjectURL;
   });
 
   it('carrega e mostra as categorias', async () => {
@@ -93,6 +98,36 @@ describe('CadastroPage', () => {
     const file = new File(['foto'], 'foto.jpg', { type: 'image/jpeg' });
     await user.upload(screen.getByLabelText(/adicionar foto/i), file);
     expect(screen.getByRole('button', { name: /continuar/i })).toBeEnabled();
+  });
+
+  it('libera a URL do blob anterior ao trocar de foto, e a última ao desmontar', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<CadastroPage />);
+    await screen.findByLabelText('Garçom');
+
+    const input = screen.getByLabelText(/adicionar foto/i);
+    await user.upload(input, new File(['foto1'], 'foto1.jpg', { type: 'image/jpeg' }));
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+
+    await user.upload(input, new File(['foto2'], 'foto2.jpg', { type: 'image/jpeg' }));
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url-0');
+    expect(URL.revokeObjectURL).toHaveBeenCalledTimes(1);
+
+    unmount();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url-1');
+    expect(URL.revokeObjectURL).toHaveBeenCalledTimes(2);
+  });
+
+  it('não tenta revogar a foto do Google (não é um blob local)', async () => {
+    getCurrentUserMock.mockResolvedValue({
+      user: { ...NO_GOOGLE_PHOTO_USER, googlePhotoUrl: 'https://lh3.googleusercontent.com/foto' },
+    });
+    const { unmount } = render(<CadastroPage />);
+    await screen.findByText(/trocar foto/i);
+
+    unmount();
+
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
   });
 
   it('mostra o que falta preencher quando o formulário está incompleto', async () => {

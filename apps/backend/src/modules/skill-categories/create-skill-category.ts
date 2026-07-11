@@ -8,6 +8,16 @@ export interface SkillCategoryResult {
   name: string;
 }
 
+/** Mesmo motivo/padrão de create-application.ts — fecha a corrida de dois pedidos simultâneos da mesma categoria nova. */
+function isUniqueViolation(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const code = (error as { code?: unknown }).code;
+  const causeCode = (error.cause as { code?: unknown } | undefined)?.code;
+  return code === '23505' || causeCode === '23505';
+}
+
 /**
  * Empresa ou trabalhador cria uma categoria na hora de publicar/se
  * cadastrar, quando nenhuma das existentes serve — fica usável
@@ -38,15 +48,31 @@ export async function createSkillCategory(userId: string, name: string | undefin
     return { id: existing.id, name: existing.name };
   }
 
-  const [category] = await db
-    .insert(skillCategories)
-    .values({
-      name: trimmedName,
-      status: 'pending',
-      createdByCompanyId: company?.id,
-      createdByWorkerId: workerProfile?.userId,
-    })
-    .returning();
+  let category;
+  try {
+    [category] = await db
+      .insert(skillCategories)
+      .values({
+        name: trimmedName,
+        status: 'pending',
+        createdByCompanyId: company?.id,
+        createdByWorkerId: workerProfile?.userId,
+      })
+      .returning();
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      // Duas pessoas pedindo a mesma categoria nova ao mesmo tempo —
+      // quem perdeu a corrida do índice único reaproveita a que a
+      // primeira acabou de criar, mesmo espírito do `existing` acima.
+      const raceWinner = await db.query.skillCategories.findFirst({
+        where: sql`lower(${skillCategories.name}) = lower(${trimmedName})`,
+      });
+      if (raceWinner) {
+        return { id: raceWinner.id, name: raceWinner.name };
+      }
+    }
+    throw error;
+  }
   if (!category) {
     throw new HttpError(500, 'Não foi possível criar a categoria.');
   }

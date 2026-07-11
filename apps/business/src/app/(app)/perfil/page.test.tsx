@@ -113,7 +113,7 @@ describe('PerfilPage', () => {
     expect(await screen.findByText('Avaliações recebidas')).toBeInTheDocument();
     expect(screen.getByText('Rafael Lima')).toBeInTheDocument();
     expect(screen.getByText('★ 4')).toBeInTheDocument();
-    expect(screen.getByText('"Endereço claro e pagamento em dia."')).toBeInTheDocument();
+    expect(screen.getByText('“Endereço claro e pagamento em dia.”')).toBeInTheDocument();
     expect(screen.getByText('★4 Pontualidade no pagamento')).toBeInTheDocument();
   });
 

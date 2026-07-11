@@ -137,49 +137,57 @@ export async function upsertWorkerProfile(
     photoUrl = input.photoUrl;
   }
 
-  const [profile] = await db
-    .insert(workerProfiles)
-    .values({
-      userId,
-      fullName,
-      photoUrl,
-      bio: bio || null,
-      cpf: cpf || null,
-      homeAddressFull: homeAddressFull || null,
-      phone: phone || null,
-      cnhCategory,
-    })
-    .onConflictDoUpdate({
-      target: workerProfiles.userId,
-      // bio/cpf/homeAddressFull/phone/cnhCategory só entram no UPDATE
-      // quando enviados de verdade — editar só o nome ou as categorias
-      // não pode apagar valor já salvo.
-      set: {
+  // Upsert do perfil + substituição das categorias numa transação só —
+  // sem isso, uma falha entre o DELETE e o INSERT de workerSkills
+  // (ex.: conexão cai no meio) apaga as categorias do trabalhador sem
+  // recriar nenhuma.
+  const { profile, existingExperienceByCategory } = await db.transaction(async (tx) => {
+    const [profile] = await tx
+      .insert(workerProfiles)
+      .values({
+        userId,
         fullName,
-        updatedAt: new Date(),
-        ...(photoUrl ? { photoUrl } : {}),
-        ...(input.bio !== undefined ? { bio: bio || null } : {}),
-        ...(input.cpf !== undefined ? { cpf: cpf || null } : {}),
-        ...(input.homeAddressFull !== undefined ? { homeAddressFull: homeAddressFull || null } : {}),
-        ...(input.phone !== undefined ? { phone: phone || null } : {}),
-        ...(input.cnhCategory !== undefined ? { cnhCategory } : {}),
-      },
-    })
-    .returning();
+        photoUrl,
+        bio: bio || null,
+        cpf: cpf || null,
+        homeAddressFull: homeAddressFull || null,
+        phone: phone || null,
+        cnhCategory,
+      })
+      .onConflictDoUpdate({
+        target: workerProfiles.userId,
+        // bio/cpf/homeAddressFull/phone/cnhCategory só entram no UPDATE
+        // quando enviados de verdade — editar só o nome ou as categorias
+        // não pode apagar valor já salvo.
+        set: {
+          fullName,
+          updatedAt: new Date(),
+          ...(photoUrl ? { photoUrl } : {}),
+          ...(input.bio !== undefined ? { bio: bio || null } : {}),
+          ...(input.cpf !== undefined ? { cpf: cpf || null } : {}),
+          ...(input.homeAddressFull !== undefined ? { homeAddressFull: homeAddressFull || null } : {}),
+          ...(input.phone !== undefined ? { phone: phone || null } : {}),
+          ...(input.cnhCategory !== undefined ? { cnhCategory } : {}),
+        },
+      })
+      .returning();
 
-  const existingSkills = await db.query.workerSkills.findMany({ where: eq(workerSkills.workerId, userId) });
-  const existingExperienceByCategory = Object.fromEntries(
-    existingSkills.map((skill) => [skill.categoryId, skill.hasExperience]),
-  );
+    const existingSkills = await tx.query.workerSkills.findMany({ where: eq(workerSkills.workerId, userId) });
+    const existingExperienceByCategory = Object.fromEntries(
+      existingSkills.map((skill) => [skill.categoryId, skill.hasExperience]),
+    );
 
-  await db.delete(workerSkills).where(eq(workerSkills.workerId, userId));
-  await db.insert(workerSkills).values(
-    categoryIds.map((categoryId) => ({
-      workerId: userId,
-      categoryId,
-      hasExperience: input.experienceByCategory?.[categoryId] ?? existingExperienceByCategory[categoryId] ?? false,
-    })),
-  );
+    await tx.delete(workerSkills).where(eq(workerSkills.workerId, userId));
+    await tx.insert(workerSkills).values(
+      categoryIds.map((categoryId) => ({
+        workerId: userId,
+        categoryId,
+        hasExperience: input.experienceByCategory?.[categoryId] ?? existingExperienceByCategory[categoryId] ?? false,
+      })),
+    );
+
+    return { profile, existingExperienceByCategory };
+  });
 
   const experienceByCategory = Object.fromEntries(
     categoryIds.map((categoryId) => [

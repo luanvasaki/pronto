@@ -86,4 +86,23 @@ describe('DocumentoPage', () => {
     expect(await screen.findByText('Envie uma foto em JPEG ou PNG.')).toBeInTheDocument();
     expect(pushMock).not.toHaveBeenCalled();
   });
+
+  it('não reenvia o documento ao tentar de novo depois que só a selfie falhou', async () => {
+    uploadWorkerDocumentMock.mockResolvedValue({ id: '1', status: 'pending', type: 'identity' });
+    uploadWorkerSelfieMock
+      .mockRejectedValueOnce(new ApiError(500, 'Falha de rede.'))
+      .mockResolvedValueOnce({ id: '2', status: 'pending', type: 'selfie' });
+    const user = userEvent.setup();
+    render(<DocumentoPage />);
+
+    await uploadBoth(user);
+    await user.click(screen.getByRole('button', { name: /enviar/i }));
+    await screen.findByText('Falha de rede.');
+
+    await user.click(screen.getByRole('button', { name: /enviar/i }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/inicio'));
+    expect(uploadWorkerDocumentMock).toHaveBeenCalledTimes(1);
+    expect(uploadWorkerSelfieMock).toHaveBeenCalledTimes(2);
+  });
 });

@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { db } from '../../db/client';
 import { applications, companies, jobs, payments, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
@@ -32,7 +32,7 @@ const FAILING_GATEWAY: PaymentGateway = {
 
 async function setupCompletedShift() {
   const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-  await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza' });
+  await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
   const [company] = await db
     .insert(companies)
@@ -105,5 +105,18 @@ describe('chargeForShift', () => {
 
     const payment = await db.query.payments.findFirst({ where: eq(payments.shiftId, shift.id) });
     expect(payment?.status).toBe('failed');
+  });
+
+  it('loga o motivo da falha do gateway, pra não ficar muda no servidor', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const shift = await setupCompletedShift();
+
+    await chargeForShift(FAILING_GATEWAY, shift.id, shift.payAmountSnapshot);
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining(shift.id),
+      expect.any(Error),
+    );
+    consoleErrorSpy.mockRestore();
   });
 });

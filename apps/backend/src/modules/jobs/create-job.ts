@@ -13,6 +13,9 @@ export async function createJob(ownerUserId: string, input: CreateJobInput): Pro
   if (!company) {
     throw new HttpError(400, 'Complete o cadastro da empresa antes de publicar uma vaga.');
   }
+  if (company.verificationStatus !== 'approved') {
+    throw new HttpError(403, 'Complete a verificação da empresa antes de publicar vagas.');
+  }
 
   const validated = validateJobInput(input);
 

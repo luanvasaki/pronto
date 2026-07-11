@@ -24,6 +24,12 @@ function isApprovalStatus(value: string): value is ApprovalStatus {
  * candidatura de cada vez) e o UPDATE de positionsFilled também é
  * condicional (WHERE positions_filled < positions_total), pra fechar
  * a mesma corrida entre duas aprovações simultâneas.
+ *
+ * As três escritas da aprovação (status da candidatura, positionsFilled
+ * da vaga, criação do turno) rodam numa transação — sem isso, se a
+ * corrida acima realmente acontecesse, a candidatura ficava "approved"
+ * sem turno correspondente e sem ter contado pra positionsFilled,
+ * um estado que nada mais no sistema sabe corrigir depois.
  */
 export async function updateApplicationStatus(
   ownerUserId: string,
@@ -58,43 +64,45 @@ export async function updateApplicationStatus(
     throw new HttpError(400, 'Essa vaga já está preenchida.');
   }
 
-  const [updated] = await db
-    .update(applications)
-    .set({ status, updatedAt: new Date() })
-    .where(and(eq(applications.id, applicationId), eq(applications.status, 'pending')))
-    .returning();
-  if (!updated) {
-    throw new HttpError(400, 'Essa candidatura já foi respondida.');
-  }
-
-  if (status === 'approved') {
-    const positionsFilled = job.positionsFilled + 1;
-    const [updatedJob] = await db
-      .update(jobs)
-      .set({
-        positionsFilled,
-        status: positionsFilled >= job.positionsTotal ? 'filled' : job.status,
-        updatedAt: new Date(),
-      })
-      .where(and(eq(jobs.id, job.id), lt(jobs.positionsFilled, jobs.positionsTotal)))
+  return db.transaction(async (tx) => {
+    const [updated] = await tx
+      .update(applications)
+      .set({ status, updatedAt: new Date() })
+      .where(and(eq(applications.id, applicationId), eq(applications.status, 'pending')))
       .returning();
-    if (!updatedJob) {
-      throw new HttpError(400, 'Essa vaga já está preenchida.');
+    if (!updated) {
+      throw new HttpError(400, 'Essa candidatura já foi respondida.');
     }
 
-    const [shift] = await db
-      .insert(shifts)
-      .values({
-        applicationId: updated.id,
-        jobId: job.id,
-        workerId: updated.workerId,
-        payAmountSnapshot: job.payAmount,
-      })
-      .returning();
-    if (!shift) {
-      throw new HttpError(500, 'Não foi possível criar o turno.');
-    }
-  }
+    if (status === 'approved') {
+      const positionsFilled = job.positionsFilled + 1;
+      const [updatedJob] = await tx
+        .update(jobs)
+        .set({
+          positionsFilled,
+          status: positionsFilled >= job.positionsTotal ? 'filled' : job.status,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(jobs.id, job.id), lt(jobs.positionsFilled, jobs.positionsTotal)))
+        .returning();
+      if (!updatedJob) {
+        throw new HttpError(400, 'Essa vaga já está preenchida.');
+      }
 
-  return toApplicationResponse(updated);
+      const [shift] = await tx
+        .insert(shifts)
+        .values({
+          applicationId: updated.id,
+          jobId: job.id,
+          workerId: updated.workerId,
+          payAmountSnapshot: job.payAmount,
+        })
+        .returning();
+      if (!shift) {
+        throw new HttpError(500, 'Não foi possível criar o turno.');
+      }
+    }
+
+    return toApplicationResponse(updated);
+  });
 }

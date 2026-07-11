@@ -11,6 +11,23 @@ export interface RegisterResult extends IssuedTokens {
   user: UserResponse;
 }
 
+/**
+ * A checagem de "já existe" acima previne o caso comum, mas não fecha a
+ * corrida entre dois registros simultâneos com o mesmo e-mail (duplo
+ * clique, aba duplicada) — as duas passam pela checagem antes de
+ * qualquer insert terminar. O índice único do banco pega isso de
+ * verdade; aqui só traduz o erro cru do Postgres pra mensagem amigável,
+ * mesmo padrão de create-application.ts.
+ */
+function isUniqueViolation(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const code = (error as { code?: unknown }).code;
+  const causeCode = (error.cause as { code?: unknown } | undefined)?.code;
+  return code === '23505' || causeCode === '23505';
+}
+
 export async function register(
   email: string | undefined,
   password: string | undefined,
@@ -32,10 +49,18 @@ export async function register(
   }
 
   const passwordHash = await hashPassword(password);
-  const [createdUser] = await db
-    .insert(users)
-    .values({ email, passwordHash, termsAcceptedAt: new Date() })
-    .returning();
+  let createdUser;
+  try {
+    [createdUser] = await db
+      .insert(users)
+      .values({ email, passwordHash, termsAcceptedAt: new Date() })
+      .returning();
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      throw new HttpError(409, 'Já existe uma conta com este e-mail.');
+    }
+    throw error;
+  }
   if (!createdUser) {
     throw new HttpError(500, 'Falha ao criar usuário.');
   }

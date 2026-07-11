@@ -40,7 +40,7 @@ function workerCategoryScores(score: number): Record<string, number> {
 
 async function setupCompletedShift() {
   const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-  await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza' });
+  await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
   const [company] = await db
     .insert(companies)
@@ -136,7 +136,7 @@ describe('createRating', () => {
 
   it('rejeita avaliar turno que ainda não foi concluído', async () => {
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
     const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
     const [company] = await db
       .insert(companies)

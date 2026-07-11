@@ -121,6 +121,16 @@ export async function upsertCompanyProfile(
   // pra um ramo do enum descarta o texto anterior, não deixa lixo salvo.
   const businessSegmentOtherToSave = businessSegment === 'outro' ? businessSegmentOther : null;
 
+  // Trocar a identidade (razão social, CNPJ ou CPF) depois de aprovada
+  // volta a empresa pra "pending" — o admin verificou os dados
+  // antigos, não os novos. Endereço/ramo/logo não mexem nisso, só
+  // servem de informação, não provam identidade.
+  const existing = await db.query.companies.findFirst({ where: eq(companies.ownerUserId, ownerUserId) });
+  const identityChanged =
+    !!existing &&
+    (existing.legalName !== legalName || existing.cnpj !== (cnpj ?? null) || existing.cpf !== (cpf ?? null));
+  const shouldResetVerification = identityChanged && existing?.verificationStatus === 'approved';
+
   const [company] = await db
     .insert(companies)
     .values({
@@ -146,6 +156,7 @@ export async function upsertCompanyProfile(
         businessSegment: businessSegment ?? null,
         businessSegmentOther: businessSegmentOtherToSave,
         updatedAt: new Date(),
+        ...(shouldResetVerification ? { verificationStatus: 'pending' as const } : {}),
       },
     })
     .returning();

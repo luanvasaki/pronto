@@ -30,6 +30,7 @@ describe('createJob', () => {
     const input = {
       categoryId: 'cat-1',
       description: 'Descrição da vaga',
+      requiresExperience: false,
       addressLabel: 'Vila Madalena, São Paulo',
       locationLat: -23.55,
       locationLng: -46.63,
@@ -58,6 +59,7 @@ describe('updateJob', () => {
     const input = {
       categoryId: 'cat-1',
       description: 'Descrição da vaga',
+      requiresExperience: false,
       addressLabel: 'Vila Madalena, São Paulo',
       locationLat: -23.55,
       locationLng: -46.63,

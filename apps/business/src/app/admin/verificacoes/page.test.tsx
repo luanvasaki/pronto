@@ -177,7 +177,7 @@ describe('AdminVerificacoesPage', () => {
     expect(image).toHaveAttribute('src', 'blob:mock-company-doc');
   });
 
-  it('avisa quando a empresa pessoa física não enviou documento', async () => {
+  it('avisa quando a empresa pessoa física não enviou documento, e desabilita aprovar', async () => {
     listPendingVerificationsMock.mockResolvedValue({
       documents: [],
       companies: [{ ...PENDING_INDIVIDUAL_COMPANY, documentId: null }],
@@ -188,6 +188,24 @@ describe('AdminVerificacoesPage', () => {
 
     expect(await screen.findByText('Nenhum documento enviado.')).toBeInTheDocument();
     expect(fetchCompanyDocumentFileMock).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /aprovar/i })).toBeDisabled();
+    expect(screen.getByText('Sem documento enviado — não é possível aprovar.')).toBeInTheDocument();
+    // Rejeitar continua disponível — a falta de documento não impede recusar.
+    expect(screen.getByRole('button', { name: /rejeitar/i })).toBeEnabled();
+  });
+
+  it('não desabilita aprovar quando a empresa pessoa física já tem documento', async () => {
+    listPendingVerificationsMock.mockResolvedValue({
+      documents: [],
+      companies: [PENDING_INDIVIDUAL_COMPANY],
+      skillCategories: [],
+    });
+
+    render(<AdminVerificacoesPage />);
+
+    await screen.findByText('CPF 11122233344');
+    expect(screen.getByRole('button', { name: /aprovar/i })).toBeEnabled();
+    expect(screen.queryByText('Sem documento enviado — não é possível aprovar.')).not.toBeInTheDocument();
   });
 
   it('lista categoria pendente com o nome pré-preenchido e a empresa criadora', async () => {

@@ -13,9 +13,14 @@ export default function DocumentoPage() {
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [documentUploaded, setDocumentUploaded] = useState(false);
+  const [selfieUploaded, setSelfieUploaded] = useState(false);
 
   const isValid = Boolean(documentFile && selfieFile);
 
+  // Se a selfie falhar depois do documento já ter subido, tentar de novo
+  // não pode reenviar o documento — cada envio cria uma linha nova (sem
+  // upsert), e reenviar duplicaria o documento pendente de revisão.
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
     if (!isValid || isSubmitting) return;
@@ -24,8 +29,14 @@ export default function DocumentoPage() {
     setIsSubmitting(true);
 
     try {
-      await uploadWorkerDocument(documentFile!);
-      await uploadWorkerSelfie(selfieFile!);
+      if (!documentUploaded) {
+        await uploadWorkerDocument(documentFile!);
+        setDocumentUploaded(true);
+      }
+      if (!selfieUploaded) {
+        await uploadWorkerSelfie(selfieFile!);
+        setSelfieUploaded(true);
+      }
       router.push('/inicio');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível enviar seus documentos.');

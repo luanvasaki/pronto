@@ -97,7 +97,22 @@ describe('EscalasPage', () => {
     expect(await screen.findByText(/Garçom/)).toBeInTheDocument();
   });
 
-  it('cancela a escala e some da lista', async () => {
+  it('pede confirmação antes de cancelar, e não chama a API sem confirmar', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    const user = userEvent.setup();
+
+    render(<EscalasPage />);
+    await screen.findByText(/Garçom/);
+    await user.click(screen.getByRole('button', { name: /cancelar escala/i }));
+
+    expect(screen.getByText(/tem certeza/i)).toBeInTheDocument();
+    expect(cancelJobMock).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: /voltar/i }));
+    expect(screen.queryByText(/tem certeza/i)).not.toBeInTheDocument();
+  });
+
+  it('cancela a escala e some da lista depois de confirmar', async () => {
     listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
     cancelJobMock.mockResolvedValue({ ...JOB, status: 'cancelled' });
     const user = userEvent.setup();
@@ -105,6 +120,7 @@ describe('EscalasPage', () => {
     render(<EscalasPage />);
     await screen.findByText(/Garçom/);
     await user.click(screen.getByRole('button', { name: /cancelar escala/i }));
+    await user.click(screen.getByRole('button', { name: /sim, cancelar/i }));
 
     await waitFor(() => expect(cancelJobMock).toHaveBeenCalledWith('job-1'));
     expect(await screen.findByText(/nenhuma escala em aberto/i)).toBeInTheDocument();
@@ -118,6 +134,7 @@ describe('EscalasPage', () => {
     render(<EscalasPage />);
     await screen.findByText(/Garçom/);
     await user.click(screen.getByRole('button', { name: /cancelar escala/i }));
+    await user.click(screen.getByRole('button', { name: /sim, cancelar/i }));
 
     expect(await screen.findByText('Não foi possível cancelar a escala.')).toBeInTheDocument();
   });

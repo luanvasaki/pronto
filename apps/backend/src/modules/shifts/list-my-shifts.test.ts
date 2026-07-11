@@ -11,9 +11,9 @@ import { checkOut } from './check-out';
 import { listMyShifts } from './list-my-shifts';
 
 // Fixtures únicas entre arquivos de teste (ver README).
-const WORKER_PHONE = '+5511966660027';
-const OWNER_PHONE = '+5511966660028';
-const TEST_CNPJ = '11222333000244';
+const WORKER_PHONE = '+5511966662210';
+const OWNER_PHONE = '+5511966662211';
+const TEST_CNPJ = '11222333000705';
 const TEST_CATEGORY_NAME = 'Categoria de teste — list-my-shifts';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -52,7 +52,7 @@ describe('listMyShifts', () => {
 
   it('lista os turnos do worker com os dados da vaga', async () => {
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
     const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
     const [company] = await db
       .insert(companies)
@@ -83,11 +83,12 @@ describe('listMyShifts', () => {
     expect(result[0].status).toBe('scheduled');
     expect(result[0].payAmountSnapshot).toBe('100.00');
     expect(result[0].job.id).toBe(job.id);
+    expect(result[0].companyName).toBe('Buffet Aurora');
   });
 
   it('avaliação às cegas: não mostra a nota que a empresa deu até o trabalhador também avaliar', async () => {
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
     const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
     const [company] = await db
       .insert(companies)

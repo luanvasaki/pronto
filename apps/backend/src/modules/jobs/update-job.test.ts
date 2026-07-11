@@ -40,7 +40,7 @@ async function setup() {
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
   await db
     .insert(companies)
-    .values({ ownerUserId: owner.id, legalName: 'Buffet Aurora Ltda', tradeName: 'Buffet Aurora', cnpj: TEST_CNPJ });
+    .values({ verificationStatus: 'approved', ownerUserId: owner.id, legalName: 'Buffet Aurora Ltda', tradeName: 'Buffet Aurora', cnpj: TEST_CNPJ });
   const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
   const job = await createJob(owner.id, baseInput(category.id));
   return { owner, category, job };
@@ -89,7 +89,7 @@ describe('updateJob', () => {
   it('rejeita editar vaga que não está mais aberta', async () => {
     const { owner, category, job } = await setup();
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
     const application = await createApplication(worker.id, job.id);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     // baseInput usa positionsTotal 2 — preenche a segunda posição também pra fechar a vaga.
@@ -97,7 +97,7 @@ describe('updateJob', () => {
       .insert(users)
       .values({ phone: SECOND_WORKER_PHONE })
       .returning();
-    await db.insert(workerProfiles).values({ userId: secondWorkerUser.id, fullName: 'Beatriz Lima' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: secondWorkerUser.id, fullName: 'Beatriz Lima' });
     const secondApplication = await createApplication(secondWorkerUser.id, job.id);
     await updateApplicationStatus(owner.id, secondApplication.id, 'approved');
 
@@ -109,7 +109,7 @@ describe('updateJob', () => {
   it('rejeita reduzir positionsTotal abaixo do já aprovado', async () => {
     const { owner, category, job } = await setup();
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
     const application = await createApplication(worker.id, job.id);
     await updateApplicationStatus(owner.id, application.id, 'approved');
 

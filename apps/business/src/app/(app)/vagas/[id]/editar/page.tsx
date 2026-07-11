@@ -10,8 +10,18 @@ import { listMyJobs, updateJob } from '../../../../../lib/jobs-api';
 
 const PAY_AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
 
+/**
+ * `job.startsAt`/`endsAt` chegam em UTC (ISO com "Z") — um `<input
+ * type="datetime-local">` espera o horário LOCAL, sem timezone. Só
+ * cortar a string (`.slice(0, 16)`) mostraria o relógio de UTC como
+ * se fosse local: certo só por coincidência pra quem está em UTC+0,
+ * errado (por até várias horas) pra qualquer empresa no Brasil — e ao
+ * salvar sem mexer nesse campo, o horário da vaga mudaria sozinho.
+ */
 function toDateTimeLocal(value: string): string {
-  return value.slice(0, 16);
+  const date = new Date(value);
+  const localTime = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localTime.toISOString().slice(0, 16);
 }
 
 export default function EditarVagaPage() {

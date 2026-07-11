@@ -26,6 +26,15 @@ vi.mock('../../../../../lib/jobs-api', () => ({
   updateJob: (...args: unknown[]) => updateJobMock(...args),
 }));
 
+// Mesma conversão que o componente deveria fazer pro <input
+// type="datetime-local">: se ele voltar a só cortar a string ISO
+// (`.slice(0, 16)`), os testes que usam isso falham em qualquer fuso
+// diferente de UTC (este ambiente roda em UTC-3).
+function toLocalDateTimeInput(iso: string): string {
+  const date = new Date(iso);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
 const JOB = {
   id: 'job-1',
   categoryId: 'cat-1',
@@ -61,6 +70,16 @@ describe('EditarVagaPage', () => {
     expect(await screen.findByDisplayValue('Vaga de garçom pra evento')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Vila Madalena, São Paulo')).toBeInTheDocument();
     expect(screen.getByDisplayValue('130.00')).toBeInTheDocument();
+  });
+
+  it('converte início/término de UTC pro fuso local, não só corta a string', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+
+    render(<EditarVagaPage />);
+    await screen.findByDisplayValue('Vaga de garçom pra evento');
+
+    expect(screen.getByDisplayValue(toLocalDateTimeInput(JOB.startsAt))).toBeInTheDocument();
+    expect(screen.getByDisplayValue(toLocalDateTimeInput(JOB.endsAt))).toBeInTheDocument();
   });
 
   it('pré-preenche experiência, vestimenta e ferramentas exigidas', async () => {
@@ -111,12 +130,13 @@ describe('EditarVagaPage', () => {
   });
 
   it('pré-preenche o prazo de candidatura quando a vaga já tem um escolhido', async () => {
-    listMyJobsMock.mockResolvedValue({ jobs: [{ ...JOB, applicationsCloseAt: '2026-08-01T15:00:00.000Z' }] });
+    const applicationsCloseAt = '2026-08-01T15:00:00.000Z';
+    listMyJobsMock.mockResolvedValue({ jobs: [{ ...JOB, applicationsCloseAt }] });
 
     render(<EditarVagaPage />);
 
     await screen.findByDisplayValue('Vaga de garçom pra evento');
-    expect(screen.getByLabelText(/fechar candidaturas em/i)).toHaveValue('2026-08-01T15:00');
+    expect(screen.getByLabelText(/fechar candidaturas em/i)).toHaveValue(toLocalDateTimeInput(applicationsCloseAt));
   });
 
   it('envia o novo prazo de candidatura quando alterado', async () => {
@@ -124,14 +144,20 @@ describe('EditarVagaPage', () => {
     updateJobMock.mockResolvedValue(JOB);
     const user = userEvent.setup();
 
+    // Precisa ser antes do início da vaga (18:00 UTC) — 2h antes, convertido
+    // pro mesmo fuso local que o campo usa, pra não depender do fuso da
+    // máquina que roda o teste.
+    const closeAtIso = new Date(new Date(JOB.startsAt).getTime() - 2 * 60 * 60 * 1000).toISOString();
+    const closeAtLocal = toLocalDateTimeInput(closeAtIso);
+
     render(<EditarVagaPage />);
     await screen.findByDisplayValue('130.00');
-    await user.type(screen.getByLabelText(/fechar candidaturas em/i), '2026-08-01T16:00');
+    await user.type(screen.getByLabelText(/fechar candidaturas em/i), closeAtLocal);
     await user.click(screen.getByRole('button', { name: /salvar alterações/i }));
 
     await waitFor(() => expect(updateJobMock).toHaveBeenCalled());
     expect(updateJobMock.mock.calls[0][1]).toMatchObject({
-      applicationsCloseAt: new Date('2026-08-01T16:00').toISOString(),
+      applicationsCloseAt: new Date(closeAtLocal).toISOString(),
     });
   });
 });

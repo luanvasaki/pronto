@@ -19,7 +19,10 @@ export async function chargeForShift(gateway: PaymentGateway, shiftId: string, a
       .update(payments)
       .set({ status: 'charged', pspChargeId, chargedAt: new Date(), updatedAt: new Date() })
       .where(eq(payments.id, payment.id));
-  } catch {
+  } catch (error) {
+    // Sem isso o motivo da falha some pra sempre — o único rastro que
+    // sobra é status "failed" no banco, sem explicação de por quê.
+    console.error(`[chargeForShift] cobrança falhou pro turno ${shiftId}:`, error);
     await db.update(payments).set({ status: 'failed', updatedAt: new Date() }).where(eq(payments.id, payment.id));
   }
 }

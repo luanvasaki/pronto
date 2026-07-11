@@ -13,9 +13,9 @@ const TEST_CATEGORY_NAME = 'Categoria de teste — create-application';
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const TOMORROW_PLUS_5H = new Date(TOMORROW.getTime() + 5 * 60 * 60 * 1000);
 
-async function createWorker(cnhCategory?: 'A' | 'B' | 'AB' | 'C' | 'D' | 'E') {
+async function createWorker(cnhCategory?: 'A' | 'B' | 'AB' | 'C' | 'D' | 'E', kycStatus: 'pending' | 'approved' | 'rejected' = 'approved') {
   const [user] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-  await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Ana Souza', cnhCategory });
+  await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Ana Souza', cnhCategory, kycStatus });
   return user;
 }
 
@@ -78,6 +78,13 @@ describe('createApplication', () => {
     const job = await createJob();
 
     await expect(createApplication(user.id, job.id)).rejects.toThrow('Complete seu cadastro');
+  });
+
+  it('rejeita quando o trabalhador ainda não teve o documento aprovado', async () => {
+    const worker = await createWorker(undefined, 'pending');
+    const job = await createJob();
+
+    await expect(createApplication(worker.id, job.id)).rejects.toThrow('Complete a verificação do seu documento');
   });
 
   it('rejeita vaga inexistente', async () => {

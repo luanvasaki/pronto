@@ -100,6 +100,20 @@ describe('NovaVagaPage', () => {
     expect(screen.getByRole('button', { name: /^publicar$/i })).toBeEnabled();
   });
 
+  it('mostra o que falta preencher quando o botão está desabilitado, incluindo a localização', async () => {
+    const user = userEvent.setup();
+    render(<NovaVagaPage />);
+    await screen.findByText('Garçom');
+
+    await user.selectOptions(screen.getByLabelText('Categoria'), 'cat-1');
+    await user.click(screen.getByRole('button', { name: 'Não' }));
+    await user.type(screen.getByLabelText('Descrição'), 'Detalhes adicionais sobre o turno.');
+    await user.type(screen.getByLabelText('Endereço completo'), 'Vila Madalena, São Paulo');
+    // Propositalmente não clica em "Usar minha localização atual".
+
+    expect(screen.getByText(/falta preencher:/i)).toHaveTextContent(/localização/i);
+  });
+
   it('publica a vaga e navega pro painel quando a API responde bem', async () => {
     createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
     const user = userEvent.setup();
@@ -208,6 +222,41 @@ describe('NovaVagaPage', () => {
     expect(screen.getByLabelText(/exige cnh/i)).toHaveValue('B');
     // Data/hora não são copiadas — sempre novas pra cada turno.
     expect(screen.getByLabelText('Início')).toHaveValue('');
+  });
+
+  it('limita o modelo às 20 vagas mais recentes, mesmo com um histórico maior', async () => {
+    const jobs = Array.from({ length: 30 }, (_, index) => ({
+      id: `job-${index}`,
+      categoryId: 'cat-1',
+      description: `Vaga número ${index} com descrição detalhada o suficiente.`,
+      requiresExperience: false,
+      dressCode: null,
+      toolsRequired: null,
+      cnhCategory: null,
+      cnhRequired: false,
+      addressLabel: 'Endereço de teste',
+      locationLat: -23.55,
+      locationLng: -46.63,
+      positionsTotal: 1,
+      positionsFilled: 0,
+      payAmount: '100.00',
+      // Índices maiores = data mais recente, pra conferir que o corte pega os últimos 20.
+      startsAt: new Date(Date.now() + index * 24 * 60 * 60 * 1000).toISOString(),
+      endsAt: ENDS_AT,
+      applicationsCloseAt: null,
+      status: 'open',
+    }));
+    listMyJobsMock.mockResolvedValue({ jobs });
+    render(<NovaVagaPage />);
+    await screen.findByText('Garçom');
+
+    await screen.findByText('Garçom');
+    const templateSelect = screen.getByLabelText(/usar vaga anterior como base/i);
+    // +1 pela opção "Começar do zero".
+    expect(templateSelect.querySelectorAll('option')).toHaveLength(21);
+    expect(screen.getByRole('option', { name: /vaga número 29/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /vaga número 10/i })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /vaga número 9 /i })).not.toBeInTheDocument();
   });
 
   it('cria uma categoria nova e usa o id retornado na vaga', async () => {

@@ -73,7 +73,7 @@ describe('deleteDemoData', () => {
 
   it('remove empresa demo com turno completo (candidatura, turno, pagamento, avaliação) e preserva empresa real', async () => {
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
     const [demoOwner] = await db.insert(users).values({ phone: DEMO_OWNER_PHONE }).returning();

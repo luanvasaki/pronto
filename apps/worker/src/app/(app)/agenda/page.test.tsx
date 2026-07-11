@@ -44,6 +44,7 @@ function makeShift(
   overrides: Partial<{
     status: string;
     job: typeof JOB;
+    companyName: string;
     payment: { id: string; shiftId: string; amount: string; status: string; chargedAt: string | null; releasedAt: string | null } | null;
     ratings: {
       worker:
@@ -75,6 +76,7 @@ function makeShift(
     checkOutLat: null,
     checkOutLng: null,
     job: JOB,
+    companyName: 'Buffet Aurora',
     payment: null,
     ratings: { worker: null, company: null },
     ...overrides,
@@ -139,6 +141,8 @@ describe('AgendaPage', () => {
     // calendário, e na lista detalhada mais abaixo (ambos mostram a
     // mesma escala concluída).
     expect(await screen.findAllByRole('link', { name: 'Vila Madalena, São Paulo' })).toHaveLength(2);
+    // Mesma lógica pro nome da empresa.
+    expect(screen.getAllByText('Buffet Aurora')).toHaveLength(2);
   });
 
   it('mostra o botão de check-in pra turno agendado', async () => {

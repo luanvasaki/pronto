@@ -38,7 +38,7 @@ async function setup(positionsTotal = 2) {
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
   await db
     .insert(companies)
-    .values({ ownerUserId: owner.id, legalName: 'Buffet Aurora Ltda', tradeName: 'Buffet Aurora', cnpj: TEST_CNPJ });
+    .values({ verificationStatus: 'approved', ownerUserId: owner.id, legalName: 'Buffet Aurora Ltda', tradeName: 'Buffet Aurora', cnpj: TEST_CNPJ });
   const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
   const job = await createJob(owner.id, baseInput(category.id, positionsTotal));
   return { owner, category, job };
@@ -82,7 +82,7 @@ describe('cancelJob', () => {
   it('rejeita cancelar quando já existe turno em andamento', async () => {
     const { owner, job } = await setup(1);
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
     const application = await createApplication(worker.id, job.id);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
@@ -94,12 +94,12 @@ describe('cancelJob', () => {
   it('cancela a vaga, rejeita candidaturas pendentes e cancela turnos agendados', async () => {
     const { owner, job } = await setup(2);
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
     const approvedApplication = await createApplication(worker.id, job.id);
     await updateApplicationStatus(owner.id, approvedApplication.id, 'approved');
 
     const [secondWorker] = await db.insert(users).values({ phone: SECOND_WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: secondWorker.id, fullName: 'Beatriz Lima' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: secondWorker.id, fullName: 'Beatriz Lima' });
     const pendingApplication = await createApplication(secondWorker.id, job.id);
 
     const result = await cancelJob(owner.id, job.id);
@@ -115,5 +115,11 @@ describe('cancelJob', () => {
       where: eq(shifts.applicationId, approvedApplication.id),
     });
     expect(scheduledShift?.status).toBe('cancelled');
+
+    const refreshedApproved = await db.query.applications.findFirst({
+      where: eq(applications.id, approvedApplication.id),
+    });
+    expect(refreshedApproved?.status).toBe('rejected');
+    expect(refreshedApproved?.removedAt).not.toBeNull();
   });
 });

@@ -179,6 +179,7 @@ describe('getWorkerProfile', () => {
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
     });
+    await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
 
     const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
     const [company] = await db
@@ -232,6 +233,7 @@ describe('getWorkerProfile', () => {
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
     });
+    await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
 
     const first = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     const firstShift = await completeShift(worker.id, first.owner.id, first.job.id);
@@ -267,6 +269,7 @@ describe('getWorkerProfile', () => {
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
     });
+    await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
 
     const { owner, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     const application = await createApplication(worker.id, job.id);
@@ -312,6 +315,7 @@ describe('getWorkerProfile', () => {
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
     });
+    await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
     const { owner, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     await completeShift(worker.id, owner.id, job.id);
 
@@ -333,6 +337,7 @@ describe('getWorkerProfile', () => {
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
     });
+    await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
     const { owner, company, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     await completeShift(worker.id, owner.id, job.id);
     const secondJob = await createJobForCompany(company.id, category.id);
@@ -356,6 +361,7 @@ describe('getWorkerProfile', () => {
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
     });
+    await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
     const first = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     await completeShift(worker.id, first.owner.id, first.job.id);
     const firstSecondJob = await createJobForCompany(first.company.id, category.id);
@@ -381,6 +387,7 @@ describe('getWorkerProfile', () => {
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
     });
+    await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
     const { job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     const application = await createApplication(worker.id, job.id);
     await withdrawApplication(worker.id, application.id);
@@ -405,6 +412,7 @@ describe('getWorkerProfile', () => {
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
     });
+    await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
     const { owner, company, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     await completeShift(worker.id, owner.id, job.id);
 

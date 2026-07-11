@@ -219,7 +219,9 @@ export default function AdminVerificacoesPage() {
           <p className="mt-2 text-sm text-text-secondary">Nenhuma empresa pendente.</p>
         )}
         <ul className="mt-3 flex flex-col gap-3">
-          {companies.map((company) => (
+          {companies.map((company) => {
+          const cannotApprove = company.personType === 'fisica' && !company.documentId;
+          return (
             <li
               key={company.id}
               className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
@@ -261,11 +263,12 @@ export default function AdminVerificacoesPage() {
                   )}
                 </div>
               )}
-              <div className="mt-3.5 flex gap-2">
+              <div className="mt-3.5 flex items-center gap-2">
                 <Button
                   type="button"
                   variant="success"
                   isLoading={actingId === company.id}
+                  disabled={cannotApprove}
                   onClick={() => handleReviewCompany(company.id, 'approved')}
                 >
                   Aprovar
@@ -278,9 +281,13 @@ export default function AdminVerificacoesPage() {
                 >
                   Rejeitar
                 </Button>
+                {cannotApprove && (
+                  <span className="text-xs text-danger">Sem documento enviado — não é possível aprovar.</span>
+                )}
               </div>
             </li>
-          ))}
+          );
+          })}
         </ul>
       </section>
 

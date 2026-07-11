@@ -10,6 +10,11 @@ import { createJob, Job, listMyJobs } from '../../../../lib/jobs-api';
 
 const PAY_AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
 const NEW_CATEGORY_OPTION = '__new__';
+// listMyJobs() traz o histórico inteiro da empresa — pra uma conta com
+// centenas de vagas, isso vira uma lista gigante só pra popular um
+// dropdown de modelo. Sem endpoint dedicado no backend pra isso ainda,
+// pelo menos limita quantas entram no <select> (mais recentes primeiro).
+const MAX_TEMPLATE_JOBS = 20;
 
 /** yyyy-mm-dd (formato do <input type="date"> e do que a Escala manda na URL) — recusa qualquer outra coisa. */
 const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -72,7 +77,12 @@ function NovaVagaForm() {
 
   useEffect(() => {
     listMyJobs()
-      .then((data) => setPreviousJobs(data.jobs))
+      .then((data) => {
+        const mostRecent = [...data.jobs]
+          .sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime())
+          .slice(0, MAX_TEMPLATE_JOBS);
+        setPreviousJobs(mostRecent);
+      })
       .catch(() => undefined);
   }, []);
 
@@ -120,23 +130,30 @@ function NovaVagaForm() {
     payAmountNumber > 0;
   const estimateTotal = positionsTotalNumber * payAmountNumber;
   const isNewCategory = categoryId === NEW_CATEGORY_OPTION;
-  const isValid =
-    categoryId !== '' &&
-    (!isNewCategory || newCategoryName.trim().length >= 2) &&
-    requiresExperience !== null &&
-    description.trim().length >= 10 &&
-    addressLabel.trim().length >= 2 &&
-    lat !== null &&
-    lng !== null &&
-    Number.isInteger(positionsTotalNumber) &&
-    positionsTotalNumber >= 1 &&
-    PAY_AMOUNT_REGEX.test(payAmount) &&
-    Number(payAmount) > 0 &&
-    startsAt !== '' &&
-    endsAt !== '' &&
-    new Date(endsAt) > new Date(startsAt) &&
-    new Date(startsAt) > new Date() &&
-    (applicationsCloseAt === '' || new Date(applicationsCloseAt) <= new Date(startsAt));
+
+  // Cada condição de isValid vira um item aqui, na mesma ordem — se
+  // ficar cinza sem explicação, ninguém acha o campo que falta (foi
+  // o caso real do botão "Publicar" travado sem nenhuma pista visível).
+  const missingFields: string[] = [];
+  if (categoryId === '') missingFields.push('categoria');
+  if (isNewCategory && newCategoryName.trim().length < 2) missingFields.push('nome da nova categoria');
+  if (requiresExperience === null) missingFields.push('exigência de experiência');
+  if (description.trim().length < 10) missingFields.push('descrição');
+  if (addressLabel.trim().length < 2) missingFields.push('endereço');
+  if (lat === null || lng === null) missingFields.push('localização (clique em "Usar minha localização atual")');
+  if (!Number.isInteger(positionsTotalNumber) || positionsTotalNumber < 1) missingFields.push('número de vagas');
+  if (!PAY_AMOUNT_REGEX.test(payAmount) || Number(payAmount) <= 0) missingFields.push('valor por pessoa');
+  if (startsAt === '') missingFields.push('início');
+  if (endsAt === '') missingFields.push('término');
+  if (startsAt !== '' && endsAt !== '' && !(new Date(endsAt) > new Date(startsAt))) {
+    missingFields.push('término depois do início');
+  }
+  if (startsAt !== '' && !(new Date(startsAt) > new Date())) missingFields.push('início no futuro');
+  if (applicationsCloseAt !== '' && startsAt !== '' && new Date(applicationsCloseAt) > new Date(startsAt)) {
+    missingFields.push('prazo de candidatura até o início');
+  }
+
+  const isValid = missingFields.length === 0;
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -454,6 +471,8 @@ function NovaVagaForm() {
         )}
 
         {error && <p className="text-sm text-danger">{error}</p>}
+
+        {!isValid && <p className="text-xs text-text-secondary">Falta preencher: {missingFields.join(', ')}.</p>}
 
         <Button type="submit" disabled={!isValid} isLoading={isSubmitting}>
           Publicar

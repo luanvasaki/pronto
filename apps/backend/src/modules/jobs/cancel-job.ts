@@ -50,6 +50,14 @@ export async function cancelJob(ownerUserId: string, jobId: string): Promise<Job
     .set({ status: 'rejected', updatedAt: new Date() })
     .where(and(eq(applications.jobId, jobId), eq(applications.status, 'pending')));
 
+  // Candidatura aprovada tem turno 'scheduled' associado (garantido pelo
+  // hasShiftInProgress acima) — cancelar a vaga tira o trabalhador dela
+  // igual a removeApprovedWorker, com removedAt pra ele ver o aviso.
+  await db
+    .update(applications)
+    .set({ status: 'rejected', removedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(applications.jobId, jobId), eq(applications.status, 'approved')));
+
   const scheduledShiftIds = jobShifts
     .filter((shift) => shift.status === 'scheduled')
     .map((shift) => shift.id);

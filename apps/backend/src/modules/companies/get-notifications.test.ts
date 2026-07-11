@@ -47,7 +47,7 @@ async function setup() {
 
 async function createWorker(phone: string, fullName: string) {
   const [worker] = await db.insert(users).values({ phone }).returning();
-  await db.insert(workerProfiles).values({ userId: worker.id, fullName });
+  await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName });
   return worker;
 }
 

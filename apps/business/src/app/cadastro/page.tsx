@@ -22,6 +22,12 @@ export default function CadastroPage() {
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Perfil e documento são dois awaits sequenciais — se o documento falhar
+  // depois do perfil já ter sido salvo, marcamos aqui pra não reenviar o
+  // perfil de novo (e não perder o motivo real do erro por trás de um
+  // "não foi possível salvar o cadastro" genérico). "Continuar" nesse
+  // estado só repete o upload do documento.
+  const [profileSaved, setProfileSaved] = useState(false);
 
   const isIndividual = personType === 'fisica';
   const isValid =
@@ -37,20 +43,35 @@ export default function CadastroPage() {
     setError(null);
     setIsSubmitting(true);
 
+    // Cópia local — `profileSaved` (estado) só reflete a próxima renderização,
+    // e o catch abaixo precisa saber se o perfil já estava salvo ANTES desta
+    // chamada específica, mesmo que ela mesma acabe de salvá-lo.
+    let alreadyHadProfile = profileSaved;
+
     try {
-      await upsertCompanyProfile({
-        legalName,
-        tradeName,
-        personType,
-        cnpj: isIndividual ? undefined : cnpj,
-        cpf: isIndividual ? cpf : undefined,
-      });
+      if (!alreadyHadProfile) {
+        await upsertCompanyProfile({
+          legalName,
+          tradeName,
+          personType,
+          cnpj: isIndividual ? undefined : cnpj,
+          cpf: isIndividual ? cpf : undefined,
+        });
+        alreadyHadProfile = true;
+        setProfileSaved(true);
+      }
       if (isIndividual && documentFile) {
         await uploadCompanyDocument(documentFile);
       }
       router.push('/painel');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Não foi possível salvar o cadastro.');
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : alreadyHadProfile
+            ? 'Cadastro salvo, mas não foi possível enviar o documento. Tente enviar de novo.'
+            : 'Não foi possível salvar o cadastro.',
+      );
       setIsSubmitting(false);
     }
   }

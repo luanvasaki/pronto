@@ -312,6 +312,15 @@ describe('PerfilPage', () => {
     expect(await screen.findByText('Perfil salvo.')).toBeInTheDocument();
   });
 
+  it('mostra o que falta preencher quando o perfil (ex.: de antes do telefone virar obrigatório) não tem telefone', async () => {
+    renderWithProfile({ ...BASE_PROFILE, phone: null });
+
+    await screen.findByRole('heading', { name: 'Editar perfil' });
+
+    expect(screen.getByText('Falta preencher: telefone.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /salvar perfil/i })).toBeDisabled();
+  });
+
   it('salva a categoria de CNH escolhida', async () => {
     upsertWorkerProfileMock.mockResolvedValue({
       fullName: 'Ana Souza',

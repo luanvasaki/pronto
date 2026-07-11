@@ -273,7 +273,7 @@ export default function PerfilPage() {
                   <p className="mt-1 text-xs text-text-secondary">
                     {[categoryName, formatShiftDate(entry.shiftDate)].filter(Boolean).join(' · ')}
                   </p>
-                  {entry.comment && <p className="mt-2 text-sm text-text">"{entry.comment}"</p>}
+                  {entry.comment && <p className="mt-2 text-sm text-text">&ldquo;{entry.comment}&rdquo;</p>}
                   {entry.categoryScores && (
                     <div className="mt-2.5 flex flex-wrap gap-1.5">
                       {COMPANY_RATING_CATEGORIES.flatMap((category) => {

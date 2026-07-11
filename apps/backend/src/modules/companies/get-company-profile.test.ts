@@ -130,7 +130,7 @@ describe('getCompanyProfile', () => {
     });
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Rafael Lima' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Rafael Lima' });
 
     const job = await createJobForCompany(company.id, category.id);
     await completeShift(worker.id, owner.id, job.id);
@@ -149,9 +149,9 @@ describe('getCompanyProfile', () => {
     });
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Rafael Lima' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Rafael Lima' });
     const [secondWorker] = await db.insert(users).values({ phone: SECOND_WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: secondWorker.id, fullName: 'Beatriz Souza' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: secondWorker.id, fullName: 'Beatriz Souza' });
 
     const firstJob = await createJobForCompany(company.id, category.id);
     await completeShift(worker.id, owner.id, firstJob.id);
@@ -190,9 +190,9 @@ describe('getCompanyProfile', () => {
     });
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Rafael Lima' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Rafael Lima' });
     const [secondWorker] = await db.insert(users).values({ phone: SECOND_WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: secondWorker.id, fullName: 'Beatriz Souza' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: secondWorker.id, fullName: 'Beatriz Souza' });
 
     const firstJob = await createJobForCompany(company.id, category.id);
     await completeShift(worker.id, owner.id, firstJob.id);

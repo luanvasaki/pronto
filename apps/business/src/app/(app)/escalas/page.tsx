@@ -26,6 +26,7 @@ export default function EscalasPage() {
   const [applicationsByJobId, setApplicationsByJobId] = useState<Record<string, JobApplication[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingCancelJobId, setConfirmingCancelJobId] = useState<string | null>(null);
   const [cancelingJobId, setCancelingJobId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<{ jobId: string; message: string } | null>(null);
 
@@ -36,6 +37,7 @@ export default function EscalasPage() {
     try {
       const updated = await cancelJob(jobId);
       setJobs((current) => current.map((job) => (job.id === jobId ? updated : job)));
+      setConfirmingCancelJobId(null);
     } catch (err) {
       setCancelError({
         jobId,
@@ -124,22 +126,49 @@ export default function EscalasPage() {
 
               {cancelError?.jobId === job.id && <p className="mt-2.5 text-sm text-danger">{cancelError.message}</p>}
 
-              <div className="mt-3.5 flex items-center gap-3 border-t border-border pt-3.5">
-                <Link
-                  href={`/vagas/${job.id}/editar`}
-                  className="text-sm text-primary underline underline-offset-2 hover:brightness-90"
-                >
-                  Editar
-                </Link>
-                <Button
-                  type="button"
-                  variant="outlined"
-                  isLoading={cancelingJobId === job.id}
-                  onClick={() => handleCancel(job.id)}
-                  className="px-3 py-1.5 text-xs"
-                >
-                  Cancelar escala
-                </Button>
+              <div className="mt-3.5 border-t border-border pt-3.5">
+                {confirmingCancelJobId === job.id ? (
+                  <div className="flex flex-col gap-2 rounded-2xl border border-dashed border-danger/40 p-3">
+                    <p className="text-sm text-text">
+                      Tem certeza? Candidaturas pendentes são rejeitadas e quem já estava aprovado perde a escala.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="danger"
+                        isLoading={cancelingJobId === job.id}
+                        onClick={() => handleCancel(job.id)}
+                        className="px-3 py-1.5 text-xs"
+                      >
+                        Sim, cancelar
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingCancelJobId(null)}
+                        className="text-sm text-text-secondary underline underline-offset-2"
+                      >
+                        Voltar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href={`/vagas/${job.id}/editar`}
+                      className="text-sm text-primary underline underline-offset-2 hover:brightness-90"
+                    >
+                      Editar
+                    </Link>
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      onClick={() => setConfirmingCancelJobId(job.id)}
+                      className="px-3 py-1.5 text-xs"
+                    >
+                      Cancelar escala
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           );

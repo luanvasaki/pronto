@@ -34,7 +34,7 @@ async function createCompanyOwner() {
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
   await db
     .insert(companies)
-    .values({ ownerUserId: owner.id, legalName: 'Buffet Aurora Ltda', tradeName: 'Buffet Aurora', cnpj: TEST_CNPJ });
+    .values({ verificationStatus: 'approved', ownerUserId: owner.id, legalName: 'Buffet Aurora Ltda', tradeName: 'Buffet Aurora', cnpj: TEST_CNPJ });
   return owner;
 }
 
@@ -88,7 +88,7 @@ describe('listNearbyJobs', () => {
 
   it('rejeita quando a localização ainda não foi definida', async () => {
     const worker = await createWorker();
-    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
 
     await expect(listNearbyJobs(worker.id)).rejects.toThrow('Defina sua localização');
   });
@@ -102,7 +102,7 @@ describe('listNearbyJobs', () => {
     const worker = await createWorker();
     await db
       .insert(workerProfiles)
-      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+      .values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
     const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
 
     const owner = await createCompanyOwner();
@@ -119,7 +119,7 @@ describe('listNearbyJobs', () => {
     const worker = await createWorker();
     await db
       .insert(workerProfiles)
-      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+      .values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
     const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
     const [categoryFar] = await db.insert(skillCategories).values({ name: CATEGORY_FAR }).returning();
     await db.insert(workerSkills).values({ workerId: worker.id, categoryId: categoryNear.id });
@@ -149,7 +149,7 @@ describe('listNearbyJobs', () => {
     const worker = await createWorker();
     await db
       .insert(workerProfiles)
-      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+      .values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
     const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
     await db.insert(workerSkills).values({ workerId: worker.id, categoryId: categoryNear.id, hasExperience: false });
 
@@ -166,7 +166,7 @@ describe('listNearbyJobs', () => {
     const worker = await createWorker();
     await db
       .insert(workerProfiles)
-      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+      .values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
     const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
     await db.insert(workerSkills).values({ workerId: worker.id, categoryId: categoryNear.id, hasExperience: true });
 
@@ -183,7 +183,7 @@ describe('listNearbyJobs', () => {
     const worker = await createWorker();
     await db
       .insert(workerProfiles)
-      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+      .values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
     const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
 
     const owner = await createCompanyOwner();
@@ -199,7 +199,7 @@ describe('listNearbyJobs', () => {
     const worker = await createWorker();
     await db
       .insert(workerProfiles)
-      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+      .values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
     const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
 
     const owner = await createCompanyOwner();
@@ -213,7 +213,7 @@ describe('listNearbyJobs', () => {
 
   it('não sinaliza cnhMismatch quando o trabalhador tem a CNH exigida', async () => {
     const worker = await createWorker();
-    await db.insert(workerProfiles).values({
+    await db.insert(workerProfiles).values({ kycStatus: 'approved',
       userId: worker.id,
       fullName: 'Ana Souza',
       homeLat: WORKER_LAT,
@@ -236,7 +236,7 @@ describe('listNearbyJobs', () => {
     const worker = await createWorker();
     await db
       .insert(workerProfiles)
-      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+      .values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
     const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
 
     const owner = await createCompanyOwner();
@@ -252,7 +252,7 @@ describe('listNearbyJobs', () => {
     const worker = await createWorker();
     await db
       .insert(workerProfiles)
-      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+      .values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
     const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
 
     const owner = await createCompanyOwner();
@@ -273,7 +273,7 @@ describe('listNearbyJobs', () => {
     const worker = await createWorker();
     await db
       .insert(workerProfiles)
-      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+      .values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
     const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
 
     const owner = await createCompanyOwner();

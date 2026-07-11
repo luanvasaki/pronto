@@ -32,10 +32,17 @@ async function createTestCompanyOwner() {
   return owner;
 }
 
-async function createTestCompany(ownerUserId: string) {
+async function createTestCompany(ownerUserId: string, overrides: Partial<{ verificationStatus: string }> = {}) {
   const [company] = await db
     .insert(companies)
-    .values({ ownerUserId, legalName: 'Buffet Aurora Ltda', tradeName: 'Buffet Aurora', cnpj: TEST_CNPJ })
+    .values({
+      ownerUserId,
+      legalName: 'Buffet Aurora Ltda',
+      tradeName: 'Buffet Aurora',
+      cnpj: TEST_CNPJ,
+      verificationStatus: 'approved',
+      ...overrides,
+    })
     .returning();
   return company;
 }
@@ -61,6 +68,16 @@ describe('createJob', () => {
 
     await expect(createJob(owner.id, baseInput(category.id))).rejects.toThrow(
       'Complete o cadastro da empresa',
+    );
+  });
+
+  it('rejeita quando a empresa ainda não foi verificada', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id, { verificationStatus: 'pending' });
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+
+    await expect(createJob(owner.id, baseInput(category.id))).rejects.toThrow(
+      'Complete a verificação da empresa',
     );
   });
 

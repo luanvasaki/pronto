@@ -29,6 +29,9 @@ export async function createApplication(workerId: string, jobId: string): Promis
   if (!profile) {
     throw new HttpError(400, 'Complete seu cadastro antes de se candidatar.');
   }
+  if (profile.kycStatus !== 'approved') {
+    throw new HttpError(403, 'Complete a verificação do seu documento antes de se candidatar.');
+  }
 
   const job = await db.query.jobs.findFirst({ where: eq(jobs.id, jobId) });
   if (!job) {

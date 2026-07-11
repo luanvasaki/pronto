@@ -17,6 +17,7 @@ export default function EntrarPage() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   const isValid = email.trim().length > 0 && password.length > 0;
 
@@ -25,6 +26,7 @@ export default function EntrarPage() {
     if (!isValid || isSubmitting) return;
 
     setError(null);
+    setGoogleError(null);
     setIsSubmitting(true);
 
     try {
@@ -45,19 +47,20 @@ export default function EntrarPage() {
    */
   async function handleGoogleSuccess(idToken: string): Promise<void> {
     setError(null);
+    setGoogleError(null);
     setIsSubmitting(true);
 
     try {
       await googleLogin(idToken, termsAccepted);
       router.push('/inicio');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Não foi possível entrar com o Google.');
+      setGoogleError(err instanceof ApiError ? err.message : 'Não foi possível entrar com o Google.');
       setIsSubmitting(false);
     }
   }
 
   function handleGoogleError(): void {
-    setError('Não foi possível entrar com o Google.');
+    setGoogleError('Não foi possível entrar com o Google.');
   }
 
   return (
@@ -70,6 +73,7 @@ export default function EntrarPage() {
         </div>
 
         <GoogleLoginButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
+        {googleError && <p className="text-sm text-danger">{googleError}</p>}
 
         <TermsCheckbox checked={termsAccepted} onChange={setTermsAccepted} id="terms-accepted-entrar" />
         <p className="-mt-3 text-xs text-text-secondary">

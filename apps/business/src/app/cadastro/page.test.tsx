@@ -143,5 +143,34 @@ describe('CadastroPage', () => {
       });
       expect(uploadCompanyDocumentMock).toHaveBeenCalledWith(file);
     });
+
+    it('quando o envio do documento falha, tentar de novo não reenvia o perfil', async () => {
+      upsertCompanyProfileMock.mockResolvedValue({ id: '1', verificationStatus: 'pending' });
+      uploadCompanyDocumentMock.mockRejectedValueOnce(new Error('falha de rede'));
+      const user = userEvent.setup();
+      render(<CadastroPage />);
+
+      await switchToPessoaFisica(user);
+      await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
+      await user.type(screen.getByLabelText('Como quer aparecer'), 'Ana Freelas');
+      await user.type(screen.getByLabelText('CPF'), '11122233344');
+      const file = new File(['doc'], 'rg.jpg', { type: 'image/jpeg' });
+      await user.upload(screen.getByLabelText(/toque para escolher uma foto/i), file);
+      await user.click(screen.getByRole('button', { name: /continuar/i }));
+
+      expect(
+        await screen.findByText('Cadastro salvo, mas não foi possível enviar o documento. Tente enviar de novo.'),
+      ).toBeInTheDocument();
+      expect(pushMock).not.toHaveBeenCalled();
+      expect(upsertCompanyProfileMock).toHaveBeenCalledTimes(1);
+
+      uploadCompanyDocumentMock.mockResolvedValueOnce({ id: 'doc-1' });
+      await user.click(screen.getByRole('button', { name: /continuar/i }));
+
+      await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/painel'));
+      // Perfil não foi salvo de novo na segunda tentativa — só o documento.
+      expect(upsertCompanyProfileMock).toHaveBeenCalledTimes(1);
+      expect(uploadCompanyDocumentMock).toHaveBeenCalledTimes(2);
+    });
   });
 });

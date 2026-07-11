@@ -23,7 +23,7 @@ const TOMORROW_PLUS_5H = new Date(TOMORROW.getTime() + 5 * 60 * 60 * 1000);
 
 async function setup(requiresExperience = false) {
   const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-  await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza' });
+  await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
   const [company] = await db
     .insert(companies)
@@ -223,7 +223,7 @@ describe('listJobApplications', () => {
     await createApplication(worker.id, job.id);
 
     const [secondWorker] = await db.insert(users).values({ phone: SECOND_WORKER_PHONE }).returning();
-    await db.insert(workerProfiles).values({ userId: secondWorker.id, fullName: 'Beatriz Lima', avgRating: '4.8' });
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: secondWorker.id, fullName: 'Beatriz Lima', avgRating: '4.8' });
     await createApplication(secondWorker.id, job.id);
 
     const result = await listJobApplications(owner.id, job.id);

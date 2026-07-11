@@ -11,7 +11,9 @@ import { ApplicationResponse, toApplicationResponse } from './application-respon
  * conclusão, isso já é um problema de turno em andamento, não uma
  * candidatura pra desfazer. Reabre a vaga (decrementa positionsFilled
  * e volta de 'filled' pra 'open' se for o caso) e cancela o shift
- * agendado.
+ * agendado. As três escritas rodam numa transação — sem isso, uma
+ * falha no meio podia deixar a candidatura "rejected" sem reabrir a
+ * vaga, travando a posição pra sempre.
  */
 export async function removeApprovedWorker(ownerUserId: string, applicationId: string): Promise<ApplicationResponse> {
   const application = await db.query.applications.findFirst({ where: eq(applications.id, applicationId) });
@@ -38,28 +40,30 @@ export async function removeApprovedWorker(ownerUserId: string, applicationId: s
     throw new HttpError(400, 'Não é possível remover: o turno já começou ou foi concluído.');
   }
 
-  const [updated] = await db
-    .update(applications)
-    .set({ status: 'rejected', removedAt: new Date(), updatedAt: new Date() })
-    .where(and(eq(applications.id, applicationId), eq(applications.status, 'approved')))
-    .returning();
-  if (!updated) {
-    throw new HttpError(400, 'Essa candidatura não está mais aprovada.');
-  }
+  return db.transaction(async (tx) => {
+    const [updated] = await tx
+      .update(applications)
+      .set({ status: 'rejected', removedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(applications.id, applicationId), eq(applications.status, 'approved')))
+      .returning();
+    if (!updated) {
+      throw new HttpError(400, 'Essa candidatura não está mais aprovada.');
+    }
 
-  if (shift && shift.status === 'scheduled') {
-    await db.update(shifts).set({ status: 'cancelled', updatedAt: new Date() }).where(eq(shifts.id, shift.id));
-  }
+    if (shift && shift.status === 'scheduled') {
+      await tx.update(shifts).set({ status: 'cancelled', updatedAt: new Date() }).where(eq(shifts.id, shift.id));
+    }
 
-  const positionsFilled = Math.max(0, job.positionsFilled - 1);
-  await db
-    .update(jobs)
-    .set({
-      positionsFilled,
-      status: job.status === 'filled' ? 'open' : job.status,
-      updatedAt: new Date(),
-    })
-    .where(eq(jobs.id, job.id));
+    const positionsFilled = Math.max(0, job.positionsFilled - 1);
+    await tx
+      .update(jobs)
+      .set({
+        positionsFilled,
+        status: job.status === 'filled' ? 'open' : job.status,
+        updatedAt: new Date(),
+      })
+      .where(eq(jobs.id, job.id));
 
-  return toApplicationResponse(updated);
+    return toApplicationResponse(updated);
+  });
 }

@@ -468,14 +468,26 @@ export default function AgendaPage() {
                       {SHIFT_STATUS_LABEL[shift.status] ?? shift.status}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-[12.5px] text-text-secondary">{formatFullDate(shift.job.startsAt)}</p>
-                  {shift.status === 'completed' && (
-                    <MapLink
-                      addressLabel={shift.job.addressLabel}
-                      lat={shift.job.locationLat}
-                      lng={shift.job.locationLng}
-                      className="mt-1 text-[12.5px]"
-                    />
+                  <p className="mt-0.5 text-[12.5px] font-semibold text-text-secondary">{shift.companyName}</p>
+                  <p className="mt-1 text-[12.5px] text-text-secondary">
+                    {formatFullDate(shift.job.startsAt)} · {formatTime(shift.job.startsAt)}–
+                    {formatTime(shift.job.endsAt)}
+                  </p>
+                  <MapLink
+                    addressLabel={shift.job.addressLabel}
+                    lat={shift.job.locationLat}
+                    lng={shift.job.locationLng}
+                    className="mt-1 text-[12.5px]"
+                  />
+                  {shift.job.dressCode && (
+                    <p className="mt-1 text-[12.5px] text-text-secondary">
+                      <span className="font-semibold text-text">Vestimenta:</span> {shift.job.dressCode}
+                    </p>
+                  )}
+                  {shift.job.toolsRequired && (
+                    <p className="mt-1 text-[12.5px] text-text-secondary">
+                      <span className="font-semibold text-text">Leve com você:</span> {shift.job.toolsRequired}
+                    </p>
                   )}
                 </li>
               ))}
@@ -496,9 +508,12 @@ export default function AgendaPage() {
               className="rounded-[20px] border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
             >
               <div className="flex items-start justify-between gap-3">
-                <p className="font-heading text-[17px] font-bold text-text">
-                  {categoryNames[shift.job.categoryId] ?? CATEGORY_LABEL_FALLBACK}
-                </p>
+                <div>
+                  <p className="font-heading text-[17px] font-bold text-text">
+                    {categoryNames[shift.job.categoryId] ?? CATEGORY_LABEL_FALLBACK}
+                  </p>
+                  <p className="text-[13px] font-semibold text-text-secondary">{shift.companyName}</p>
+                </div>
                 <span
                   className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
                     SHIFT_STATUS_CLASS[shift.status] ?? SHIFT_STATUS_CLASS.scheduled

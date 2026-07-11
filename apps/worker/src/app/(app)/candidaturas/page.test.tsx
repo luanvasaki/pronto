@@ -23,6 +23,7 @@ const APPLICATION = {
   id: 'app-1',
   status: 'pending',
   createdAt: '2026-07-01T12:00:00.000Z',
+  companyName: 'Buffet Aurora',
   job: {
     id: 'job-1',
     categoryId: 'cat-1',
@@ -62,6 +63,7 @@ describe('CandidaturasPage', () => {
     render(<CandidaturasPage />);
 
     expect(await screen.findByText('Garçom')).toBeInTheDocument();
+    expect(screen.getByText('Buffet Aurora')).toBeInTheDocument();
     expect(screen.getByText('Em análise')).toBeInTheDocument();
     expect(screen.getByText('Vila Madalena, São Paulo')).toBeInTheDocument();
     expect(screen.getByText('R$ 130.00')).toBeInTheDocument();

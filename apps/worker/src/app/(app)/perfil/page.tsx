@@ -212,11 +212,12 @@ export default function PerfilPage() {
     }
   }
 
-  const isProfileFormValid =
-    fullName.trim().length >= 2 &&
-    homeAddressFull.trim().length >= 8 &&
-    phone.length >= 10 &&
-    phone.length <= 11;
+  const profileMissingFields: string[] = [];
+  if (fullName.trim().length < 2) profileMissingFields.push('nome completo');
+  if (homeAddressFull.trim().length < 8) profileMissingFields.push('endereço completo');
+  if (phone.length < 10 || phone.length > 11) profileMissingFields.push('telefone');
+
+  const isProfileFormValid = profileMissingFields.length === 0;
 
   async function handleSaveProfile(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -367,7 +368,7 @@ export default function PerfilPage() {
                   <p className="mt-1 text-xs text-text-secondary">
                     {[categoryName, formatShiftDate(entry.shiftDate)].filter(Boolean).join(' · ')}
                   </p>
-                  {entry.comment && <p className="mt-2 text-sm text-text">"{entry.comment}"</p>}
+                  {entry.comment && <p className="mt-2 text-sm text-text">&quot;{entry.comment}&quot;</p>}
                   {entry.categoryScores && (
                     <div className="mt-2.5 flex flex-wrap gap-1.5">
                       {WORKER_RATING_CATEGORIES.flatMap((category) => {
@@ -610,6 +611,10 @@ export default function PerfilPage() {
         </div>
 
         {profileError && <p className="text-sm text-danger">{profileError}</p>}
+
+        {!isProfileFormValid && (
+          <p className="text-xs text-text-secondary">Falta preencher: {profileMissingFields.join(', ')}.</p>
+        )}
 
         {profileSaved ? (
           <div className="flex flex-col gap-2.5">

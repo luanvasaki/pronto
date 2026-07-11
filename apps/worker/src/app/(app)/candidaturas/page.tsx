@@ -104,9 +104,12 @@ export default function CandidaturasPage() {
             className="rounded-[20px] border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
           >
             <div className="flex items-start justify-between gap-3">
-              <p className="font-heading text-[17px] font-bold text-text">
-                {categoryNames[application.job.categoryId] ?? CATEGORY_LABEL_FALLBACK}
-              </p>
+              <div>
+                <p className="font-heading text-[17px] font-bold text-text">
+                  {categoryNames[application.job.categoryId] ?? CATEGORY_LABEL_FALLBACK}
+                </p>
+                <p className="text-[13px] font-semibold text-text-secondary">{application.companyName}</p>
+              </div>
               <span
                 className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
                   STATUS_CLASS[application.status] ?? STATUS_CLASS.pending

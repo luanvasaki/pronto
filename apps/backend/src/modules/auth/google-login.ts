@@ -10,6 +10,16 @@ export interface GoogleLoginResult extends IssuedTokens {
   user: UserResponse;
 }
 
+/** Mesmo motivo/padrão de register.ts — fecha a corrida de dois logins Google simultâneos criando conta nova. */
+function isUniqueViolation(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const code = (error as { code?: unknown }).code;
+  const causeCode = (error.cause as { code?: unknown } | undefined)?.code;
+  return code === '23505' || causeCode === '23505';
+}
+
 /**
  * Não linka automaticamente por e-mail com uma conta de senha existente:
  * o registro por e-mail+senha não tem confirmação de dono do e-mail, então
@@ -63,15 +73,31 @@ export async function googleLogin(
     throw new HttpError(400, 'É preciso aceitar os Termos de Uso para criar uma conta.');
   }
 
-  const [createdUser] = await db
-    .insert(users)
-    .values({
-      email: googleUser.email,
-      googleId: googleUser.googleId,
-      googlePhotoUrl: googleUser.picture,
-      termsAcceptedAt: new Date(),
-    })
-    .returning();
+  let createdUser;
+  try {
+    [createdUser] = await db
+      .insert(users)
+      .values({
+        email: googleUser.email,
+        googleId: googleUser.googleId,
+        googlePhotoUrl: googleUser.picture,
+        termsAcceptedAt: new Date(),
+      })
+      .returning();
+  } catch (error) {
+    // Duas abas/cliques simultâneos no mesmo login Google: a segunda
+    // chamada perde a corrida do índice único, mas a conta que a
+    // primeira acabou de criar já existe de verdade — melhor logar
+    // nela do que devolver erro pra quem só clicou duas vezes.
+    if (isUniqueViolation(error)) {
+      const raceWinner = await db.query.users.findFirst({ where: eq(users.googleId, googleUser.googleId) });
+      if (raceWinner) {
+        const tokens = await issueTokens(raceWinner.id);
+        return { user: toUserResponse(raceWinner), ...tokens };
+      }
+    }
+    throw error;
+  }
   if (!createdUser) {
     throw new HttpError(500, 'Falha ao criar usuário.');
   }

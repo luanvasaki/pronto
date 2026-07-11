@@ -87,6 +87,17 @@ export default function CadastroPage() {
     }
   }
 
+  /**
+   * `photoPreviewUrl` também guarda a foto do Google (URL de verdade, não
+   * criada por nós) quando não há `photoFile` — só revoga o blob local, e só
+   * quando ele deixa de estar em uso (troca de foto ou saída da tela), pra
+   * não vazar memória a cada nova seleção.
+   */
+  useEffect(() => {
+    if (!photoFile || !photoPreviewUrl) return;
+    return () => URL.revokeObjectURL(photoPreviewUrl);
+  }, [photoFile, photoPreviewUrl]);
+
   function handlePhotoChange(event: ChangeEvent<HTMLInputElement>): void {
     const file = event.target.files?.[0];
     if (!file) return;
