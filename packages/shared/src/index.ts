@@ -12,6 +12,7 @@ export {
   resetPassword,
 } from './auth-api';
 export type { UserResponse } from './auth-api';
+export { isValidCnpj, isValidCpf } from './cpf-cnpj';
 export { extractDigits } from './digits';
 export { formatCnpj, formatCpf, formatPhone } from './masks';
 export { isValidPassword } from './password';
