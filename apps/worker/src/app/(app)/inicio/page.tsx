@@ -1,6 +1,7 @@
 'use client';
 
 import { ApiError, listSkillCategories } from '@shift/shared';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
@@ -9,6 +10,7 @@ import { MapLink } from '../../../components/ui/map-link';
 import { listMyApplications, markApplicationSeen, markRemovalSeen, MyApplication } from '../../../lib/applications-api';
 import { getCurrentPosition } from '../../../lib/geolocation';
 import { applyToJob, listNearbyJobs, NearbyJob } from '../../../lib/jobs-api';
+import { listMyShifts } from '../../../lib/shifts-api';
 import { updateWorkerLocation } from '../../../lib/worker-profile-api';
 import { useWorkerProfile } from '../worker-profile-context';
 
@@ -101,6 +103,8 @@ export default function InicioPage() {
   const [removedApplications, setRemovedApplications] = useState<MyApplication[]>([]);
   const [dismissingRemovalId, setDismissingRemovalId] = useState<string | null>(null);
 
+  const [pendingRatingsCount, setPendingRatingsCount] = useState(0);
+
   function toggleAvailable(): void {
     setAvailable((current) => {
       const next = !current;
@@ -131,6 +135,14 @@ export default function InicioPage() {
       .then(({ applications }) => {
         setCalledApplications(applications.filter((a) => a.status === 'approved' && a.workerSeenAt === null));
         setRemovedApplications(applications.filter((a) => a.removedAt !== null && a.workerSeenRemovalAt === null));
+      })
+      .catch(() => undefined);
+
+    // Escala concluída esperando avaliação — mesmo espírito "secundário"
+    // acima: não trava a tela principal se falhar.
+    listMyShifts()
+      .then(({ shifts }) => {
+        setPendingRatingsCount(shifts.filter((shift) => shift.status === 'completed' && !shift.ratings.worker).length);
       })
       .catch(() => undefined);
   }, []);
@@ -257,6 +269,20 @@ export default function InicioPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {pendingRatingsCount > 0 && (
+        <Link
+          href="/agenda"
+          className="mb-4 block rounded-[18px] border border-warning/30 bg-warning/10 p-4 text-warning"
+        >
+          <p className="font-heading text-[15px] font-bold">
+            {pendingRatingsCount === 1
+              ? '1 escala concluída esperando sua avaliação'
+              : `${pendingRatingsCount} escalas concluídas esperando sua avaliação`}
+          </p>
+          <p className="mt-1 text-[13px]">Toque para avaliar na Agenda.</p>
+        </Link>
       )}
 
       <div className="flex items-start justify-between">

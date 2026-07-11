@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { Topbar } from './topbar';
 
 const NOTIFICATIONS = [
-  { applicationId: 'app-1', message: 'Buffet Aurora aceitou sua candidatura!' },
-  { applicationId: 'app-2', message: 'Bar do Zé removeu você do turno.' },
+  { id: 'app-1', message: 'Buffet Aurora aceitou sua candidatura!', href: '/inicio' },
+  { id: 'app-2', message: 'Bar do Zé removeu você do turno.', href: '/inicio' },
 ];
 
 describe('Topbar', () => {
@@ -29,6 +29,20 @@ describe('Topbar', () => {
 
     expect(screen.getByText(/Buffet Aurora aceitou sua candidatura/)).toBeInTheDocument();
     expect(screen.getByText(/Bar do Zé removeu você do turno/)).toBeInTheDocument();
+  });
+
+  it('cada notificação leva pro href próprio (ex.: escala esperando avaliação leva pra Agenda)', async () => {
+    const user = userEvent.setup();
+    render(
+      <Topbar
+        calledCount={1}
+        calledNotifications={[{ id: 'shift-1', message: 'Avalie a Buffet Aurora pela escala de Garçom.', href: '/agenda' }]}
+      />,
+    );
+
+    await user.click(screen.getByLabelText('1 chamada(s) pra trabalhar'));
+
+    expect(screen.getByRole('link', { name: /avalie a buffet aurora/i })).toHaveAttribute('href', '/agenda');
   });
 
   it('mostra mensagem de vazio quando não há chamadas', async () => {

@@ -1,6 +1,7 @@
 import { and, count, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, companies, jobs, shifts, skillCategories, workerProfiles } from '../../db/schema';
+import { getRatingsByShiftIds } from '../ratings/get-ratings-by-shift-ids';
 import { HttpError } from '../../shared/errors/http-error';
 
 const MAX_NOTIFICATIONS = 20;
@@ -21,11 +22,21 @@ export interface CheckedInNotification {
   checkInAt: Date;
 }
 
+export interface PendingRatingNotification {
+  shiftId: string;
+  jobId: string;
+  workerName: string;
+  categoryName: string;
+  checkOutAt: Date;
+}
+
 export interface CompanyNotifications {
   pendingApplicationsCount: number;
   pendingApplications: CompanyNotification[];
   checkedInCount: number;
   checkedInNotifications: CheckedInNotification[];
+  pendingRatingsCount: number;
+  pendingRatingsNotifications: PendingRatingNotification[];
 }
 
 /**
@@ -40,6 +51,10 @@ export interface CompanyNotifications {
  * candidatura, o turno não muda de status sozinho quando a empresa
  * "resolve" o aviso, então precisa de um campo próprio + endpoint pra
  * marcar como visto (ver mark-shift-check-in-seen.ts).
+ *
+ * Avaliação pendente também não precisa de "lido/não lido" próprio —
+ * o próprio ato de avaliar (criar a linha em `ratings`) já tira o
+ * turno da lista, igual às candidaturas pendentes.
  */
 export async function getCompanyNotifications(ownerUserId: string): Promise<CompanyNotifications> {
   const company = await db.query.companies.findFirst({ where: eq(companies.ownerUserId, ownerUserId) });
@@ -50,7 +65,14 @@ export async function getCompanyNotifications(ownerUserId: string): Promise<Comp
   const companyJobs = await db.query.jobs.findMany({ where: eq(jobs.companyId, company.id) });
   const jobIds = companyJobs.map((job) => job.id);
   if (jobIds.length === 0) {
-    return { pendingApplicationsCount: 0, pendingApplications: [], checkedInCount: 0, checkedInNotifications: [] };
+    return {
+      pendingApplicationsCount: 0,
+      pendingApplications: [],
+      checkedInCount: 0,
+      checkedInNotifications: [],
+      pendingRatingsCount: 0,
+      pendingRatingsNotifications: [],
+    };
   }
   const jobsById = new Map(companyJobs.map((job) => [job.id, job]));
 
@@ -78,14 +100,28 @@ export async function getCompanyNotifications(ownerUserId: string): Promise<Comp
     limit: MAX_NOTIFICATIONS,
   });
 
-  const workerIds = [...new Set([...pendingRows.map((row) => row.workerId), ...checkedInRows.map((row) => row.workerId)])];
+  const completedShiftRows = await db.query.shifts.findMany({
+    where: and(inArray(shifts.jobId, jobIds), eq(shifts.status, 'completed')),
+    orderBy: desc(shifts.checkOutAt),
+  });
+  const ratingsByShiftId = await getRatingsByShiftIds(completedShiftRows.map((row) => row.id));
+  const unratedShiftRows = completedShiftRows.filter((row) => !ratingsByShiftId.get(row.id)?.company);
+  const pendingRatingRows = unratedShiftRows.slice(0, MAX_NOTIFICATIONS);
+
+  const workerIds = [
+    ...new Set([
+      ...pendingRows.map((row) => row.workerId),
+      ...checkedInRows.map((row) => row.workerId),
+      ...pendingRatingRows.map((row) => row.workerId),
+    ]),
+  ];
   const workerRows =
     workerIds.length > 0 ? await db.query.workerProfiles.findMany({ where: inArray(workerProfiles.userId, workerIds) }) : [];
   const workersById = new Map(workerRows.map((worker) => [worker.userId, worker]));
 
   const categoryIds = [
     ...new Set(
-      [...pendingRows, ...checkedInRows].flatMap((row) => {
+      [...pendingRows, ...checkedInRows, ...pendingRatingRows].flatMap((row) => {
         const categoryId = jobsById.get(row.jobId)?.categoryId;
         return categoryId ? [categoryId] : [];
       }),
@@ -131,10 +167,30 @@ export async function getCompanyNotifications(ownerUserId: string): Promise<Comp
     ];
   });
 
+  const pendingRatingsNotifications = pendingRatingRows.flatMap((row) => {
+    const job = jobsById.get(row.jobId);
+    const worker = workersById.get(row.workerId);
+    const category = job ? categoriesById.get(job.categoryId) : undefined;
+    if (!job || !worker || !category || !row.checkOutAt) {
+      return [];
+    }
+    return [
+      {
+        shiftId: row.id,
+        jobId: row.jobId,
+        workerName: worker.fullName,
+        categoryName: category.name,
+        checkOutAt: row.checkOutAt,
+      },
+    ];
+  });
+
   return {
     pendingApplicationsCount: countRow?.value ?? 0,
     pendingApplications,
     checkedInCount: checkedInCountRow?.value ?? 0,
     checkedInNotifications,
+    pendingRatingsCount: unratedShiftRows.length,
+    pendingRatingsNotifications,
   };
 }

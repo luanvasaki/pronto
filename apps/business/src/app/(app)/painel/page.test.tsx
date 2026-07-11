@@ -188,4 +188,53 @@ describe('PainelPage', () => {
     await screen.findByText('Escalas abertas');
     expect(screen.queryByText('Escalas confirmadas')).not.toBeInTheDocument();
   });
+
+  it('avisa de escala concluída esperando avaliação da empresa', async () => {
+    const pastJob = { ...JOB, id: 'job-past', status: 'filled', positionsFilled: 1 };
+    listMyJobsMock.mockResolvedValue({ jobs: [pastJob] });
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [
+        {
+          id: 'app-1',
+          status: 'approved',
+          createdAt: '2026-08-01T00:00:00.000Z',
+          worker: { id: 'w1', fullName: 'Rafael Lima', photoUrl: null, avgRating: '4.9' },
+          shift: { id: 'shift-1', status: 'completed', checkInAt: null, checkOutAt: null, payment: null, ratings: { worker: null, company: null } },
+        },
+      ],
+    });
+
+    renderPainel();
+
+    expect(await screen.findByText('1 escala concluída esperando sua avaliação')).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /avalie rafael lima/i });
+    expect(link).toHaveAttribute('href', '/vagas/job-past');
+  });
+
+  it('não avisa quando a escala concluída já foi avaliada pela empresa', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [{ ...JOB, status: 'filled', positionsFilled: 1 }] });
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [
+        {
+          id: 'app-1',
+          status: 'approved',
+          createdAt: '2026-08-01T00:00:00.000Z',
+          worker: { id: 'w1', fullName: 'Rafael Lima', photoUrl: null, avgRating: '4.9' },
+          shift: {
+            id: 'shift-1',
+            status: 'completed',
+            checkInAt: null,
+            checkOutAt: null,
+            payment: null,
+            ratings: { worker: null, company: { id: 'r1', shiftId: 'shift-1', raterRole: 'company', score: 5, categoryScores: null, comment: null, createdAt: '2026-08-02T00:00:00.000Z' } },
+          },
+        },
+      ],
+    });
+
+    renderPainel();
+
+    await screen.findByText('Escalas abertas');
+    expect(screen.queryByText(/esperando sua avaliação/)).not.toBeInTheDocument();
+  });
 });

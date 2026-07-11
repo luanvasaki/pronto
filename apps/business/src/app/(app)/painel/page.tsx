@@ -1,12 +1,15 @@
 'use client';
 
 import { listSkillCategories } from '@shift/shared';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { StatCard } from '../../../components/ui/stat-card';
 import { JobApplication, listJobApplications } from '../../../lib/applications-api';
 import { Job, listMyJobs } from '../../../lib/jobs-api';
 import { useCompanyProfile } from '../company-profile-context';
+
+const MAX_PENDING_RATINGS_SHOWN = 3;
 
 const DAY_LABEL = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
 
@@ -38,6 +41,13 @@ interface ConfirmedRow {
   dayTime: string;
   workerName: string;
   workerPhotoUrl: string | null;
+}
+
+interface PendingRatingRow {
+  key: string;
+  jobId: string;
+  categoryName: string;
+  workerName: string;
 }
 
 /**
@@ -124,9 +134,48 @@ export default function PainelPage() {
         })),
     );
 
+  // Escala concluída sem avaliação da empresa — fica em aberto até a
+  // empresa avaliar (ver rateShift/RatingForm em vagas/[id]/page.tsx).
+  // Não filtra por isPastEvent: o que importa aqui é o status do turno
+  // (completed), não se a vaga em si já passou.
+  const pendingRatingRows: PendingRatingRow[] = jobs.flatMap((job) =>
+    (applicationsByJobId[job.id] ?? [])
+      .filter((application) => application.shift?.status === 'completed' && !application.shift.ratings.company)
+      .map((application) => ({
+        key: application.id,
+        jobId: job.id,
+        categoryName: categoryNames[job.categoryId] ?? 'Categoria',
+        workerName: application.worker.fullName,
+      })),
+  );
+
   return (
     <div className="flex flex-col gap-8">
       {error && <p className="text-sm text-danger">{error}</p>}
+
+      {pendingRatingRows.length > 0 && (
+        <div className="rounded-[18px] border border-warning/30 bg-warning/10 p-4">
+          <p className="font-heading text-[15px] font-bold text-warning">
+            {pendingRatingRows.length === 1
+              ? '1 escala concluída esperando sua avaliação'
+              : `${pendingRatingRows.length} escalas concluídas esperando sua avaliação`}
+          </p>
+          <ul className="mt-2.5 flex flex-col gap-1.5">
+            {pendingRatingRows.slice(0, MAX_PENDING_RATINGS_SHOWN).map((row) => (
+              <li key={row.key}>
+                <Link href={`/vagas/${row.jobId}`} className="text-[13.5px] text-warning underline underline-offset-2">
+                  Avalie {row.workerName} · {row.categoryName}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {pendingRatingRows.length > MAX_PENDING_RATINGS_SHOWN && (
+            <p className="mt-1.5 text-[12.5px] text-warning">
+              +{pendingRatingRows.length - MAX_PENDING_RATINGS_SHOWN} escala(s)
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard

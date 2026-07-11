@@ -7,6 +7,7 @@ import { TabBar } from '../../components/ui/tab-bar';
 import { CalledNotification, Topbar } from '../../components/ui/topbar';
 import { listMyApplications } from '../../lib/applications-api';
 import { useRequireAuth } from '../../hooks/use-require-auth';
+import { listMyShifts } from '../../lib/shifts-api';
 import { getWorkerProfile, WorkerProfileDetails } from '../../lib/worker-profile-api';
 import { WorkerProfileProvider } from './worker-profile-context';
 
@@ -71,20 +72,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     let cancelled = false;
 
     function poll(): void {
-      listMyApplications()
-        .then(({ applications }) => {
+      Promise.all([listMyApplications(), listMyShifts()])
+        .then(([{ applications }, { shifts }]) => {
           if (cancelled) return;
           const called = applications.filter((a) => a.status === 'approved' && a.workerSeenAt === null);
           const removed = applications.filter((a) => a.removedAt !== null && a.workerSeenRemovalAt === null);
-          setCalledCount(called.length + removed.length);
+          const pendingRatings = shifts.filter((shift) => shift.status === 'completed' && !shift.ratings.worker);
+          setCalledCount(called.length + removed.length + pendingRatings.length);
           setCalledNotifications([
             ...called.map((a) => ({
-              applicationId: a.id,
+              id: a.id,
               message: `${a.companyName || 'Uma empresa'} aceitou sua candidatura!`,
+              href: '/inicio',
             })),
             ...removed.map((a) => ({
-              applicationId: a.id,
+              id: a.id,
               message: `${a.companyName || 'Uma empresa'} removeu você da escala.`,
+              href: '/inicio',
+            })),
+            ...pendingRatings.map((shift) => ({
+              id: shift.id,
+              message: 'Você tem uma escala concluída esperando avaliação.',
+              href: '/agenda',
             })),
           ]);
         })

@@ -18,6 +18,14 @@ export interface CheckedInNotification {
   checkInAt: string;
 }
 
+export interface PendingRatingNotification {
+  shiftId: string;
+  jobId: string;
+  workerName: string;
+  categoryName: string;
+  checkOutAt: string;
+}
+
 export interface TopbarProps {
   title: string;
   subtitle?: string;
@@ -26,6 +34,8 @@ export interface TopbarProps {
   pendingApplications?: PendingApplicationNotification[];
   checkedInCount?: number;
   checkedInNotifications?: CheckedInNotification[];
+  pendingRatingsCount?: number;
+  pendingRatingsNotifications?: PendingRatingNotification[];
   onOpenNotifications?: () => void;
 }
 
@@ -43,6 +53,10 @@ function formatCheckInTime(iso: string): string {
  * "Publicar escala" navega pra /vagas/nova; virar modal fica pra uma
  * próxima etapa.
  *
+ * Avaliação pendente (escala concluída que a empresa ainda não avaliou)
+ * usa o mesmo sino — sem isso, a avaliação em pé fica invisível até a
+ * empresa lembrar de voltar na vaga sozinha.
+ *
  * Hambúrguer só existe abaixo de `lg` — acima disso a Sidebar já
  * fica sempre visível (ver sidebar.tsx).
  */
@@ -54,11 +68,13 @@ export function Topbar({
   pendingApplications = [],
   checkedInCount = 0,
   checkedInNotifications = [],
+  pendingRatingsCount = 0,
+  pendingRatingsNotifications = [],
   onOpenNotifications,
 }: TopbarProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
-  const totalCount = pendingApplicationsCount + checkedInCount;
+  const totalCount = pendingApplicationsCount + checkedInCount + pendingRatingsCount;
 
   useEffect(() => {
     if (!isNotificationsOpen) return;
@@ -143,7 +159,25 @@ export function Topbar({
                   ))}
                 </ul>
               )}
-              {pendingApplications.length === 0 && checkedInNotifications.length === 0 ? (
+              {pendingRatingsNotifications.length > 0 && (
+                <ul>
+                  {pendingRatingsNotifications.map((notification) => (
+                    <li key={notification.shiftId} className="border-b border-border bg-warning/5 last:border-b-0">
+                      <Link
+                        href={`/vagas/${notification.jobId}`}
+                        onClick={() => setIsNotificationsOpen(false)}
+                        className="block p-3.5 text-sm text-text transition hover:bg-background"
+                      >
+                        Avalie <span className="font-semibold">{notification.workerName}</span> pela escala de{' '}
+                        {notification.categoryName}.
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {pendingApplications.length === 0 &&
+              checkedInNotifications.length === 0 &&
+              pendingRatingsNotifications.length === 0 ? (
                 <p className="p-4 text-sm text-text-secondary">Nenhuma notificação por aqui.</p>
               ) : (
                 <ul>

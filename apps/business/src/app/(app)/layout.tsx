@@ -13,6 +13,7 @@ import {
   getCompanyProfile,
   markShiftCheckInSeen,
   PendingApplicationNotification,
+  PendingRatingNotification,
 } from '../../lib/company-profile-api';
 import { CompanyProfileProvider } from './company-profile-context';
 
@@ -75,6 +76,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [pendingApplications, setPendingApplications] = useState<PendingApplicationNotification[]>([]);
   const [checkedInCount, setCheckedInCount] = useState(0);
   const [checkedInNotifications, setCheckedInNotifications] = useState<CheckedInNotification[]>([]);
+  const [pendingRatingsCount, setPendingRatingsCount] = useState(0);
+  const [pendingRatingsNotifications, setPendingRatingsNotifications] = useState<PendingRatingNotification[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -116,6 +119,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           setPendingApplications(result.pendingApplications);
           setCheckedInCount(result.checkedInCount);
           setCheckedInNotifications(result.checkedInNotifications);
+          setPendingRatingsCount(result.pendingRatingsCount);
+          setPendingRatingsNotifications(result.pendingRatingsNotifications);
         })
         .catch(() => undefined);
     }
@@ -169,6 +174,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             pendingApplications={pendingApplications}
             checkedInCount={checkedInCount}
             checkedInNotifications={checkedInNotifications}
+            pendingRatingsCount={pendingRatingsCount}
+            pendingRatingsNotifications={pendingRatingsNotifications}
             onOpenNotifications={handleOpenNotifications}
           />
           <div className="flex-1 overflow-y-auto p-4 lg:p-7">{children}</div>

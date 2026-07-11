@@ -37,11 +37,21 @@ vi.mock('../../lib/applications-api', async (importOriginal) => {
   };
 });
 
+const listMyShiftsMock = vi.fn();
+vi.mock('../../lib/shifts-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/shifts-api')>();
+  return {
+    ...actual,
+    listMyShifts: (...args: unknown[]) => listMyShiftsMock(...args),
+  };
+});
+
 describe('AppLayout', () => {
   beforeEach(() => {
     getCurrentUserMock.mockReset();
     getWorkerProfileMock.mockReset();
     listMyApplicationsMock.mockReset().mockResolvedValue({ applications: [] });
+    listMyShiftsMock.mockReset().mockResolvedValue({ shifts: [] });
     replaceMock.mockClear();
     pathnameMock = '/inicio';
   });
@@ -215,5 +225,45 @@ describe('AppLayout', () => {
 
     await screen.findByText('Conteúdo protegido');
     expect(await screen.findByLabelText('1 chamada(s) pra trabalhar')).toBeInTheDocument();
+  });
+
+  it('mostra escala concluída sem avaliação no sino, levando pra Agenda', async () => {
+    getCurrentUserMock.mockResolvedValue({ user: { id: '1' } });
+    getWorkerProfileMock.mockResolvedValue({
+      fullName: 'Ana Souza',
+      bio: null,
+      cpf: null,
+      categoryIds: ['cat-1'],
+      photoUrl: null,
+      homeAddressLabel: null,
+      kycStatus: 'approved',
+      hasDocument: true,
+      hasSelfie: true,
+      avgRating: null,
+      totalShiftsCompleted: 1,
+      totalHoursWorked: 5,
+    });
+    listMyShiftsMock.mockResolvedValue({
+      shifts: [
+        { id: 'shift-1', status: 'completed', ratings: { worker: null, company: null } },
+        { id: 'shift-2', status: 'completed', ratings: { worker: { id: 'r1' }, company: null } },
+      ],
+    });
+
+    render(
+      <AppLayout>
+        <p>Conteúdo protegido</p>
+      </AppLayout>,
+    );
+
+    await screen.findByText('Conteúdo protegido');
+    const bell = await screen.findByLabelText('1 chamada(s) pra trabalhar');
+    const user = (await import('@testing-library/user-event')).default.setup();
+    await user.click(bell);
+
+    expect(screen.getByRole('link', { name: /escala concluída esperando avaliação/i })).toHaveAttribute(
+      'href',
+      '/agenda',
+    );
   });
 });

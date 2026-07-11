@@ -35,6 +35,11 @@ vi.mock('../../../lib/applications-api', () => ({
   markRemovalSeen: (...args: unknown[]) => markRemovalSeenMock(...args),
 }));
 
+const listMyShiftsMock = vi.fn();
+vi.mock('../../../lib/shifts-api', () => ({
+  listMyShifts: (...args: unknown[]) => listMyShiftsMock(...args),
+}));
+
 const PROFILE = {
   fullName: 'Ana Souza',
   bio: null,
@@ -102,6 +107,7 @@ describe('InicioPage', () => {
     listMyApplicationsMock.mockReset().mockResolvedValue({ applications: [] });
     markApplicationSeenMock.mockReset();
     markRemovalSeenMock.mockReset();
+    listMyShiftsMock.mockReset().mockResolvedValue({ shifts: [] });
     window.localStorage.clear();
     // Evita vazamento entre testes — cada um define seu próprio mock.
     Object.defineProperty(window.navigator, 'geolocation', { value: undefined, configurable: true });
@@ -491,5 +497,33 @@ describe('InicioPage', () => {
 
     await waitFor(() => expect(screen.queryByText(/removeu você da escala/)).not.toBeInTheDocument());
     expect(markRemovalSeenMock).toHaveBeenCalledWith('app-1');
+  });
+
+  it('avisa de escala concluída esperando avaliação, com link pra Agenda', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [] });
+    listMyShiftsMock.mockResolvedValue({
+      shifts: [
+        { id: 'shift-1', status: 'completed', ratings: { worker: null, company: null } },
+        { id: 'shift-2', status: 'completed', ratings: { worker: { id: 'r1' }, company: null } },
+        { id: 'shift-3', status: 'scheduled', ratings: { worker: null, company: null } },
+      ],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('1 escala concluída esperando sua avaliação')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /1 escala concluída/i })).toHaveAttribute('href', '/agenda');
+  });
+
+  it('não avisa de avaliação pendente quando não há escala concluída sem avaliação', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [] });
+    listMyShiftsMock.mockResolvedValue({
+      shifts: [{ id: 'shift-1', status: 'completed', ratings: { worker: { id: 'r1' }, company: null } }],
+    });
+
+    renderPage();
+
+    await screen.findByText('Nenhuma vaga disponível com esse filtro.');
+    expect(screen.queryByText(/esperando sua avaliação/)).not.toBeInTheDocument();
   });
 });

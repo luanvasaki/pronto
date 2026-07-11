@@ -68,11 +68,21 @@ export interface CheckedInNotification {
   checkInAt: string;
 }
 
+export interface PendingRatingNotification {
+  shiftId: string;
+  jobId: string;
+  workerName: string;
+  categoryName: string;
+  checkOutAt: string;
+}
+
 export interface CompanyNotifications {
   pendingApplicationsCount: number;
   pendingApplications: PendingApplicationNotification[];
   checkedInCount: number;
   checkedInNotifications: CheckedInNotification[];
+  pendingRatingsCount: number;
+  pendingRatingsNotifications: PendingRatingNotification[];
 }
 
 export function getCompanyNotifications(): Promise<CompanyNotifications> {

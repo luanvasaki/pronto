@@ -5,8 +5,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Logo } from './logo';
 
 export interface CalledNotification {
-  applicationId: string;
+  id: string;
   message: string;
+  href: string;
 }
 
 export interface TopbarProps {
@@ -15,10 +16,11 @@ export interface TopbarProps {
 }
 
 /**
- * Sino avisa quantas novidades de candidatura ainda não foram vistas
- * (aprovação ou remoção — mesmos alertas dos banners na tela de
- * Início) — clicar abre um dropdown; cada item leva pro Início, onde
- * dá pra ver a escala completa e confirmar a leitura.
+ * Sino avisa quantas novidades ainda não foram vistas — candidatura
+ * aprovada/removida (mesmos alertas dos banners na tela de Início) e
+ * escala concluída esperando avaliação (banner da Agenda) — clicar
+ * abre um dropdown; cada item leva pro `href` da própria notificação
+ * (Início ou Agenda, dependendo do tipo).
  */
 export function Topbar({ calledCount, calledNotifications = [] }: TopbarProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -74,9 +76,9 @@ export function Topbar({ calledCount, calledNotifications = [] }: TopbarProps) {
             ) : (
               <ul>
                 {calledNotifications.map((notification) => (
-                  <li key={notification.applicationId} className="border-b border-border last:border-b-0">
+                  <li key={notification.id} className="border-b border-border last:border-b-0">
                     <Link
-                      href="/inicio"
+                      href={notification.href}
                       onClick={() => setIsNotificationsOpen(false)}
                       className="block p-3.5 text-sm text-text transition hover:bg-background"
                     >

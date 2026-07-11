@@ -1,10 +1,12 @@
 import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
-import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
+import { applications, companies, jobs, ratings, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
 import { updateApplicationStatus } from '../applications/update-application-status';
+import { createRating } from '../ratings/create-rating';
 import { checkIn } from '../shifts/check-in';
+import { checkOut } from '../shifts/check-out';
 import { markShiftCheckInSeen } from '../shifts/mark-shift-check-in-seen';
 import { getCompanyNotifications } from './get-notifications';
 
@@ -57,6 +59,10 @@ describe('getCompanyNotifications', () => {
       if (company) {
         const companyJobs = await db.query.jobs.findMany({ where: eq(jobs.companyId, company.id) });
         for (const job of companyJobs) {
+          const jobShifts = await db.query.shifts.findMany({ where: eq(shifts.jobId, job.id) });
+          for (const shift of jobShifts) {
+            await db.delete(ratings).where(eq(ratings.shiftId, shift.id));
+          }
           await db.delete(shifts).where(eq(shifts.jobId, job.id));
           await db.delete(applications).where(eq(applications.jobId, job.id));
         }
@@ -136,5 +142,50 @@ describe('getCompanyNotifications', () => {
     const afterSeen = await getCompanyNotifications(owner.id);
     expect(afterSeen.checkedInCount).toBe(0);
     expect(afterSeen.checkedInNotifications).toEqual([]);
+  });
+
+  it('avisa de escala concluída aguardando avaliação da empresa, e some depois que ela avalia', async () => {
+    const { owner, job } = await setup();
+    const worker = await createWorker(WORKER_PHONE, 'Ana Souza');
+    const application = await createApplication(worker.id, job.id);
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+    const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
+    if (!shift) throw new Error('Turno não foi criado no setup do teste.');
+    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+
+    const beforeRating = await getCompanyNotifications(owner.id);
+    expect(beforeRating.pendingRatingsCount).toBe(1);
+    expect(beforeRating.pendingRatingsNotifications).toHaveLength(1);
+    expect(beforeRating.pendingRatingsNotifications[0].workerName).toBe('Ana Souza');
+    expect(beforeRating.pendingRatingsNotifications[0].categoryName).toBe(TEST_CATEGORY_NAME);
+    expect(beforeRating.pendingRatingsNotifications[0].shiftId).toBe(shift.id);
+
+    await createRating(owner.id, shift.id, {
+      categoryScores: {
+        pontualidade: 5,
+        educacao: 5,
+        proatividade: 5,
+        comunicacao: 5,
+        qualidade: 5,
+      },
+      comment: undefined,
+    });
+
+    const afterRating = await getCompanyNotifications(owner.id);
+    expect(afterRating.pendingRatingsCount).toBe(0);
+    expect(afterRating.pendingRatingsNotifications).toEqual([]);
+  });
+
+  it('não conta escala agendada ou em andamento como avaliação pendente', async () => {
+    const { owner, job } = await setup();
+    const worker = await createWorker(WORKER_PHONE, 'Ana Souza');
+    const application = await createApplication(worker.id, job.id);
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+
+    const result = await getCompanyNotifications(owner.id);
+
+    expect(result.pendingRatingsCount).toBe(0);
+    expect(result.pendingRatingsNotifications).toEqual([]);
   });
 });
