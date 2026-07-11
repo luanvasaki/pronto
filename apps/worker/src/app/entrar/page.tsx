@@ -66,7 +66,7 @@ export default function EntrarPage() {
         <Logo className="mb-2" />
         <div>
           <h1 className="font-heading text-2xl font-bold text-text">Entre na sua conta</h1>
-          <p className="mt-1 text-[15px] text-text-secondary">Encontre turnos perto de você.</p>
+          <p className="mt-1 text-[15px] text-text-secondary">Encontre escalas perto de você.</p>
         </div>
 
         <GoogleLoginButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />

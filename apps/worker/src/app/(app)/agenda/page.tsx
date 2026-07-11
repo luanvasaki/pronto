@@ -32,14 +32,55 @@ const SHIFT_STATUS_CLASS: Record<string, string> = {
  * isso, mesmo que o campo por trás ainda seja `payment.status`.
  */
 const PAYMENT_STATUS_LABEL: Record<string, string> = {
-  pending: 'Aguardando conclusão do turno',
-  charged: 'Turno concluído — acerte o pagamento direto com a empresa',
+  pending: 'Aguardando conclusão da escala',
+  charged: 'Escala concluída — acerte o pagamento direto com a empresa',
   released: 'A empresa marcou como pago — você recebeu?',
   confirmed: 'Você confirmou o recebimento',
   disputed: 'Você avisou que não recebeu — em análise',
   failed: 'Não foi possível registrar o acerto',
   refunded: 'Acerto cancelado',
 };
+
+/** Cor do ponto no calendário — mesmo mapeamento de SHIFT_STATUS_CLASS, mas sólido (dot, não pílula). */
+const CALENDAR_DOT_CLASS: Record<string, string> = {
+  scheduled: 'bg-warning',
+  checked_in: 'bg-primary',
+  completed: 'bg-success',
+  no_show: 'bg-danger',
+  cancelled: 'bg-border',
+};
+
+const WEEKDAY_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const MAX_DOTS_PER_DAY = 4;
+
+function toDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function startOfCalendarGrid(monthDate: Date): Date {
+  const start = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+  start.setDate(start.getDate() - start.getDay());
+  return start;
+}
+
+function isSameDate(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function monthLabel(date: Date): string {
+  const label = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(date);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function formatFullDate(iso: string): string {
+  const label = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(
+    new Date(iso),
+  );
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
 
 interface RatingDraft {
   scores: Record<string, number>;
@@ -63,7 +104,7 @@ interface UpcomingReminder {
   urgent: boolean;
 }
 
-/** Aviso pra não perder o turno confirmado — some depois que começa (o
+/** Aviso pra não perder a escala confirmada — some depois que começa (o
  * trabalhador já deveria estar fazendo check-in, não esperando um lembrete). */
 function getUpcomingReminder(startsAt: string): UpcomingReminder | null {
   const hoursUntil = (new Date(startsAt).getTime() - Date.now()) / (1000 * 60 * 60);
@@ -77,8 +118,8 @@ function getUpcomingReminder(startsAt: string): UpcomingReminder | null {
       ? `em ${minutesUntil} min`
       : `em ${Math.round(hoursUntil)}h`;
   const message = urgent
-    ? `Seu turno começa ${countdown}, às ${time} — não perca o horário!`
-    : `Seu turno começa ${countdown}, às ${time}. Não esqueça!`;
+    ? `Sua escala começa ${countdown}, às ${time} — não perca o horário!`
+    : `Sua escala começa ${countdown}, às ${time}. Não esqueça!`;
 
   return { message, urgent };
 }
@@ -119,11 +160,17 @@ function TimelineRow({ label, time, done, active, last }: TimelineRowProps) {
   );
 }
 
-export default function TurnosPage() {
+export default function AgendaPage() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
 
   const [actingShiftId, setActingShiftId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<{ shiftId: string; message: string } | null>(null);
@@ -142,7 +189,7 @@ export default function TurnosPage() {
         setShifts(shiftsResult.shifts);
         setCategoryNames(Object.fromEntries(categoriesResult.categories.map((c) => [c.id, c.name])));
       } catch {
-        setError('Não foi possível carregar seus turnos.');
+        setError('Não foi possível carregar suas escalas.');
       } finally {
         setIsLoading(false);
       }
@@ -256,19 +303,185 @@ export default function TurnosPage() {
   if (isLoading) {
     return (
       <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando seus turnos...</p>
+        <p className="text-sm text-text-secondary">Carregando suas escalas...</p>
       </main>
     );
   }
 
+  const scheduledCount = shifts.filter((shift) => shift.status === 'scheduled' || shift.status === 'checked_in').length;
+  const completedCount = shifts.filter((shift) => shift.status === 'completed').length;
+
+  const shiftsByDateKey = new Map<string, Shift[]>();
+  for (const shift of shifts) {
+    const key = toDateKey(new Date(shift.job.startsAt));
+    const dayShifts = shiftsByDateKey.get(key) ?? [];
+    dayShifts.push(shift);
+    shiftsByDateKey.set(key, dayShifts);
+  }
+
+  const gridStart = startOfCalendarGrid(currentMonth);
+  const calendarDays = Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(gridStart);
+    date.setDate(date.getDate() + index);
+    return date;
+  });
+  const today = new Date();
+  const selectedDayShifts = selectedDateKey ? (shiftsByDateKey.get(selectedDateKey) ?? []) : [];
+
   return (
     <main className="flex flex-1 flex-col gap-4 px-5 py-8">
-      <h1 className="font-heading text-2xl font-bold text-text">Meus turnos</h1>
+      <h1 className="font-heading text-2xl font-bold text-text">Minhas escalas</h1>
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
       {shifts.length === 0 && !error && (
-        <p className="text-sm text-text-secondary">Você ainda não tem turnos agendados.</p>
+        <p className="text-sm text-text-secondary">Você ainda não tem escalas agendadas.</p>
+      )}
+
+      {shifts.length > 0 && (
+        <div className="flex gap-3">
+          <div className="flex-1 rounded-2xl border border-border bg-surface p-4 text-center">
+            <p className="font-heading text-xl font-bold text-warning">{scheduledCount}</p>
+            <p className="mt-1 text-xs text-text-secondary">Agendadas</p>
+          </div>
+          <div className="flex-1 rounded-2xl border border-border bg-surface p-4 text-center">
+            <p className="font-heading text-xl font-bold text-success">{completedCount}</p>
+            <p className="mt-1 text-xs text-text-secondary">Já concluídas</p>
+          </div>
+        </div>
+      )}
+
+      {shifts.length > 0 && (
+        <div className="rounded-[20px] border border-border bg-surface p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading text-[15px] font-bold text-text">{monthLabel(currentMonth)}</h2>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                aria-label="Mês anterior"
+                onClick={() => {
+                  setSelectedDateKey(null);
+                  setCurrentMonth((month) => new Date(month.getFullYear(), month.getMonth() - 1, 1));
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-text transition hover:border-primary hover:text-primary"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const now = new Date();
+                  setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+                  setSelectedDateKey(null);
+                }}
+                className="rounded-lg border border-border px-2 py-1 text-[12px] font-semibold text-text transition hover:border-primary hover:text-primary"
+              >
+                Hoje
+              </button>
+              <button
+                type="button"
+                aria-label="Próximo mês"
+                onClick={() => {
+                  setSelectedDateKey(null);
+                  setCurrentMonth((month) => new Date(month.getFullYear(), month.getMonth() + 1, 1));
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-text transition hover:border-primary hover:text-primary"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[10px] font-semibold tracking-[0.06em] text-text-secondary uppercase">
+            {WEEKDAY_LABEL.map((label) => (
+              <span key={label}>{label}</span>
+            ))}
+          </div>
+
+          <div className="mt-1 grid grid-cols-7 gap-1">
+            {calendarDays.map((date) => {
+              const dateKey = toDateKey(date);
+              const dayShifts = shiftsByDateKey.get(dateKey) ?? [];
+              const inCurrentMonth = date.getMonth() === currentMonth.getMonth();
+              const isToday = isSameDate(date, today);
+              const isSelected = dateKey === selectedDateKey;
+
+              return (
+                <button
+                  key={dateKey}
+                  type="button"
+                  disabled={dayShifts.length === 0}
+                  onClick={() => setSelectedDateKey((current) => (current === dateKey ? null : dateKey))}
+                  className={`flex min-h-[42px] flex-col items-center gap-1 rounded-lg py-1.5 ${
+                    isSelected ? 'bg-primary/10' : dayShifts.length > 0 ? 'hover:bg-background' : ''
+                  }`}
+                >
+                  <span
+                    className={`flex h-5 w-5 items-center justify-center rounded-full text-[11.5px] font-semibold ${
+                      isToday
+                        ? 'bg-primary text-white'
+                        : inCurrentMonth
+                          ? 'text-text'
+                          : 'text-text-secondary/40'
+                    }`}
+                  >
+                    {date.getDate()}
+                  </span>
+                  <span className="flex h-[6px] items-center gap-[3px]">
+                    {dayShifts.slice(0, MAX_DOTS_PER_DAY).map((shift) => (
+                      <span
+                        key={shift.id}
+                        className={`h-[5px] w-[5px] rounded-full ${CALENDAR_DOT_CLASS[shift.status] ?? 'bg-border'}`}
+                      />
+                    ))}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-3 text-[11.5px] text-text-secondary">
+            <span className="flex items-center gap-1.5">
+              <span className="h-[7px] w-[7px] rounded-full bg-warning" /> Agendada
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-[7px] w-[7px] rounded-full bg-primary" /> Em andamento
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-[7px] w-[7px] rounded-full bg-success" /> Concluída
+            </span>
+          </div>
+
+          {selectedDateKey && selectedDayShifts.length > 0 && (
+            <ul className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+              {selectedDayShifts.map((shift) => (
+                <li key={shift.id} className="rounded-xl bg-background p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[13.5px] font-semibold text-text">
+                      {categoryNames[shift.job.categoryId] ?? CATEGORY_LABEL_FALLBACK}
+                    </p>
+                    <span
+                      className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        SHIFT_STATUS_CLASS[shift.status] ?? SHIFT_STATUS_CLASS.scheduled
+                      }`}
+                    >
+                      {SHIFT_STATUS_LABEL[shift.status] ?? shift.status}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[12.5px] text-text-secondary">{formatFullDate(shift.job.startsAt)}</p>
+                  {shift.status === 'completed' && (
+                    <MapLink
+                      addressLabel={shift.job.addressLabel}
+                      lat={shift.job.locationLat}
+                      lng={shift.job.locationLng}
+                      className="mt-1 text-[12.5px]"
+                    />
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
 
       <ul className="flex flex-col gap-3">
@@ -362,13 +575,13 @@ export default function TurnosPage() {
                     label="Em andamento"
                     done={step >= 2}
                     active={step === 1}
-                    time={step === 1 ? 'Turno em andamento' : step === 2 ? 'Concluído' : '—'}
+                    time={step === 1 ? 'Escala em andamento' : step === 2 ? 'Concluído' : '—'}
                   />
                   <TimelineRow
                     label="Check-out"
                     done={step >= 2}
                     last
-                    time={shift.checkOutAt ? formatTime(shift.checkOutAt) : 'Ao fim do turno'}
+                    time={shift.checkOutAt ? formatTime(shift.checkOutAt) : 'Ao fim da escala'}
                   />
                 </div>
               )}

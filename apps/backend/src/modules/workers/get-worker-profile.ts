@@ -15,6 +15,9 @@ export interface WorkerProfileDetails {
   // Endereço completo — só volta aqui (visão do próprio dono do perfil),
   // nunca em endpoints que empresa ou outro trabalhador acessam.
   homeAddressFull: string | null;
+  // Telefone de contato — mesma regra do endereço completo: só volta
+  // aqui (visão do próprio dono) e no admin (list-workers.ts).
+  phone: string | null;
   cnhCategory: string | null;
   kycStatus: string;
   hasDocument: boolean;
@@ -101,6 +104,7 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
     photoUrl: profile.photoUrl,
     homeAddressLabel: profile.homeAddressLabel,
     homeAddressFull: profile.homeAddressFull,
+    phone: profile.phone,
     cnhCategory: profile.cnhCategory,
     kycStatus: profile.kycStatus,
     hasDocument,

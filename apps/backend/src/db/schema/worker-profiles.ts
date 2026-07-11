@@ -50,6 +50,13 @@ export const workerProfiles = pgTable(
     // (diferente de homeAddressLabel, que é só o resumo público). Só
     // aparece no retorno de getWorkerProfile.ts (visão do próprio dono).
     homeAddressFull: varchar('home_address_full', { length: 500 }),
+    // Telefone de contato — dado sensível, mesma regra do endereço
+    // completo: nunca exposto pra empresa, só aparece pro próprio dono
+    // (getWorkerProfile.ts) e pro admin (list-workers.ts), que pode
+    // precisar ligar em caso de problema. Diferente de `users.phone`
+    // (reservado pra uma futura verificação de conta por celular/OTP,
+    // hoje sem uso) — este aqui é só o contato que o trabalhador informou.
+    phone: varchar('phone', { length: 20 }),
     // Nulo = não tem CNH — usada pra bater com o requisito de CNH de
     // uma vaga (ver jobs.cnh_category/cnh_required e create-application.ts).
     cnhCategory: cnhCategoryEnum('cnh_category'),

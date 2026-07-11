@@ -12,6 +12,7 @@ const TEST_PASSWORD = 'senha-de-teste-123';
 const TEST_CATEGORY_NAME = 'Categoria de teste — worker-document-routes';
 const TEST_CPF = '11122233366';
 const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
+const TEST_WORKER_PHONE = '11912345678';
 
 async function loginAndCreateProfile(app: ReturnType<typeof createApp>) {
   const agent = request.agent(app);
@@ -21,9 +22,13 @@ async function loginAndCreateProfile(app: ReturnType<typeof createApp>) {
     .insert(skillCategories)
     .values({ name: TEST_CATEGORY_NAME })
     .returning();
-  await agent
-    .put('/worker-profile')
-    .send({ fullName: 'Rafael Lima', categoryIds: [category.id], cpf: TEST_CPF, homeAddressFull: TEST_ADDRESS });
+  await agent.put('/worker-profile').send({
+    fullName: 'Rafael Lima',
+    categoryIds: [category.id],
+    cpf: TEST_CPF,
+    homeAddressFull: TEST_ADDRESS,
+    phone: TEST_WORKER_PHONE,
+  });
 
   return agent;
 }

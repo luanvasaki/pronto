@@ -6,6 +6,9 @@ export interface AdminWorker {
   userId: string;
   fullName: string;
   email: string | null;
+  // Contato do trabalhador — só o admin vê essa lista (nunca exposto
+  // pra empresa, ver comentário de worker_profiles.phone).
+  phone: string | null;
   photoUrl: string | null;
   kycStatus: string;
   avgRating: string | null;
@@ -25,6 +28,7 @@ export async function listAdminWorkers(): Promise<AdminWorker[]> {
       userId: workerProfiles.userId,
       fullName: workerProfiles.fullName,
       email: users.email,
+      phone: workerProfiles.phone,
       photoUrl: workerProfiles.photoUrl,
       kycStatus: workerProfiles.kycStatus,
       avgRating: workerProfiles.avgRating,

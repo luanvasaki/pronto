@@ -12,6 +12,7 @@ const CATEGORY_B = 'Categoria de teste — upsert B';
 const TEST_CPF = '11122233344';
 const OTHER_CPF = '55566677788';
 const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
+const TEST_WORKER_PHONE = '11912345678';
 
 async function createTestUser() {
   const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
@@ -47,6 +48,7 @@ describe('upsertWorkerProfile', () => {
         photoUrl: 'https://attacker.example.com/foto.jpg',
         cpf: TEST_CPF,
         homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
       }),
     ).rejects.toThrow('Foto de perfil inválida');
   });
@@ -65,6 +67,7 @@ describe('upsertWorkerProfile', () => {
       photoUrl: googlePhotoUrl,
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
 
     expect(result.photoUrl).toBe(googlePhotoUrl);
@@ -107,6 +110,35 @@ describe('upsertWorkerProfile', () => {
     ).rejects.toThrow('Endereço completo é obrigatório');
   });
 
+  it('rejeita telefone ausente no cadastro inicial', async () => {
+    const user = await createTestUser();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+    await expect(
+      upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+      }),
+    ).rejects.toThrow('Telefone é obrigatório');
+  });
+
+  it('rejeita telefone com formato inválido', async () => {
+    const user = await createTestUser();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+    await expect(
+      upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: '123',
+      }),
+    ).rejects.toThrow('Telefone inválido');
+  });
+
   it('cria o perfil com as categorias associadas', async () => {
     const user = await createTestUser();
     const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
@@ -116,6 +148,7 @@ describe('upsertWorkerProfile', () => {
       categoryIds: [category.id],
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
 
     expect(result.fullName).toBe('Ana Souza');
@@ -135,6 +168,7 @@ describe('upsertWorkerProfile', () => {
       categoryIds: [categoryA.id],
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
     const updated = await upsertWorkerProfile(user.id, {
       fullName: 'Ana Souza Lima',
@@ -159,11 +193,13 @@ describe('upsertWorkerProfile', () => {
       bio: 'Garçonete com 5 anos de experiência em eventos.',
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
 
     expect(result.bio).toBe('Garçonete com 5 anos de experiência em eventos.');
     expect(result.cpf).toBe(TEST_CPF);
     expect(result.homeAddressFull).toBe(TEST_ADDRESS);
+    expect(result.phone).toBe(TEST_WORKER_PHONE);
   });
 
   it('rejeita CPF com formato inválido', async () => {
@@ -184,6 +220,7 @@ describe('upsertWorkerProfile', () => {
       categoryIds: [category.id],
       cpf: OTHER_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
 
     await expect(
@@ -200,6 +237,7 @@ describe('upsertWorkerProfile', () => {
       bio: 'Bio original.',
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
 
     const updated = await upsertWorkerProfile(user.id, { fullName: 'Ana Souza Lima', categoryIds: [category.id] });
@@ -208,6 +246,7 @@ describe('upsertWorkerProfile', () => {
     expect(updated.bio).toBe('Bio original.');
     expect(updated.cpf).toBe(TEST_CPF);
     expect(updated.homeAddressFull).toBe(TEST_ADDRESS);
+    expect(updated.phone).toBe(TEST_WORKER_PHONE);
   });
 
   it('salva a experiência declarada por categoria', async () => {
@@ -221,6 +260,7 @@ describe('upsertWorkerProfile', () => {
       experienceByCategory: { [categoryA.id]: true, [categoryB.id]: false },
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
 
     expect(result.experienceByCategory[categoryA.id]).toBe(true);
@@ -241,6 +281,7 @@ describe('upsertWorkerProfile', () => {
       experienceByCategory: { [categoryA.id]: true },
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
 
     // Adiciona categoryB sem reenviar experienceByCategory — igual ao
@@ -264,6 +305,7 @@ describe('upsertWorkerProfile', () => {
         categoryIds: [category.id],
         cpf: TEST_CPF,
         homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
         cnhCategory: 'Z',
       }),
     ).rejects.toThrow('Categoria de CNH inválida');
@@ -278,6 +320,7 @@ describe('upsertWorkerProfile', () => {
       categoryIds: [category.id],
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
       cnhCategory: 'AB',
     });
     expect(created.cnhCategory).toBe('AB');

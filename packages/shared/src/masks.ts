@@ -19,3 +19,11 @@ export function formatCnpj(digits: string): string {
     .replace(/(\d{3})(\d)/, '$1/$2')
     .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
 }
+
+/** Celular (11 dígitos, 9 na frente) ou fixo (10 dígitos) — os dois formatam certo pela mesma regra. */
+export function formatPhone(digits: string): string {
+  return digits
+    .slice(0, 11)
+    .replace(/(\d{2})(\d)/, '($1) $2')
+    .replace(/(\d{4,5})(\d{4})$/, '$1-$2');
+}

@@ -66,6 +66,11 @@ export interface AdminNavProps {
  * Análoga à Sidebar de empresa, mas própria pro painel administrativo —
  * sem branding de empresa nem depender de perfil de empresa (admin pode
  * não ter uma). Ver app/admin/layout.tsx.
+ *
+ * "Voltar pra empresa" leva pro painel normal (/painel) — útil pra quem
+ * é admin E dono de empresa. Quem não tem empresa cadastrada acaba
+ * caindo em /cadastro sozinho (checagem já existe no layout do grupo
+ * `(app)`), não precisa de tratamento especial aqui.
  */
 export function AdminNav({ isOpen, onClose }: AdminNavProps) {
   const pathname = usePathname();
@@ -113,6 +118,22 @@ export function AdminNav({ isOpen, onClose }: AdminNavProps) {
             );
           })}
         </nav>
+
+        <Link
+          href="/painel"
+          className="mt-auto flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[14.5px] font-semibold text-background/70 transition hover:bg-background/5"
+        >
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M11 5l-7 7 7 7M4 12h16"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Voltar pra empresa
+        </Link>
       </aside>
     </>
   );

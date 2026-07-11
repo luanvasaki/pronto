@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 const TABS = [
   {
     href: '/inicio',
-    label: 'Turnos',
+    label: 'Escalas',
     icon: <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor" />,
   },
   {

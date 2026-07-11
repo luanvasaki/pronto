@@ -12,7 +12,7 @@ describe('TabBar', () => {
     usePathnameMock.mockReturnValue('/inicio');
     render(<TabBar />);
 
-    expect(screen.getByRole('link', { name: 'Turnos' })).toHaveAttribute('href', '/inicio');
+    expect(screen.getByRole('link', { name: 'Escalas' })).toHaveAttribute('href', '/inicio');
     expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('href', '/agenda');
     expect(screen.getByRole('link', { name: 'Ganhos' })).toHaveAttribute('href', '/ganhos');
     expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('href', '/perfil');
@@ -23,6 +23,6 @@ describe('TabBar', () => {
     render(<TabBar />);
 
     expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: 'Turnos' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'Escalas' })).not.toHaveAttribute('aria-current');
   });
 });

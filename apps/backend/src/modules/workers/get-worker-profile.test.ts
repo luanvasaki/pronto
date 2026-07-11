@@ -68,6 +68,7 @@ const TEST_CNPJ = '11222333000397';
 const TEST_CNPJ2 = '11222333000702';
 const TEST_CPF = '11122233396';
 const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
+const TEST_WORKER_PHONE = '11912345678';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const TOMORROW_PLUS_5H = new Date(TOMORROW.getTime() + 5 * 60 * 60 * 1000);
@@ -111,6 +112,7 @@ describe('getWorkerProfile', () => {
       bio: undefined,
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
 
     const result = await getWorkerProfile(user.id);
@@ -135,6 +137,7 @@ describe('getWorkerProfile', () => {
       bio: undefined,
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
     await db.insert(documents).values({ workerId: user.id, fileUrl: 'documents/fake.jpg' });
 
@@ -154,6 +157,7 @@ describe('getWorkerProfile', () => {
       bio: undefined,
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
     await db.insert(documents).values({ workerId: user.id, fileUrl: 'documents/fake-selfie.jpg', type: 'selfie' });
 
@@ -173,6 +177,7 @@ describe('getWorkerProfile', () => {
       bio: undefined,
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
 
     const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
@@ -225,6 +230,7 @@ describe('getWorkerProfile', () => {
       bio: undefined,
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
 
     const first = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
@@ -259,6 +265,7 @@ describe('getWorkerProfile', () => {
       bio: undefined,
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
 
     const { owner, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
@@ -284,6 +291,7 @@ describe('getWorkerProfile', () => {
       bio: undefined,
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
     await db.update(workerProfiles).set({ avgRating: '4.5' }).where(eq(workerProfiles.userId, user.id));
 
@@ -302,6 +310,7 @@ describe('getWorkerProfile', () => {
       bio: undefined,
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
     const { owner, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     await completeShift(worker.id, owner.id, job.id);
@@ -322,6 +331,7 @@ describe('getWorkerProfile', () => {
       bio: undefined,
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
     const { owner, company, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     await completeShift(worker.id, owner.id, job.id);
@@ -344,6 +354,7 @@ describe('getWorkerProfile', () => {
       bio: undefined,
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
     const first = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     await completeShift(worker.id, first.owner.id, first.job.id);
@@ -368,6 +379,7 @@ describe('getWorkerProfile', () => {
       bio: undefined,
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
     const { job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     const application = await createApplication(worker.id, job.id);
@@ -391,6 +403,7 @@ describe('getWorkerProfile', () => {
       bio: undefined,
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
     });
     const { owner, company, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     await completeShift(worker.id, owner.id, job.id);

@@ -57,6 +57,7 @@ describe('AdminLayout', () => {
     expect(await screen.findByText('conteúdo')).toBeInTheDocument();
     expect(screen.getByText('Empresas')).toBeInTheDocument();
     expect(screen.getByText('Trabalhadores')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /voltar pra empresa/i })).toHaveAttribute('href', '/painel');
   });
 
   it('desloga e manda pro login', async () => {

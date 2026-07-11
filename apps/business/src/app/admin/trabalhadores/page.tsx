@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiError } from '@shift/shared';
+import { ApiError, formatPhone } from '@shift/shared';
 import { useEffect, useMemo, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
@@ -151,6 +151,14 @@ export default function AdminTrabalhadoresPage() {
               </span>
             </div>
             {worker.email && <p className="mt-1 text-sm text-text-secondary">{worker.email}</p>}
+            {worker.phone && (
+              <a
+                href={`tel:+55${worker.phone}`}
+                className="mt-0.5 block text-sm text-primary underline underline-offset-2"
+              >
+                {formatPhone(worker.phone)}
+              </a>
+            )}
 
             <div className="mt-2.5 flex flex-wrap gap-2 text-[12.5px] font-semibold text-text-secondary">
               <span className="rounded-lg bg-background px-2.5 py-1">{worker.shiftsCompleted} escala(s) concluída(s)</span>

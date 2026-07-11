@@ -5,6 +5,7 @@ import { EmailSender } from '../auth/email-sender';
 import { deleteDemoDataHandler } from './delete-demo-data.controller';
 import { getCompanyDocumentFileHandler } from './get-company-document-file.controller';
 import { getDocumentFileHandler } from './get-document-file.controller';
+import { getGrowthMetricsHandler } from './get-growth-metrics.controller';
 import { getMetricsHandler } from './get-metrics.controller';
 import { listCompaniesHandler } from './list-companies.controller';
 import { listPendingVerificationsHandler } from './list-pending-verifications.controller';
@@ -28,6 +29,7 @@ export function createAdminRoutes(options: AdminRoutesOptions = {}): Router {
   const emailSender = options.emailSender ?? createEmailSender();
 
   adminRoutes.get('/admin/metrics', requireAuth, requireAdmin, getMetricsHandler);
+  adminRoutes.get('/admin/growth-metrics', requireAuth, requireAdmin, getGrowthMetricsHandler);
   adminRoutes.get('/admin/verifications', requireAuth, requireAdmin, listPendingVerificationsHandler);
   adminRoutes.get('/admin/documents/:id/file', requireAuth, requireAdmin, getDocumentFileHandler);
   adminRoutes.get('/admin/company-documents/:id/file', requireAuth, requireAdmin, getCompanyDocumentFileHandler);

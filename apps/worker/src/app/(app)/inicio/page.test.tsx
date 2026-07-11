@@ -44,6 +44,7 @@ const PROFILE = {
   photoUrl: null,
   homeAddressLabel: 'Campolim, Sorocaba',
   homeAddressFull: 'Rua das Flores, 123, Centro, Sorocaba - SP',
+  phone: '11912345678',
   cnhCategory: null,
   kycStatus: 'approved',
   hasDocument: true,
@@ -128,8 +129,8 @@ describe('InicioPage', () => {
     const user = userEvent.setup();
 
     const { unmount } = renderPage();
-    await screen.findByText('Disponível para turnos');
-    await user.click(screen.getByText('Disponível para turnos'));
+    await screen.findByText('Disponível para escalas');
+    await user.click(screen.getByText('Disponível para escalas'));
     expect(await screen.findByText('Indisponível')).toBeInTheDocument();
     unmount();
 
@@ -203,7 +204,7 @@ describe('InicioPage', () => {
     renderPage();
     await screen.findByText('Garçom');
 
-    const applyButton = screen.getByRole('button', { name: /aceitar turno/i });
+    const applyButton = screen.getByRole('button', { name: /aceitar escala/i });
     expect(applyButton).toBeDisabled();
 
     await user.click(screen.getByRole('checkbox'));
@@ -221,7 +222,7 @@ describe('InicioPage', () => {
     renderPage();
     await screen.findByText('Garçom');
 
-    expect(screen.getByRole('button', { name: /aceitar turno/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /aceitar escala/i })).toBeEnabled();
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 
@@ -243,7 +244,7 @@ describe('InicioPage', () => {
     await screen.findByText('Garçom');
 
     expect(screen.getByText('CNH B obrigatória')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /aceitar turno/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /aceitar escala/i })).toBeDisabled();
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 
@@ -256,7 +257,7 @@ describe('InicioPage', () => {
     await screen.findByText('Garçom');
 
     expect(screen.getByText('CNH B (preferência)')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /aceitar turno/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /aceitar escala/i })).toBeEnabled();
   });
 
   it('não bloqueia a candidatura quando o trabalhador já tem a CNH exigida', async () => {
@@ -267,7 +268,7 @@ describe('InicioPage', () => {
     renderPage();
     await screen.findByText('Garçom');
 
-    expect(screen.getByRole('button', { name: /aceitar turno/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /aceitar escala/i })).toBeEnabled();
   });
 
   it('pede localização e tenta de novo quando o backend diz que ela falta', async () => {
@@ -319,7 +320,7 @@ describe('InicioPage', () => {
 
     renderPage();
     await screen.findByText('Garçom');
-    await user.click(screen.getByRole('button', { name: /aceitar turno/i }));
+    await user.click(screen.getByRole('button', { name: /aceitar escala/i }));
 
     expect(await screen.findByRole('button', { name: /candidatura enviada/i })).toBeDisabled();
     expect(applyToJobMock).toHaveBeenCalledWith('job-1');
@@ -332,10 +333,10 @@ describe('InicioPage', () => {
 
     renderPage();
     await screen.findByText('Garçom');
-    await user.click(screen.getByRole('button', { name: /aceitar turno/i }));
+    await user.click(screen.getByRole('button', { name: /aceitar escala/i }));
 
     expect(await screen.findByText('Você já se candidatou a essa vaga.')).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByRole('button', { name: /aceitar turno/i })).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: /aceitar escala/i })).toBeEnabled());
   });
 
   it('mostra alerta quando o trabalhador foi aprovado e ainda não viu', async () => {
@@ -430,7 +431,7 @@ describe('InicioPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/Buffet Aurora removeu você do turno de Garçom/)).toBeInTheDocument();
+    expect(await screen.findByText(/Buffet Aurora removeu você da escala de Garçom/)).toBeInTheDocument();
   });
 
   it('não mostra alerta de remoção já visto', async () => {
@@ -453,7 +454,7 @@ describe('InicioPage', () => {
     renderPage();
 
     await screen.findByText('Nenhuma vaga disponível com esse filtro.');
-    expect(screen.queryByText(/removeu você do turno/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/removeu você da escala/)).not.toBeInTheDocument();
   });
 
   it('dispensa o alerta de remoção e marca como vista', async () => {
@@ -485,10 +486,10 @@ describe('InicioPage', () => {
     const user = userEvent.setup();
 
     renderPage();
-    await screen.findByText(/removeu você do turno/);
+    await screen.findByText(/removeu você da escala/);
     await user.click(screen.getByRole('button', { name: /ok, entendi/i }));
 
-    await waitFor(() => expect(screen.queryByText(/removeu você do turno/)).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText(/removeu você da escala/)).not.toBeInTheDocument());
     expect(markRemovalSeenMock).toHaveBeenCalledWith('app-1');
   });
 });

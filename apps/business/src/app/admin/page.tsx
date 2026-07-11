@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui/button';
-import { AdminMetrics, deleteDemoData, getAdminMetrics } from '../../lib/admin-api';
+import { GrowthChart } from '../../components/ui/growth-chart';
+import {
+  AdminGrowthMetrics,
+  AdminMetrics,
+  deleteDemoData,
+  getAdminGrowthMetrics,
+  getAdminMetrics,
+} from '../../lib/admin-api';
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -10,6 +17,8 @@ export default function AdminOverviewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
+  const [growth, setGrowth] = useState<AdminGrowthMetrics | null>(null);
+  const [growthError, setGrowthError] = useState<string | null>(null);
 
   const [confirmingDemoDelete, setConfirmingDemoDelete] = useState(false);
   const [isDeletingDemoData, setIsDeletingDemoData] = useState(false);
@@ -21,6 +30,9 @@ export default function AdminOverviewPage() {
       .then(setMetrics)
       .catch(() => setError('Não foi possível carregar as métricas.'))
       .finally(() => setIsLoading(false));
+    getAdminGrowthMetrics()
+      .then(setGrowth)
+      .catch(() => setGrowthError('Não foi possível carregar os gráficos de crescimento.'));
   }, []);
 
   async function handleDeleteDemoData(): Promise<void> {
@@ -105,6 +117,25 @@ export default function AdminOverviewPage() {
           </div>
         </section>
       )}
+
+      <section>
+        <h2 className="font-heading text-lg font-bold text-text">Crescimento</h2>
+        <p className="mt-1 text-sm text-text-secondary">Últimas 8 semanas, mais recente à direita.</p>
+
+        {growthError && <p className="mt-2 text-sm text-danger">{growthError}</p>}
+
+        {growth && (
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <GrowthChart title="Empresas" subtitle="Novos cadastros por semana" data={growth.companies} />
+            <GrowthChart title="Trabalhadores" subtitle="Novos cadastros por semana" data={growth.workers} />
+            <GrowthChart
+              title="Negociações fechadas"
+              subtitle="Escalas concluídas por semana"
+              data={growth.dealsClosed}
+            />
+          </div>
+        )}
+      </section>
 
       <section>
         <h2 className="font-heading text-lg font-bold text-text">Dados de demonstração</h2>

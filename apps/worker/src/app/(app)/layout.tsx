@@ -17,7 +17,7 @@ const NOTIFICATIONS_POLL_INTERVAL_MS = 60_000;
 
 /**
  * Grupo de rotas (parênteses não entram na URL) — só as telas
- * autenticadas do dia a dia (início, candidaturas, turnos, perfil)
+ * autenticadas do dia a dia (início, candidaturas, escalas, perfil)
  * ganham a tab bar fixa embaixo; login/cadastro ficam fora do grupo.
  *
  * `useRequireAuth` aqui (uma vez, no layout) em vez de em cada página —
@@ -84,7 +84,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             })),
             ...removed.map((a) => ({
               applicationId: a.id,
-              message: `${a.companyName || 'Uma empresa'} removeu você do turno.`,
+              message: `${a.companyName || 'Uma empresa'} removeu você da escala.`,
             })),
           ]);
         })

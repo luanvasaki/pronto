@@ -12,7 +12,7 @@ export default function GanhosPage() {
       <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border p-10 text-center">
         <p className="font-heading text-lg font-bold text-text">Em breve</p>
         <p className="max-w-xs text-sm text-text-secondary">
-          Enquanto isso, combine o pagamento direto com a empresa ao concluir cada turno.
+          Enquanto isso, combine o pagamento direto com a empresa ao concluir cada escala.
         </p>
       </div>
     </main>

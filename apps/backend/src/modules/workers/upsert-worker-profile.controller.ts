@@ -13,7 +13,7 @@ export async function upsertWorkerProfileHandler(
       throw new HttpError(401, 'Sessão inválida ou expirada.');
     }
 
-    const { fullName, categoryIds, photoUrl, bio, cpf, homeAddressFull, cnhCategory, experienceByCategory } =
+    const { fullName, categoryIds, photoUrl, bio, cpf, homeAddressFull, phone, cnhCategory, experienceByCategory } =
       req.body as {
         fullName?: string;
         categoryIds?: string[];
@@ -21,6 +21,7 @@ export async function upsertWorkerProfileHandler(
         bio?: string;
         cpf?: string;
         homeAddressFull?: string;
+        phone?: string;
         cnhCategory?: string;
         experienceByCategory?: Record<string, boolean>;
       };
@@ -31,6 +32,7 @@ export async function upsertWorkerProfileHandler(
       bio,
       cpf,
       homeAddressFull,
+      phone,
       cnhCategory,
       experienceByCategory,
     });

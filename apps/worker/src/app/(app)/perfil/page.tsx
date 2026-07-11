@@ -6,6 +6,7 @@ import {
   createSkillCategory,
   extractDigits,
   formatCpf,
+  formatPhone,
   listSkillCategories,
   logout,
   SkillCategory,
@@ -68,6 +69,7 @@ export default function PerfilPage() {
   const [fullName, setFullName] = useState(profile?.fullName ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
   const [cpf, setCpf] = useState(profile?.cpf ?? '');
+  const [phone, setPhone] = useState(profile?.phone ?? '');
   const [homeAddressFull, setHomeAddressFull] = useState(profile?.homeAddressFull ?? '');
   const [cnhCategory, setCnhCategory] = useState(profile?.cnhCategory ?? '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -210,7 +212,11 @@ export default function PerfilPage() {
     }
   }
 
-  const isProfileFormValid = fullName.trim().length >= 2 && homeAddressFull.trim().length >= 8;
+  const isProfileFormValid =
+    fullName.trim().length >= 2 &&
+    homeAddressFull.trim().length >= 8 &&
+    phone.length >= 10 &&
+    phone.length <= 11;
 
   async function handleSaveProfile(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -225,6 +231,7 @@ export default function PerfilPage() {
         categoryIds: profile.categoryIds,
         bio: bio.trim() || undefined,
         cpf: cpf.trim() || undefined,
+        phone,
         homeAddressFull: homeAddressFull.trim(),
         cnhCategory,
       });
@@ -298,7 +305,7 @@ export default function PerfilPage() {
 
       <div className="flex gap-3">
         <StatCard label="horas trabalhadas" value={`${profile.totalHoursWorked}h`} />
-        <StatCard label="turnos" value={String(profile.totalShiftsCompleted)} />
+        <StatCard label="escalas" value={String(profile.totalShiftsCompleted)} />
         <StatCard label="nota média" value={profile.avgRating ? `★ ${profile.avgRating}` : '—'} />
       </div>
 
@@ -478,7 +485,7 @@ export default function PerfilPage() {
       <div className="border-t border-border pt-6">
         <h2 className="font-heading text-[17px] font-bold text-text">Localização</h2>
         <p className="mt-1 text-xs text-text-secondary">
-          Usada pra mostrar turnos perto de você. Atualize se você mudou de endereço.
+          Usada pra mostrar escalas perto de você. Atualize se você mudou de endereço.
         </p>
         <p className="mt-2.5 text-sm text-text">
           {profile.homeAddressLabel ?? 'Nenhum endereço definido ainda.'}
@@ -539,6 +546,26 @@ export default function PerfilPage() {
             setProfileSaved(false);
           }}
         />
+
+        <div>
+          <Input
+            id="phone"
+            label="Telefone"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            placeholder="(11) 91234-5678"
+            maxLength={16}
+            value={formatPhone(phone)}
+            onChange={(event) => {
+              setPhone(extractDigits(event.target.value).slice(0, 11));
+              setProfileSaved(false);
+            }}
+          />
+          <p className="mt-1.5 text-xs text-text-secondary">
+            Protegido — só o admin vê, pra entrar em contato se precisar. Empresas nunca veem.
+          </p>
+        </div>
 
         <div>
           <Input

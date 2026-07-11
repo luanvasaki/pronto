@@ -9,6 +9,7 @@ export interface WorkerProfileDetails {
   photoUrl: string | null;
   homeAddressLabel: string | null;
   homeAddressFull: string | null;
+  phone: string | null;
   cnhCategory: string | null;
   kycStatus: string;
   hasDocument: boolean;
@@ -49,6 +50,7 @@ export interface UpsertWorkerProfileInput {
   bio?: string;
   cpf?: string;
   homeAddressFull?: string;
+  phone?: string;
   cnhCategory?: string;
   experienceByCategory?: Record<string, boolean>;
 }
@@ -60,6 +62,7 @@ export interface UpsertWorkerProfileResponse {
   bio: string | null;
   cpf: string | null;
   homeAddressFull: string | null;
+  phone: string | null;
   cnhCategory: string | null;
   experienceByCategory: Record<string, boolean>;
 }

@@ -8,6 +8,7 @@ import {
   createSkillCategory,
   extractDigits,
   formatCpf,
+  formatPhone,
   getCurrentUser,
   listSkillCategories,
   SkillCategory,
@@ -21,6 +22,7 @@ export default function CadastroPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState('');
   const [cpf, setCpf] = useState('');
+  const [phone, setPhone] = useState('');
   const [homeAddressFull, setHomeAddressFull] = useState('');
   const [cnhCategory, setCnhCategory] = useState('');
   const [categories, setCategories] = useState<SkillCategory[]>([]);
@@ -96,6 +98,7 @@ export default function CadastroPage() {
   const missingFields: string[] = [];
   if (fullName.trim().length < 2) missingFields.push('nome completo');
   if (cpf.length !== 11) missingFields.push('CPF');
+  if (phone.length < 10 || phone.length > 11) missingFields.push('telefone');
   if (homeAddressFull.trim().length < 8) missingFields.push('endereço completo');
   if (selectedIds.length === 0) missingFields.push('ao menos uma categoria');
   if (!photoPreviewUrl) missingFields.push('foto de perfil');
@@ -116,6 +119,7 @@ export default function CadastroPage() {
         categoryIds: selectedIds,
         photoUrl: useGooglePhoto ? googlePhotoUrl! : undefined,
         cpf,
+        phone,
         homeAddressFull: homeAddressFull.trim(),
         cnhCategory: cnhCategory || undefined,
         experienceByCategory,
@@ -161,6 +165,23 @@ export default function CadastroPage() {
           value={formatCpf(cpf)}
           onChange={(event) => setCpf(extractDigits(event.target.value).slice(0, 11))}
         />
+
+        <div>
+          <Input
+            id="phone"
+            label="Telefone"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            placeholder="(11) 91234-5678"
+            maxLength={16}
+            value={formatPhone(phone)}
+            onChange={(event) => setPhone(extractDigits(event.target.value).slice(0, 11))}
+          />
+          <p className="mt-1.5 text-xs text-text-secondary">
+            Protegido — só o admin vê, pra entrar em contato se precisar. Empresas nunca veem.
+          </p>
+        </div>
 
         <div>
           <Input

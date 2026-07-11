@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCnpj, formatCpf } from './masks';
+import { formatCnpj, formatCpf, formatPhone } from './masks';
 
 describe('formatCpf', () => {
   it('aplica a máscara progressivamente conforme os dígitos aparecem', () => {
@@ -34,5 +34,23 @@ describe('formatCnpj', () => {
 
   it('ignora dígitos além do 14º', () => {
     expect(formatCnpj('123456780001959999')).toBe('12.345.678/0001-95');
+  });
+});
+
+describe('formatPhone', () => {
+  it('aplica a máscara progressivamente até fechar um fixo (10 dígitos)', () => {
+    expect(formatPhone('1')).toBe('1');
+    expect(formatPhone('11')).toBe('11');
+    expect(formatPhone('113')).toBe('(11) 3');
+    expect(formatPhone('1139123')).toBe('(11) 39123');
+    expect(formatPhone('1139123456')).toBe('(11) 3912-3456');
+  });
+
+  it('formata celular (11 dígitos, 9 na frente)', () => {
+    expect(formatPhone('11391234567')).toBe('(11) 39123-4567');
+  });
+
+  it('ignora dígitos além do 11º', () => {
+    expect(formatPhone('113912345679999')).toBe('(11) 39123-4567');
   });
 });

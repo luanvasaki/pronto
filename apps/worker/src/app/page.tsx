@@ -4,19 +4,19 @@ import { Logo } from '../components/ui/logo';
 const PERKS = [
   {
     title: 'Você escolhe',
-    description: 'Aceita só os turnos que cabem na sua agenda. Sem chefe fixo.',
+    description: 'Aceita só as escalas que cabem na sua agenda. Sem chefe fixo.',
   },
   {
     title: 'Valor combinado, sem susto',
-    description: 'O valor do turno já aparece antes de você aceitar — o acerto é direto com a empresa.',
+    description: 'O valor da escala já aparece antes de você aceitar — o acerto é direto com a empresa.',
   },
   {
     title: 'Constrói fama',
-    description: 'Cada avaliação boa te coloca na frente da fila do próximo turno.',
+    description: 'Cada avaliação boa te coloca na frente da fila da próxima escala.',
   },
   {
     title: 'Perto de casa',
-    description: 'Turnos filtrados por distância. Menos trânsito, mais trabalho.',
+    description: 'Escalas filtradas por distância. Menos trânsito, mais trabalho.',
   },
 ];
 
@@ -29,28 +29,28 @@ const TRUST_ITEMS = [
   {
     icon: '★',
     title: 'Avaliação dos dois lados',
-    description: 'Empresa avalia profissional e vice-versa. Reputação real, construída turno a turno.',
+    description: 'Empresa avalia profissional e vice-versa. Reputação real, construída escala a escala.',
   },
   {
     icon: 'R$',
     title: 'Valor sempre visível',
-    description: 'O valor do turno aparece na tela antes de você aceitar. Sem combinar no susto.',
+    description: 'O valor da escala aparece na tela antes de você aceitar. Sem combinar no susto.',
   },
 ];
 
 const FAQ = [
   {
-    question: 'Como escolho os turnos que aparecem pra mim?',
+    question: 'Como escolho as escalas que aparecem pra mim?',
     answer:
-      'Você define suas categorias de trabalho e sua localização no cadastro — só aparecem turnos dessas categorias, perto de você.',
+      'Você define suas categorias de trabalho e sua localização no cadastro — só aparecem escalas dessas categorias, perto de você.',
   },
   {
-    question: 'Como confirmo que estou em um turno?',
+    question: 'Como confirmo que estou em uma escala?',
     answer: 'Você faz check-in ao chegar e check-out ao final, direto pelo celular, com sua localização.',
   },
   {
     question: 'Como eu recebo?',
-    answer: 'O valor combinado aparece antes de você aceitar a vaga. O acerto do pagamento é feito direto com a empresa, depois que o turno termina.',
+    answer: 'O valor combinado aparece antes de você aceitar a vaga. O acerto do pagamento é feito direto com a empresa, depois que a escala termina.',
   },
 ];
 
@@ -125,7 +125,7 @@ export default function Home() {
         <div className="mx-auto max-w-2xl rounded-3xl bg-primary px-8 py-12 text-center">
           <h2 className="font-heading text-3xl font-extrabold text-white">Bora trabalhar?</h2>
           <p className="mt-3 text-[17px] text-white/90">
-            Crie sua conta e comece a ver turnos perto de você hoje mesmo.
+            Crie sua conta e comece a ver escalas perto de você hoje mesmo.
           </p>
           <Link
             href="/cadastro/conta"

@@ -62,6 +62,21 @@ export function getAdminMetrics(): Promise<AdminMetrics> {
   return apiFetch('/admin/metrics');
 }
 
+export interface GrowthWeek {
+  weekStart: string;
+  count: number;
+}
+
+export interface AdminGrowthMetrics {
+  companies: GrowthWeek[];
+  workers: GrowthWeek[];
+  dealsClosed: GrowthWeek[];
+}
+
+export function getAdminGrowthMetrics(): Promise<AdminGrowthMetrics> {
+  return apiFetch('/admin/growth-metrics');
+}
+
 export function reviewDocument(
   documentId: string,
   status: 'approved' | 'rejected',
@@ -122,6 +137,7 @@ export interface AdminWorker {
   userId: string;
   fullName: string;
   email: string | null;
+  phone: string | null;
   photoUrl: string | null;
   kycStatus: string;
   avgRating: string | null;

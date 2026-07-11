@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import TurnosPage from './page';
+import AgendaPage from './page';
 
 const listSkillCategoriesMock = vi.fn();
 const rateShiftMock = vi.fn();
@@ -43,6 +43,7 @@ const JOB = {
 function makeShift(
   overrides: Partial<{
     status: string;
+    job: typeof JOB;
     payment: { id: string; shiftId: string; amount: string; status: string; chargedAt: string | null; releasedAt: string | null } | null;
     ratings: {
       worker:
@@ -80,7 +81,7 @@ function makeShift(
   };
 }
 
-describe('TurnosPage', () => {
+describe('AgendaPage', () => {
   beforeEach(() => {
     listSkillCategoriesMock.mockReset().mockResolvedValue({ categories: [{ id: 'cat-1', name: 'Garçom' }] });
     listMyShiftsMock.mockReset();
@@ -91,18 +92,59 @@ describe('TurnosPage', () => {
     Object.defineProperty(window.navigator, 'geolocation', { value: undefined, configurable: true });
   });
 
-  it('mostra estado vazio quando não há turnos', async () => {
+  it('mostra estado vazio quando não há escalas', async () => {
     listMyShiftsMock.mockResolvedValue({ shifts: [] });
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
 
-    expect(await screen.findByText('Você ainda não tem turnos agendados.')).toBeInTheDocument();
+    expect(await screen.findByText('Você ainda não tem escalas agendadas.')).toBeInTheDocument();
+  });
+
+  it('mostra o resumo de escalas agendadas e concluídas', async () => {
+    listMyShiftsMock.mockResolvedValue({
+      shifts: [makeShift({ status: 'scheduled' }), makeShift({ status: 'checked_in' }), makeShift({ status: 'completed' })],
+    });
+
+    render(<AgendaPage />);
+
+    await screen.findByText('Minhas escalas');
+    expect(screen.getByText('Agendadas').previousElementSibling).toHaveTextContent('2');
+    expect(screen.getByText('Já concluídas').previousElementSibling).toHaveTextContent('1');
+  });
+
+  it('mostra o calendário com um ponto por escala do mês, e o endereço ao clicar num dia com escala concluída', async () => {
+    const now = new Date();
+    const dayInMonth = now.getDate() <= 20 ? now.getDate() + 5 : now.getDate() - 5;
+    const dateInCurrentMonth = new Date(now.getFullYear(), now.getMonth(), dayInMonth, 18, 0).toISOString();
+
+    listMyShiftsMock.mockResolvedValue({
+      shifts: [
+        makeShift({
+          status: 'completed',
+          job: { ...JOB, startsAt: dateInCurrentMonth, endsAt: dateInCurrentMonth },
+        }),
+      ],
+    });
+    const user = userEvent.setup();
+
+    render(<AgendaPage />);
+    await screen.findByText('Minhas escalas');
+
+    const dayButtons = screen.getAllByRole('button', { name: String(dayInMonth) });
+    const dayButton = dayButtons.find((button) => !button.hasAttribute('disabled'));
+    expect(dayButton).toBeDefined();
+    await user.click(dayButton!);
+
+    // O endereço aparece duas vezes: no painel do dia selecionado no
+    // calendário, e na lista detalhada mais abaixo (ambos mostram a
+    // mesma escala concluída).
+    expect(await screen.findAllByRole('link', { name: 'Vila Madalena, São Paulo' })).toHaveLength(2);
   });
 
   it('mostra o botão de check-in pra turno agendado', async () => {
     listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'scheduled' })] });
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
 
     expect(await screen.findByText('Agendado')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /fazer check-in/i })).toBeInTheDocument();
@@ -111,7 +153,7 @@ describe('TurnosPage', () => {
   it('mostra o botão de check-out pra turno em andamento', async () => {
     listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'checked_in' })] });
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
 
     expect((await screen.findAllByText('Em andamento')).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /fazer check-out/i })).toBeInTheDocument();
@@ -120,7 +162,7 @@ describe('TurnosPage', () => {
   it('não mostra botão de check-in/check-out pra turno concluído', async () => {
     listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'completed' })] });
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
 
     await screen.findAllByText('Concluído');
     expect(screen.queryByRole('button', { name: /fazer check-in/i })).not.toBeInTheDocument();
@@ -137,7 +179,7 @@ describe('TurnosPage', () => {
       ],
     });
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
 
     expect(await screen.findByText(/acerte o pagamento direto com a empresa/i)).toBeInTheDocument();
   });
@@ -145,7 +187,7 @@ describe('TurnosPage', () => {
   it('mostra o formulário de avaliação pra turno concluído ainda não avaliado', async () => {
     listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'completed' })] });
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
 
     expect(await screen.findByText('Avaliar a empresa')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Pontualidade no pagamento: 5 de 5' })).toBeInTheDocument();
@@ -170,7 +212,7 @@ describe('TurnosPage', () => {
     });
     const user = userEvent.setup();
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
     await screen.findByText('Avaliar a empresa');
 
     expect(screen.getByRole('button', { name: /enviar avaliação/i })).toBeDisabled();
@@ -219,7 +261,7 @@ describe('TurnosPage', () => {
       ],
     });
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
 
     expect(await screen.findByText('Você avaliou: 3 de 5.')).toBeInTheDocument();
     expect(screen.queryByText('Avaliar a empresa')).not.toBeInTheDocument();
@@ -236,7 +278,7 @@ describe('TurnosPage', () => {
     });
     const user = userEvent.setup();
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
     await screen.findByText('Agendado');
     await user.click(screen.getByRole('button', { name: /fazer check-in/i }));
 
@@ -252,7 +294,7 @@ describe('TurnosPage', () => {
     });
     const user = userEvent.setup();
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
     await screen.findByText('Agendado');
     await user.click(screen.getByRole('button', { name: /fazer check-in/i }));
 
@@ -285,7 +327,7 @@ describe('TurnosPage', () => {
     });
     const user = userEvent.setup();
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
     await screen.findByRole('button', { name: /fazer check-out/i });
     await user.click(screen.getByRole('button', { name: /fazer check-out/i }));
 
@@ -303,7 +345,7 @@ describe('TurnosPage', () => {
       ],
     });
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
 
     expect(await screen.findByRole('button', { name: /recebi o pagamento/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /não recebi/i })).toBeInTheDocument();
@@ -328,7 +370,7 @@ describe('TurnosPage', () => {
     });
     const user = userEvent.setup();
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
     await user.click(await screen.findByRole('button', { name: /recebi o pagamento/i }));
 
     expect(confirmPaymentMock).toHaveBeenCalledWith('shift-1', true);
@@ -354,7 +396,7 @@ describe('TurnosPage', () => {
     });
     const user = userEvent.setup();
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
     await user.click(await screen.findByRole('button', { name: /não recebi/i }));
 
     expect(confirmPaymentMock).toHaveBeenCalledWith('shift-1', false);
@@ -373,7 +415,7 @@ describe('TurnosPage', () => {
     confirmPaymentMock.mockRejectedValue(new Error('falha de rede'));
     const user = userEvent.setup();
 
-    render(<TurnosPage />);
+    render(<AgendaPage />);
     await user.click(await screen.findByRole('button', { name: /recebi o pagamento/i }));
 
     expect(await screen.findByText('falha de rede')).toBeInTheDocument();

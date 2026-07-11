@@ -18,7 +18,7 @@ export interface TopbarProps {
  * Sino avisa quantas novidades de candidatura ainda não foram vistas
  * (aprovação ou remoção — mesmos alertas dos banners na tela de
  * Início) — clicar abre um dropdown; cada item leva pro Início, onde
- * dá pra ver o turno completo e confirmar a leitura.
+ * dá pra ver a escala completa e confirmar a leitura.
  */
 export function Topbar({ calledCount, calledNotifications = [] }: TopbarProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);

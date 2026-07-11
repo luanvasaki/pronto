@@ -13,6 +13,7 @@ const WORKER = {
   userId: 'worker-1',
   fullName: 'Rafael Lima',
   email: 'rafael@example.com',
+  phone: '11912345678',
   photoUrl: '/uploads/public/rafael.jpg',
   kycStatus: 'approved',
   avgRating: '4.8',
@@ -43,5 +44,23 @@ describe('AdminTrabalhadoresPage', () => {
 
     await screen.findByText('Rafael Lima');
     expect(screen.queryByAltText('Rafael Lima')).not.toBeInTheDocument();
+  });
+
+  it('mostra o telefone formatado como link pra ligar', async () => {
+    listAdminWorkersMock.mockResolvedValue({ workers: [WORKER] });
+
+    render(<AdminTrabalhadoresPage />);
+
+    const link = await screen.findByRole('link', { name: '(11) 91234-5678' });
+    expect(link).toHaveAttribute('href', 'tel:+5511912345678');
+  });
+
+  it('não mostra link de telefone quando o trabalhador não informou', async () => {
+    listAdminWorkersMock.mockResolvedValue({ workers: [{ ...WORKER, phone: null }] });
+
+    render(<AdminTrabalhadoresPage />);
+
+    await screen.findByText('Rafael Lima');
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });

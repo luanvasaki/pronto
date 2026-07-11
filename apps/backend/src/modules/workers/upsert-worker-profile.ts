@@ -5,6 +5,7 @@ import { CnhCategory, isCnhCategory } from '../jobs/cnh';
 import { HttpError } from '../../shared/errors/http-error';
 
 const CPF_REGEX = /^\d{11}$/;
+const PHONE_REGEX = /^\d{10,11}$/;
 
 export interface UpsertWorkerProfileInput {
   fullName: string | undefined;
@@ -19,6 +20,9 @@ export interface UpsertWorkerProfileInput {
   // Dado sensível — nunca retornado pra empresa, ver comentário do
   // schema. Igual ao CPF, obrigatório só no cadastro inicial.
   homeAddressFull: string | undefined;
+  // Telefone de contato — mesma regra de privacidade e obrigatoriedade
+  // do endereço completo (ver comentário do schema).
+  phone: string | undefined;
   // Categoria de CNH do trabalhador — opcional (nem todo mundo tem
   // carteira), string vazia limpa um valor já salvo. Usada só pra bater
   // com o requisito de CNH de uma vaga (ver jobs/cnh.ts).
@@ -37,6 +41,7 @@ export interface WorkerProfileResponse {
   bio: string | null;
   cpf: string | null;
   homeAddressFull: string | null;
+  phone: string | null;
   cnhCategory: string | null;
   experienceByCategory: Record<string, boolean>;
 }
@@ -46,11 +51,11 @@ export interface WorkerProfileResponse {
  * categorias juntos, não em dois passos. Substitui as categorias
  * associadas em vez de diffar o que já existia: mais simples e
  * igualmente correto pro volume de categorias por trabalhador (poucas).
- * `bio`/`cpf`/`homeAddressFull` são opcionais aqui pra quem já tem
- * perfil (editar outra coisa sem reenviá-los preserva o valor salvo) —
- * mas CPF e endereço completo são exigidos quando ainda não existe
- * perfil (cadastro inicial), pra não dar pra criar um perfil sem eles
- * só pulando a validação do cliente.
+ * `bio`/`cpf`/`homeAddressFull`/`phone` são opcionais aqui pra quem já
+ * tem perfil (editar outra coisa sem reenviá-los preserva o valor
+ * salvo) — mas CPF, endereço completo e telefone são exigidos quando
+ * ainda não existe perfil (cadastro inicial), pra não dar pra criar um
+ * perfil sem eles só pulando a validação do cliente.
  */
 export async function upsertWorkerProfile(
   userId: string,
@@ -108,6 +113,15 @@ export async function upsertWorkerProfile(
     throw new HttpError(400, 'Endereço incompleto.');
   }
 
+  const phone = input.phone?.trim();
+  // Mesma regra do CPF/endereço: obrigatório só quando ainda não existe perfil.
+  if (!existingProfile && !phone) {
+    throw new HttpError(400, 'Telefone é obrigatório.');
+  }
+  if (phone && !PHONE_REGEX.test(phone)) {
+    throw new HttpError(400, 'Telefone inválido — envie só os números, com DDD.');
+  }
+
   const rawCnhCategory = input.cnhCategory?.trim();
   if (rawCnhCategory && !isCnhCategory(rawCnhCategory)) {
     throw new HttpError(400, 'Categoria de CNH inválida.');
@@ -132,13 +146,14 @@ export async function upsertWorkerProfile(
       bio: bio || null,
       cpf: cpf || null,
       homeAddressFull: homeAddressFull || null,
+      phone: phone || null,
       cnhCategory,
     })
     .onConflictDoUpdate({
       target: workerProfiles.userId,
-      // bio/cpf/homeAddressFull/cnhCategory só entram no UPDATE quando
-      // enviados de verdade — editar só o nome ou as categorias não
-      // pode apagar valor já salvo.
+      // bio/cpf/homeAddressFull/phone/cnhCategory só entram no UPDATE
+      // quando enviados de verdade — editar só o nome ou as categorias
+      // não pode apagar valor já salvo.
       set: {
         fullName,
         updatedAt: new Date(),
@@ -146,6 +161,7 @@ export async function upsertWorkerProfile(
         ...(input.bio !== undefined ? { bio: bio || null } : {}),
         ...(input.cpf !== undefined ? { cpf: cpf || null } : {}),
         ...(input.homeAddressFull !== undefined ? { homeAddressFull: homeAddressFull || null } : {}),
+        ...(input.phone !== undefined ? { phone: phone || null } : {}),
         ...(input.cnhCategory !== undefined ? { cnhCategory } : {}),
       },
     })
@@ -179,6 +195,7 @@ export async function upsertWorkerProfile(
     bio: profile?.bio ?? null,
     cpf: profile?.cpf ?? null,
     homeAddressFull: profile?.homeAddressFull ?? null,
+    phone: profile?.phone ?? null,
     cnhCategory: profile?.cnhCategory ?? null,
     experienceByCategory,
   };

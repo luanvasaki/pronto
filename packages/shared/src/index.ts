@@ -13,7 +13,7 @@ export {
 } from './auth-api';
 export type { UserResponse } from './auth-api';
 export { extractDigits } from './digits';
-export { formatCnpj, formatCpf } from './masks';
+export { formatCnpj, formatCpf, formatPhone } from './masks';
 export { isValidPassword } from './password';
 export {
   COMPANY_RATING_CATEGORIES,

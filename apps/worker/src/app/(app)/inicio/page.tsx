@@ -124,7 +124,7 @@ export default function InicioPage() {
 
     void load();
 
-    // Alertas de "foi chamado pra trabalhar" e "foi removido do turno"
+    // Alertas de "foi chamado pra trabalhar" e "foi removido da escala"
     // são secundários — se essa chamada falhar, a tela principal de
     // vagas continua funcionando.
     listMyApplications()
@@ -241,7 +241,7 @@ export default function InicioPage() {
           {removedApplications.map((application) => (
             <li key={application.id} className="rounded-[18px] border border-danger/30 bg-danger/10 p-4 text-danger">
               <p className="font-heading text-[15px] font-bold">
-                {application.companyName || 'A empresa'} removeu você do turno de{' '}
+                {application.companyName || 'A empresa'} removeu você da escala de{' '}
                 {categoryNames[application.job.categoryId] ?? CATEGORY_LABEL_FALLBACK}.
               </p>
               <p className="mt-1 text-[13px]">{formatDateRange(application.job.startsAt, application.job.endsAt)}</p>
@@ -293,10 +293,10 @@ export default function InicioPage() {
           <span className={`h-2.5 w-2.5 rounded-full ${available ? 'bg-success' : 'bg-text-secondary'}`} />
           <div>
             <p className={`text-[16px] font-bold ${available ? 'text-success' : 'text-text'}`}>
-              {available ? 'Disponível para turnos' : 'Indisponível'}
+              {available ? 'Disponível para escalas' : 'Indisponível'}
             </p>
             <p className="text-[12.5px] text-text-secondary">
-              {available ? 'Você aparece para empresas perto de você' : 'Toque para voltar a receber turnos'}
+              {available ? 'Você aparece para empresas perto de você' : 'Toque para voltar a receber escalas'}
             </p>
           </div>
         </div>
@@ -329,7 +329,7 @@ export default function InicioPage() {
       </div>
 
       <div className="mt-3.5 flex items-baseline justify-between">
-        <h2 className="font-heading text-[18px] font-bold text-text">Turnos perto de você</h2>
+        <h2 className="font-heading text-[18px] font-bold text-text">Escalas perto de você</h2>
         <span className="text-[13px] font-semibold text-primary">{visibleJobs.length} disponíveis</span>
       </div>
 
@@ -465,7 +465,7 @@ export default function InicioPage() {
                 onClick={() => handleApply(job.id)}
                 className="mt-3.5 w-full"
               >
-                {applied ? 'Candidatura enviada ✓' : 'Aceitar turno'}
+                {applied ? 'Candidatura enviada ✓' : 'Aceitar escala'}
               </Button>
             </li>
           );

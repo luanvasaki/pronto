@@ -10,6 +10,7 @@ const TEST_PASSWORD = 'senha-de-teste-123';
 const TEST_CATEGORY_NAME = 'Categoria de teste — worker-profile-routes';
 const TEST_CPF = '11122233355';
 const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
+const TEST_WORKER_PHONE = '11912345678';
 
 async function loginAgent(app: ReturnType<typeof createApp>) {
   const agent = request.agent(app);
@@ -41,7 +42,13 @@ describe('PUT /worker-profile', () => {
 
     const response = await agent
       .put('/worker-profile')
-      .send({ fullName: 'Ana Souza', categoryIds: [category.id], cpf: TEST_CPF, homeAddressFull: TEST_ADDRESS });
+      .send({
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
+      });
 
     expect(response.status).toBe(200);
     expect(response.body.fullName).toBe('Ana Souza');
@@ -71,7 +78,13 @@ describe('GET /worker-profile/me', () => {
       .returning();
     await agent
       .put('/worker-profile')
-      .send({ fullName: 'Ana Souza', categoryIds: [category.id], cpf: TEST_CPF, homeAddressFull: TEST_ADDRESS });
+      .send({
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
+      });
 
     const response = await agent.get('/worker-profile/me');
 

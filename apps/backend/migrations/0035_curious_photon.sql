@@ -1,0 +1,1 @@
+ALTER TABLE "worker_profiles" ADD COLUMN "phone" varchar(20);

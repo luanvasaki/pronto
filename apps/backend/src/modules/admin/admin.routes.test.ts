@@ -26,6 +26,7 @@ const TEST_CATEGORY_NAME = 'Categoria de teste — admin-routes';
 const TEST_CNPJ = '11222333000300';
 const TEST_CPF = '11122233377';
 const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
+const TEST_WORKER_PHONE = '11912345678';
 
 async function loginAgent(app: ReturnType<typeof createApp>, email: string) {
   const agent = request.agent(app);
@@ -100,13 +101,50 @@ describe('rotas de admin', () => {
     expect(response.body).toHaveProperty('shifts');
   });
 
+  it('GET /admin/growth-metrics responde 401 sem sessão', async () => {
+    const app = createApp();
+
+    const response = await request(app).get('/admin/growth-metrics');
+
+    expect(response.status).toBe(401);
+  });
+
+  it('GET /admin/growth-metrics responde 403 pra quem não é admin', async () => {
+    const app = createApp();
+    const agent = await loginAgent(app, WORKER_EMAIL);
+
+    const response = await agent.get('/admin/growth-metrics');
+
+    expect(response.status).toBe(403);
+  });
+
+  it('GET /admin/growth-metrics responde 200 com as séries semanais pro admin', async () => {
+    const app = createApp();
+    const adminAgent = await loginAgent(app, ADMIN_EMAIL);
+    await makeAdmin(ADMIN_EMAIL);
+
+    const response = await adminAgent.get('/admin/growth-metrics');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('companies');
+    expect(response.body).toHaveProperty('workers');
+    expect(response.body).toHaveProperty('dealsClosed');
+    expect(response.body.companies).toHaveLength(8);
+  });
+
   it('lista documento pendente e o admin consegue baixar o arquivo e aprovar', async () => {
     const app = createApp();
     const workerAgent = await loginAgent(app, WORKER_EMAIL);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
     await workerAgent
       .put('/worker-profile')
-      .send({ fullName: 'Rafael Lima', categoryIds: [category.id], cpf: TEST_CPF, homeAddressFull: TEST_ADDRESS });
+      .send({
+        fullName: 'Rafael Lima',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
+      });
     const documentBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
     const uploadResponse = await workerAgent
       .post('/worker-profile/document')
@@ -198,7 +236,13 @@ describe('rotas de admin', () => {
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
     await workerAgent
       .put('/worker-profile')
-      .send({ fullName: 'Rafael Lima', categoryIds: [category.id], cpf: TEST_CPF, homeAddressFull: TEST_ADDRESS });
+      .send({
+        fullName: 'Rafael Lima',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
+      });
     const meResponse = await workerAgent.get('/auth/me');
 
     const adminAgent = await loginAgent(app, ADMIN_EMAIL);
