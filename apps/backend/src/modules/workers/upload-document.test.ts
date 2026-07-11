@@ -79,4 +79,32 @@ describe('uploadDocument', () => {
 
     await expect(uploadDocument(user.id, file, storage)).rejects.toThrow('não é uma imagem');
   });
+
+  it('grava como "identity" por padrão quando o type não é informado', async () => {
+    const user = await createTestUser();
+    await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Beatriz Nunes' });
+    const file = { buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9]), mimetype: 'image/jpeg', size: 4 };
+
+    const result = await uploadDocument(user.id, file, storage);
+
+    expect(result.type).toBe('identity');
+  });
+
+  it('grava a selfie com o type correto', async () => {
+    const user = await createTestUser();
+    await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Beatriz Nunes' });
+    const file = { buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9]), mimetype: 'image/jpeg', size: 4 };
+
+    const result = await uploadDocument(user.id, file, storage, 'selfie');
+
+    expect(result.type).toBe('selfie');
+  });
+
+  it('rejeita PDF como selfie', async () => {
+    const user = await createTestUser();
+    await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Beatriz Nunes' });
+    const file = { buffer: Buffer.from('%PDF-1.4\n...'), mimetype: 'application/pdf', size: 12 };
+
+    await expect(uploadDocument(user.id, file, storage, 'selfie')).rejects.toThrow('precisa ser uma foto');
+  });
 });

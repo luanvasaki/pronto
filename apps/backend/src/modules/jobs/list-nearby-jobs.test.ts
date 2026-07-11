@@ -45,6 +45,8 @@ async function createTestJob(
   lng: number,
   requiresExperience = false,
   applicationsCloseAt?: string,
+  cnhCategory?: string,
+  cnhRequired?: boolean,
 ) {
   return createJob(ownerId, {
     categoryId,
@@ -58,6 +60,8 @@ async function createTestJob(
     startsAt: TOMORROW.toISOString(),
     endsAt: TOMORROW_PLUS_5H.toISOString(),
     applicationsCloseAt,
+    cnhCategory,
+    cnhRequired,
   });
 }
 
@@ -189,6 +193,59 @@ describe('listNearbyJobs', () => {
     const found = result.find((j) => j.id === job.id);
 
     expect(found?.experienceMismatch).toBe(false);
+  });
+
+  it('sinaliza cnhMismatch quando a vaga exige CNH que o trabalhador não tem', async () => {
+    const worker = await createWorker();
+    await db
+      .insert(workerProfiles)
+      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+    const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
+
+    const owner = await createCompanyOwner();
+    const job = await createTestJob(owner.id, categoryNear.id, NEAR_JOB_LAT, NEAR_JOB_LNG, false, undefined, 'B', true);
+
+    const result = await listNearbyJobs(worker.id);
+    const found = result.find((j) => j.id === job.id);
+
+    expect(found?.cnhMismatch).toBe(true);
+  });
+
+  it('não sinaliza cnhMismatch quando o trabalhador tem a CNH exigida', async () => {
+    const worker = await createWorker();
+    await db.insert(workerProfiles).values({
+      userId: worker.id,
+      fullName: 'Ana Souza',
+      homeLat: WORKER_LAT,
+      homeLng: WORKER_LNG,
+      searchRadiusKm: 20,
+      cnhCategory: 'B',
+    });
+    const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
+
+    const owner = await createCompanyOwner();
+    const job = await createTestJob(owner.id, categoryNear.id, NEAR_JOB_LAT, NEAR_JOB_LNG, false, undefined, 'B', true);
+
+    const result = await listNearbyJobs(worker.id);
+    const found = result.find((j) => j.id === job.id);
+
+    expect(found?.cnhMismatch).toBe(false);
+  });
+
+  it('não sinaliza cnhMismatch quando a vaga não tem exigência de CNH', async () => {
+    const worker = await createWorker();
+    await db
+      .insert(workerProfiles)
+      .values({ userId: worker.id, fullName: 'Ana Souza', homeLat: WORKER_LAT, homeLng: WORKER_LNG, searchRadiusKm: 20 });
+    const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
+
+    const owner = await createCompanyOwner();
+    const job = await createTestJob(owner.id, categoryNear.id, NEAR_JOB_LAT, NEAR_JOB_LNG);
+
+    const result = await listNearbyJobs(worker.id);
+    const found = result.find((j) => j.id === job.id);
+
+    expect(found?.cnhMismatch).toBe(false);
   });
 
   it('não retorna vaga cujo prazo de candidatura (escolhido pela empresa) já passou', async () => {

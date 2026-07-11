@@ -45,8 +45,11 @@ const BASE_PROFILE: WorkerProfileDetails = {
   experienceByCategory: {},
   photoUrl: null,
   homeAddressLabel: null,
+  homeAddressFull: 'Rua das Flores, 123, Centro, São Paulo - SP',
+  cnhCategory: null,
   kycStatus: 'approved',
   hasDocument: true,
+  hasSelfie: true,
   avgRating: '4.5',
   avgCategoryScores: { pontualidade: '4.7', educacao: '4.3' },
   totalShiftsCompleted: 3,
@@ -300,9 +303,35 @@ describe('PerfilPage', () => {
         categoryIds: ['cat-1'],
         bio: 'Garçonete com experiência em eventos.',
         cpf: '11122233344',
+        homeAddressFull: 'Rua das Flores, 123, Centro, São Paulo - SP',
+        cnhCategory: '',
       }),
     );
     expect(await screen.findByText('Perfil salvo.')).toBeInTheDocument();
+  });
+
+  it('salva a categoria de CNH escolhida', async () => {
+    upsertWorkerProfileMock.mockResolvedValue({
+      fullName: 'Ana Souza',
+      categoryIds: ['cat-1'],
+      photoUrl: null,
+      bio: null,
+      cpf: null,
+      homeAddressFull: 'Rua das Flores, 123, Centro, São Paulo - SP',
+      cnhCategory: 'AB',
+    });
+    const user = userEvent.setup();
+    renderWithProfile(BASE_PROFILE);
+
+    await screen.findByText('Ana Souza');
+    await user.selectOptions(screen.getByLabelText(/categoria da cnh/i), 'AB');
+    await user.click(screen.getByRole('button', { name: /salvar perfil/i }));
+
+    await waitFor(() =>
+      expect(upsertWorkerProfileMock).toHaveBeenCalledWith(
+        expect.objectContaining({ cnhCategory: 'AB' }),
+      ),
+    );
   });
 
   it('cria uma categoria nova, marca ela e salva o perfil', async () => {

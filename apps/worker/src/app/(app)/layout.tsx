@@ -30,9 +30,10 @@ const NOTIFICATIONS_POLL_INTERVAL_MS = 60_000;
  * sozinho) quanto login pelo Google (que hoje manda direto pro app sem
  * checar nada, e sem isso cada página tentava buscar o perfil sozinha
  * e só mostrava um erro genérico). Da mesma forma, se o perfil existe
- * mas o documento nunca foi enviado (ex.: usuário fechou o app entre os
- * dois passos do cadastro), manda de volta pro upload — sem isso dava
- * pra "concluir" o cadastro sem documento só navegando direto pro app.
+ * mas o documento ou a selfie nunca foram enviados (ex.: usuário fechou
+ * o app entre os dois passos do cadastro), manda de volta pro upload —
+ * sem isso dava pra "concluir" o cadastro sem eles só navegando direto
+ * pro app.
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isChecking } = useRequireAuth();
@@ -48,7 +49,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     getWorkerProfile()
       .then((data) => {
-        if (!data.hasDocument) {
+        if (!data.hasDocument || !data.hasSelfie) {
           setIsRedirecting(true);
           router.replace('/cadastro/documento');
           return;

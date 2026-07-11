@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiError, listSkillCategories, SkillCategory } from '@shift/shared';
+import { ApiError, CNH_CATEGORY_OPTIONS, listSkillCategories, SkillCategory } from '@shift/shared';
 import { useParams, useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
 import { Button } from '../../../../../components/ui/button';
@@ -27,6 +27,8 @@ export default function EditarVagaPage() {
   const [requiresExperience, setRequiresExperience] = useState<boolean | null>(null);
   const [dressCode, setDressCode] = useState('');
   const [toolsRequired, setToolsRequired] = useState('');
+  const [cnhCategory, setCnhCategory] = useState('');
+  const [cnhRequired, setCnhRequired] = useState(false);
   const [description, setDescription] = useState('');
   const [addressLabel, setAddressLabel] = useState('');
   const [lat, setLat] = useState<number | null>(null);
@@ -78,6 +80,8 @@ export default function EditarVagaPage() {
         setRequiresExperience(job.requiresExperience);
         setDressCode(job.dressCode ?? '');
         setToolsRequired(job.toolsRequired ?? '');
+        setCnhCategory(job.cnhCategory ?? '');
+        setCnhRequired(job.cnhRequired);
         setDescription(job.description);
         setAddressLabel(job.addressLabel);
         setLat(job.locationLat);
@@ -131,6 +135,8 @@ export default function EditarVagaPage() {
         requiresExperience,
         dressCode: dressCode.trim() || undefined,
         toolsRequired: toolsRequired.trim() || undefined,
+        cnhCategory: cnhCategory || undefined,
+        cnhRequired,
         addressLabel,
         locationLat: lat,
         locationLng: lng,
@@ -166,7 +172,7 @@ export default function EditarVagaPage() {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-8">
       <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-5">
-        <p className="text-[15px] text-text-secondary">Corrija os detalhes do turno.</p>
+        <p className="text-[15px] text-text-secondary">Corrija os detalhes da escala.</p>
 
         <div>
           <label htmlFor="categoryId" className="mb-1.5 block text-sm font-medium text-text-secondary">
@@ -237,6 +243,61 @@ export default function EditarVagaPage() {
             value={toolsRequired}
             onChange={(event) => setToolsRequired(event.target.value)}
           />
+
+          <div>
+            <label htmlFor="cnhCategory" className="mb-1.5 block text-sm font-medium text-text-secondary">
+              Exige CNH? (opcional)
+            </label>
+            <select
+              id="cnhCategory"
+              value={cnhCategory}
+              onChange={(event) => setCnhCategory(event.target.value)}
+              className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+            >
+              <option value="">Nenhuma exigência</option>
+              {CNH_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {cnhCategory && (
+              <div className="mt-2.5">
+                <span className="mb-1.5 block text-sm font-medium text-text-secondary">
+                  Isso é obrigatório pra se candidatar ou só uma preferência?
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCnhRequired(true)}
+                    className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+                      cnhRequired
+                        ? 'border-primary bg-primary text-white'
+                        : 'border-border bg-surface text-text-secondary'
+                    }`}
+                  >
+                    Obrigatório
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCnhRequired(false)}
+                    className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+                      !cnhRequired
+                        ? 'border-primary bg-primary text-white'
+                        : 'border-border bg-surface text-text-secondary'
+                    }`}
+                  >
+                    Preferência
+                  </button>
+                </div>
+                {cnhRequired && (
+                  <p className="mt-1.5 text-xs text-text-secondary">
+                    Quem não tiver CNH {cnhCategory} não vai conseguir se candidatar.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div>
@@ -320,7 +381,7 @@ export default function EditarVagaPage() {
             automaticamente 1h antes do início.
           </p>
           {applicationsCloseAt !== '' && startsAt !== '' && new Date(applicationsCloseAt) > new Date(startsAt) && (
-            <p className="mt-1.5 text-xs text-danger">Precisa ser até o horário de início do turno.</p>
+            <p className="mt-1.5 text-xs text-danger">Precisa ser até o horário de início da escala.</p>
           )}
         </div>
 

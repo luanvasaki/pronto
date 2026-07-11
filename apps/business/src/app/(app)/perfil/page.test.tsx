@@ -45,6 +45,7 @@ const BASE_PROFILE: CompanyProfileDetails = {
   logoUrl: null,
   addressLabel: null,
   businessSegment: null,
+  businessSegmentOther: null,
   verificationStatus: 'approved',
   avgRating: '4.2',
   avgCategoryScores: { pontualidade_pagamento: '4.5', clareza_vaga: '4.0' },
@@ -52,6 +53,10 @@ const BASE_PROFILE: CompanyProfileDetails = {
   jobsPosted: 5,
   shiftsCompleted: 8,
   rehireRate: 40,
+  jobsOpenedThisMonth: 0,
+  workersHiredThisMonth: 0,
+  topHiredWorkerName: null,
+  topHiredWorkerCount: 0,
 };
 
 function renderWithProfile(profile: CompanyProfileDetails | null) {
@@ -188,6 +193,37 @@ describe('PerfilPage', () => {
       }),
     );
     expect(await screen.findByText('Dados salvos.')).toBeInTheDocument();
+  });
+
+  it('pede pra digitar o ramo quando escolhe "Outro" e envia o texto', async () => {
+    upsertCompanyProfileMock.mockResolvedValue({
+      id: '1',
+      legalName: 'Bar do Zé',
+      tradeName: 'Bar do Zé',
+      cnpj: '11222333000181',
+      businessSegment: 'outro',
+      businessSegmentOther: 'Confeitaria',
+      verificationStatus: 'approved',
+    });
+    const user = userEvent.setup();
+    renderWithProfile(BASE_PROFILE);
+
+    await user.selectOptions(screen.getByLabelText(/ramo de atividade/i), 'outro');
+    const saveButton = screen.getByRole('button', { name: /salvar dados da empresa/i });
+    expect(saveButton).toBeDisabled();
+
+    await user.type(screen.getByLabelText(/qual é o ramo de atividade/i), 'Confeitaria');
+    expect(saveButton).toBeEnabled();
+    await user.click(saveButton);
+
+    await waitFor(() =>
+      expect(upsertCompanyProfileMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          businessSegment: 'outro',
+          businessSegmentOther: 'Confeitaria',
+        }),
+      ),
+    );
   });
 
   it('mostra erro da API ao falhar salvar dados da empresa', async () => {

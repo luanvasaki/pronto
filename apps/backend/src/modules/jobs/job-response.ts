@@ -9,6 +9,8 @@ export interface JobResponse {
   requiresExperience: boolean;
   dressCode: string | null;
   toolsRequired: string | null;
+  cnhCategory: string | null;
+  cnhRequired: boolean;
   addressLabel: string;
   locationLat: number;
   locationLng: number;
@@ -29,6 +31,8 @@ export function toJobResponse(job: JobRow): JobResponse {
     requiresExperience: job.requiresExperience,
     dressCode: job.dressCode,
     toolsRequired: job.toolsRequired,
+    cnhCategory: job.cnhCategory,
+    cnhRequired: job.cnhRequired,
     addressLabel: job.addressLabel,
     locationLat: job.locationLat,
     locationLng: job.locationLng,

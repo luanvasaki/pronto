@@ -70,6 +70,7 @@ describe('AppLayout', () => {
       homeAddressLabel: null,
       kycStatus: 'approved',
       hasDocument: true,
+      hasSelfie: true,
       avgRating: null,
       totalShiftsCompleted: 0,
       totalHoursWorked: 0,
@@ -111,6 +112,34 @@ describe('AppLayout', () => {
       homeAddressLabel: null,
       kycStatus: 'pending',
       hasDocument: false,
+      hasSelfie: false,
+      avgRating: null,
+      totalShiftsCompleted: 0,
+      totalHoursWorked: 0,
+    });
+
+    render(
+      <AppLayout>
+        <p>Conteúdo protegido</p>
+      </AppLayout>,
+    );
+
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/cadastro/documento'));
+    expect(screen.queryByText('Conteúdo protegido')).not.toBeInTheDocument();
+  });
+
+  it('redireciona pro upload de documento quando o documento foi enviado mas a selfie não', async () => {
+    getCurrentUserMock.mockResolvedValue({ user: { id: '1' } });
+    getWorkerProfileMock.mockResolvedValue({
+      fullName: 'Ana Souza',
+      bio: null,
+      cpf: null,
+      categoryIds: ['cat-1'],
+      photoUrl: null,
+      homeAddressLabel: null,
+      kycStatus: 'pending',
+      hasDocument: true,
+      hasSelfie: false,
       avgRating: null,
       totalShiftsCompleted: 0,
       totalHoursWorked: 0,
@@ -138,6 +167,7 @@ describe('AppLayout', () => {
       homeAddressLabel: null,
       kycStatus: 'approved',
       hasDocument: true,
+      hasSelfie: true,
       avgRating: null,
       totalShiftsCompleted: 0,
       totalHoursWorked: 0,
@@ -164,6 +194,7 @@ describe('AppLayout', () => {
       homeAddressLabel: null,
       kycStatus: 'approved',
       hasDocument: true,
+      hasSelfie: true,
       avgRating: null,
       totalShiftsCompleted: 0,
       totalHoursWorked: 0,

@@ -3,6 +3,7 @@ import { db } from '../../db/client';
 import { applications, jobs, workerProfiles } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { areApplicationsClosed } from '../jobs/applications-close';
+import { satisfiesCnhRequirement } from '../jobs/cnh';
 import { ApplicationResponse, toApplicationResponse } from './application-response';
 
 /**
@@ -38,6 +39,9 @@ export async function createApplication(workerId: string, jobId: string): Promis
   }
   if (areApplicationsClosed(job)) {
     throw new HttpError(400, 'As candidaturas pra essa vaga já fecharam.');
+  }
+  if (job.cnhRequired && job.cnhCategory && !satisfiesCnhRequirement(profile.cnhCategory, job.cnhCategory)) {
+    throw new HttpError(400, `Essa vaga exige CNH categoria ${job.cnhCategory}.`);
   }
 
   const existing = await db.query.applications.findFirst({

@@ -191,4 +191,50 @@ describe('createJob', () => {
       createJob(owner.id, { ...baseInput(category.id), applicationsCloseAt: yesterday.toISOString() }),
     ).rejects.toThrow('Prazo pra se candidatar precisa ser no futuro');
   });
+
+  it('rejeita categoria de CNH inválida', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+
+    await expect(
+      createJob(owner.id, { ...baseInput(category.id), cnhCategory: 'Z' }),
+    ).rejects.toThrow('Categoria de CNH inválida');
+  });
+
+  it('rejeita cnhRequired sem escolher a categoria', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+
+    await expect(
+      createJob(owner.id, { ...baseInput(category.id), cnhRequired: true }),
+    ).rejects.toThrow('Escolha a categoria de CNH exigida');
+  });
+
+  it('salva a exigência de CNH quando informada', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+
+    const result = await createJob(owner.id, {
+      ...baseInput(category.id),
+      cnhCategory: 'B',
+      cnhRequired: true,
+    });
+
+    expect(result.cnhCategory).toBe('B');
+    expect(result.cnhRequired).toBe(true);
+  });
+
+  it('trata cnhRequired como preferência (false) quando não exigido explicitamente', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+
+    const result = await createJob(owner.id, { ...baseInput(category.id), cnhCategory: 'B' });
+
+    expect(result.cnhCategory).toBe('B');
+    expect(result.cnhRequired).toBe(false);
+  });
 });

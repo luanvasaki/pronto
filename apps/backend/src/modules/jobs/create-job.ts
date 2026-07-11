@@ -32,6 +32,8 @@ export async function createJob(ownerUserId: string, input: CreateJobInput): Pro
       requiresExperience: validated.requiresExperience,
       dressCode: validated.dressCode,
       toolsRequired: validated.toolsRequired,
+      cnhCategory: validated.cnhCategory,
+      cnhRequired: validated.cnhRequired,
       addressLabel: validated.addressLabel,
       locationLat: validated.locationLat,
       locationLng: validated.locationLng,

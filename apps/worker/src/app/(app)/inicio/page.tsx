@@ -396,6 +396,15 @@ export default function InicioPage() {
                     Experiência necessária
                   </span>
                 )}
+                {job.cnhCategory && (
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] font-semibold ${
+                      job.cnhRequired ? 'bg-warning/10 text-warning' : 'bg-background text-text'
+                    }`}
+                  >
+                    CNH {job.cnhCategory} {job.cnhRequired ? 'obrigatória' : '(preferência)'}
+                  </span>
+                )}
               </div>
 
               {!job.matchesSkills && (
@@ -415,6 +424,14 @@ export default function InicioPage() {
                   Essa vaga pede experiência anterior e você não tem isso declarado no perfil. Confirmo que
                   quero me candidatar mesmo assim.
                 </label>
+              )}
+
+              {job.cnhMismatch && (
+                <p className="mt-2.5 rounded-lg bg-danger/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-danger">
+                  {job.cnhRequired
+                    ? `Essa vaga exige CNH categoria ${job.cnhCategory} — você não tem essa categoria no perfil, então não pode se candidatar.`
+                    : `Essa vaga prefere CNH categoria ${job.cnhCategory} — você pode se candidatar mesmo assim.`}
+                </p>
               )}
 
               <MapLink
@@ -441,7 +458,9 @@ export default function InicioPage() {
               <Button
                 type="button"
                 variant={applied ? 'outlined' : 'primary'}
-                disabled={applied || (job.experienceMismatch && !experienceConfirmed)}
+                disabled={
+                  applied || (job.experienceMismatch && !experienceConfirmed) || (job.cnhMismatch && job.cnhRequired)
+                }
                 isLoading={applyingJobId === job.id}
                 onClick={() => handleApply(job.id)}
                 className="mt-3.5 w-full"

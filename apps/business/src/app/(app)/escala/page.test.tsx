@@ -102,7 +102,7 @@ describe('EscalaPage', () => {
 
     render(<EscalaPage />);
 
-    const addLink = await screen.findByRole('link', { name: 'Publicar turno em 2026-08-06' });
+    const addLink = await screen.findByRole('link', { name: 'Publicar escala em 2026-08-06' });
     expect(addLink).toHaveAttribute('href', '/vagas/nova?data=2026-08-06');
   });
 
@@ -140,6 +140,6 @@ describe('EscalaPage', () => {
 
     render(<EscalaPage />);
 
-    expect(await screen.findByText('Não foi possível carregar seus turnos.')).toBeInTheDocument();
+    expect(await screen.findByText('Não foi possível carregar suas escalas.')).toBeInTheDocument();
   });
 });

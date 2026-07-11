@@ -51,7 +51,8 @@ export async function uploadDocumentHandler(
       throw new HttpError(401, 'Sessão inválida ou expirada.');
     }
 
-    const result = await uploadDocument(userId, req.file, fileStorage);
+    const { type } = req.body as { type?: string };
+    const result = await uploadDocument(userId, req.file, fileStorage, type);
     res.status(201).json(result);
   } catch (error) {
     next(error);

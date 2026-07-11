@@ -16,6 +16,7 @@ export interface UpsertCompanyProfileInput {
   cnpj: string | undefined;
   addressLabel: string | undefined;
   businessSegment: string | undefined;
+  businessSegmentOther: string | undefined;
 }
 
 export interface CompanyProfileResponse {
@@ -25,6 +26,7 @@ export interface CompanyProfileResponse {
   cnpj: string;
   addressLabel: string | null;
   businessSegment: string | null;
+  businessSegmentOther: string | null;
   verificationStatus: string;
 }
 
@@ -63,10 +65,19 @@ export async function upsertCompanyProfile(
   }
   const businessSegment = input.businessSegment as BusinessSegment | undefined;
 
+  const businessSegmentOther = input.businessSegmentOther?.trim();
+  if (businessSegment === 'outro' && !businessSegmentOther) {
+    throw new HttpError(400, 'Digite qual é o ramo de atividade.');
+  }
+
   const cnpjOwner = await db.query.companies.findFirst({ where: eq(companies.cnpj, cnpj) });
   if (cnpjOwner && cnpjOwner.ownerUserId !== ownerUserId) {
     throw new HttpError(400, 'Esse CNPJ já está cadastrado.');
   }
+
+  // Só guarda o texto livre quando o ramo escolhido é "outro" — trocar
+  // pra um ramo do enum descarta o texto anterior, não deixa lixo salvo.
+  const businessSegmentOtherToSave = businessSegment === 'outro' ? businessSegmentOther : null;
 
   const [company] = await db
     .insert(companies)
@@ -77,6 +88,7 @@ export async function upsertCompanyProfile(
       cnpj,
       addressLabel: addressLabel || undefined,
       businessSegment,
+      businessSegmentOther: businessSegmentOtherToSave,
     })
     .onConflictDoUpdate({
       target: companies.ownerUserId,
@@ -86,6 +98,7 @@ export async function upsertCompanyProfile(
         cnpj,
         addressLabel: addressLabel || null,
         businessSegment: businessSegment ?? null,
+        businessSegmentOther: businessSegmentOtherToSave,
         updatedAt: new Date(),
       },
     })
@@ -102,6 +115,7 @@ export async function upsertCompanyProfile(
     cnpj: company.cnpj,
     addressLabel: company.addressLabel,
     businessSegment: company.businessSegment,
+    businessSegmentOther: company.businessSegmentOther,
     verificationStatus: company.verificationStatus,
   };
 }

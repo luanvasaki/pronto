@@ -113,7 +113,7 @@ export default function AdminEmpresasPage() {
             variant={sortOrder === 'shiftsCompleted' ? 'primary' : 'outlined'}
             onClick={() => setSortOrder('shiftsCompleted')}
           >
-            Mais turnos
+            Mais escalas
           </Button>
           <Button
             type="button"
@@ -151,7 +151,7 @@ export default function AdminEmpresasPage() {
 
             <div className="mt-2.5 flex flex-wrap gap-2 text-[12.5px] font-semibold text-text-secondary">
               <span className="rounded-lg bg-background px-2.5 py-1">{company.jobsPosted} vaga(s) publicada(s)</span>
-              <span className="rounded-lg bg-background px-2.5 py-1">{company.shiftsCompleted} turno(s) concluído(s)</span>
+              <span className="rounded-lg bg-background px-2.5 py-1">{company.shiftsCompleted} escala(s) concluída(s)</span>
               {company.avgRating && <span className="rounded-lg bg-background px-2.5 py-1">★ {company.avgRating}</span>}
             </div>
 

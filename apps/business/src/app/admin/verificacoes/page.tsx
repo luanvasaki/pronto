@@ -15,6 +15,35 @@ import {
   reviewSkillCategory,
 } from '../../../lib/admin-api';
 
+const DOCUMENT_TYPE_LABEL: Record<string, string> = {
+  identity: 'Documento (RG/CNH)',
+  selfie: 'Selfie',
+};
+
+interface WorkerDocumentGroup {
+  workerId: string;
+  workerFullName: string;
+  documents: PendingDocument[];
+}
+
+/** Identidade e selfie do mesmo trabalhador lado a lado, pra comparar antes de aprovar. */
+function groupDocumentsByWorker(documents: PendingDocument[]): WorkerDocumentGroup[] {
+  const groups = new Map<string, WorkerDocumentGroup>();
+  for (const document of documents) {
+    const group = groups.get(document.workerId);
+    if (group) {
+      group.documents.push(document);
+    } else {
+      groups.set(document.workerId, {
+        workerId: document.workerId,
+        workerFullName: document.workerFullName,
+        documents: [document],
+      });
+    }
+  }
+  return Array.from(groups.values());
+}
+
 export default function AdminVerificacoesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +76,8 @@ export default function AdminVerificacoesPage() {
         });
     });
   }, [documents, documentFiles]);
+
+  const documentsByWorker = groupDocumentsByWorker(documents);
 
   async function handleReviewDocument(documentId: string, status: 'approved' | 'rejected'): Promise<void> {
     setError(null);
@@ -105,52 +136,64 @@ export default function AdminVerificacoesPage() {
 
       <section>
         <h2 className="font-heading text-lg font-bold text-text">Documentos de trabalhadores</h2>
+        <p className="mt-1 text-sm text-text-secondary">
+          Compare a selfie com a foto do documento pra confirmar que é a mesma pessoa antes de aprovar.
+        </p>
         {documents.length === 0 && (
           <p className="mt-2 text-sm text-text-secondary">Nenhum documento pendente.</p>
         )}
         <ul className="mt-3 flex flex-col gap-3">
-          {documents.map((document) => (
+          {documentsByWorker.map(({ workerId, workerFullName, documents: workerDocuments }) => (
             <li
-              key={document.id}
+              key={workerId}
               className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
             >
-              <p className="font-heading text-[15.5px] font-bold text-text">{document.workerFullName}</p>
-              {documentFiles[document.id] && documentFiles[document.id].contentType === 'application/pdf' ? (
-                <a
-                  href={documentFiles[document.id].url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2.5 inline-block text-sm font-semibold text-primary underline underline-offset-2"
-                >
-                  Abrir documento (PDF)
-                </a>
-              ) : (
-                documentFiles[document.id] && (
-                  // eslint-disable-next-line @next/next/no-img-element -- vem de um blob: URL autenticado, next/image não se aplica
-                  <img
-                    src={documentFiles[document.id].url}
-                    alt={`Documento de ${document.workerFullName}`}
-                    className="mt-2.5 max-h-64 rounded-xl border border-border object-contain"
-                  />
-                )
-              )}
-              <div className="mt-3.5 flex gap-2">
-                <Button
-                  type="button"
-                  variant="success"
-                  isLoading={actingId === document.id}
-                  onClick={() => handleReviewDocument(document.id, 'approved')}
-                >
-                  Aprovar
-                </Button>
-                <Button
-                  type="button"
-                  variant="outlined"
-                  isLoading={actingId === document.id}
-                  onClick={() => handleReviewDocument(document.id, 'rejected')}
-                >
-                  Rejeitar
-                </Button>
+              <p className="font-heading text-[15.5px] font-bold text-text">{workerFullName}</p>
+              <div className="mt-2.5 flex flex-wrap gap-4">
+                {workerDocuments.map((document) => (
+                  <div key={document.id} className="flex flex-col gap-2">
+                    <span className="text-xs font-semibold text-text-secondary uppercase">
+                      {DOCUMENT_TYPE_LABEL[document.type] ?? document.type}
+                    </span>
+                    {documentFiles[document.id] && documentFiles[document.id].contentType === 'application/pdf' ? (
+                      <a
+                        href={documentFiles[document.id].url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm font-semibold text-primary underline underline-offset-2"
+                      >
+                        Abrir documento (PDF)
+                      </a>
+                    ) : (
+                      documentFiles[document.id] && (
+                        // eslint-disable-next-line @next/next/no-img-element -- vem de um blob: URL autenticado, next/image não se aplica
+                        <img
+                          src={documentFiles[document.id].url}
+                          alt={`${DOCUMENT_TYPE_LABEL[document.type] ?? document.type} de ${workerFullName}`}
+                          className="max-h-64 rounded-xl border border-border object-contain"
+                        />
+                      )
+                    )}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="success"
+                        isLoading={actingId === document.id}
+                        onClick={() => handleReviewDocument(document.id, 'approved')}
+                      >
+                        Aprovar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        isLoading={actingId === document.id}
+                        onClick={() => handleReviewDocument(document.id, 'rejected')}
+                      >
+                        Rejeitar
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </li>
           ))}

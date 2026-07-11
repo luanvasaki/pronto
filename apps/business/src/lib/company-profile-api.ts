@@ -18,6 +18,7 @@ export interface CompanyProfileDetails {
   logoUrl: string | null;
   addressLabel: string | null;
   businessSegment: string | null;
+  businessSegmentOther: string | null;
   verificationStatus: string;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
@@ -25,6 +26,10 @@ export interface CompanyProfileDetails {
   jobsPosted: number;
   shiftsCompleted: number;
   rehireRate: number | null;
+  jobsOpenedThisMonth: number;
+  workersHiredThisMonth: number;
+  topHiredWorkerName: string | null;
+  topHiredWorkerCount: number;
 }
 
 export function getCompanyProfile(): Promise<CompanyProfileDetails> {
@@ -83,6 +88,7 @@ export interface CompanyProfileResponse {
   cnpj: string;
   addressLabel: string | null;
   businessSegment: string | null;
+  businessSegmentOther: string | null;
   verificationStatus: string;
 }
 
@@ -92,6 +98,7 @@ export interface UpsertCompanyProfileInput {
   cnpj: string;
   addressLabel?: string;
   businessSegment?: string;
+  businessSegmentOther?: string;
 }
 
 export function upsertCompanyProfile(input: UpsertCompanyProfileInput): Promise<CompanyProfileResponse> {

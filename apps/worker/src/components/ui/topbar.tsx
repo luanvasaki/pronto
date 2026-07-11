@@ -39,7 +39,9 @@ export function Topbar({ calledCount, calledNotifications = [] }: TopbarProps) {
 
   return (
     <div className="flex h-[60px] shrink-0 items-center justify-between border-b border-border bg-background/90 px-5 backdrop-blur-sm">
-      <Logo />
+      <Link href="/inicio" aria-label="Ir para o início">
+        <Logo />
+      </Link>
       <div ref={notificationsRef} className="relative">
         <button
           type="button"

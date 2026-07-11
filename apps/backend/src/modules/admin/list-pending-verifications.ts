@@ -6,6 +6,7 @@ export interface PendingDocument {
   id: string;
   workerId: string;
   workerFullName: string;
+  type: string;
   createdAt: Date;
 }
 
@@ -72,6 +73,7 @@ export async function listPendingVerifications(): Promise<PendingVerifications> 
           id: document.id,
           workerId: document.workerId,
           workerFullName: worker.fullName,
+          type: document.type,
           createdAt: document.createdAt,
         },
       ];

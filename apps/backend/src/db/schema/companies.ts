@@ -52,6 +52,9 @@ export const companies = pgTable(
     // não da empresa, então não precisa de lat/lng aqui.
     addressLabel: varchar('address_label', { length: 255 }),
     businessSegment: businessSegmentEnum('business_segment'),
+    // Só preenchido quando businessSegment === 'outro' — o texto que a
+    // empresa digitou pra descrever o ramo dela, já que o enum não cobre.
+    businessSegmentOther: varchar('business_segment_other', { length: 255 }),
     verificationStatus: companyVerificationStatusEnum('verification_status')
       .notNull()
       .default('pending'),

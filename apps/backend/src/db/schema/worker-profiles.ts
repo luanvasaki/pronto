@@ -10,6 +10,7 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
+import { cnhCategoryEnum } from './cnh';
 import { users } from './users';
 
 export const kycStatusEnum = pgEnum('kyc_status', ['pending', 'approved', 'rejected']);
@@ -44,6 +45,14 @@ export const workerProfiles = pgTable(
     // sendo direto com homeLat/homeLng). Nulo se a geocodificação falhar
     // ou ainda não tiver rodado.
     homeAddressLabel: varchar('home_address_label', { length: 255 }),
+    // Endereço completo digitado pelo próprio trabalhador no cadastro —
+    // dado sensível, nunca exposto pra empresa nem outro trabalhador
+    // (diferente de homeAddressLabel, que é só o resumo público). Só
+    // aparece no retorno de getWorkerProfile.ts (visão do próprio dono).
+    homeAddressFull: varchar('home_address_full', { length: 500 }),
+    // Nulo = não tem CNH — usada pra bater com o requisito de CNH de
+    // uma vaga (ver jobs.cnh_category/cnh_required e create-application.ts).
+    cnhCategory: cnhCategoryEnum('cnh_category'),
     searchRadiusKm: integer('search_radius_km').notNull().default(10),
     kycStatus: kycStatusEnum('kyc_status').notNull().default('pending'),
     avgRating: numeric('avg_rating', { precision: 2, scale: 1 }),

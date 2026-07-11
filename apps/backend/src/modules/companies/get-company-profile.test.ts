@@ -87,6 +87,10 @@ describe('getCompanyProfile', () => {
     expect(result.jobsPosted).toBe(0);
     expect(result.shiftsCompleted).toBe(0);
     expect(result.rehireRate).toBeNull();
+    expect(result.jobsOpenedThisMonth).toBe(0);
+    expect(result.workersHiredThisMonth).toBe(0);
+    expect(result.topHiredWorkerName).toBeNull();
+    expect(result.topHiredWorkerCount).toBe(0);
   });
 
   it('reflete avgRating quando já existe', async () => {
@@ -159,5 +163,48 @@ describe('getCompanyProfile', () => {
     const result = await getCompanyProfile(owner.id);
 
     expect(result.rehireRate).toBe(50);
+  });
+
+  it('jobsOpenedThisMonth conta só as vagas publicadas no mês corrente', async () => {
+    const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const company = await upsertCompanyProfile(user.id, {
+      legalName: 'Bar do Zé Ltda',
+      tradeName: 'Bar do Zé',
+      cnpj: TEST_CNPJ,
+    });
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await createJobForCompany(company.id, category.id);
+    await createJobForCompany(company.id, category.id);
+
+    const result = await getCompanyProfile(user.id);
+
+    expect(result.jobsOpenedThisMonth).toBe(2);
+  });
+
+  it('workersHiredThisMonth e topHiredWorker refletem quem foi aprovado nesse mês', async () => {
+    const [owner] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const company = await upsertCompanyProfile(owner.id, {
+      legalName: 'Bar do Zé Ltda',
+      tradeName: 'Bar do Zé',
+      cnpj: TEST_CNPJ,
+    });
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
+    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Rafael Lima' });
+    const [secondWorker] = await db.insert(users).values({ phone: SECOND_WORKER_PHONE }).returning();
+    await db.insert(workerProfiles).values({ userId: secondWorker.id, fullName: 'Beatriz Souza' });
+
+    const firstJob = await createJobForCompany(company.id, category.id);
+    await completeShift(worker.id, owner.id, firstJob.id);
+    const secondJob = await createJobForCompany(company.id, category.id);
+    await completeShift(worker.id, owner.id, secondJob.id);
+    const thirdJob = await createJobForCompany(company.id, category.id);
+    await completeShift(secondWorker.id, owner.id, thirdJob.id);
+
+    const result = await getCompanyProfile(owner.id);
+
+    expect(result.workersHiredThisMonth).toBe(2);
+    expect(result.topHiredWorkerName).toBe('Rafael Lima');
+    expect(result.topHiredWorkerCount).toBe(2);
   });
 });

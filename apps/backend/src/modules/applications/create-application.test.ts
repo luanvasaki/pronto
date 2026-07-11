@@ -13,9 +13,9 @@ const TEST_CATEGORY_NAME = 'Categoria de teste — create-application';
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const TOMORROW_PLUS_5H = new Date(TOMORROW.getTime() + 5 * 60 * 60 * 1000);
 
-async function createWorker() {
+async function createWorker(cnhCategory?: 'A' | 'B' | 'AB' | 'C' | 'D' | 'E') {
   const [user] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-  await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Ana Souza' });
+  await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Ana Souza', cnhCategory });
   return user;
 }
 
@@ -26,6 +26,8 @@ async function createJob(
     positionsFilled: number;
     startsAt: Date;
     applicationsCloseAt: Date;
+    cnhCategory: 'A' | 'B' | 'AB' | 'C' | 'D' | 'E';
+    cnhRequired: boolean;
   }> = {},
 ) {
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
@@ -140,5 +142,39 @@ describe('createApplication', () => {
     const job = await createJob({ startsAt: new Date(Date.now() + 30 * 60 * 1000) });
 
     await expect(createApplication(worker.id, job.id)).rejects.toThrow('já fecharam');
+  });
+
+  it('rejeita candidatura quando a vaga exige CNH que o trabalhador não tem', async () => {
+    const worker = await createWorker();
+    const job = await createJob({ cnhCategory: 'B', cnhRequired: true });
+
+    await expect(createApplication(worker.id, job.id)).rejects.toThrow('exige CNH categoria B');
+  });
+
+  it('aceita candidatura quando o trabalhador tem a categoria de CNH exigida', async () => {
+    const worker = await createWorker('B');
+    const job = await createJob({ cnhCategory: 'B', cnhRequired: true });
+
+    const result = await createApplication(worker.id, job.id);
+
+    expect(result.status).toBe('pending');
+  });
+
+  it('aceita candidatura quando a CNH é só preferência, mesmo sem a categoria', async () => {
+    const worker = await createWorker();
+    const job = await createJob({ cnhCategory: 'B', cnhRequired: false });
+
+    const result = await createApplication(worker.id, job.id);
+
+    expect(result.status).toBe('pending');
+  });
+
+  it('CNH categoria AB satisfaz exigência de A ou B', async () => {
+    const worker = await createWorker('AB');
+    const job = await createJob({ cnhCategory: 'A', cnhRequired: true });
+
+    const result = await createApplication(worker.id, job.id);
+
+    expect(result.status).toBe('pending');
   });
 });

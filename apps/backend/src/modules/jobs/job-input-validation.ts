@@ -1,4 +1,5 @@
 import { HttpError } from '../../shared/errors/http-error';
+import { CnhCategory, isCnhCategory } from './cnh';
 
 export interface JobInput {
   categoryId: string | undefined;
@@ -6,6 +7,10 @@ export interface JobInput {
   requiresExperience: boolean | undefined;
   dressCode: string | undefined;
   toolsRequired: string | undefined;
+  /** Undefined/vazio = vaga sem exigência de CNH. */
+  cnhCategory: string | undefined;
+  /** Só importa quando `cnhCategory` está preenchido — default false (preferência, não bloqueia). */
+  cnhRequired: boolean | undefined;
   addressLabel: string | undefined;
   locationLat: number | undefined;
   locationLng: number | undefined;
@@ -23,6 +28,8 @@ export interface ValidatedJobFields {
   requiresExperience: boolean;
   dressCode: string | null;
   toolsRequired: string | null;
+  cnhCategory: CnhCategory | null;
+  cnhRequired: boolean;
   addressLabel: string;
   locationLat: number;
   locationLng: number;
@@ -64,6 +71,15 @@ export function validateJobInput(input: JobInput): ValidatedJobFields {
   if (toolsRequired && toolsRequired.length > 255) {
     throw new HttpError(400, 'Ferramentas exigidas muito longas.');
   }
+
+  const rawCnhCategory = input.cnhCategory?.trim();
+  if (rawCnhCategory && !isCnhCategory(rawCnhCategory)) {
+    throw new HttpError(400, 'Categoria de CNH inválida.');
+  }
+  if (input.cnhRequired && !rawCnhCategory) {
+    throw new HttpError(400, 'Escolha a categoria de CNH exigida.');
+  }
+  const cnhCategory: CnhCategory | null = rawCnhCategory && isCnhCategory(rawCnhCategory) ? rawCnhCategory : null;
 
   const addressLabel = input.addressLabel?.trim();
   if (!addressLabel || addressLabel.length < 2) {
@@ -124,6 +140,8 @@ export function validateJobInput(input: JobInput): ValidatedJobFields {
     requiresExperience: input.requiresExperience,
     dressCode: dressCode || null,
     toolsRequired: toolsRequired || null,
+    cnhCategory,
+    cnhRequired: Boolean(cnhCategory) && Boolean(input.cnhRequired),
     addressLabel,
     locationLat: input.locationLat,
     locationLng: input.locationLng,

@@ -12,8 +12,13 @@ export interface WorkerProfileDetails {
   experienceByCategory: Record<string, boolean>;
   photoUrl: string | null;
   homeAddressLabel: string | null;
+  // Endereço completo — só volta aqui (visão do próprio dono do perfil),
+  // nunca em endpoints que empresa ou outro trabalhador acessam.
+  homeAddressFull: string | null;
+  cnhCategory: string | null;
   kycStatus: string;
   hasDocument: boolean;
+  hasSelfie: boolean;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
   totalShiftsCompleted: number;
@@ -37,7 +42,9 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
   }
 
   const skills = await db.query.workerSkills.findMany({ where: eq(workerSkills.workerId, userId) });
-  const document = await db.query.documents.findFirst({ where: eq(documents.workerId, userId) });
+  const workerDocuments = await db.query.documents.findMany({ where: eq(documents.workerId, userId) });
+  const hasDocument = workerDocuments.some((document) => document.type === 'identity');
+  const hasSelfie = workerDocuments.some((document) => document.type === 'selfie');
 
   // "Horas de voo": calculadas ao vivo a partir dos turnos concluídos —
   // as colunas `totalShiftsCompleted`/`totalNoShows` de `worker_profiles`
@@ -93,8 +100,11 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
     experienceByCategory: Object.fromEntries(skills.map((skill) => [skill.categoryId, skill.hasExperience])),
     photoUrl: profile.photoUrl,
     homeAddressLabel: profile.homeAddressLabel,
+    homeAddressFull: profile.homeAddressFull,
+    cnhCategory: profile.cnhCategory,
     kycStatus: profile.kycStatus,
-    hasDocument: Boolean(document),
+    hasDocument,
+    hasSelfie,
     avgRating: profile.avgRating,
     avgCategoryScores: profile.avgCategoryScores ?? null,
     totalShiftsCompleted,

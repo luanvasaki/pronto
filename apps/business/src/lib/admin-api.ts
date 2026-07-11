@@ -6,6 +6,7 @@ export interface PendingDocument {
   id: string;
   workerId: string;
   workerFullName: string;
+  type: string;
   createdAt: string;
 }
 

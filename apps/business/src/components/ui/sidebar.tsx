@@ -28,9 +28,9 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    href: '/turnos',
-    label: 'Turnos',
-    available: false,
+    href: '/escalas',
+    label: 'Escalas',
+    available: true,
     icon: (
       <>
         <rect x="3" y="6" width="18" height="14" rx="2.5" stroke="currentColor" strokeWidth="2" />
@@ -40,7 +40,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     href: '/escala',
-    label: 'Escala',
+    label: 'Calendário',
     available: true,
     icon: (
       <>
@@ -69,9 +69,10 @@ export interface SidebarProps {
  * abaixo de `lg`, controlado pelo hambúrguer na Topbar, em vez de
  * ficar sempre fixa ocupando a tela.
  *
- * Turnos ainda não tem página própria — fica visível no menu, mas
- * desabilitado ("em breve") até existir de verdade. Escala é o
- * calendário do mês (ver escala/page.tsx).
+ * "Escalas" lista as vagas abertas (ver app/(app)/escalas/page.tsx);
+ * "Calendário" é o calendário do mês com quem trabalhou em cada dia
+ * (ver app/(app)/escala/page.tsx — rota continua singular, só o label
+ * mudou).
  */
 export function Sidebar({ companyName, logoUrl, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();

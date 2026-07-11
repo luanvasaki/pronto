@@ -8,15 +8,15 @@ const COMPARISON_TODAY = [
 ];
 
 const COMPARISON_PRONTO = [
-  'Publica o turno e recebe candidatos verificados.',
+  'Publica a escala e recebe candidatos verificados.',
   'Vê nota, histórico e distância de cada candidato antes de aprovar.',
-  'Vê o valor total do turno antes de publicar.',
+  'Vê o valor total da escala antes de publicar.',
 ];
 
 const STEPS = [
   {
     number: '1',
-    title: 'Publique o turno',
+    title: 'Publique a escala',
     description: 'Função, data, horário e local. Você vê o valor total estimado na hora.',
   },
   {
@@ -27,7 +27,7 @@ const STEPS = [
   {
     number: '3',
     title: 'Confirme e acompanhe',
-    description: 'A pessoa faz check-in e check-out pelo turno. Vocês acertam o pagamento direto, depois.',
+    description: 'A pessoa faz check-in e check-out pela escala. Vocês acertam o pagamento direto, depois.',
   },
 ];
 
@@ -54,7 +54,7 @@ const TRUST_ITEMS = [
   {
     icon: 'R$',
     title: 'Valor claro na tela',
-    description: 'O valor total do turno aparece antes de você publicar. Sem surpresa depois.',
+    description: 'O valor total da escala aparece antes de você publicar. Sem surpresa depois.',
   },
 ];
 
@@ -112,7 +112,7 @@ export default function Home() {
       </section>
 
       <section className="bg-secondary px-5 py-14 text-background">
-        <h2 className="text-center font-heading text-2xl font-bold">Três passos. Um turno coberto.</h2>
+        <h2 className="text-center font-heading text-2xl font-bold">Três passos. Uma escala coberta.</h2>
         <div className="mx-auto mt-8 grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-3">
           {STEPS.map((step) => (
             <div key={step.number} className="rounded-2xl bg-background/[0.06] p-6">
@@ -159,7 +159,7 @@ export default function Home() {
         <div className="mx-auto max-w-2xl rounded-3xl bg-primary px-8 py-12 text-center">
           <h2 className="font-heading text-3xl font-extrabold text-white">Faltou gente? Já sabe.</h2>
           <p className="mt-3 text-[17px] text-white/90">
-            Publique seu primeiro turno hoje e sinta a diferença de resolver em minutos.
+            Publique sua primeira escala hoje e sinta a diferença de resolver em minutos.
           </p>
           <Link
             href="/cadastro/conta"

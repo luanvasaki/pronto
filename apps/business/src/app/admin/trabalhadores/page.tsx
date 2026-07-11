@@ -109,7 +109,7 @@ export default function AdminTrabalhadoresPage() {
             variant={sortOrder === 'shiftsCompleted' ? 'primary' : 'outlined'}
             onClick={() => setSortOrder('shiftsCompleted')}
           >
-            Mais turnos
+            Mais escalas
           </Button>
           <Button
             type="button"
@@ -149,7 +149,7 @@ export default function AdminTrabalhadoresPage() {
             {worker.email && <p className="mt-1 text-sm text-text-secondary">{worker.email}</p>}
 
             <div className="mt-2.5 flex flex-wrap gap-2 text-[12.5px] font-semibold text-text-secondary">
-              <span className="rounded-lg bg-background px-2.5 py-1">{worker.shiftsCompleted} turno(s) concluído(s)</span>
+              <span className="rounded-lg bg-background px-2.5 py-1">{worker.shiftsCompleted} escala(s) concluída(s)</span>
               <span className="rounded-lg bg-background px-2.5 py-1">{worker.hoursWorked}h trabalhadas</span>
               {worker.avgRating && <span className="rounded-lg bg-background px-2.5 py-1">★ {worker.avgRating}</span>}
             </div>

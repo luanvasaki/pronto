@@ -184,7 +184,7 @@ describe('VagaCandidatosPage', () => {
     await user.click(screen.getByRole('button', { name: /aprovar/i }));
 
     await waitFor(() => expect(screen.getByText('Aprovado')).toBeInTheDocument());
-    expect(screen.getByText('Turno: Aguardando check-in')).toBeInTheDocument();
+    expect(screen.getByText('Escala: Aguardando check-in')).toBeInTheDocument();
     expect(updateApplicationStatusMock).toHaveBeenCalledWith('app-1', 'approved');
     expect(listJobApplicationsMock).toHaveBeenCalledTimes(2);
   });
@@ -282,7 +282,7 @@ describe('VagaCandidatosPage', () => {
 
     render(<VagaCandidatosPage />);
 
-    expect(await screen.findByText('Turno concluído — combine o pagamento com o profissional')).toBeInTheDocument();
+    expect(await screen.findByText('Escala concluída — combine o pagamento com o profissional')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /marcar como pago/i })).toBeInTheDocument();
   });
 

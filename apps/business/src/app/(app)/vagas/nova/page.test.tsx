@@ -24,8 +24,10 @@ vi.mock('@shift/shared', async (importOriginal) => {
 });
 
 const createJobMock = vi.fn();
+const listMyJobsMock = vi.fn();
 vi.mock('../../../../lib/jobs-api', () => ({
   createJob: (...args: unknown[]) => createJobMock(...args),
+  listMyJobs: (...args: unknown[]) => listMyJobsMock(...args),
 }));
 
 function toDateTimeLocal(date: Date): string {
@@ -55,6 +57,7 @@ describe('NovaVagaPage', () => {
     searchParamsMock = new URLSearchParams();
     listSkillCategoriesMock.mockReset().mockResolvedValue({ categories: [{ id: 'cat-1', name: 'Garçom' }] });
     createJobMock.mockReset();
+    listMyJobsMock.mockReset().mockResolvedValue({ jobs: [] });
     createSkillCategoryMock.mockReset();
     Object.defineProperty(window.navigator, 'geolocation', {
       value: {
@@ -148,6 +151,65 @@ describe('NovaVagaPage', () => {
     );
   });
 
+  it('envia a exigência de CNH quando escolhida como obrigatória', async () => {
+    createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
+    const user = userEvent.setup();
+    render(<NovaVagaPage />);
+    await screen.findByText('Garçom');
+
+    await fillValidForm(user);
+    await user.selectOptions(screen.getByLabelText(/exige cnh/i), 'B');
+    await user.click(screen.getByRole('button', { name: 'Obrigatório' }));
+    await user.click(screen.getByRole('button', { name: /^publicar$/i }));
+
+    await waitFor(() =>
+      expect(createJobMock).toHaveBeenCalledWith(
+        expect.objectContaining({ cnhCategory: 'B', cnhRequired: true }),
+      ),
+    );
+  });
+
+  it('pré-preenche o formulário ao escolher uma vaga anterior como base', async () => {
+    listMyJobsMock.mockResolvedValue({
+      jobs: [
+        {
+          id: 'job-old',
+          categoryId: 'cat-1',
+          description: 'Vaga anterior com descrição detalhada o suficiente.',
+          requiresExperience: true,
+          dressCode: 'Social completo',
+          toolsRequired: 'Bandeja própria',
+          cnhCategory: 'B',
+          cnhRequired: true,
+          addressLabel: 'Itaim Bibi, São Paulo',
+          locationLat: -23.58,
+          locationLng: -46.68,
+          positionsTotal: 3,
+          positionsFilled: 0,
+          payAmount: '150.00',
+          startsAt: STARTS_AT,
+          endsAt: ENDS_AT,
+          applicationsCloseAt: null,
+          status: 'open',
+        },
+      ],
+    });
+    const user = userEvent.setup();
+    render(<NovaVagaPage />);
+    await screen.findByText('Garçom');
+
+    await user.selectOptions(screen.getByLabelText(/usar vaga anterior como base/i), 'job-old');
+
+    expect(screen.getByLabelText('Categoria')).toHaveValue('cat-1');
+    expect(screen.getByLabelText('Descrição')).toHaveValue('Vaga anterior com descrição detalhada o suficiente.');
+    expect(screen.getByLabelText('Endereço completo')).toHaveValue('Itaim Bibi, São Paulo');
+    expect(screen.getByLabelText(/vestimenta exigida/i)).toHaveValue('Social completo');
+    expect(screen.getByLabelText('Valor por pessoa (R$)')).toHaveValue('150.00');
+    expect(screen.getByLabelText(/exige cnh/i)).toHaveValue('B');
+    // Data/hora não são copiadas — sempre novas pra cada turno.
+    expect(screen.getByLabelText('Início')).toHaveValue('');
+  });
+
   it('cria uma categoria nova e usa o id retornado na vaga', async () => {
     createSkillCategoryMock.mockResolvedValue({ id: 'cat-new', name: 'Manobrista' });
     createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
@@ -216,7 +278,7 @@ describe('NovaVagaPage', () => {
     const afterStart = toDateTimeLocal(new Date(Date.now() + 30 * 60 * 60 * 1000));
     await user.type(screen.getByLabelText(/fechar candidaturas em/i), afterStart);
 
-    expect(screen.getByText('Precisa ser até o horário de início do turno.')).toBeInTheDocument();
+    expect(screen.getByText('Precisa ser até o horário de início da escala.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^publicar$/i })).toBeDisabled();
   });
 

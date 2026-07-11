@@ -52,4 +52,34 @@ describe('reviewDocument', () => {
 
     await expect(reviewDocument(admin.id, document.id, 'approved')).rejects.toThrow('já foi revisado');
   });
+
+  it('só marca o kycStatus como aprovado quando identidade e selfie estão aprovadas', async () => {
+    const { admin, document: identityDocument, worker } = await setupPendingDocument();
+    const [selfieDocument] = await db
+      .insert(documents)
+      .values({ workerId: worker.id, fileUrl: 'documents/x/selfie.jpg', type: 'selfie' })
+      .returning();
+
+    await reviewDocument(admin.id, identityDocument.id, 'approved');
+    let profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
+    expect(profile?.kycStatus).toBe('pending');
+
+    await reviewDocument(admin.id, selfieDocument.id, 'approved');
+    profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
+    expect(profile?.kycStatus).toBe('approved');
+  });
+
+  it('rejeitar um documento marca o kycStatus como rejeitado mesmo com o outro já aprovado', async () => {
+    const { admin, document: identityDocument, worker } = await setupPendingDocument();
+    const [selfieDocument] = await db
+      .insert(documents)
+      .values({ workerId: worker.id, fileUrl: 'documents/x/selfie.jpg', type: 'selfie' })
+      .returning();
+
+    await reviewDocument(admin.id, identityDocument.id, 'approved');
+    await reviewDocument(admin.id, selfieDocument.id, 'rejected');
+
+    const profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
+    expect(profile?.kycStatus).toBe('rejected');
+  });
 });

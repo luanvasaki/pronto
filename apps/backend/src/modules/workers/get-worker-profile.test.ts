@@ -66,6 +66,8 @@ const OWNER2_PHONE = '+5511966661094';
 const TEST_CATEGORY_NAME = 'Categoria de teste — get-worker-profile';
 const TEST_CNPJ = '11222333000397';
 const TEST_CNPJ2 = '11222333000702';
+const TEST_CPF = '11122233396';
+const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const TOMORROW_PLUS_5H = new Date(TOMORROW.getTime() + 5 * 60 * 60 * 1000);
@@ -107,13 +109,15 @@ describe('getWorkerProfile', () => {
       categoryIds: [category.id],
       photoUrl: undefined,
       bio: undefined,
-      cpf: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
     });
 
     const result = await getWorkerProfile(user.id);
 
     expect(result.fullName).toBe('Ana Souza');
     expect(result.categoryIds).toEqual([category.id]);
+    expect(result.homeAddressFull).toBe(TEST_ADDRESS);
     expect(result.kycStatus).toBe('pending');
     expect(result.hasDocument).toBe(false);
     expect(result.totalShiftsCompleted).toBe(0);
@@ -129,13 +133,34 @@ describe('getWorkerProfile', () => {
       categoryIds: [category.id],
       photoUrl: undefined,
       bio: undefined,
-      cpf: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
     });
     await db.insert(documents).values({ workerId: user.id, fileUrl: 'documents/fake.jpg' });
 
     const result = await getWorkerProfile(user.id);
 
     expect(result.hasDocument).toBe(true);
+    expect(result.hasSelfie).toBe(false);
+  });
+
+  it('indica hasSelfie separado de hasDocument, um por type', async () => {
+    const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await upsertWorkerProfile(user.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      photoUrl: undefined,
+      bio: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
+    });
+    await db.insert(documents).values({ workerId: user.id, fileUrl: 'documents/fake-selfie.jpg', type: 'selfie' });
+
+    const result = await getWorkerProfile(user.id);
+
+    expect(result.hasDocument).toBe(false);
+    expect(result.hasSelfie).toBe(true);
   });
 
   it('calcula turnos completados e horas trabalhadas ao vivo, a partir dos turnos de verdade', async () => {
@@ -146,7 +171,8 @@ describe('getWorkerProfile', () => {
       categoryIds: [category.id],
       photoUrl: undefined,
       bio: undefined,
-      cpf: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
     });
 
     const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
@@ -197,7 +223,8 @@ describe('getWorkerProfile', () => {
       categoryIds: [category.id],
       photoUrl: undefined,
       bio: undefined,
-      cpf: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
     });
     await db.update(workerProfiles).set({ avgRating: '4.5' }).where(eq(workerProfiles.userId, user.id));
 
@@ -214,7 +241,8 @@ describe('getWorkerProfile', () => {
       categoryIds: [category.id],
       photoUrl: undefined,
       bio: undefined,
-      cpf: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
     });
     const { owner, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     await completeShift(worker.id, owner.id, job.id);
@@ -233,7 +261,8 @@ describe('getWorkerProfile', () => {
       categoryIds: [category.id],
       photoUrl: undefined,
       bio: undefined,
-      cpf: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
     });
     const { owner, company, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     await completeShift(worker.id, owner.id, job.id);
@@ -254,7 +283,8 @@ describe('getWorkerProfile', () => {
       categoryIds: [category.id],
       photoUrl: undefined,
       bio: undefined,
-      cpf: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
     });
     const first = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     await completeShift(worker.id, first.owner.id, first.job.id);
@@ -277,7 +307,8 @@ describe('getWorkerProfile', () => {
       categoryIds: [category.id],
       photoUrl: undefined,
       bio: undefined,
-      cpf: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
     });
     const { job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     const application = await createApplication(worker.id, job.id);
@@ -299,7 +330,8 @@ describe('getWorkerProfile', () => {
       categoryIds: [category.id],
       photoUrl: undefined,
       bio: undefined,
-      cpf: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
     });
     const { owner, company, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     await completeShift(worker.id, owner.id, job.id);

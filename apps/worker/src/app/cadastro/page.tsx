@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import {
   ApiError,
+  CNH_CATEGORY_OPTIONS,
   createSkillCategory,
   extractDigits,
   formatCpf,
@@ -20,6 +21,8 @@ export default function CadastroPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState('');
   const [cpf, setCpf] = useState('');
+  const [homeAddressFull, setHomeAddressFull] = useState('');
+  const [cnhCategory, setCnhCategory] = useState('');
   const [categories, setCategories] = useState<SkillCategory[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
@@ -93,6 +96,7 @@ export default function CadastroPage() {
   const missingFields: string[] = [];
   if (fullName.trim().length < 2) missingFields.push('nome completo');
   if (cpf.length !== 11) missingFields.push('CPF');
+  if (homeAddressFull.trim().length < 8) missingFields.push('endereço completo');
   if (selectedIds.length === 0) missingFields.push('ao menos uma categoria');
   if (!photoPreviewUrl) missingFields.push('foto de perfil');
 
@@ -112,6 +116,8 @@ export default function CadastroPage() {
         categoryIds: selectedIds,
         photoUrl: useGooglePhoto ? googlePhotoUrl! : undefined,
         cpf,
+        homeAddressFull: homeAddressFull.trim(),
+        cnhCategory: cnhCategory || undefined,
         experienceByCategory,
       });
       if (photoFile) {
@@ -155,6 +161,42 @@ export default function CadastroPage() {
           value={formatCpf(cpf)}
           onChange={(event) => setCpf(extractDigits(event.target.value).slice(0, 11))}
         />
+
+        <div>
+          <Input
+            id="homeAddressFull"
+            label="Endereço completo"
+            type="text"
+            placeholder="Rua, número, bairro, cidade - UF"
+            value={homeAddressFull}
+            onChange={(event) => setHomeAddressFull(event.target.value)}
+          />
+          <p className="mt-1.5 text-xs text-text-secondary">
+            Só pra confirmar sua identidade — protegido, empresas nunca veem esse endereço.
+          </p>
+        </div>
+
+        <div>
+          <label htmlFor="cnhCategory" className="mb-1.5 block text-sm font-medium text-text-secondary">
+            Categoria da CNH (opcional)
+          </label>
+          <select
+            id="cnhCategory"
+            value={cnhCategory}
+            onChange={(event) => setCnhCategory(event.target.value)}
+            className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+          >
+            <option value="">Não tenho CNH</option>
+            {CNH_CATEGORY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1.5 text-xs text-text-secondary">
+            Algumas vagas exigem uma categoria de CNH pra se candidatar.
+          </p>
+        </div>
 
         <div>
           <span className="mb-2 block text-sm font-medium text-text-secondary">Foto de perfil (obrigatória)</span>

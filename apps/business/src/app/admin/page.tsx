@@ -88,7 +88,7 @@ export default function AdminOverviewPage() {
             </div>
             <div className="rounded-2xl border border-border bg-surface p-4 text-center">
               <p className="font-heading text-xl font-bold text-text">{metrics.workers.active}</p>
-              <p className="mt-1 text-xs text-text-secondary">Trabalharam ao menos 1 turno</p>
+              <p className="mt-1 text-xs text-text-secondary">Trabalharam em ao menos 1 escala</p>
             </div>
             <div className="rounded-2xl border border-border bg-surface p-4 text-center">
               <p className="font-heading text-xl font-bold text-text">{metrics.companies.total}</p>
@@ -100,7 +100,7 @@ export default function AdminOverviewPage() {
             </div>
             <div className="rounded-2xl border border-border bg-surface p-4 text-center">
               <p className="font-heading text-xl font-bold text-text">{metrics.shifts.completed}</p>
-              <p className="mt-1 text-xs text-text-secondary">Turnos concluídos (negócios fechados)</p>
+              <p className="mt-1 text-xs text-text-secondary">Escalas concluídas (negócios fechados)</p>
             </div>
           </div>
         </section>
@@ -110,7 +110,7 @@ export default function AdminOverviewPage() {
         <h2 className="font-heading text-lg font-bold text-text">Dados de demonstração</h2>
         <p className="mt-1 text-sm text-text-secondary">
           Remove de uma vez todas as empresas e vagas criadas só pra demonstrar o app (e tudo que veio delas —
-          candidaturas, turnos, pagamentos, avaliações). Empresas de verdade não são afetadas.
+          candidaturas, escalas, pagamentos, avaliações). Empresas de verdade não são afetadas.
         </p>
 
         {demoDeleteMessage && <p className="mt-2 text-sm text-success">{demoDeleteMessage}</p>}

@@ -57,8 +57,8 @@ const SHIFT_STATUS_LABEL: Record<string, string> = {
  * isso, mesmo que o campo por trás ainda seja `payment.status`.
  */
 const PAYMENT_STATUS_LABEL: Record<string, string> = {
-  pending: 'Aguardando conclusão do turno',
-  charged: 'Turno concluído — combine o pagamento com o profissional',
+  pending: 'Aguardando conclusão da escala',
+  charged: 'Escala concluída — combine o pagamento com o profissional',
   released: 'Marcado como pago — aguardando confirmação do profissional',
   confirmed: 'Profissional confirmou o recebimento',
   disputed: 'Profissional avisou que não recebeu',
@@ -279,7 +279,7 @@ export default function VagaCandidatosPage() {
 
             {application.shift && (
               <p className="mt-2 text-sm text-text-secondary">
-                Turno: {SHIFT_STATUS_LABEL[application.shift.status] ?? application.shift.status}
+                Escala: {SHIFT_STATUS_LABEL[application.shift.status] ?? application.shift.status}
               </p>
             )}
 

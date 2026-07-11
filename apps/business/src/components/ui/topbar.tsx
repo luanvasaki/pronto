@@ -40,7 +40,7 @@ function formatCheckInTime(iso: string): string {
  * (e da lista) sozinho. Clicar abre um dropdown com quem se
  * candidatou; cada item leva pra tela de candidatos da vaga.
  *
- * "Publicar turno" navega pra /vagas/nova; virar modal fica pra uma
+ * "Publicar escala" navega pra /vagas/nova; virar modal fica pra uma
  * próxima etapa.
  *
  * Hambúrguer só existe abaixo de `lg` — acima disso a Sidebar já
@@ -171,7 +171,7 @@ export function Topbar({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
           </svg>
-          <span className="hidden sm:inline">Publicar turno</span>
+          <span className="hidden sm:inline">Publicar escala</span>
         </Link>
       </div>
     </div>

@@ -1,0 +1,1 @@
+ALTER TABLE "companies" ADD COLUMN "business_segment_other" varchar(255);

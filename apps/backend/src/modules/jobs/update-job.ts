@@ -58,6 +58,8 @@ export async function updateJob(
       requiresExperience: validated.requiresExperience,
       dressCode: validated.dressCode,
       toolsRequired: validated.toolsRequired,
+      cnhCategory: validated.cnhCategory,
+      cnhRequired: validated.cnhRequired,
       addressLabel: validated.addressLabel,
       locationLat: validated.locationLat,
       locationLng: validated.locationLng,

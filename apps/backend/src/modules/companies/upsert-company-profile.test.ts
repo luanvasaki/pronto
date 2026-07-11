@@ -110,6 +110,35 @@ describe('upsertCompanyProfile', () => {
     ).rejects.toThrow('Ramo de atividade inválido');
   });
 
+  it('rejeita "outro" sem o texto do ramo', async () => {
+    const user = await createTestUser(TEST_PHONE);
+
+    await expect(
+      upsertCompanyProfile(user.id, {
+        legalName: 'Bar do Zé Ltda',
+        tradeName: 'Bar do Zé',
+        cnpj: CNPJ_A,
+        businessSegment: 'outro',
+        businessSegmentOther: undefined,
+      }),
+    ).rejects.toThrow('Digite qual é o ramo de atividade');
+  });
+
+  it('salva o texto do ramo quando escolhe "outro"', async () => {
+    const user = await createTestUser(TEST_PHONE);
+
+    const result = await upsertCompanyProfile(user.id, {
+      legalName: 'Bar do Zé Ltda',
+      tradeName: 'Bar do Zé',
+      cnpj: CNPJ_A,
+      businessSegment: 'outro',
+      businessSegmentOther: 'Confeitaria',
+    });
+
+    expect(result.businessSegment).toBe('outro');
+    expect(result.businessSegmentOther).toBe('Confeitaria');
+  });
+
   it('rejeita CNPJ já usado por outro dono', async () => {
     const owner = await createTestUser(TEST_PHONE);
     const otherOwner = await createTestUser(OTHER_PHONE);

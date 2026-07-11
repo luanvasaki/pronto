@@ -20,6 +20,15 @@ const PENDING_DOCUMENT = {
   id: 'doc-1',
   workerId: 'worker-1',
   workerFullName: 'Rafael Lima',
+  type: 'identity',
+  createdAt: '2026-07-01T12:00:00.000Z',
+};
+
+const PENDING_SELFIE = {
+  id: 'doc-2',
+  workerId: 'worker-1',
+  workerFullName: 'Rafael Lima',
+  type: 'selfie',
   createdAt: '2026-07-01T12:00:00.000Z',
 };
 
@@ -84,9 +93,23 @@ describe('AdminVerificacoesPage', () => {
 
     render(<AdminVerificacoesPage />);
 
-    const image = await screen.findByAltText('Documento de Rafael Lima');
+    const image = await screen.findByAltText('Documento (RG/CNH) de Rafael Lima');
     expect(image).toHaveAttribute('src', 'blob:mock-url');
     expect(screen.queryByRole('link', { name: /abrir documento/i })).not.toBeInTheDocument();
+  });
+
+  it('agrupa identidade e selfie do mesmo trabalhador no mesmo card', async () => {
+    listPendingVerificationsMock.mockResolvedValue({
+      documents: [PENDING_DOCUMENT, PENDING_SELFIE],
+      companies: [],
+      skillCategories: [],
+    });
+
+    render(<AdminVerificacoesPage />);
+
+    expect(await screen.findAllByText('Rafael Lima')).toHaveLength(1);
+    expect(screen.getByText('Documento (RG/CNH)')).toBeInTheDocument();
+    expect(screen.getByText('Selfie')).toBeInTheDocument();
   });
 
   it('aprova um documento e remove ele da lista', async () => {

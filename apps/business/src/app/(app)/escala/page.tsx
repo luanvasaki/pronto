@@ -68,7 +68,7 @@ export default function EscalaPage() {
         );
         setApplicationsByJobId(Object.fromEntries(applicationsResults));
       } catch {
-        setError('Não foi possível carregar seus turnos.');
+        setError('Não foi possível carregar suas escalas.');
       } finally {
         setIsLoading(false);
       }
@@ -183,7 +183,7 @@ export default function EscalaPage() {
                 </span>
                 <Link
                   href={`/vagas/nova?data=${dateKey}`}
-                  aria-label={`Publicar turno em ${dateKey}`}
+                  aria-label={`Publicar escala em ${dateKey}`}
                   className="flex h-5 w-5 items-center justify-center rounded-full text-text-secondary transition hover:bg-primary/10 hover:text-primary"
                 >
                   +

@@ -7,6 +7,8 @@ export interface Job {
   requiresExperience: boolean;
   dressCode: string | null;
   toolsRequired: string | null;
+  cnhCategory: string | null;
+  cnhRequired: boolean;
   addressLabel: string;
   locationLat: number;
   locationLng: number;
@@ -29,6 +31,8 @@ export interface CreateJobInput {
   requiresExperience: boolean;
   dressCode?: string;
   toolsRequired?: string;
+  cnhCategory?: string;
+  cnhRequired?: boolean;
   addressLabel: string;
   locationLat: number;
   locationLng: number;

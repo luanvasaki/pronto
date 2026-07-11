@@ -1,6 +1,7 @@
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { skillCategories, users, workerProfiles, workerSkills } from '../../db/schema';
+import { CnhCategory, isCnhCategory } from '../jobs/cnh';
 import { HttpError } from '../../shared/errors/http-error';
 
 const CPF_REGEX = /^\d{11}$/;
@@ -15,6 +16,13 @@ export interface UpsertWorkerProfileInput {
   photoUrl: string | undefined;
   bio: string | undefined;
   cpf: string | undefined;
+  // Dado sensível — nunca retornado pra empresa, ver comentário do
+  // schema. Igual ao CPF, obrigatório só no cadastro inicial.
+  homeAddressFull: string | undefined;
+  // Categoria de CNH do trabalhador — opcional (nem todo mundo tem
+  // carteira), string vazia limpa um valor já salvo. Usada só pra bater
+  // com o requisito de CNH de uma vaga (ver jobs/cnh.ts).
+  cnhCategory: string | undefined;
   // Opcional — quando uma categoria de `categoryIds` não aparece aqui,
   // o valor anterior dela é preservado (troca de categoria pelo /perfil
   // não reseta a experiência já declarada); categoria nova sem entrada
@@ -28,6 +36,8 @@ export interface WorkerProfileResponse {
   photoUrl: string | null;
   bio: string | null;
   cpf: string | null;
+  homeAddressFull: string | null;
+  cnhCategory: string | null;
   experienceByCategory: Record<string, boolean>;
 }
 
@@ -36,9 +46,11 @@ export interface WorkerProfileResponse {
  * categorias juntos, não em dois passos. Substitui as categorias
  * associadas em vez de diffar o que já existia: mais simples e
  * igualmente correto pro volume de categorias por trabalhador (poucas).
- * `bio`/`cpf` são opcionais aqui (quem já tem perfil pode editar outra
- * coisa sem reenviar os dois) — o cadastro inicial que exige CPF, no
- * cliente.
+ * `bio`/`cpf`/`homeAddressFull` são opcionais aqui pra quem já tem
+ * perfil (editar outra coisa sem reenviá-los preserva o valor salvo) —
+ * mas CPF e endereço completo são exigidos quando ainda não existe
+ * perfil (cadastro inicial), pra não dar pra criar um perfil sem eles
+ * só pulando a validação do cliente.
  */
 export async function upsertWorkerProfile(
   userId: string,
@@ -67,7 +79,16 @@ export async function upsertWorkerProfile(
     throw new HttpError(400, 'Bio muito longa — no máximo 500 caracteres.');
   }
 
+  const existingProfile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, userId) });
+
   const cpf = input.cpf?.trim();
+  // CPF é obrigatório só no cadastro inicial (perfil ainda não existe) —
+  // depois disso, editar outra coisa sem reenviá-lo preserva o valor
+  // salvo (ver comentário da interface). Repetido aqui no servidor
+  // porque a exigência do cliente sozinha não impede um POST direto.
+  if (!existingProfile && !cpf) {
+    throw new HttpError(400, 'CPF é obrigatório.');
+  }
   if (cpf) {
     if (!CPF_REGEX.test(cpf)) {
       throw new HttpError(400, 'CPF inválido — envie só os 11 números.');
@@ -77,6 +98,21 @@ export async function upsertWorkerProfile(
       throw new HttpError(400, 'Esse CPF já está cadastrado.');
     }
   }
+
+  const homeAddressFull = input.homeAddressFull?.trim();
+  // Mesma regra do CPF: obrigatório só quando ainda não existe perfil.
+  if (!existingProfile && !homeAddressFull) {
+    throw new HttpError(400, 'Endereço completo é obrigatório.');
+  }
+  if (homeAddressFull && homeAddressFull.length < 8) {
+    throw new HttpError(400, 'Endereço incompleto.');
+  }
+
+  const rawCnhCategory = input.cnhCategory?.trim();
+  if (rawCnhCategory && !isCnhCategory(rawCnhCategory)) {
+    throw new HttpError(400, 'Categoria de CNH inválida.');
+  }
+  const cnhCategory: CnhCategory | null = rawCnhCategory && isCnhCategory(rawCnhCategory) ? rawCnhCategory : null;
 
   let photoUrl: string | undefined;
   if (input.photoUrl) {
@@ -89,17 +125,28 @@ export async function upsertWorkerProfile(
 
   const [profile] = await db
     .insert(workerProfiles)
-    .values({ userId, fullName, photoUrl, bio: bio || null, cpf: cpf || null })
+    .values({
+      userId,
+      fullName,
+      photoUrl,
+      bio: bio || null,
+      cpf: cpf || null,
+      homeAddressFull: homeAddressFull || null,
+      cnhCategory,
+    })
     .onConflictDoUpdate({
       target: workerProfiles.userId,
-      // bio/cpf só entram no UPDATE quando enviados de verdade — editar
-      // só o nome ou as categorias não pode apagar um bio/cpf já salvo.
+      // bio/cpf/homeAddressFull/cnhCategory só entram no UPDATE quando
+      // enviados de verdade — editar só o nome ou as categorias não
+      // pode apagar valor já salvo.
       set: {
         fullName,
         updatedAt: new Date(),
         ...(photoUrl ? { photoUrl } : {}),
         ...(input.bio !== undefined ? { bio: bio || null } : {}),
         ...(input.cpf !== undefined ? { cpf: cpf || null } : {}),
+        ...(input.homeAddressFull !== undefined ? { homeAddressFull: homeAddressFull || null } : {}),
+        ...(input.cnhCategory !== undefined ? { cnhCategory } : {}),
       },
     })
     .returning();
@@ -131,6 +178,8 @@ export async function upsertWorkerProfile(
     photoUrl: profile?.photoUrl ?? null,
     bio: profile?.bio ?? null,
     cpf: profile?.cpf ?? null,
+    homeAddressFull: profile?.homeAddressFull ?? null,
+    cnhCategory: profile?.cnhCategory ?? null,
     experienceByCategory,
   };
 }

@@ -10,6 +10,8 @@ import { skillCategories, users } from '../../db/schema';
 const TEST_EMAIL = 'worker-document-routes-test@example.com';
 const TEST_PASSWORD = 'senha-de-teste-123';
 const TEST_CATEGORY_NAME = 'Categoria de teste — worker-document-routes';
+const TEST_CPF = '11122233366';
+const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
 
 async function loginAndCreateProfile(app: ReturnType<typeof createApp>) {
   const agent = request.agent(app);
@@ -19,7 +21,9 @@ async function loginAndCreateProfile(app: ReturnType<typeof createApp>) {
     .insert(skillCategories)
     .values({ name: TEST_CATEGORY_NAME })
     .returning();
-  await agent.put('/worker-profile').send({ fullName: 'Rafael Lima', categoryIds: [category.id] });
+  await agent
+    .put('/worker-profile')
+    .send({ fullName: 'Rafael Lima', categoryIds: [category.id], cpf: TEST_CPF, homeAddressFull: TEST_ADDRESS });
 
   return agent;
 }
@@ -88,5 +92,22 @@ describe('POST /worker-profile/document', () => {
 
     expect(response.status).toBe(201);
     expect(response.body.status).toBe('pending');
+    expect(response.body.type).toBe('identity');
+  });
+
+  it('responde 201 e grava como selfie quando o campo type é enviado', async () => {
+    const app = createApp();
+    const agent = await loginAndCreateProfile(app);
+
+    const response = await agent
+      .post('/worker-profile/document')
+      .field('type', 'selfie')
+      .attach('document', Buffer.from([0xff, 0xd8, 0xff, 0xd9]), {
+        filename: 'selfie.jpg',
+        contentType: 'image/jpeg',
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.type).toBe('selfie');
   });
 });

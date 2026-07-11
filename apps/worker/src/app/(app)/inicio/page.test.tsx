@@ -43,8 +43,11 @@ const PROFILE = {
   experienceByCategory: {},
   photoUrl: null,
   homeAddressLabel: 'Campolim, Sorocaba',
+  homeAddressFull: 'Rua das Flores, 123, Centro, Sorocaba - SP',
+  cnhCategory: null,
   kycStatus: 'approved',
   hasDocument: true,
+  hasSelfie: true,
   avgRating: '4.8',
   avgCategoryScores: null,
   totalShiftsCompleted: 10,
@@ -84,6 +87,9 @@ const JOB = {
   companyAvgRating: '4.8',
   matchesSkills: true,
   experienceMismatch: false,
+  cnhCategory: null,
+  cnhRequired: false,
+  cnhMismatch: false,
 };
 
 describe('InicioPage', () => {
@@ -226,6 +232,42 @@ describe('InicioPage', () => {
 
     await screen.findByText('Garçom');
     expect(screen.queryByText('Experiência necessária')).not.toBeInTheDocument();
+  });
+
+  it('bloqueia a candidatura sem opção de confirmar quando falta CNH obrigatória', async () => {
+    listNearbyJobsMock.mockResolvedValue({
+      jobs: [{ ...JOB, cnhCategory: 'B', cnhRequired: true, cnhMismatch: true }],
+    });
+
+    renderPage();
+    await screen.findByText('Garçom');
+
+    expect(screen.getByText('CNH B obrigatória')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /aceitar turno/i })).toBeDisabled();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  });
+
+  it('não bloqueia a candidatura quando a CNH é só preferência', async () => {
+    listNearbyJobsMock.mockResolvedValue({
+      jobs: [{ ...JOB, cnhCategory: 'B', cnhRequired: false, cnhMismatch: true }],
+    });
+
+    renderPage();
+    await screen.findByText('Garçom');
+
+    expect(screen.getByText('CNH B (preferência)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /aceitar turno/i })).toBeEnabled();
+  });
+
+  it('não bloqueia a candidatura quando o trabalhador já tem a CNH exigida', async () => {
+    listNearbyJobsMock.mockResolvedValue({
+      jobs: [{ ...JOB, cnhCategory: 'B', cnhRequired: true, cnhMismatch: false }],
+    });
+
+    renderPage();
+    await screen.findByText('Garçom');
+
+    expect(screen.getByRole('button', { name: /aceitar turno/i })).toBeEnabled();
   });
 
   it('pede localização e tenta de novo quando o backend diz que ela falta', async () => {

@@ -24,6 +24,8 @@ const ADMIN_EMAIL = 'admin-routes-admin@example.com';
 const TEST_PASSWORD = 'senha-de-teste-123';
 const TEST_CATEGORY_NAME = 'Categoria de teste — admin-routes';
 const TEST_CNPJ = '11222333000300';
+const TEST_CPF = '11122233377';
+const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
 
 async function loginAgent(app: ReturnType<typeof createApp>, email: string) {
   const agent = request.agent(app);
@@ -102,7 +104,9 @@ describe('rotas de admin', () => {
     const app = createApp();
     const workerAgent = await loginAgent(app, WORKER_EMAIL);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
-    await workerAgent.put('/worker-profile').send({ fullName: 'Rafael Lima', categoryIds: [category.id] });
+    await workerAgent
+      .put('/worker-profile')
+      .send({ fullName: 'Rafael Lima', categoryIds: [category.id], cpf: TEST_CPF, homeAddressFull: TEST_ADDRESS });
     const documentBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
     const uploadResponse = await workerAgent
       .post('/worker-profile/document')
@@ -192,7 +196,9 @@ describe('rotas de admin', () => {
     const app = createApp();
     const workerAgent = await loginAgent(app, WORKER_EMAIL);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
-    await workerAgent.put('/worker-profile').send({ fullName: 'Rafael Lima', categoryIds: [category.id] });
+    await workerAgent
+      .put('/worker-profile')
+      .send({ fullName: 'Rafael Lima', categoryIds: [category.id], cpf: TEST_CPF, homeAddressFull: TEST_ADDRESS });
     const meResponse = await workerAgent.get('/auth/me');
 
     const adminAgent = await loginAgent(app, ADMIN_EMAIL);

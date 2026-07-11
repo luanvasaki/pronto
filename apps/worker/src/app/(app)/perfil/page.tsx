@@ -2,6 +2,7 @@
 
 import {
   ApiError,
+  CNH_CATEGORY_OPTIONS,
   createSkillCategory,
   extractDigits,
   formatCpf,
@@ -67,6 +68,8 @@ export default function PerfilPage() {
   const [fullName, setFullName] = useState(profile?.fullName ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
   const [cpf, setCpf] = useState(profile?.cpf ?? '');
+  const [homeAddressFull, setHomeAddressFull] = useState(profile?.homeAddressFull ?? '');
+  const [cnhCategory, setCnhCategory] = useState(profile?.cnhCategory ?? '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -207,7 +210,7 @@ export default function PerfilPage() {
     }
   }
 
-  const isProfileFormValid = fullName.trim().length >= 2;
+  const isProfileFormValid = fullName.trim().length >= 2 && homeAddressFull.trim().length >= 8;
 
   async function handleSaveProfile(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -222,6 +225,8 @@ export default function PerfilPage() {
         categoryIds: profile.categoryIds,
         bio: bio.trim() || undefined,
         cpf: cpf.trim() || undefined,
+        homeAddressFull: homeAddressFull.trim(),
+        cnhCategory,
       });
       applyUpdate(updated);
       setProfileSaved(true);
@@ -534,6 +539,48 @@ export default function PerfilPage() {
             setProfileSaved(false);
           }}
         />
+
+        <div>
+          <Input
+            id="homeAddressFull"
+            label="Endereço completo"
+            type="text"
+            placeholder="Rua, número, bairro, cidade - UF"
+            value={homeAddressFull}
+            onChange={(event) => {
+              setHomeAddressFull(event.target.value);
+              setProfileSaved(false);
+            }}
+          />
+          <p className="mt-1.5 text-xs text-text-secondary">
+            Protegido — empresas nunca veem esse endereço, só usamos pra confirmar sua identidade.
+          </p>
+        </div>
+
+        <div>
+          <label htmlFor="cnhCategory" className="mb-1.5 block text-sm font-medium text-text-secondary">
+            Categoria da CNH (opcional)
+          </label>
+          <select
+            id="cnhCategory"
+            value={cnhCategory}
+            onChange={(event) => {
+              setCnhCategory(event.target.value);
+              setProfileSaved(false);
+            }}
+            className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+          >
+            <option value="">Não tenho CNH</option>
+            {CNH_CATEGORY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1.5 text-xs text-text-secondary">
+            Algumas vagas exigem uma categoria de CNH pra se candidatar.
+          </p>
+        </div>
 
         {profileError && <p className="text-sm text-danger">{profileError}</p>}
 

@@ -8,8 +8,11 @@ export interface WorkerProfileDetails {
   experienceByCategory: Record<string, boolean>;
   photoUrl: string | null;
   homeAddressLabel: string | null;
+  homeAddressFull: string | null;
+  cnhCategory: string | null;
   kycStatus: string;
   hasDocument: boolean;
+  hasSelfie: boolean;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
   totalShiftsCompleted: number;
@@ -45,6 +48,8 @@ export interface UpsertWorkerProfileInput {
   photoUrl?: string;
   bio?: string;
   cpf?: string;
+  homeAddressFull?: string;
+  cnhCategory?: string;
   experienceByCategory?: Record<string, boolean>;
 }
 
@@ -54,6 +59,8 @@ export interface UpsertWorkerProfileResponse {
   photoUrl: string | null;
   bio: string | null;
   cpf: string | null;
+  homeAddressFull: string | null;
+  cnhCategory: string | null;
   experienceByCategory: Record<string, boolean>;
 }
 
@@ -67,11 +74,24 @@ export function upsertWorkerProfile(input: UpsertWorkerProfileInput): Promise<Up
 export interface UploadDocumentResponse {
   id: string;
   status: string;
+  type: string;
 }
 
 export function uploadWorkerDocument(file: File): Promise<UploadDocumentResponse> {
   const formData = new FormData();
   formData.append('document', file);
+  formData.append('type', 'identity');
+
+  return apiFetch('/worker-profile/document', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+export function uploadWorkerSelfie(file: File): Promise<UploadDocumentResponse> {
+  const formData = new FormData();
+  formData.append('document', file);
+  formData.append('type', 'selfie');
 
   return apiFetch('/worker-profile/document', {
     method: 'POST',

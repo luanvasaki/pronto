@@ -1,12 +1,12 @@
 'use client';
 
-import { ApiError, createSkillCategory, listSkillCategories, SkillCategory } from '@shift/shared';
+import { ApiError, CNH_CATEGORY_OPTIONS, createSkillCategory, listSkillCategories, SkillCategory } from '@shift/shared';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { getCurrentPosition } from '../../../../lib/geolocation';
-import { createJob } from '../../../../lib/jobs-api';
+import { createJob, Job, listMyJobs } from '../../../../lib/jobs-api';
 
 const PAY_AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
 const NEW_CATEGORY_OPTION = '__new__';
@@ -29,11 +29,19 @@ function NovaVagaForm() {
   const [categories, setCategories] = useState<SkillCategory[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
+  // Toda vaga publicada já serve de modelo — esse picker deixa escolher
+  // uma vaga anterior (própria, qualquer status) pra pré-preencher o
+  // formulário, sem precisar redigitar tudo de novo pra uma escala recorrente.
+  const [previousJobs, setPreviousJobs] = useState<Job[]>([]);
+  const [templateJobId, setTemplateJobId] = useState('');
+
   const [categoryId, setCategoryId] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [requiresExperience, setRequiresExperience] = useState<boolean | null>(null);
   const [dressCode, setDressCode] = useState('');
   const [toolsRequired, setToolsRequired] = useState('');
+  const [cnhCategory, setCnhCategory] = useState('');
+  const [cnhRequired, setCnhRequired] = useState(false);
   const [description, setDescription] = useState('');
   const [addressLabel, setAddressLabel] = useState('');
   const [lat, setLat] = useState<number | null>(null);
@@ -43,7 +51,7 @@ function NovaVagaForm() {
   const [positionsTotal, setPositionsTotal] = useState('1');
   const [payAmount, setPayAmount] = useState('');
   // Vindo da Escala (clicou num dia do calendário) — pré-preenche a
-  // data com um horário comum de turno; a pessoa ainda ajusta a hora.
+  // data com um horário comum de escala; a pessoa ainda ajusta a hora.
   const prefilledDate = searchParams.get('data');
   const [startsAt, setStartsAt] = useState(
     prefilledDate && DATE_ONLY_REGEX.test(prefilledDate) ? `${prefilledDate}T18:00` : '',
@@ -61,6 +69,33 @@ function NovaVagaForm() {
       .catch(() => setError('Não foi possível carregar as categorias.'))
       .finally(() => setIsLoadingCategories(false));
   }, []);
+
+  useEffect(() => {
+    listMyJobs()
+      .then((data) => setPreviousJobs(data.jobs))
+      .catch(() => undefined);
+  }, []);
+
+  function handleUseTemplate(jobId: string): void {
+    setTemplateJobId(jobId);
+    const template = previousJobs.find((job) => job.id === jobId);
+    if (!template) return;
+
+    setCategoryId(template.categoryId);
+    setRequiresExperience(template.requiresExperience);
+    setDressCode(template.dressCode ?? '');
+    setToolsRequired(template.toolsRequired ?? '');
+    setCnhCategory(template.cnhCategory ?? '');
+    setCnhRequired(template.cnhRequired);
+    setDescription(template.description);
+    setAddressLabel(template.addressLabel);
+    setLat(template.locationLat);
+    setLng(template.locationLng);
+    setPositionsTotal(String(template.positionsTotal));
+    setPayAmount(template.payAmount);
+    // Data/hora e prazo de candidatura ficam de fora de propósito —
+    // são sempre novos pra cada escala, não fazem sentido copiados.
+  }
 
   async function handleUseCurrentLocation(): Promise<void> {
     setLocationError(null);
@@ -121,6 +156,8 @@ function NovaVagaForm() {
         requiresExperience,
         dressCode: dressCode.trim() || undefined,
         toolsRequired: toolsRequired.trim() || undefined,
+        cnhCategory: cnhCategory || undefined,
+        cnhRequired,
         addressLabel,
         locationLat: lat,
         locationLng: lng,
@@ -141,8 +178,34 @@ function NovaVagaForm() {
     <main className="flex flex-1 items-center justify-center px-4 py-8">
       <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-5">
         <p className="text-[15px] text-text-secondary">
-          Preencha os detalhes do turno que você precisa cobrir.
+          Preencha os detalhes da escala que você precisa cobrir.
         </p>
+
+        {previousJobs.length > 0 && (
+          <div>
+            <label htmlFor="templateJobId" className="mb-1.5 block text-sm font-medium text-text-secondary">
+              Usar vaga anterior como base (opcional)
+            </label>
+            <select
+              id="templateJobId"
+              value={templateJobId}
+              onChange={(event) => handleUseTemplate(event.target.value)}
+              className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+            >
+              <option value="">Começar do zero</option>
+              {previousJobs.map((job) => (
+                <option key={job.id} value={job.id}>
+                  {job.description.slice(0, 60)}
+                  {job.description.length > 60 ? '…' : ''} · R$ {job.payAmount}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-text-secondary">
+              Preenche categoria, exigências, endereço e valor com os dados dessa vaga — data, horário e
+              vagas você ajusta na hora.
+            </p>
+          </div>
+        )}
 
         <div>
           <label htmlFor="categoryId" className="mb-1.5 block text-sm font-medium text-text-secondary">
@@ -232,6 +295,61 @@ function NovaVagaForm() {
             value={toolsRequired}
             onChange={(event) => setToolsRequired(event.target.value)}
           />
+
+          <div>
+            <label htmlFor="cnhCategory" className="mb-1.5 block text-sm font-medium text-text-secondary">
+              Exige CNH? (opcional)
+            </label>
+            <select
+              id="cnhCategory"
+              value={cnhCategory}
+              onChange={(event) => setCnhCategory(event.target.value)}
+              className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+            >
+              <option value="">Nenhuma exigência</option>
+              {CNH_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {cnhCategory && (
+              <div className="mt-2.5">
+                <span className="mb-1.5 block text-sm font-medium text-text-secondary">
+                  Isso é obrigatório pra se candidatar ou só uma preferência?
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCnhRequired(true)}
+                    className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+                      cnhRequired
+                        ? 'border-primary bg-primary text-white'
+                        : 'border-border bg-surface text-text-secondary'
+                    }`}
+                  >
+                    Obrigatório
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCnhRequired(false)}
+                    className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+                      !cnhRequired
+                        ? 'border-primary bg-primary text-white'
+                        : 'border-border bg-surface text-text-secondary'
+                    }`}
+                  >
+                    Preferência
+                  </button>
+                </div>
+                {cnhRequired && (
+                  <p className="mt-1.5 text-xs text-text-secondary">
+                    Quem não tiver CNH {cnhCategory} não vai conseguir se candidatar.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div>
@@ -317,7 +435,7 @@ function NovaVagaForm() {
             automaticamente 1h antes do início.
           </p>
           {applicationsCloseAt !== '' && startsAt !== '' && new Date(applicationsCloseAt) > new Date(startsAt) && (
-            <p className="mt-1.5 text-xs text-danger">Precisa ser até o horário de início do turno.</p>
+            <p className="mt-1.5 text-xs text-danger">Precisa ser até o horário de início da escala.</p>
           )}
         </div>
 

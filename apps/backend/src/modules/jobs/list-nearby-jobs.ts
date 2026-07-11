@@ -3,6 +3,7 @@ import { db } from '../../db/client';
 import { companies, jobs, workerProfiles, workerSkills } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { areApplicationsClosed } from './applications-close';
+import { satisfiesCnhRequirement } from './cnh';
 import { haversineDistanceKm } from './haversine';
 import { JobResponse, toJobResponse } from './job-response';
 
@@ -16,6 +17,9 @@ export interface NearbyJobResponse extends JobResponse {
   matchesSkills: boolean;
   /** Vaga exige experiência anterior e o trabalhador não declarou ter nessa categoria. */
   experienceMismatch: boolean;
+  /** Vaga tem exigência de CNH e o trabalhador não tem a categoria certa — quando `cnhRequired` também é
+   * true, isso bloqueia a candidatura (ver create-application.ts); senão é só um aviso. */
+  cnhMismatch: boolean;
 }
 
 /**
@@ -79,6 +83,7 @@ export async function listNearbyJobs(workerId: string): Promise<NearbyJobRespons
           companyAvgCategoryScores: company.avgCategoryScores ?? null,
           matchesSkills: categoryIds.has(job.categoryId),
           experienceMismatch: job.requiresExperience && !(hasExperienceByCategoryId.get(job.categoryId) ?? false),
+          cnhMismatch: Boolean(job.cnhCategory) && !satisfiesCnhRequirement(profile.cnhCategory, job.cnhCategory!),
         },
       ];
     });

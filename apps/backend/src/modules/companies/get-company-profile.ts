@@ -1,6 +1,6 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, gte, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { companies, jobs, shifts } from '../../db/schema';
+import { companies, jobs, shifts, workerProfiles } from '../../db/schema';
 import { updateCompanyRatingAggregate } from '../ratings/update-rating-aggregates';
 import { HttpError } from '../../shared/errors/http-error';
 
@@ -12,6 +12,7 @@ export interface CompanyProfileDetails {
   logoUrl: string | null;
   addressLabel: string | null;
   businessSegment: string | null;
+  businessSegmentOther: string | null;
   verificationStatus: string;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
@@ -19,6 +20,11 @@ export interface CompanyProfileDetails {
   jobsPosted: number;
   shiftsCompleted: number;
   rehireRate: number | null;
+  /** Área gerencial do Início — resumo do mês corrente (calendário, não janela móvel de 30 dias). */
+  jobsOpenedThisMonth: number;
+  workersHiredThisMonth: number;
+  topHiredWorkerName: string | null;
+  topHiredWorkerCount: number;
 }
 
 export async function getCompanyProfile(ownerUserId: string): Promise<CompanyProfileDetails> {
@@ -59,6 +65,40 @@ export async function getCompanyProfile(ownerUserId: string): Promise<CompanyPro
   const workersHired = workerShiftCounts.filter((row) => Number(row.completedCount) >= 1).length;
   const workersRehired = workerShiftCounts.filter((row) => Number(row.completedCount) >= 2).length;
 
+  // Resumo do mês (Início/área gerencial) — mês corrente do calendário,
+  // não "últimos 30 dias". "Aberta" = jobs.created_at (quando a vaga foi
+  // publicada); "contratada" = shifts.created_at (quando a candidatura
+  // foi aprovada, que é quando o turno é criado — ver update-application-status.ts).
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const [{ jobsOpenedThisMonth = 0 } = { jobsOpenedThisMonth: 0 }] = await db
+    .select({ jobsOpenedThisMonth: sql<number>`count(*)` })
+    .from(jobs)
+    .where(and(eq(jobs.companyId, company.id), gte(jobs.createdAt, monthStart)));
+
+  const workerHiresThisMonth = await db
+    .select({
+      workerId: shifts.workerId,
+      hiresCount: sql<string>`count(*)`,
+    })
+    .from(shifts)
+    .innerJoin(jobs, eq(shifts.jobId, jobs.id))
+    .where(and(eq(jobs.companyId, company.id), gte(shifts.createdAt, monthStart)))
+    .groupBy(shifts.workerId);
+
+  let topHiredWorkerName: string | null = null;
+  let topHiredWorkerCount = 0;
+  if (workerHiresThisMonth.length > 0) {
+    const top = workerHiresThisMonth.reduce((max, row) =>
+      Number(row.hiresCount) > Number(max.hiresCount) ? row : max,
+    );
+    const topWorker = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, top.workerId) });
+    topHiredWorkerName = topWorker?.fullName ?? null;
+    topHiredWorkerCount = Number(top.hiresCount);
+  }
+
   return {
     id: company.id,
     legalName: company.legalName,
@@ -67,6 +107,7 @@ export async function getCompanyProfile(ownerUserId: string): Promise<CompanyPro
     logoUrl: company.logoUrl,
     addressLabel: company.addressLabel,
     businessSegment: company.businessSegment,
+    businessSegmentOther: company.businessSegmentOther,
     verificationStatus: company.verificationStatus,
     avgRating: company.avgRating,
     avgCategoryScores: company.avgCategoryScores ?? null,
@@ -74,5 +115,9 @@ export async function getCompanyProfile(ownerUserId: string): Promise<CompanyPro
     jobsPosted: Number(jobsPosted),
     shiftsCompleted,
     rehireRate: workersHired > 0 ? Math.round((workersRehired / workersHired) * 100) : null,
+    jobsOpenedThisMonth: Number(jobsOpenedThisMonth),
+    workersHiredThisMonth: workerHiresThisMonth.length,
+    topHiredWorkerName,
+    topHiredWorkerCount,
   };
 }

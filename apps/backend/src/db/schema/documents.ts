@@ -4,6 +4,12 @@ import { workerProfiles } from './worker-profiles';
 
 export const documentStatusEnum = pgEnum('document_status', ['pending', 'approved', 'rejected']);
 
+// `identity` é o documento oficial (RG/CNH); `selfie` é a foto do rosto
+// enviada junto, pro admin comparar visualmente e confirmar que quem se
+// cadastrou é o dono do documento. Default 'identity' preserva o
+// significado dos documentos já enviados antes dessa coluna existir.
+export const documentTypeEnum = pgEnum('document_type', ['identity', 'selfie']);
+
 /**
  * Só documento de trabalhador por enquanto — empresa é verificada
  * só por CNPJ, sem upload de arquivo, no MVP. `onDelete: cascade`
@@ -18,6 +24,7 @@ export const documents = pgTable('documents', {
   // Caminho no object storage, não uma URL assinada temporária —
   // a URL de acesso é gerada sob demanda pela aplicação.
   fileUrl: text('file_url').notNull(),
+  type: documentTypeEnum('type').notNull().default('identity'),
   status: documentStatusEnum('status').notNull().default('pending'),
   reviewedBy: uuid('reviewed_by').references(() => users.id),
   reviewedAt: timestamp('reviewed_at', { withTimezone: true }),

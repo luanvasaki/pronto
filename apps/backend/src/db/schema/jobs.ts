@@ -10,6 +10,7 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
+import { cnhCategoryEnum } from './cnh';
 import { companies } from './companies';
 import { skillCategories } from './skill-categories';
 
@@ -35,6 +36,12 @@ export const jobs = pgTable('jobs', {
   requiresExperience: boolean('requires_experience').notNull().default(false),
   dressCode: varchar('dress_code', { length: 255 }),
   toolsRequired: varchar('tools_required', { length: 255 }),
+  // Nulo = vaga não tem exigência de CNH. Quando preenchida, `cnhRequired`
+  // decide se é bloqueante (candidato sem essa CNH nem consegue se
+  // candidatar, ver create-application.ts) ou só uma preferência
+  // (mostrada como aviso, mas não impede candidatura).
+  cnhCategory: cnhCategoryEnum('cnh_category'),
+  cnhRequired: boolean('cnh_required').notNull().default(false),
   addressLabel: varchar('address_label', { length: 255 }).notNull(),
   locationLat: doublePrecision('location_lat').notNull(),
   locationLng: doublePrecision('location_lng').notNull(),

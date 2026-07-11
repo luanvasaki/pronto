@@ -1,5 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CompanyProfileDetails } from '../../../lib/company-profile-api';
 import { CompanyProfileProvider } from '../company-profile-context';
@@ -20,10 +19,8 @@ vi.mock('@shift/shared', async (importOriginal) => {
 });
 
 const listMyJobsMock = vi.fn();
-const cancelJobMock = vi.fn();
 vi.mock('../../../lib/jobs-api', () => ({
   listMyJobs: (...args: unknown[]) => listMyJobsMock(...args),
-  cancelJob: (...args: unknown[]) => cancelJobMock(...args),
 }));
 
 const listJobApplicationsMock = vi.fn();
@@ -39,6 +36,7 @@ const PROFILE: CompanyProfileDetails = {
   logoUrl: null,
   addressLabel: null,
   businessSegment: null,
+  businessSegmentOther: null,
   verificationStatus: 'approved',
   avgRating: '4.8',
   avgCategoryScores: null,
@@ -46,6 +44,10 @@ const PROFILE: CompanyProfileDetails = {
   jobsPosted: 3,
   shiftsCompleted: 5,
   rehireRate: 20,
+  jobsOpenedThisMonth: 4,
+  workersHiredThisMonth: 3,
+  topHiredWorkerName: 'Ana Souza',
+  topHiredWorkerCount: 2,
 };
 
 // Quarta-feira, dentro da semana e do mês usados nas vagas de teste.
@@ -80,7 +82,6 @@ describe('PainelPage', () => {
     vi.setSystemTime(NOW);
     listSkillCategoriesMock.mockReset().mockResolvedValue({ categories: [{ id: 'cat-1', name: 'Garçom' }] });
     listMyJobsMock.mockReset();
-    cancelJobMock.mockReset();
     listJobApplicationsMock.mockReset().mockResolvedValue({ applications: [] });
   });
 
@@ -88,36 +89,12 @@ describe('PainelPage', () => {
     vi.useRealTimers();
   });
 
-  it('mostra estado vazio em "Precisam de gente" quando não há vaga aberta', async () => {
-    listMyJobsMock.mockResolvedValue({ jobs: [] });
-
-    renderPainel();
-
-    expect(await screen.findByText(/tudo coberto por aqui/i)).toBeInTheDocument();
-  });
-
-  it('mostra a vaga aberta com categoria, horário e candidatos pendentes', async () => {
-    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
-    listJobApplicationsMock.mockResolvedValue({
-      applications: [
-        { id: 'app-1', status: 'pending', createdAt: '2026-08-01T00:00:00.000Z', worker: { id: 'w1', fullName: 'Ana Souza', photoUrl: null, avgRating: null }, shift: null },
-      ],
-    });
-
-    renderPainel();
-
-    expect(await screen.findByText(/Garçom · 3 vaga\(s\)/)).toBeInTheDocument();
-    expect(screen.getByText(/R\$ 130.00 por pessoa/)).toBeInTheDocument();
-    expect(screen.getByText('1 candidatos')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /ver candidatos/i })).toHaveAttribute('href', '/vagas/job-1');
-  });
-
-  it('mostra o total investido no mês e turnos confirmados na semana nas estatísticas', async () => {
+  it('mostra o total investido no mês e escalas preenchidas na semana nas estatísticas', async () => {
     listMyJobsMock.mockResolvedValue({ jobs: [{ ...JOB, status: 'filled', positionsFilled: 4 }] });
 
     renderPainel();
 
-    await screen.findByText('Turnos abertos');
+    await screen.findByText('Escalas abertas');
     expect(screen.getByText('R$ 520,00')).toBeInTheDocument();
     expect(screen.getAllByText('1').length).toBeGreaterThan(0);
   });
@@ -127,42 +104,31 @@ describe('PainelPage', () => {
 
     renderPainel();
 
-    await screen.findByText('Turnos abertos');
+    await screen.findByText('Escalas abertas');
     expect(screen.getByText('★ 4.8')).toBeInTheDocument();
   });
 
-  it('mostra link de editar só pra vaga aberta', async () => {
-    listMyJobsMock.mockResolvedValue({ jobs: [JOB, { ...JOB, id: 'job-2', status: 'filled' }] });
+  it('mostra o resumo do mês vindo do perfil da empresa', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [] });
 
     renderPainel();
 
-    await screen.findAllByText(/Garçom/);
-    expect(screen.getAllByRole('link', { name: /editar/i })).toHaveLength(1);
+    expect(await screen.findByText('Resumo do mês')).toBeInTheDocument();
+    expect(screen.getByText('Escalas abertas no mês')).toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.getByText('Pessoas contratadas')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByText('Ana Souza')).toBeInTheDocument();
+    expect(screen.getByText('2x esse mês')).toBeInTheDocument();
   });
 
-  it('cancela a vaga e some da lista de abertas', async () => {
-    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
-    cancelJobMock.mockResolvedValue({ ...JOB, status: 'cancelled' });
-    const user = userEvent.setup();
+  it('mostra travessão em "Mais contratado(a)" quando ninguém foi contratado no mês', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [] });
 
-    renderPainel();
-    await screen.findByText(/Garçom/);
-    await user.click(screen.getByRole('button', { name: /cancelar vaga/i }));
+    renderPainel({ ...PROFILE, topHiredWorkerName: null, topHiredWorkerCount: 0 });
 
-    await waitFor(() => expect(cancelJobMock).toHaveBeenCalledWith('job-1'));
-    expect(await screen.findByText(/tudo coberto por aqui/i)).toBeInTheDocument();
-  });
-
-  it('mostra a mensagem da API quando o cancelamento falha', async () => {
-    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
-    cancelJobMock.mockRejectedValue(new Error('falha de rede'));
-    const user = userEvent.setup();
-
-    renderPainel();
-    await screen.findByText(/Garçom/);
-    await user.click(screen.getByRole('button', { name: /cancelar vaga/i }));
-
-    expect(await screen.findByText('Não foi possível cancelar a vaga.')).toBeInTheDocument();
+    await screen.findByText('Resumo do mês');
+    expect(screen.getByText('—')).toBeInTheDocument();
   });
 
   it('mostra mensagem de erro quando a listagem falha', async () => {
@@ -170,10 +136,10 @@ describe('PainelPage', () => {
 
     renderPainel();
 
-    expect(await screen.findByText('Não foi possível carregar suas vagas.')).toBeInTheDocument();
+    expect(await screen.findByText('Não foi possível carregar suas escalas.')).toBeInTheDocument();
   });
 
-  it('mostra o trabalhador aprovado em "Turnos confirmados"', async () => {
+  it('mostra o trabalhador aprovado em "Escalas confirmadas"', async () => {
     listMyJobsMock.mockResolvedValue({ jobs: [{ ...JOB, status: 'filled', positionsFilled: 4 }] });
     listJobApplicationsMock.mockResolvedValue({
       applications: [
@@ -181,7 +147,7 @@ describe('PainelPage', () => {
           id: 'app-1',
           status: 'approved',
           createdAt: '2026-08-01T00:00:00.000Z',
-          worker: { id: 'w1', fullName: 'Ana Souza', photoUrl: null, avgRating: '4.9' },
+          worker: { id: 'w1', fullName: 'Rafael Lima', photoUrl: null, avgRating: '4.9' },
           shift: null,
         },
       ],
@@ -189,20 +155,11 @@ describe('PainelPage', () => {
 
     renderPainel();
 
-    expect(await screen.findByText('Turnos confirmados')).toBeInTheDocument();
-    expect(screen.getByText('Ana Souza')).toBeInTheDocument();
+    expect(await screen.findByText('Escalas confirmadas')).toBeInTheDocument();
+    expect(screen.getByText('Rafael Lima')).toBeInTheDocument();
   });
 
-  it('some de "Precisam de gente" quando o horário do evento já passou', async () => {
-    const pastJob = { ...JOB, id: 'job-past', startsAt: '2026-08-01T18:00:00.000Z', endsAt: '2026-08-01T23:00:00.000Z' };
-    listMyJobsMock.mockResolvedValue({ jobs: [pastJob] });
-
-    renderPainel();
-
-    expect(await screen.findByText(/tudo coberto por aqui/i)).toBeInTheDocument();
-  });
-
-  it('some de "Turnos confirmados" quando o evento já aconteceu', async () => {
+  it('some de "Escalas confirmadas" quando o evento já aconteceu', async () => {
     const pastJob = {
       ...JOB,
       id: 'job-past',
@@ -226,8 +183,7 @@ describe('PainelPage', () => {
 
     renderPainel();
 
-    await screen.findByText('Turnos abertos');
-    expect(screen.queryByText('Turnos confirmados')).not.toBeInTheDocument();
-    expect(screen.queryByText('Ana Souza')).not.toBeInTheDocument();
+    await screen.findByText('Escalas abertas');
+    expect(screen.queryByText('Escalas confirmadas')).not.toBeInTheDocument();
   });
 });

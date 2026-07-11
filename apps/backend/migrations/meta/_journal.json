@@ -211,6 +211,34 @@
       "when": 1783723759863,
       "tag": "0029_whole_gamma_corps",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1783729902093,
+      "tag": "0030_lethal_human_fly",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1783730266254,
+      "tag": "0031_cynical_hellcat",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1783734751995,
+      "tag": "0032_wild_black_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1783735404837,
+      "tag": "0033_mute_dazzler",
+      "breakpoints": true
     }
   ]
 }

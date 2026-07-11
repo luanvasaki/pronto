@@ -1,4 +1,6 @@
 export { ApiError, apiFetch } from './api';
+export { CNH_CATEGORY_OPTIONS } from './cnh';
+export type { CnhCategoryOption } from './cnh';
 export {
   forgotPassword,
   getCurrentUser,

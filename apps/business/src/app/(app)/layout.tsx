@@ -34,19 +34,22 @@ function greeting(): string {
  */
 function pageHeader(pathname: string, tradeName: string): { title: string; subtitle?: string } {
   if (pathname === '/painel') {
-    return { title: `${greeting()}, ${tradeName}`, subtitle: 'Aqui está o que precisa da sua atenção hoje' };
+    return { title: `${greeting()}, ${tradeName}`, subtitle: 'Um resumo geral de como está sua operação' };
   }
   if (pathname === '/perfil') {
     return { title: 'Perfil da empresa' };
   }
   if (pathname === '/escala') {
-    return { title: 'Escala', subtitle: 'Clique num dia pra publicar um turno' };
+    return { title: 'Calendário', subtitle: 'Clique num dia pra publicar uma escala' };
+  }
+  if (pathname === '/escalas') {
+    return { title: 'Escalas', subtitle: 'Todas as suas escalas em aberto' };
   }
   if (pathname === '/vagas/nova') {
-    return { title: 'Publicar turno' };
+    return { title: 'Publicar escala' };
   }
   if (pathname.endsWith('/editar')) {
-    return { title: 'Editar turno' };
+    return { title: 'Editar escala' };
   }
   if (pathname.startsWith('/vagas/')) {
     return { title: 'Candidatos' };

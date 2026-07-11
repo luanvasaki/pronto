@@ -53,6 +53,7 @@ export default function PerfilPage() {
   const [cnpj, setCnpj] = useState(profile?.cnpj ?? '');
   const [addressLabel, setAddressLabel] = useState(profile?.addressLabel ?? '');
   const [businessSegment, setBusinessSegment] = useState(profile?.businessSegment ?? '');
+  const [businessSegmentOther, setBusinessSegmentOther] = useState(profile?.businessSegmentOther ?? '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -106,7 +107,11 @@ export default function PerfilPage() {
     }
   }
 
-  const isProfileValid = legalName.trim().length >= 2 && tradeName.trim().length >= 2 && cnpj.trim().length === 14;
+  const isProfileValid =
+    legalName.trim().length >= 2 &&
+    tradeName.trim().length >= 2 &&
+    cnpj.trim().length === 14 &&
+    (businessSegment !== 'outro' || businessSegmentOther.trim().length >= 2);
 
   async function handleSaveProfile(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -123,6 +128,7 @@ export default function PerfilPage() {
         cnpj,
         addressLabel: addressLabel.trim() || undefined,
         businessSegment: businessSegment || undefined,
+        businessSegmentOther: businessSegment === 'outro' ? businessSegmentOther.trim() : undefined,
       });
       setProfile({ ...profile, ...updated });
       setProfileSaved(true);
@@ -196,7 +202,7 @@ export default function PerfilPage() {
         </label>
         {logoError && <p className="mt-1 text-xs text-danger">{logoError}</p>}
         <p className="mt-1 text-xs text-text-secondary">
-          Trabalhadores veem o logo ao procurar turnos perto deles.
+          Trabalhadores veem o logo ao procurar escalas perto deles.
         </p>
       </div>
 
@@ -338,6 +344,18 @@ export default function PerfilPage() {
               </option>
             ))}
           </select>
+          {businessSegment === 'outro' && (
+            <div className="mt-3">
+              <Input
+                id="businessSegmentOther"
+                label="Qual é o ramo de atividade?"
+                type="text"
+                placeholder="Descreva o ramo da sua empresa"
+                value={businessSegmentOther}
+                onChange={(event) => setBusinessSegmentOther(event.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         {profileError && <p className="text-sm text-danger">{profileError}</p>}

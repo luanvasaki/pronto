@@ -20,6 +20,11 @@ export interface ReviewDocumentResult {
  * Aprovar/rejeitar o documento também atualiza worker_profiles.kyc_status
  * — são dois campos que representam a mesma decisão, sem isso o
  * documento fica revisado mas o perfil continua "pending" pra sempre.
+ *
+ * Trabalhador manda dois documentos (identidade + selfie, ver
+ * upload-document.ts) — rejeitar qualquer um dos dois já reprova a
+ * verificação; aprovar só marca o perfil como aprovado quando TODOS
+ * os documentos dele já estiverem aprovados.
  */
 export async function reviewDocument(
   adminUserId: string,
@@ -47,9 +52,17 @@ export async function reviewDocument(
     throw new HttpError(400, 'Esse documento já foi revisado.');
   }
 
+  const workerDocuments = await db.query.documents.findMany({ where: eq(documents.workerId, document.workerId) });
+  const newKycStatus =
+    status === 'rejected'
+      ? 'rejected'
+      : workerDocuments.every((workerDocument) => workerDocument.status === 'approved')
+        ? 'approved'
+        : 'pending';
+
   await db
     .update(workerProfiles)
-    .set({ kycStatus: status, updatedAt: new Date() })
+    .set({ kycStatus: newKycStatus, updatedAt: new Date() })
     .where(eq(workerProfiles.userId, document.workerId));
 
   return { id: updated.id, status: updated.status };
