@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createAuthRateLimiter } from '../../shared/middlewares/rate-limit';
+import { createAuthRateLimiter, createLoginAccountRateLimiter } from '../../shared/middlewares/rate-limit';
 import { changePasswordHandler } from './change-password.controller';
 import { createEmailSender } from './create-email-sender';
 import { createGoogleTokenVerifier } from './create-google-token-verifier';
@@ -30,9 +30,10 @@ export function createAuthRoutes(options: AuthRoutesOptions = {}): Router {
   const emailSender = options.emailSender ?? createEmailSender();
   const googleTokenVerifier = options.googleTokenVerifier ?? createGoogleTokenVerifier();
   const authRateLimiter = createAuthRateLimiter();
+  const loginAccountRateLimiter = createLoginAccountRateLimiter();
 
   authRoutes.post('/auth/register', authRateLimiter, registerHandler);
-  authRoutes.post('/auth/login', authRateLimiter, loginHandler);
+  authRoutes.post('/auth/login', authRateLimiter, loginAccountRateLimiter, loginHandler);
   authRoutes.post('/auth/google', authRateLimiter, createGoogleLoginHandler(googleTokenVerifier));
   authRoutes.post('/auth/forgot-password', authRateLimiter, createForgotPasswordHandler(emailSender));
   authRoutes.post('/auth/reset-password', authRateLimiter, resetPasswordHandler);

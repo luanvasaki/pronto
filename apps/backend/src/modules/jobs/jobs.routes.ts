@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../auth/require-auth';
+import { createWriteRateLimiter } from '../../shared/middlewares/rate-limit';
 import { cancelJobHandler } from './cancel-job.controller';
 import { createJobHandler } from './create-job.controller';
 import { listMyJobsHandler } from './list-my-jobs.controller';
@@ -8,7 +9,9 @@ import { updateJobHandler } from './update-job.controller';
 
 export const jobsRoutes = Router();
 
-jobsRoutes.post('/jobs', requireAuth, createJobHandler);
+const writeRateLimiter = createWriteRateLimiter();
+
+jobsRoutes.post('/jobs', requireAuth, writeRateLimiter, createJobHandler);
 jobsRoutes.get('/jobs/mine', requireAuth, listMyJobsHandler);
 jobsRoutes.get('/jobs/nearby', requireAuth, listNearbyJobsHandler);
 jobsRoutes.patch('/jobs/:id', requireAuth, updateJobHandler);

@@ -143,6 +143,25 @@ describe('POST /auth/login', () => {
 
     expect(response.status).toBe(401);
   });
+
+  it('aplica o rate limiter por conta no login, mais apertado que o de IP', async () => {
+    const app = createApp();
+
+    // O limite por conta é 10 por janela — bem menor que os 20 do
+    // limite por IP que já existe em todas as rotas de auth. A 11ª
+    // tentativa de login pro MESMO e-mail deve ser barrada, o que só
+    // acontece se o `createLoginAccountRateLimiter()` estiver de fato
+    // encadeado nessa rota (além do `authRateLimiter` por IP).
+    let lastStatus = 0;
+    for (let i = 0; i < 11; i += 1) {
+      const response = await request(app)
+        .post('/auth/login')
+        .send({ email: 'conta-sob-ataque@example.com', password: 'senha-errada' });
+      lastStatus = response.status;
+    }
+
+    expect(lastStatus).toBe(429);
+  });
 });
 
 describe('POST /auth/google', () => {

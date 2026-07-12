@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../auth/require-auth';
+import { createWriteRateLimiter } from '../../shared/middlewares/rate-limit';
 import { createApplicationHandler } from './create-application.controller';
 import { listJobApplicationsHandler } from './list-job-applications.controller';
 import { listMyApplicationsHandler } from './list-my-applications.controller';
@@ -11,7 +12,9 @@ import { withdrawApplicationHandler } from './withdraw-application.controller';
 
 export const applicationsRoutes = Router();
 
-applicationsRoutes.post('/jobs/:jobId/applications', requireAuth, createApplicationHandler);
+const writeRateLimiter = createWriteRateLimiter();
+
+applicationsRoutes.post('/jobs/:jobId/applications', requireAuth, writeRateLimiter, createApplicationHandler);
 applicationsRoutes.get('/applications/mine', requireAuth, listMyApplicationsHandler);
 applicationsRoutes.get('/jobs/:jobId/applications', requireAuth, listJobApplicationsHandler);
 applicationsRoutes.patch('/applications/:id', requireAuth, updateApplicationStatusHandler);

@@ -43,7 +43,8 @@ export class NominatimReverseGeocoder implements ReverseGeocoder {
         return `${neighborhood}, ${city}`;
       }
       return city ?? neighborhood ?? null;
-    } catch {
+    } catch (error) {
+      console.warn('[reverse-geocode] falha ao consultar Nominatim, seguindo sem label de localização:', error);
       return null;
     }
   }
