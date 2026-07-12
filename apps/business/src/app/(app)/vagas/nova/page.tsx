@@ -2,7 +2,7 @@
 
 import { ApiError, CNH_CATEGORY_OPTIONS, createSkillCategory, listSkillCategories, SkillCategory } from '@shift/shared';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FormEvent, Suspense, useEffect, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useRef, useState } from 'react';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { JobTermsCheckbox } from '../../../../components/ui/job-terms-checkbox';
@@ -42,6 +42,12 @@ function NovaVagaForm() {
   // formulário, sem precisar redigitar tudo de novo pra uma escala recorrente.
   const [previousJobs, setPreviousJobs] = useState<Job[]>([]);
   const [templateJobId, setTemplateJobId] = useState('');
+  // Vindo da Escala (clicou em "Duplicar" num card) — aplica o template
+  // automaticamente assim que a vaga aparecer em previousJobs, sem exigir
+  // que a pessoa abra o dropdown na mão. Só uma vez: depois disso a escolha
+  // é do usuário (não queremos reaplicar se ele trocar o select manualmente).
+  const templateIdFromUrl = searchParams.get('template');
+  const appliedTemplateFromUrlRef = useRef(false);
 
   const [categoryId, setCategoryId] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -89,6 +95,15 @@ function NovaVagaForm() {
       })
       .catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    if (appliedTemplateFromUrlRef.current || !templateIdFromUrl) return;
+    if (!previousJobs.some((job) => job.id === templateIdFromUrl)) return;
+
+    appliedTemplateFromUrlRef.current = true;
+    handleUseTemplate(templateIdFromUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previousJobs, templateIdFromUrl]);
 
   function handleUseTemplate(jobId: string): void {
     setTemplateJobId(jobId);

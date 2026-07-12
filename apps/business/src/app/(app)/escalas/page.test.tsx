@@ -77,6 +77,18 @@ describe('EscalasPage', () => {
     expect(screen.getByRole('link', { name: /ver candidatos/i })).toHaveAttribute('href', '/vagas/job-1');
   });
 
+  it('linka "Duplicar" pra /vagas/nova com o id da vaga como template', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+
+    render(<EscalasPage />);
+    await screen.findByText(/Garçom/);
+
+    expect(screen.getByRole('link', { name: /duplicar/i })).toHaveAttribute(
+      'href',
+      '/vagas/nova?template=job-1',
+    );
+  });
+
   it('não lista escala preenchida ou cancelada', async () => {
     listMyJobsMock.mockResolvedValue({
       jobs: [JOB, { ...JOB, id: 'job-2', status: 'filled' }, { ...JOB, id: 'job-3', status: 'cancelled' }],

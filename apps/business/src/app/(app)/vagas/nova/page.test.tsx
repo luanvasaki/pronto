@@ -277,6 +277,46 @@ describe('NovaVagaPage', () => {
     expect(screen.getByLabelText('Início')).toHaveValue('');
   });
 
+  it('pré-preenche o formulário automaticamente quando chega via ?template= (duplicar da Escala)', async () => {
+    searchParamsMock = new URLSearchParams({ template: 'job-old' });
+    listMyJobsMock.mockResolvedValue({
+      jobs: [
+        {
+          id: 'job-old',
+          categoryId: 'cat-1',
+          description: 'Vaga anterior com descrição detalhada o suficiente.',
+          requiresExperience: true,
+          dressCode: 'Social completo',
+          toolsRequired: 'Bandeja própria',
+          cnhCategory: 'B',
+          cnhRequired: true,
+          addressLabel: 'Itaim Bibi, São Paulo',
+          locationLat: -23.58,
+          locationLng: -46.68,
+          positionsTotal: 3,
+          positionsFilled: 0,
+          payAmount: '150.00',
+          startsAt: STARTS_AT,
+          endsAt: ENDS_AT,
+          applicationsCloseAt: null,
+          status: 'open',
+        },
+      ],
+    });
+    renderPage();
+    await screen.findByText('Garçom');
+
+    // Sem nenhuma interação com o dropdown — o template já vem aplicado.
+    expect(await screen.findByLabelText('Categoria')).toHaveValue('cat-1');
+    expect(screen.getByLabelText('Descrição')).toHaveValue('Vaga anterior com descrição detalhada o suficiente.');
+    expect(screen.getByLabelText('Endereço completo')).toHaveValue('Itaim Bibi, São Paulo');
+    expect(screen.getByLabelText(/vestimenta exigida/i)).toHaveValue('Social completo');
+    expect(screen.getByLabelText('Valor por pessoa (R$)')).toHaveValue('150.00');
+    expect(screen.getByLabelText(/exige cnh/i)).toHaveValue('B');
+    // Data/hora não são copiadas — sempre novas pra cada turno.
+    expect(screen.getByLabelText('Início')).toHaveValue('');
+  });
+
   it('limita o modelo às 20 vagas mais recentes, mesmo com um histórico maior', async () => {
     const jobs = Array.from({ length: 30 }, (_, index) => ({
       id: `job-${index}`,

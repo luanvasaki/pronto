@@ -157,6 +157,12 @@ export default function EscalasPage() {
                     >
                       Editar
                     </Link>
+                    <Link
+                      href={`/vagas/nova?template=${job.id}`}
+                      className="text-sm text-primary underline underline-offset-2 hover:brightness-90"
+                    >
+                      Duplicar
+                    </Link>
                     <Button
                       type="button"
                       variant="outlined"
