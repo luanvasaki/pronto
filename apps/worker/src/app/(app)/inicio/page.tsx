@@ -2,7 +2,7 @@
 
 import { ApiError, listSkillCategories } from '@shift/shared';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
 import { Chip } from '../../../components/ui/chip';
@@ -11,11 +11,13 @@ import { listMyApplications, markApplicationSeen, markRemovalSeen, MyApplication
 import { getCurrentPosition } from '../../../lib/geolocation';
 import { applyToJob, listNearbyJobs, NearbyJob } from '../../../lib/jobs-api';
 import { listMyShifts } from '../../../lib/shifts-api';
-import { updateWorkerLocation } from '../../../lib/worker-profile-api';
+import { updateSearchRadius, updateWorkerLocation } from '../../../lib/worker-profile-api';
 import { NOTIFICATIONS_POLL_INTERVAL_MS } from '../layout';
 import { useWorkerProfile } from '../worker-profile-context';
 
 const CATEGORY_LABEL_FALLBACK = 'Categoria';
+
+const SEARCH_RADIUS_OPTIONS_KM = [5, 10, 20, 30, 50, 100];
 
 type DateFilter = 'todos' | 'hoje' | 'amanha' | 'fds';
 
@@ -75,8 +77,11 @@ async function fetchNearbyJobs(): Promise<{ jobs: NearbyJob[] }> {
 }
 
 export default function InicioPage() {
-  const { profile } = useWorkerProfile();
+  const { profile, setProfile } = useWorkerProfile();
   const [jobs, setJobs] = useState<NearbyJob[]>([]);
+  const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
+  const [isUpdatingRadius, setIsUpdatingRadius] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -179,6 +184,45 @@ export default function InicioPage() {
       }
       return next;
     });
+  }
+
+  async function handleUpdateLocation(): Promise<void> {
+    setLocationError(null);
+    setIsUpdatingLocation(true);
+    try {
+      const position = await getCurrentPosition('Precisamos da sua localização pra mostrar vagas perto de você.');
+      const result = await updateWorkerLocation(position.coords.latitude, position.coords.longitude);
+      if (profile) {
+        setProfile({
+          ...profile,
+          homeAddressLabel: result.homeAddressLabel,
+          homeLat: result.homeLat,
+          homeLng: result.homeLng,
+        });
+      }
+      const jobsResult = await listNearbyJobs();
+      setJobs(jobsResult.jobs);
+    } catch (err) {
+      setLocationError(err instanceof Error ? err.message : 'Não foi possível atualizar sua localização.');
+    } finally {
+      setIsUpdatingLocation(false);
+    }
+  }
+
+  async function handleRadiusChange(event: ChangeEvent<HTMLSelectElement>): Promise<void> {
+    const searchRadiusKm = Number(event.target.value);
+    setLocationError(null);
+    setIsUpdatingRadius(true);
+    try {
+      await updateSearchRadius(searchRadiusKm);
+      if (profile) setProfile({ ...profile, searchRadiusKm });
+      const jobsResult = await listNearbyJobs();
+      setJobs(jobsResult.jobs);
+    } catch (err) {
+      setLocationError(err instanceof Error ? err.message : 'Não foi possível atualizar o raio de busca.');
+    } finally {
+      setIsUpdatingRadius(false);
+    }
   }
 
   async function handleApply(jobId: string): Promise<void> {
@@ -347,6 +391,37 @@ export default function InicioPage() {
         <h2 className="font-heading text-[18px] font-bold text-text">Escalas perto de você</h2>
         <span className="text-[13px] font-semibold text-primary">{visibleJobs.length} disponíveis</span>
       </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          variant="outlined"
+          onClick={handleUpdateLocation}
+          isLoading={isUpdatingLocation}
+          className="px-3 py-1.5 text-xs"
+        >
+          {profile?.homeAddressLabel ? 'Atualizar localização' : 'Definir localização'}
+        </Button>
+        <label className="flex items-center gap-1.5 text-[12.5px] text-text-secondary">
+          Raio de busca
+          <select
+            value={profile?.searchRadiusKm ?? 10}
+            onChange={handleRadiusChange}
+            disabled={isUpdatingRadius}
+            className="rounded-md border border-border bg-surface px-2 py-1 text-[12.5px] text-text"
+          >
+            {SEARCH_RADIUS_OPTIONS_KM.map((km) => (
+              <option key={km} value={km}>
+                {km} km
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {locationError && <p className="mt-1.5 text-xs text-danger">{locationError}</p>}
+      <p className="mt-1 text-[11.5px] text-text-secondary">
+        Se você não atualizar, usamos o endereço já cadastrado.
+      </p>
 
       {visibleJobs.length === 0 && (
         <p className="mt-3 text-sm text-text-secondary">Nenhuma vaga disponível com esse filtro.</p>

@@ -125,6 +125,9 @@ describe('getWorkerProfile', () => {
     expect(result.totalShiftsCompleted).toBe(0);
     expect(result.totalHoursWorked).toBe(0);
     expect(result.avgRating).toBeNull();
+    expect(result.searchRadiusKm).toBe(10);
+    expect(result.homeLat).toBeNull();
+    expect(result.homeLng).toBeNull();
   });
 
   it('indica hasDocument depois que o documento é enviado', async () => {

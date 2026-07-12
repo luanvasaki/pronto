@@ -23,8 +23,10 @@ vi.mock('../../../lib/jobs-api', () => ({
 }));
 
 const updateWorkerLocationMock = vi.fn();
+const updateSearchRadiusMock = vi.fn();
 vi.mock('../../../lib/worker-profile-api', () => ({
   updateWorkerLocation: (...args: unknown[]) => updateWorkerLocationMock(...args),
+  updateSearchRadius: (...args: unknown[]) => updateSearchRadiusMock(...args),
 }));
 
 const listMyApplicationsMock = vi.fn();
@@ -49,6 +51,9 @@ const PROFILE = {
   experienceByCategory: {},
   photoUrl: null,
   homeAddressLabel: 'Campolim, Sorocaba',
+  homeLat: -23.4894,
+  homeLng: -47.4619,
+  searchRadiusKm: 10,
   homeAddressFull: 'Rua das Flores, 123, Centro, Sorocaba - SP',
   phone: '11912345678',
   cnhCategory: null,
@@ -106,6 +111,7 @@ describe('InicioPage', () => {
     listNearbyJobsMock.mockReset();
     applyToJobMock.mockReset();
     updateWorkerLocationMock.mockReset();
+    updateSearchRadiusMock.mockReset();
     listMyApplicationsMock.mockReset().mockResolvedValue({ applications: [] });
     markApplicationSeenMock.mockReset();
     markRemovalSeenMock.mockReset();
@@ -298,6 +304,42 @@ describe('InicioPage', () => {
     await screen.findByText('Garçom');
 
     expect(screen.getByRole('button', { name: /aceitar escala/i })).toBeEnabled();
+  });
+
+  it('deixa atualizar a localização manualmente pelo botão da tela', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    updateWorkerLocationMock.mockResolvedValue({
+      homeLat: -23.55,
+      homeLng: -46.63,
+      homeAddressLabel: 'Pinheiros, São Paulo',
+    });
+    Object.defineProperty(window.navigator, 'geolocation', {
+      value: {
+        getCurrentPosition: vi.fn((success) => success({ coords: { latitude: -23.55, longitude: -46.63 } })),
+      },
+      configurable: true,
+    });
+    const user = userEvent.setup();
+
+    renderPage();
+    await screen.findByText('Garçom');
+    await user.click(screen.getByRole('button', { name: 'Atualizar localização' }));
+
+    await waitFor(() => expect(updateWorkerLocationMock).toHaveBeenCalledWith(-23.55, -46.63));
+    expect(await screen.findByText('Pinheiros, São Paulo')).toBeInTheDocument();
+  });
+
+  it('deixa trocar o raio de busca e recarrega as vagas', async () => {
+    listNearbyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    updateSearchRadiusMock.mockResolvedValue({ searchRadiusKm: 30 });
+    const user = userEvent.setup();
+
+    renderPage();
+    await screen.findByText('Garçom');
+    await user.selectOptions(screen.getByLabelText('Raio de busca'), '30');
+
+    await waitFor(() => expect(updateSearchRadiusMock).toHaveBeenCalledWith(30));
+    await waitFor(() => expect(listNearbyJobsMock).toHaveBeenCalledTimes(2));
   });
 
   it('pede localização e tenta de novo quando o backend diz que ela falta', async () => {

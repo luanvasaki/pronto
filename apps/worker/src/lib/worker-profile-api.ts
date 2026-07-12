@@ -8,6 +8,9 @@ export interface WorkerProfileDetails {
   experienceByCategory: Record<string, boolean>;
   photoUrl: string | null;
   homeAddressLabel: string | null;
+  homeLat: number | null;
+  homeLng: number | null;
+  searchRadiusKm: number;
   homeAddressFull: string | null;
   phone: string | null;
   cnhCategory: string | null;
@@ -139,5 +142,16 @@ export function updateWorkerLocation(lat: number, lng: number): Promise<UpdateWo
   return apiFetch('/worker-profile/location', {
     method: 'PATCH',
     body: JSON.stringify({ lat, lng }),
+  });
+}
+
+export interface UpdateSearchRadiusResponse {
+  searchRadiusKm: number;
+}
+
+export function updateSearchRadius(searchRadiusKm: number): Promise<UpdateSearchRadiusResponse> {
+  return apiFetch('/worker-profile/search-radius', {
+    method: 'PATCH',
+    body: JSON.stringify({ searchRadiusKm }),
   });
 }

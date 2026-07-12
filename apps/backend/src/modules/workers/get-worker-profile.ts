@@ -12,6 +12,9 @@ export interface WorkerProfileDetails {
   experienceByCategory: Record<string, boolean>;
   photoUrl: string | null;
   homeAddressLabel: string | null;
+  homeLat: number | null;
+  homeLng: number | null;
+  searchRadiusKm: number;
   // Endereço completo — só volta aqui (visão do próprio dono do perfil),
   // nunca em endpoints que empresa ou outro trabalhador acessam.
   homeAddressFull: string | null;
@@ -105,6 +108,9 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
     experienceByCategory: Object.fromEntries(skills.map((skill) => [skill.categoryId, skill.hasExperience])),
     photoUrl: profile.photoUrl,
     homeAddressLabel: profile.homeAddressLabel,
+    homeLat: profile.homeLat,
+    homeLng: profile.homeLng,
+    searchRadiusKm: profile.searchRadiusKm,
     homeAddressFull: profile.homeAddressFull,
     phone: profile.phone,
     cnhCategory: profile.cnhCategory,

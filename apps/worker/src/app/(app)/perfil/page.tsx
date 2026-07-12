@@ -20,10 +20,8 @@ import { Button } from '../../../components/ui/button';
 import { Chip } from '../../../components/ui/chip';
 import { Input } from '../../../components/ui/input';
 import { StatCard } from '../../../components/ui/stat-card';
-import { getCurrentPosition } from '../../../lib/geolocation';
 import {
   listWorkerRatings,
-  updateWorkerLocation,
   UpsertWorkerProfileResponse,
   uploadWorkerPhoto,
   upsertWorkerProfile,
@@ -75,9 +73,6 @@ export default function PerfilPage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileSaved, setProfileSaved] = useState(false);
-
-  const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
 
   const [ratingHistory, setRatingHistory] = useState<WorkerRatingHistoryEntry[]>([]);
   const [isLoadingRatingHistory, setIsLoadingRatingHistory] = useState(true);
@@ -193,22 +188,6 @@ export default function PerfilPage() {
       setCategoriesError(err instanceof ApiError ? err.message : 'Não foi possível criar a categoria.');
     } finally {
       setIsCreatingCategory(false);
-    }
-  }
-
-  async function handleUpdateLocation(): Promise<void> {
-    if (!profile || isUpdatingLocation) return;
-
-    setLocationError(null);
-    setIsUpdatingLocation(true);
-    try {
-      const position = await getCurrentPosition('Precisamos da sua localização pra atualizar seu endereço.');
-      const result = await updateWorkerLocation(position.coords.latitude, position.coords.longitude);
-      setProfile({ ...profile, homeAddressLabel: result.homeAddressLabel });
-    } catch (err) {
-      setLocationError(err instanceof Error ? err.message : 'Não foi possível atualizar sua localização.');
-    } finally {
-      setIsUpdatingLocation(false);
     }
   }
 
@@ -486,21 +465,12 @@ export default function PerfilPage() {
       <div className="border-t border-border pt-6">
         <h2 className="font-heading text-[17px] font-bold text-text">Localização</h2>
         <p className="mt-1 text-xs text-text-secondary">
-          Usada pra mostrar escalas perto de você. Atualize se você mudou de endereço.
+          Usada pra mostrar escalas perto de você. Pra atualizar ou trocar o raio de busca, use o botão na tela de
+          Início.
         </p>
         <p className="mt-2.5 text-sm text-text">
           {profile.homeAddressLabel ?? 'Nenhum endereço definido ainda.'}
         </p>
-        <Button
-          type="button"
-          variant="outlined"
-          onClick={handleUpdateLocation}
-          isLoading={isUpdatingLocation}
-          className="mt-2.5"
-        >
-          Atualizar localização
-        </Button>
-        {locationError && <p className="mt-1.5 text-sm text-danger">{locationError}</p>}
       </div>
 
       <form onSubmit={handleSaveProfile} className="flex flex-col gap-4 border-t border-border pt-6">
