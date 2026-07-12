@@ -52,6 +52,16 @@ export async function googleLogin(
 
   const byEmail = await db.query.users.findFirst({ where: eq(users.email, googleUser.email) });
   if (byEmail) {
+    // Corrida: duas chamadas simultâneas de login Google pra uma conta
+    // nova — a outra já inseriu a conta (com esse mesmo googleId) entre
+    // o byGoogleId (achou null) e esse byEmail. É a mesma conta Google
+    // se formando, não um conflito de verdade com conta de senha; loga
+    // nela em vez de recusar (mesmo espírito do catch de unique
+    // violation mais abaixo, só que fechando essa corrida mais cedo).
+    if (byEmail.googleId === googleUser.googleId) {
+      const tokens = await issueTokens(byEmail.id);
+      return { user: toUserResponse(byEmail), ...tokens };
+    }
     throw new HttpError(
       409,
       'Já existe uma conta com senha para este e-mail. Entre com e-mail e senha.',

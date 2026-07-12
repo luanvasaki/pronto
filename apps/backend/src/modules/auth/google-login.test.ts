@@ -36,4 +36,38 @@ describe('googleLogin', () => {
     const rows = await db.query.users.findMany({ where: eq(users.email, TEST_EMAIL) });
     expect(rows).toHaveLength(1);
   });
+
+  it('loga na conta já criada por uma corrida, em vez de recusar como se fosse conta de senha', async () => {
+    // Simula deterministicamente o que a corrida acima só produz por
+    // timing: a conta Google já existe (outra chamada "venceu") no
+    // instante em que o byEmail desta chamada roda.
+    const [existing] = await db
+      .insert(users)
+      .values({ email: TEST_EMAIL, googleId: TEST_GOOGLE_ID, termsAcceptedAt: new Date() })
+      .returning();
+
+    const verifier = fakeVerifier({
+      email: TEST_EMAIL,
+      googleId: TEST_GOOGLE_ID,
+      emailVerified: true,
+      picture: 'https://example.com/photo.jpg',
+    });
+
+    const result = await googleLogin('fake-token', true, verifier);
+
+    expect(result.user.id).toBe(existing.id);
+  });
+
+  it('continua recusando quando o e-mail já é de uma conta de senha de verdade (sem googleId)', async () => {
+    await db.insert(users).values({ email: TEST_EMAIL, passwordHash: 'hash-qualquer' });
+
+    const verifier = fakeVerifier({
+      email: TEST_EMAIL,
+      googleId: TEST_GOOGLE_ID,
+      emailVerified: true,
+      picture: 'https://example.com/photo.jpg',
+    });
+
+    await expect(googleLogin('fake-token', true, verifier)).rejects.toThrow('Já existe uma conta com senha');
+  });
 });
