@@ -139,7 +139,7 @@ export default function EscalasPage() {
                 past ? 'border-border bg-background/60 opacity-70' : 'border-border bg-surface'
               }`}
             >
-              <div className="flex items-center gap-5">
+              <div className="flex flex-wrap items-center gap-4 sm:flex-nowrap sm:gap-5">
                 <div
                   className={`flex h-[52px] w-[52px] shrink-0 flex-col items-center justify-center rounded-[13px] ${
                     past ? 'bg-border/60 text-text-secondary' : 'bg-primary/10 text-primary'
@@ -171,7 +171,7 @@ export default function EscalasPage() {
                     </p>
                   )}
                 </div>
-                <div className="flex shrink-0 items-center gap-3.5">
+                <div className="flex w-full shrink-0 items-center justify-between gap-3.5 sm:w-auto sm:justify-start">
                   <span className="flex items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold text-text">
                     <span className="h-[7px] w-[7px] rounded-full bg-success" />
                     {pendingCount} candidatos
