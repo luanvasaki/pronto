@@ -163,6 +163,13 @@ export default function EscalasPage() {
                   <p className="mt-0.5 text-[13.5px] text-text-secondary">
                     {formatTimeRange(job.startsAt, job.endsAt)} · R$ {job.payAmount} por pessoa
                   </p>
+                  {(job.offersMeal || job.offersTransport) && (
+                    <p className="mt-1 text-[12px] text-text-secondary">
+                      {[job.offersMeal && 'Alimentação', job.offersTransport && 'Transporte']
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-3.5">
                   <span className="flex items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold text-text">

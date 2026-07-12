@@ -115,6 +115,14 @@ describe('EscalasPage', () => {
     expect(screen.getByText('Encerrada')).toBeInTheDocument();
   });
 
+  it('mostra os benefícios oferecidos na lista de escalas', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [{ ...JOB, offersMeal: true, offersTransport: true }] });
+
+    render(<EscalasPage />);
+
+    expect(await screen.findByText('Alimentação · Transporte')).toBeInTheDocument();
+  });
+
   it('pede confirmação antes de cancelar, e não chama a API sem confirmar', async () => {
     listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
     const user = userEvent.setup();

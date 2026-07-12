@@ -442,6 +442,18 @@ describe('VagaCandidatosPage', () => {
     expect(await screen.findByText('2 de 4 vagas preenchidas')).toBeInTheDocument();
   });
 
+  it('mostra os benefícios oferecidos pela vaga', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [] });
+    listMyJobsMock.mockResolvedValue({
+      jobs: [{ id: 'job-1', positionsTotal: 4, positionsFilled: 0, offersMeal: true, offersTransport: true }],
+    });
+
+    render(<VagaCandidatosPage />);
+
+    expect(await screen.findByText('Oferece alimentação')).toBeInTheDocument();
+    expect(screen.getByText('Oferece transporte')).toBeInTheDocument();
+  });
+
   it('não mostra o formulário quando o turno já foi avaliado', async () => {
     listJobApplicationsMock.mockResolvedValue({
       applications: [

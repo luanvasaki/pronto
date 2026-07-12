@@ -15,7 +15,7 @@ import {
   skipRating,
   updateApplicationStatus,
 } from '../../../../lib/applications-api';
-import { listMyJobs } from '../../../../lib/jobs-api';
+import { Job, listMyJobs } from '../../../../lib/jobs-api';
 import { answerQuestion, JobQuestion, listJobQuestions } from '../../../../lib/questions-api';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -84,7 +84,7 @@ export default function VagaCandidatosPage() {
   const jobId = params.id;
 
   const [applications, setApplications] = useState<JobApplication[]>([]);
-  const [positionsTotal, setPositionsTotal] = useState<number | null>(null);
+  const [job, setJob] = useState<Job | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -140,8 +140,7 @@ export default function VagaCandidatosPage() {
     Promise.all([listJobApplications(jobId), listMyJobs()])
       .then(([applicationsResult, jobsResult]) => {
         setApplications(applicationsResult.applications);
-        const job = jobsResult.jobs.find((j) => j.id === jobId);
-        setPositionsTotal(job ? job.positionsTotal : null);
+        setJob(jobsResult.jobs.find((j) => j.id === jobId) ?? null);
       })
       .catch(() => setError('Não foi possível carregar os candidatos.'))
       .finally(() => setIsLoading(false));
@@ -336,11 +335,23 @@ export default function VagaCandidatosPage() {
   return (
     <main className="flex flex-1 flex-col gap-4">
 
-      {positionsTotal !== null && (
-        <span className="flex w-fit items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold text-text">
-          <span className="h-[7px] w-[7px] rounded-full bg-success" />
-          {positionsFilled} de {positionsTotal} vagas preenchidas
-        </span>
+      {job && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="flex w-fit items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold text-text">
+            <span className="h-[7px] w-[7px] rounded-full bg-success" />
+            {positionsFilled} de {job.positionsTotal} vagas preenchidas
+          </span>
+          {job.offersMeal && (
+            <span className="rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold text-text">
+              Oferece alimentação
+            </span>
+          )}
+          {job.offersTransport && (
+            <span className="rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold text-text">
+              Oferece transporte
+            </span>
+          )}
+        </div>
       )}
 
       {error && <p className="text-sm text-danger">{error}</p>}
