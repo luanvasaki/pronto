@@ -20,6 +20,7 @@ import { workerProfileRoutes } from './modules/workers/worker-profile.routes';
 import { errorHandler } from './shared/middlewares/error-handler';
 import { notFoundHandler } from './shared/middlewares/not-found';
 import { createGeneralRateLimiter } from './shared/middlewares/rate-limit';
+import { requireSameOrigin } from './shared/middlewares/require-same-origin';
 
 /**
  * Monta a aplicação Express sem chamar `listen`. Isso permite que os
@@ -48,6 +49,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
   app.use(cors({ origin: env.corsOrigins, credentials: true }));
   app.use(cookieParser());
   app.use(express.json());
+  app.use(requireSameOrigin);
   app.use(createGeneralRateLimiter());
   // Só serve algo quando o LocalFileStorage é usado (sem BLOB_READ_WRITE_TOKEN
   // configurado, ou seja, dev/teste local) — em produção, foto/logo público
