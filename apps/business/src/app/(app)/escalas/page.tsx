@@ -10,9 +10,21 @@ import { cancelJob, Job, listMyJobs } from '../../../lib/jobs-api';
 
 const DAY_LABEL = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
 
+type TimeFilter = 'futuras' | 'passadas' | 'todas';
+
 function formatTimeRange(startsAt: string, endsAt: string): string {
   const formatter = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
   return `${formatter.format(new Date(startsAt))}–${formatter.format(new Date(endsAt))}`;
+}
+
+/**
+ * "Passada" é sobre o horário de início já ter chegado, não sobre o
+ * status — uma vaga `open` que já começou provavelmente não vai mais
+ * receber candidatos, mas ninguém marcou ela como preenchida/cancelada
+ * ainda. Isso é só pra organizar a lista, não muda o status de verdade.
+ */
+function isPast(job: Job): boolean {
+  return new Date(job.startsAt).getTime() < Date.now();
 }
 
 /**
@@ -30,6 +42,7 @@ export default function EscalasPage() {
   const [confirmingCancelJobId, setConfirmingCancelJobId] = useState<string | null>(null);
   const [cancelingJobId, setCancelingJobId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<{ jobId: string; message: string } | null>(null);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('futuras');
 
   async function handleCancel(jobId: string): Promise<void> {
     setCancelError(null);
@@ -77,23 +90,61 @@ export default function EscalasPage() {
   }
 
   const openJobs = jobs.filter((job) => job.status === 'open');
+  const futureJobs = openJobs.filter((job) => !isPast(job));
+  const pastJobs = openJobs.filter((job) => isPast(job));
+  const visibleJobs = timeFilter === 'futuras' ? futureJobs : timeFilter === 'passadas' ? pastJobs : openJobs;
 
   return (
     <main className="flex flex-1 flex-col gap-3.5">
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      {openJobs.length === 0 ? (
+      <div className="flex gap-2">
+        {(
+          [
+            ['futuras', `Futuras (${futureJobs.length})`],
+            ['passadas', `Passadas (${pastJobs.length})`],
+            ['todas', `Todas (${openJobs.length})`],
+          ] as [TimeFilter, string][]
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setTimeFilter(value)}
+            className={`rounded-[10px] border px-3 py-1.5 text-[13px] font-semibold transition ${
+              timeFilter === value
+                ? 'border-primary bg-primary text-white'
+                : 'border-border text-text-secondary hover:border-primary hover:text-primary'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {visibleJobs.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border p-8 text-center text-text-secondary">
-          Nenhuma escala em aberto agora. Publique uma quando precisar de gente.
+          {timeFilter === 'passadas'
+            ? 'Nenhuma escala passada em aberto.'
+            : 'Nenhuma escala em aberto agora. Publique uma quando precisar de gente.'}
         </div>
       ) : (
-        openJobs.map((job) => {
+        visibleJobs.map((job) => {
           const start = new Date(job.startsAt);
+          const past = isPast(job);
           const pendingCount = (applicationsByJobId[job.id] ?? []).filter((a) => a.status === 'pending').length;
           return (
-            <div key={job.id} className="rounded-2xl border border-border bg-surface p-5">
+            <div
+              key={job.id}
+              className={`rounded-2xl border p-5 ${
+                past ? 'border-border bg-background/60 opacity-70' : 'border-border bg-surface'
+              }`}
+            >
               <div className="flex items-center gap-5">
-                <div className="flex h-[52px] w-[52px] shrink-0 flex-col items-center justify-center rounded-[13px] bg-primary/10 text-primary">
+                <div
+                  className={`flex h-[52px] w-[52px] shrink-0 flex-col items-center justify-center rounded-[13px] ${
+                    past ? 'bg-border/60 text-text-secondary' : 'bg-primary/10 text-primary'
+                  }`}
+                >
                   <span className="font-heading text-lg leading-none font-extrabold">{start.getDate()}</span>
                   <span className="text-[10px] font-semibold tracking-[0.06em] uppercase">
                     {DAY_LABEL[start.getDay()]}
@@ -103,6 +154,11 @@ export default function EscalasPage() {
                   <p className="font-heading text-[17px] font-bold text-text">
                     {categoryNames[job.categoryId] ?? 'Categoria'} · {job.positionsTotal - job.positionsFilled}{' '}
                     vaga(s)
+                    {past && (
+                      <span className="ml-2 rounded-full bg-border/60 px-2 py-0.5 text-[11px] font-semibold text-text-secondary uppercase">
+                        Encerrada
+                      </span>
+                    )}
                   </p>
                   <p className="mt-0.5 text-[13.5px] text-text-secondary">
                     {formatTimeRange(job.startsAt, job.endsAt)} · R$ {job.payAmount} por pessoa

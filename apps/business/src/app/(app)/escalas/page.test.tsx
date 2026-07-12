@@ -100,13 +100,19 @@ describe('EscalasPage', () => {
     expect(screen.getAllByText(/Garçom/)).toHaveLength(1);
   });
 
-  it('mostra escala aberta mesmo que o horário de início já tenha passado', async () => {
+  it('mostra escala aberta com horário já passado no filtro "Passadas", não no padrão "Futuras"', async () => {
     const pastJob = { ...JOB, id: 'job-past', startsAt: '2020-01-01T18:00:00.000Z', endsAt: '2020-01-01T23:00:00.000Z' };
     listMyJobsMock.mockResolvedValue({ jobs: [pastJob] });
+    const user = userEvent.setup();
 
     render(<EscalasPage />);
 
+    await screen.findByText(/Nenhuma escala em aberto agora/);
+    expect(screen.queryByText(/Garçom/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Passadas/ }));
     expect(await screen.findByText(/Garçom/)).toBeInTheDocument();
+    expect(screen.getByText('Encerrada')).toBeInTheDocument();
   });
 
   it('pede confirmação antes de cancelar, e não chama a API sem confirmar', async () => {
