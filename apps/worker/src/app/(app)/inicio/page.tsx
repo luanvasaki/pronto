@@ -476,6 +476,13 @@ export default function InicioPage() {
                 </p>
               )}
 
+              <Link
+                href={`/vaga/${job.id}`}
+                className="mt-2 inline-block text-[13.5px] font-semibold text-primary underline underline-offset-2"
+              >
+                Ver detalhes da vaga
+              </Link>
+
               {applyError?.jobId === job.id && (
                 <p className="mt-2 text-sm text-danger">{applyError.message}</p>
               )}

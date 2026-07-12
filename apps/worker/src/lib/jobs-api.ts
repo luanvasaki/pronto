@@ -38,6 +38,20 @@ export function listNearbyJobs(): Promise<{ jobs: NearbyJob[] }> {
   return apiFetch('/jobs/nearby');
 }
 
+export interface JobDetail extends Job {
+  companyName: string;
+  companyLogoUrl: string | null;
+  companyAvgRating: string | null;
+  matchesSkills: boolean;
+  experienceMismatch: boolean;
+  cnhMismatch: boolean;
+  hasApplied: boolean;
+}
+
+export function getJobDetail(jobId: string): Promise<JobDetail> {
+  return apiFetch(`/jobs/${jobId}`);
+}
+
 export interface ApplicationResponse {
   id: string;
   jobId: string;

@@ -1,0 +1,138 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import VagaDetalhePage from './page';
+
+vi.mock('next/navigation', () => ({
+  useParams: () => ({ id: 'job-1' }),
+}));
+
+vi.mock('@shift/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@shift/shared')>();
+  return {
+    ...actual,
+    listSkillCategories: (...args: unknown[]) => listSkillCategoriesMock(...args),
+  };
+});
+
+const listSkillCategoriesMock = vi.fn();
+const getJobDetailMock = vi.fn();
+const applyToJobMock = vi.fn();
+vi.mock('../../../../lib/jobs-api', () => ({
+  getJobDetail: (...args: unknown[]) => getJobDetailMock(...args),
+  applyToJob: (...args: unknown[]) => applyToJobMock(...args),
+}));
+
+const listJobAnnouncementsMock = vi.fn();
+vi.mock('../../../../lib/announcements-api', () => ({
+  listJobAnnouncements: (...args: unknown[]) => listJobAnnouncementsMock(...args),
+}));
+
+const listJobQuestionsMock = vi.fn();
+const askQuestionMock = vi.fn();
+vi.mock('../../../../lib/questions-api', () => ({
+  listJobQuestions: (...args: unknown[]) => listJobQuestionsMock(...args),
+  askQuestion: (...args: unknown[]) => askQuestionMock(...args),
+}));
+
+const JOB: Awaited<ReturnType<typeof getJobDetailMock>> = {
+  id: 'job-1',
+  categoryId: 'cat-1',
+  description: 'Descrição bem detalhada da vaga de garçom.',
+  requiresExperience: false,
+  dressCode: null,
+  toolsRequired: null,
+  cnhCategory: null,
+  cnhRequired: false,
+  offersMeal: true,
+  offersTransport: false,
+  addressLabel: 'Vila Madalena, São Paulo',
+  locationLat: -23.55,
+  locationLng: -46.63,
+  positionsTotal: 2,
+  positionsFilled: 0,
+  payAmount: '130.00',
+  startsAt: '2026-08-06T18:00:00.000Z',
+  endsAt: '2026-08-06T23:00:00.000Z',
+  applicationsCloseAt: null,
+  status: 'open',
+  companyName: 'Bar do Zé',
+  companyLogoUrl: null,
+  companyAvgRating: null,
+  matchesSkills: true,
+  experienceMismatch: false,
+  cnhMismatch: false,
+  hasApplied: false,
+};
+
+describe('VagaDetalhePage', () => {
+  beforeEach(() => {
+    listSkillCategoriesMock.mockReset().mockResolvedValue({ categories: [{ id: 'cat-1', name: 'Garçom' }] });
+    getJobDetailMock.mockReset().mockResolvedValue(JOB);
+    applyToJobMock.mockReset();
+    listJobAnnouncementsMock.mockReset().mockResolvedValue({ announcements: [] });
+    listJobQuestionsMock.mockReset().mockResolvedValue({ questions: [] });
+    askQuestionMock.mockReset();
+  });
+
+  it('mostra a descrição completa da vaga', async () => {
+    render(<VagaDetalhePage />);
+
+    expect(await screen.findByText('Descrição bem detalhada da vaga de garçom.')).toBeInTheDocument();
+    expect(screen.getByText('Garçom')).toBeInTheDocument();
+    expect(screen.getByText('Alimentação')).toBeInTheDocument();
+  });
+
+  it('não busca avisos/perguntas antes de se candidatar', async () => {
+    render(<VagaDetalhePage />);
+
+    await screen.findByText('Descrição bem detalhada da vaga de garçom.');
+    expect(listJobAnnouncementsMock).not.toHaveBeenCalled();
+    expect(screen.queryByText('Avisos da empresa')).not.toBeInTheDocument();
+  });
+
+  it('candidata-se e passa a mostrar avisos e perguntas', async () => {
+    applyToJobMock.mockResolvedValue({ id: 'app-1' });
+    const user = userEvent.setup();
+
+    render(<VagaDetalhePage />);
+    await user.click(await screen.findByRole('button', { name: 'Aceitar escala' }));
+
+    await waitFor(() => expect(applyToJobMock).toHaveBeenCalledWith('job-1'));
+    expect(await screen.findByText('Candidatura enviada ✓')).toBeInTheDocument();
+    await waitFor(() => expect(listJobAnnouncementsMock).toHaveBeenCalledWith('job-1'));
+  });
+
+  it('já mostra avisos/perguntas de cara quando já se candidatou (hasApplied)', async () => {
+    getJobDetailMock.mockResolvedValue({ ...JOB, hasApplied: true });
+    listJobAnnouncementsMock.mockResolvedValue({
+      announcements: [{ id: 'a-1', jobId: 'job-1', message: 'Chegar 15 min antes', createdAt: '2026-07-01T10:00:00.000Z' }],
+    });
+
+    render(<VagaDetalhePage />);
+
+    expect(await screen.findByText('Chegar 15 min antes')).toBeInTheDocument();
+  });
+
+  it('envia uma pergunta pra empresa', async () => {
+    getJobDetailMock.mockResolvedValue({ ...JOB, hasApplied: true });
+    askQuestionMock.mockResolvedValue({
+      id: 'q-1',
+      jobId: 'job-1',
+      question: 'Tem vestiário?',
+      answer: null,
+      answeredAt: null,
+      createdAt: '2026-07-01T10:00:00.000Z',
+      worker: { id: 'worker-1', fullName: 'Ana Souza' },
+    });
+    const user = userEvent.setup();
+
+    render(<VagaDetalhePage />);
+    await screen.findByText('Perguntas e respostas');
+    await user.type(screen.getByPlaceholderText('Faça uma pergunta pra empresa...'), 'Tem vestiário?');
+    await user.click(screen.getByRole('button', { name: 'Perguntar' }));
+
+    await waitFor(() => expect(askQuestionMock).toHaveBeenCalledWith('job-1', 'Tem vestiário?'));
+    expect(await screen.findByText('Tem vestiário?')).toBeInTheDocument();
+  });
+});
