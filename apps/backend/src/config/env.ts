@@ -66,4 +66,10 @@ export const env = {
   // Sem isso, createGoogleTokenVerifier() cai pra fora do ar em produção —
   // ver create-google-token-verifier.ts.
   googleClientId: process.env.GOOGLE_CLIENT_ID,
+  // Opcional em qualquer ambiente — sem isso, initSentry() não faz nada e
+  // erro 500 continua só no console.error de sempre (ver config/sentry.ts).
+  // Diferente de Resend/Google, não trava o boot em produção: rastreio de
+  // erro é importante, mas sua ausência não é um risco de segurança/perda
+  // de dado como os outros dois.
+  sentryDsn: process.env.SENTRY_DSN,
 };

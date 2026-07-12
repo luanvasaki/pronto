@@ -154,6 +154,19 @@ export function resetUserPassword(userId: string): Promise<{ email: string }> {
   return apiFetch(`/admin/users/${userId}/reset-password`, { method: 'POST' });
 }
 
+export interface FailedPayment {
+  id: string;
+  shiftId: string;
+  amount: string;
+  companyName: string;
+  workerFullName: string;
+  createdAt: string;
+}
+
+export function listFailedPayments(): Promise<{ payments: FailedPayment[] }> {
+  return apiFetch('/admin/failed-payments');
+}
+
 export interface DocumentFile {
   url: string;
   contentType: string;

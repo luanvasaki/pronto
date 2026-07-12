@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { Sentry } from '../../config/sentry';
 import { HttpError } from '../errors/http-error';
 
 /**
@@ -6,6 +7,11 @@ import { HttpError } from '../errors/http-error';
  * argumentos). Toda rota deve chamar `next(erro)` em vez de responder o
  * erro diretamente — assim o formato da resposta de erro fica igual em
  * qualquer parte da API.
+ *
+ * Só reporta pro Sentry o que vira 500 — HttpError é erro esperado
+ * (validação, 404, 403 etc.), não uma falha real do sistema que alguém
+ * precise ser avisado. Sem SENTRY_DSN configurada, captureException não
+ * faz nada (ver config/sentry.ts) — continua só no console.error de sempre.
  */
 export function errorHandler(
   err: unknown,
@@ -19,5 +25,6 @@ export function errorHandler(
   }
 
   console.error(err);
+  Sentry.captureException(err);
   res.status(500).json({ error: 'Erro interno do servidor.' });
 }

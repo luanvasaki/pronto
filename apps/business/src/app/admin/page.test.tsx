@@ -6,10 +6,12 @@ import AdminOverviewPage from './page';
 const getAdminMetricsMock = vi.fn();
 const getAdminGrowthMetricsMock = vi.fn();
 const deleteDemoDataMock = vi.fn();
+const listFailedPaymentsMock = vi.fn();
 vi.mock('../../lib/admin-api', () => ({
   getAdminMetrics: (...args: unknown[]) => getAdminMetricsMock(...args),
   getAdminGrowthMetrics: (...args: unknown[]) => getAdminGrowthMetricsMock(...args),
   deleteDemoData: (...args: unknown[]) => deleteDemoDataMock(...args),
+  listFailedPayments: (...args: unknown[]) => listFailedPaymentsMock(...args),
 }));
 
 const SAMPLE_METRICS = {
@@ -31,6 +33,7 @@ describe('AdminOverviewPage', () => {
     getAdminMetricsMock.mockReset().mockResolvedValue(SAMPLE_METRICS);
     getAdminGrowthMetricsMock.mockReset().mockResolvedValue(SAMPLE_GROWTH);
     deleteDemoDataMock.mockReset();
+    listFailedPaymentsMock.mockReset().mockResolvedValue({ payments: [] });
   });
 
   it('mostra as métricas gerais', async () => {
@@ -39,6 +42,31 @@ describe('AdminOverviewPage', () => {
     expect(await screen.findByText('R$ 1.500,00')).toBeInTheDocument();
     expect(screen.getByText('10')).toBeInTheDocument();
     expect(screen.getByText('6')).toBeInTheDocument();
+  });
+
+  it('mostra os pagamentos com falha', async () => {
+    listFailedPaymentsMock.mockResolvedValue({
+      payments: [
+        {
+          id: 'payment-1',
+          shiftId: 'shift-1',
+          amount: '150.00',
+          companyName: 'Buffet Aurora',
+          workerFullName: 'Ana Souza',
+          createdAt: '2026-07-01T12:00:00.000Z',
+        },
+      ],
+    });
+
+    render(<AdminOverviewPage />);
+
+    expect(await screen.findByText('Buffet Aurora → Ana Souza')).toBeInTheDocument();
+  });
+
+  it('mostra mensagem quando não há pagamentos com falha', async () => {
+    render(<AdminOverviewPage />);
+
+    expect(await screen.findByText('Nenhum pagamento com falha no momento.')).toBeInTheDocument();
   });
 
   it('mostra os gráficos de crescimento', async () => {

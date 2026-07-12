@@ -7,11 +7,14 @@ import {
   AdminGrowthMetrics,
   AdminMetrics,
   deleteDemoData,
+  FailedPayment,
   getAdminGrowthMetrics,
   getAdminMetrics,
+  listFailedPayments,
 } from '../../lib/admin-api';
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const DATE_FORMATTER = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 
 export default function AdminOverviewPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -19,6 +22,9 @@ export default function AdminOverviewPage() {
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [growth, setGrowth] = useState<AdminGrowthMetrics | null>(null);
   const [growthError, setGrowthError] = useState<string | null>(null);
+
+  const [failedPayments, setFailedPayments] = useState<FailedPayment[]>([]);
+  const [failedPaymentsError, setFailedPaymentsError] = useState<string | null>(null);
 
   const [confirmingDemoDelete, setConfirmingDemoDelete] = useState(false);
   const [isDeletingDemoData, setIsDeletingDemoData] = useState(false);
@@ -33,6 +39,9 @@ export default function AdminOverviewPage() {
     getAdminGrowthMetrics()
       .then(setGrowth)
       .catch(() => setGrowthError('Não foi possível carregar os gráficos de crescimento.'));
+    listFailedPayments()
+      .then((result) => setFailedPayments(result.payments))
+      .catch(() => setFailedPaymentsError('Não foi possível carregar os pagamentos com falha.'));
   }, []);
 
   async function handleDeleteDemoData(): Promise<void> {
@@ -117,6 +126,35 @@ export default function AdminOverviewPage() {
           </div>
         </section>
       )}
+
+      <section>
+        <h2 className="font-heading text-lg font-bold text-text">Pagamentos com falha</h2>
+        <p className="mt-1 text-sm text-text-secondary">
+          O gateway não conseguiu registrar a cobrança — sem retry automático ainda, precisa resolver na mão com
+          a empresa e o profissional.
+        </p>
+
+        {failedPaymentsError && <p className="mt-2 text-sm text-danger">{failedPaymentsError}</p>}
+
+        {!failedPaymentsError && failedPayments.length === 0 && (
+          <p className="mt-2 text-sm text-text-secondary">Nenhum pagamento com falha no momento.</p>
+        )}
+
+        {failedPayments.length > 0 && (
+          <ul className="mt-3 flex flex-col gap-2">
+            {failedPayments.map((payment) => (
+              <li key={payment.id} className="rounded-2xl border border-danger/30 bg-danger/10 p-3.5">
+                <p className="text-sm font-semibold text-text">
+                  {payment.companyName} → {payment.workerFullName}
+                </p>
+                <p className="mt-0.5 text-[13px] text-text-secondary">
+                  R$ {payment.amount} · {DATE_FORMATTER.format(new Date(payment.createdAt))}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section>
         <h2 className="font-heading text-lg font-bold text-text">Crescimento</h2>

@@ -8,6 +8,7 @@ import { getDocumentFileHandler } from './get-document-file.controller';
 import { getGrowthMetricsHandler } from './get-growth-metrics.controller';
 import { getMetricsHandler } from './get-metrics.controller';
 import { listCompaniesHandler } from './list-companies.controller';
+import { listFailedPaymentsHandler } from './list-failed-payments.controller';
 import { listPendingVerificationsHandler } from './list-pending-verifications.controller';
 import { listWorkersHandler } from './list-workers.controller';
 import { requireAdmin } from './require-admin';
@@ -39,6 +40,7 @@ export function createAdminRoutes(options: AdminRoutesOptions = {}): Router {
   adminRoutes.delete('/admin/demo-data', requireAuth, requireAdmin, deleteDemoDataHandler);
   adminRoutes.get('/admin/companies', requireAuth, requireAdmin, listCompaniesHandler);
   adminRoutes.get('/admin/workers', requireAuth, requireAdmin, listWorkersHandler);
+  adminRoutes.get('/admin/failed-payments', requireAuth, requireAdmin, listFailedPaymentsHandler);
   adminRoutes.post(
     '/admin/users/:id/reset-password',
     requireAuth,
