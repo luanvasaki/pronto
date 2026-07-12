@@ -114,11 +114,27 @@ export default function VagaCandidatosPage() {
   const [newAnnouncement, setNewAnnouncement] = useState('');
   const [isPostingAnnouncement, setIsPostingAnnouncement] = useState(false);
   const [announcementError, setAnnouncementError] = useState<string | null>(null);
+  const [announcementsLoadError, setAnnouncementsLoadError] = useState(false);
 
   const [questions, setQuestions] = useState<JobQuestion[]>([]);
   const [answerDrafts, setAnswerDrafts] = useState<Record<string, string>>({});
   const [answeringId, setAnsweringId] = useState<string | null>(null);
   const [answerError, setAnswerError] = useState<{ id: string; message: string } | null>(null);
+  const [questionsLoadError, setQuestionsLoadError] = useState(false);
+
+  function loadAnnouncements(): void {
+    setAnnouncementsLoadError(false);
+    listJobAnnouncements(jobId)
+      .then((result) => setAnnouncements(result.announcements))
+      .catch(() => setAnnouncementsLoadError(true));
+  }
+
+  function loadQuestions(): void {
+    setQuestionsLoadError(false);
+    listJobQuestions(jobId)
+      .then((result) => setQuestions(result.questions))
+      .catch(() => setQuestionsLoadError(true));
+  }
 
   useEffect(() => {
     Promise.all([listJobApplications(jobId), listMyJobs()])
@@ -130,13 +146,9 @@ export default function VagaCandidatosPage() {
       .catch(() => setError('Não foi possível carregar os candidatos.'))
       .finally(() => setIsLoading(false));
 
-    listJobAnnouncements(jobId)
-      .then((result) => setAnnouncements(result.announcements))
-      .catch(() => undefined);
-
-    listJobQuestions(jobId)
-      .then((result) => setQuestions(result.questions))
-      .catch(() => undefined);
+    loadAnnouncements();
+    loadQuestions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId]);
 
   async function handlePostAnnouncement(): Promise<void> {
@@ -587,6 +599,15 @@ export default function VagaCandidatosPage() {
           Publicar aviso
         </Button>
 
+        {announcementsLoadError && (
+          <p className="text-sm text-danger">
+            Não foi possível carregar os avisos.{' '}
+            <button type="button" onClick={loadAnnouncements} className="underline underline-offset-2">
+              Tentar de novo
+            </button>
+          </p>
+        )}
+
         {announcements.length > 0 && (
           <ul className="mt-2 flex flex-col gap-2.5">
             {announcements.map((announcement) => (
@@ -606,7 +627,18 @@ export default function VagaCandidatosPage() {
           perguntou.
         </p>
 
-        {questions.length === 0 && <p className="text-sm text-text-secondary">Nenhuma pergunta ainda.</p>}
+        {questionsLoadError && (
+          <p className="text-sm text-danger">
+            Não foi possível carregar as perguntas.{' '}
+            <button type="button" onClick={loadQuestions} className="underline underline-offset-2">
+              Tentar de novo
+            </button>
+          </p>
+        )}
+
+        {!questionsLoadError && questions.length === 0 && (
+          <p className="text-sm text-text-secondary">Nenhuma pergunta ainda.</p>
+        )}
 
         <ul className="flex flex-col gap-3">
           {questions.map((question) => (

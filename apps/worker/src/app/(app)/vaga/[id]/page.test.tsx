@@ -135,4 +135,20 @@ describe('VagaDetalhePage', () => {
     await waitFor(() => expect(askQuestionMock).toHaveBeenCalledWith('job-1', 'Tem vestiário?'));
     expect(await screen.findByText('Tem vestiário?')).toBeInTheDocument();
   });
+
+  it('mostra erro (não "nenhum aviso") quando a busca de avisos falha, e permite tentar de novo', async () => {
+    getJobDetailMock.mockResolvedValue({ ...JOB, hasApplied: true });
+    listJobAnnouncementsMock.mockRejectedValueOnce(new Error('falha de rede'));
+    const user = userEvent.setup();
+
+    render(<VagaDetalhePage />);
+
+    expect(await screen.findByText('Não foi possível carregar os avisos.')).toBeInTheDocument();
+    expect(screen.queryByText('Nenhum aviso ainda.')).not.toBeInTheDocument();
+
+    listJobAnnouncementsMock.mockResolvedValueOnce({ announcements: [] });
+    await user.click(screen.getByRole('button', { name: 'Tentar de novo' }));
+
+    expect(await screen.findByText('Nenhum aviso ainda.')).toBeInTheDocument();
+  });
 });

@@ -35,7 +35,9 @@ export default function VagaDetalhePage() {
   const [applyError, setApplyError] = useState<string | null>(null);
 
   const [announcements, setAnnouncements] = useState<JobAnnouncement[]>([]);
+  const [announcementsLoadError, setAnnouncementsLoadError] = useState(false);
   const [questions, setQuestions] = useState<JobQuestion[]>([]);
+  const [questionsLoadError, setQuestionsLoadError] = useState(false);
   const [newQuestion, setNewQuestion] = useState('');
   const [isAsking, setIsAsking] = useState(false);
   const [askError, setAskError] = useState<string | null>(null);
@@ -51,14 +53,25 @@ export default function VagaDetalhePage() {
       .finally(() => setIsLoading(false));
   }, [jobId]);
 
-  useEffect(() => {
-    if (!applied) return;
+  function loadAnnouncements(): void {
+    setAnnouncementsLoadError(false);
     listJobAnnouncements(jobId)
       .then((result) => setAnnouncements(result.announcements))
-      .catch(() => undefined);
+      .catch(() => setAnnouncementsLoadError(true));
+  }
+
+  function loadQuestions(): void {
+    setQuestionsLoadError(false);
     listJobQuestions(jobId)
       .then((result) => setQuestions(result.questions))
-      .catch(() => undefined);
+      .catch(() => setQuestionsLoadError(true));
+  }
+
+  useEffect(() => {
+    if (!applied) return;
+    loadAnnouncements();
+    loadQuestions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId, applied]);
 
   async function handleApply(): Promise<void> {
@@ -220,7 +233,14 @@ export default function VagaDetalhePage() {
         <>
           <section className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
             <p className="font-heading text-[15px] font-bold text-text">Avisos da empresa</p>
-            {announcements.length === 0 ? (
+            {announcementsLoadError ? (
+              <p className="text-sm text-danger">
+                Não foi possível carregar os avisos.{' '}
+                <button type="button" onClick={loadAnnouncements} className="underline underline-offset-2">
+                  Tentar de novo
+                </button>
+              </p>
+            ) : announcements.length === 0 ? (
               <p className="text-sm text-text-secondary">Nenhum aviso ainda.</p>
             ) : (
               <ul className="flex flex-col gap-2">
@@ -236,7 +256,17 @@ export default function VagaDetalhePage() {
 
           <section className="mb-4 flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
             <p className="font-heading text-[15px] font-bold text-text">Perguntas e respostas</p>
-            {questions.length === 0 && <p className="text-sm text-text-secondary">Nenhuma pergunta ainda.</p>}
+            {questionsLoadError && (
+              <p className="text-sm text-danger">
+                Não foi possível carregar as perguntas.{' '}
+                <button type="button" onClick={loadQuestions} className="underline underline-offset-2">
+                  Tentar de novo
+                </button>
+              </p>
+            )}
+            {!questionsLoadError && questions.length === 0 && (
+              <p className="text-sm text-text-secondary">Nenhuma pergunta ainda.</p>
+            )}
             <ul className="flex flex-col gap-2">
               {questions.map((question) => (
                 <li key={question.id} className="rounded-lg bg-background p-3">

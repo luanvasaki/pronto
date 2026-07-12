@@ -34,6 +34,20 @@ vi.mock('../../../../lib/jobs-api', () => ({
   listMyJobs: (...args: unknown[]) => listMyJobsMock(...args),
 }));
 
+const listJobAnnouncementsMock = vi.fn();
+const createAnnouncementMock = vi.fn();
+vi.mock('../../../../lib/announcements-api', () => ({
+  listJobAnnouncements: (...args: unknown[]) => listJobAnnouncementsMock(...args),
+  createAnnouncement: (...args: unknown[]) => createAnnouncementMock(...args),
+}));
+
+const listJobQuestionsMock = vi.fn();
+const answerQuestionMock = vi.fn();
+vi.mock('../../../../lib/questions-api', () => ({
+  listJobQuestions: (...args: unknown[]) => listJobQuestionsMock(...args),
+  answerQuestion: (...args: unknown[]) => answerQuestionMock(...args),
+}));
+
 const PENDING_APPLICATION = {
   id: 'app-1',
   status: 'pending',
@@ -94,6 +108,10 @@ describe('VagaCandidatosPage', () => {
     removeApprovedWorkerMock.mockReset();
     listMyJobsMock.mockReset();
     listMyJobsMock.mockResolvedValue({ jobs: [] });
+    listJobAnnouncementsMock.mockReset().mockResolvedValue({ announcements: [] });
+    createAnnouncementMock.mockReset();
+    listJobQuestionsMock.mockReset().mockResolvedValue({ questions: [] });
+    answerQuestionMock.mockReset();
   });
 
   it('mostra estado vazio quando não há candidatos', async () => {
@@ -448,5 +466,21 @@ describe('VagaCandidatosPage', () => {
 
     expect(await screen.findByText('Você avaliou: 4 de 5.')).toBeInTheDocument();
     expect(screen.queryByText('Avaliar o trabalhador')).not.toBeInTheDocument();
+  });
+
+  it('mostra erro (não "nenhuma pergunta") quando a busca de perguntas falha, e permite tentar de novo', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [] });
+    listJobQuestionsMock.mockRejectedValueOnce(new Error('falha de rede'));
+    const user = userEvent.setup();
+
+    render(<VagaCandidatosPage />);
+
+    expect(await screen.findByText('Não foi possível carregar as perguntas.')).toBeInTheDocument();
+    expect(screen.queryByText('Nenhuma pergunta ainda.')).not.toBeInTheDocument();
+
+    listJobQuestionsMock.mockResolvedValueOnce({ questions: [] });
+    await user.click(screen.getByRole('button', { name: 'Tentar de novo' }));
+
+    expect(await screen.findByText('Nenhuma pergunta ainda.')).toBeInTheDocument();
   });
 });
