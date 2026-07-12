@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
-import { applications, companies, jobAnnouncements, jobs, skillCategories, users, workerProfiles } from '../../db/schema';
+import { applications, companies, jobAnnouncements, jobs, skillCategories, users } from '../../db/schema';
 import { createAnnouncement } from './create-announcement';
 
 const OWNER_PHONE = '+5511966660020';
