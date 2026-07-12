@@ -1,14 +1,15 @@
 'use client';
 
-import { ApiError, CNH_CATEGORY_OPTIONS, listSkillCategories, SkillCategory } from '@shift/shared';
+import { ApiError, listSkillCategories, SkillCategory } from '@shift/shared';
 import { useParams, useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
 import { Button } from '../../../../../components/ui/button';
 import { Input } from '../../../../../components/ui/input';
+import { JobBenefitsFields } from '../../../../../components/ui/job-benefits-fields';
+import { JobRequirementsFields } from '../../../../../components/ui/job-requirements-fields';
+import { useJobFormValidation } from '../../../../../hooks/use-job-form-validation';
 import { getCurrentPosition } from '../../../../../lib/geolocation';
 import { listMyJobs, updateJob } from '../../../../../lib/jobs-api';
-
-const PAY_AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
 
 /**
  * `job.startsAt`/`endsAt` chegam em UTC (ISO com "Z") — um `<input
@@ -110,36 +111,19 @@ export default function EditarVagaPage() {
       .finally(() => setIsLoading(false));
   }, [jobId]);
 
-  const positionsTotalNumber = Number(positionsTotal);
-  const payAmountNumber = Number(payAmount);
-  const showEstimate =
-    Number.isInteger(positionsTotalNumber) &&
-    positionsTotalNumber >= 1 &&
-    PAY_AMOUNT_REGEX.test(payAmount) &&
-    payAmountNumber > 0;
-  const estimateTotal = positionsTotalNumber * payAmountNumber;
-  // Mesmo motivo de vagas/nova: sem isso o botão "Salvar" fica cinza sem
-  // nenhuma pista de qual campo falta (localização é a mais fácil de
-  // esquecer, já que fica num botão separado do campo de endereço).
-  const missingFields: string[] = [];
-  if (categoryId === '') missingFields.push('categoria');
-  if (requiresExperience === null) missingFields.push('exigência de experiência');
-  if (description.trim().length < 10) missingFields.push('descrição (mínimo 10 caracteres)');
-  if (addressLabel.trim().length < 2) missingFields.push('endereço');
-  if (lat === null || lng === null) missingFields.push('localização (clique em "Usar minha localização atual")');
-  if (!Number.isInteger(positionsTotalNumber) || positionsTotalNumber < 1) missingFields.push('número de vagas');
-  if (!PAY_AMOUNT_REGEX.test(payAmount) || Number(payAmount) <= 0) missingFields.push('valor por pessoa');
-  if (startsAt === '') missingFields.push('início');
-  if (endsAt === '') missingFields.push('término');
-  if (startsAt !== '' && endsAt !== '' && !(new Date(endsAt) > new Date(startsAt))) {
-    missingFields.push('término depois do início');
-  }
-  if (startsAt !== '' && !(new Date(startsAt) > new Date())) missingFields.push('início no futuro');
-  if (applicationsCloseAt !== '' && startsAt !== '' && new Date(applicationsCloseAt) > new Date(startsAt)) {
-    missingFields.push('prazo de candidatura até o início');
-  }
-
-  const isValid = missingFields.length === 0;
+  const { positionsTotalNumber, showEstimate, estimateTotal, missingFields, isValid } = useJobFormValidation({
+    categoryId,
+    requiresExperience,
+    description,
+    addressLabel,
+    lat,
+    lng,
+    positionsTotal,
+    payAmount,
+    startsAt,
+    endsAt,
+    applicationsCloseAt,
+  });
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -215,132 +199,25 @@ export default function EditarVagaPage() {
           </select>
         </div>
 
-        <div className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-4">
-          <p className="font-heading text-sm font-bold text-text">O que essa vaga exige?</p>
+        <JobRequirementsFields
+          requiresExperience={requiresExperience}
+          onRequiresExperienceChange={setRequiresExperience}
+          dressCode={dressCode}
+          onDressCodeChange={setDressCode}
+          toolsRequired={toolsRequired}
+          onToolsRequiredChange={setToolsRequired}
+          cnhCategory={cnhCategory}
+          onCnhCategoryChange={setCnhCategory}
+          cnhRequired={cnhRequired}
+          onCnhRequiredChange={setCnhRequired}
+        />
 
-          <div>
-            <span className="mb-1.5 block text-sm font-medium text-text-secondary">
-              Precisa de experiência anterior?
-            </span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setRequiresExperience(true)}
-                className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
-                  requiresExperience === true
-                    ? 'border-primary bg-primary text-white'
-                    : 'border-border bg-surface text-text-secondary'
-                }`}
-              >
-                Sim
-              </button>
-              <button
-                type="button"
-                onClick={() => setRequiresExperience(false)}
-                className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
-                  requiresExperience === false
-                    ? 'border-primary bg-primary text-white'
-                    : 'border-border bg-surface text-text-secondary'
-                }`}
-              >
-                Não
-              </button>
-            </div>
-          </div>
-
-          <Input
-            id="dressCode"
-            label="Vestimenta exigida (opcional)"
-            type="text"
-            placeholder="Social, uniforme fornecido, traje esportivo..."
-            value={dressCode}
-            onChange={(event) => setDressCode(event.target.value)}
-          />
-
-          <Input
-            id="toolsRequired"
-            label="Ferramentas que o profissional precisa levar (opcional)"
-            type="text"
-            placeholder="Câmera própria, ferramentas de bar..."
-            value={toolsRequired}
-            onChange={(event) => setToolsRequired(event.target.value)}
-          />
-
-          <div>
-            <label htmlFor="cnhCategory" className="mb-1.5 block text-sm font-medium text-text-secondary">
-              Exige CNH? (opcional)
-            </label>
-            <select
-              id="cnhCategory"
-              value={cnhCategory}
-              onChange={(event) => setCnhCategory(event.target.value)}
-              className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
-            >
-              <option value="">Nenhuma exigência</option>
-              {CNH_CATEGORY_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {cnhCategory && (
-              <div className="mt-2.5">
-                <span className="mb-1.5 block text-sm font-medium text-text-secondary">
-                  Isso é obrigatório pra se candidatar ou só uma preferência?
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCnhRequired(true)}
-                    className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
-                      cnhRequired
-                        ? 'border-primary bg-primary text-white'
-                        : 'border-border bg-surface text-text-secondary'
-                    }`}
-                  >
-                    Obrigatório
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCnhRequired(false)}
-                    className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
-                      !cnhRequired
-                        ? 'border-primary bg-primary text-white'
-                        : 'border-border bg-surface text-text-secondary'
-                    }`}
-                  >
-                    Preferência
-                  </button>
-                </div>
-                {cnhRequired && (
-                  <p className="mt-1.5 text-xs text-text-secondary">
-                    Quem não tiver CNH {cnhCategory} não vai conseguir se candidatar.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
-          <p className="font-heading text-sm font-bold text-text">Benefícios oferecidos</p>
-          <label className="flex items-center gap-2 text-sm font-medium text-text">
-            <input
-              type="checkbox"
-              checked={offersMeal}
-              onChange={(event) => setOffersMeal(event.target.checked)}
-            />
-            Oferece alimentação
-          </label>
-          <label className="flex items-center gap-2 text-sm font-medium text-text">
-            <input
-              type="checkbox"
-              checked={offersTransport}
-              onChange={(event) => setOffersTransport(event.target.checked)}
-            />
-            Oferece transporte
-          </label>
-        </div>
+        <JobBenefitsFields
+          offersMeal={offersMeal}
+          onOffersMealChange={setOffersMeal}
+          offersTransport={offersTransport}
+          onOffersTransportChange={setOffersTransport}
+        />
 
         <div>
           <label htmlFor="description" className="mb-1.5 block text-sm font-medium text-text-secondary">
