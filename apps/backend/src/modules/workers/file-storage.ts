@@ -113,6 +113,13 @@ export class VercelBlobFileStorage implements FileStorage {
  * `access` escolhe o token certo: `public` (foto/logo) e `private`
  * (documento de KYC) são stores diferentes na Vercel, cada um só aceita
  * gravar com o access com que foi criado.
+ *
+ * Em produção, exige o token: sem isso, LocalFileStorage gravaria no
+ * disco do processo — que no Railway é efêmero, então foto de perfil,
+ * logo de empresa e documento de KYC sumiriam a cada redeploy, sem
+ * nenhum erro avisando. Mesmo padrão de createEmailSender()/
+ * createGoogleTokenVerifier(): trava o boot em produção em vez de
+ * degradar silenciosamente.
  */
 export function createFileStorage(access: FileAccess): FileStorage {
   const token = access === 'public' ? env.blobReadWriteToken : env.blobDocumentsToken;
@@ -120,6 +127,18 @@ export function createFileStorage(access: FileAccess): FileStorage {
   if (token) {
     return new VercelBlobFileStorage(token);
   }
+
+  if (env.nodeEnv === 'production') {
+    const varName = access === 'public' ? 'BLOB_READ_WRITE_TOKEN' : 'BLOB_DOCUMENTS_TOKEN';
+    throw new Error(
+      `${varName} não configurada — LocalFileStorage não pode rodar em produção (o disco do processo é efêmero no Railway, arquivos salvos ali somem no próximo redeploy).`,
+    );
+  }
+
+  console.warn(
+    `[createFileStorage] Token do Blob (${access}) não configurado — caindo pro LocalFileStorage (disco local, só serve pra dev/teste). ` +
+      'Isso é esperado em dev/teste. Se essa mensagem aparecer nos logs de PRODUÇÃO, significa que o upload de arquivos está QUEBRADO (verifique NODE_ENV e as variáveis do Blob no ambiente de deploy).',
+  );
 
   return new LocalFileStorage();
 }

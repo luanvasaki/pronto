@@ -109,4 +109,30 @@ describe('releasePayment', () => {
       'não está pronto pra ser liberado',
     );
   });
+
+  it('libera no gateway só uma vez mesmo com duas chamadas simultâneas (corrida)', async () => {
+    const { owner, shift } = await setupChargedShift();
+    let releaseCallCount = 0;
+    const countingGateway: PaymentGateway = {
+      charge: SUCCESS_GATEWAY.charge,
+      release: async (pspChargeId) => {
+        releaseCallCount += 1;
+        await SUCCESS_GATEWAY.release(pspChargeId);
+      },
+    };
+
+    const results = await Promise.allSettled([
+      releasePayment(countingGateway, owner.id, shift.id),
+      releasePayment(countingGateway, owner.id, shift.id),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    // Só quem vence o UPDATE condicional chama o gateway — sem isso, as
+    // duas chamadas passariam pela checagem de status antes de qualquer
+    // uma escrever, e o gateway seria chamado duas vezes.
+    expect(releaseCallCount).toBe(1);
+  });
 });

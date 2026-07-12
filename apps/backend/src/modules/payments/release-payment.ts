@@ -39,10 +39,13 @@ export async function releasePayment(
     throw new HttpError(400, 'Esse pagamento não está pronto pra ser liberado.');
   }
 
-  if (payment.pspChargeId) {
-    await gateway.release(payment.pspChargeId);
-  }
-
+  // UPDATE condicional primeiro, chamada ao gateway só depois de vencer
+  // essa corrida — se fosse ao contrário, duas chamadas simultâneas
+  // passariam ambas pela checagem `status === 'charged'` acima e as
+  // duas chamariam `gateway.release()`, liberando o pagamento em
+  // dobro no PSP (só uma delas venceria o UPDATE depois). Inofensivo
+  // enquanto o gateway for mock, mas seria dinheiro de verdade saindo
+  // duas vezes assim que existir um PSP real.
   const [updated] = await db
     .update(payments)
     .set({ status: 'released', releasedAt: new Date(), updatedAt: new Date() })
@@ -50,6 +53,10 @@ export async function releasePayment(
     .returning();
   if (!updated) {
     throw new HttpError(400, 'Esse pagamento não está pronto pra ser liberado.');
+  }
+
+  if (updated.pspChargeId) {
+    await gateway.release(updated.pspChargeId);
   }
 
   return toPaymentResponse(updated);

@@ -50,37 +50,44 @@ export async function reviewDocument(
     throw new HttpError(400, 'Esse documento já foi revisado.');
   }
 
-  const [updated] = await db
-    .update(documents)
-    .set({ status, reviewedBy: adminUserId, reviewedAt: new Date(), updatedAt: new Date() })
-    .where(and(eq(documents.id, documentId), eq(documents.status, 'pending')))
-    .returning();
-  if (!updated) {
-    throw new HttpError(400, 'Esse documento já foi revisado.');
-  }
-
-  const workerDocuments = await db.query.documents.findMany({
-    where: eq(documents.workerId, document.workerId),
-    orderBy: desc(documents.createdAt),
-  });
-  const latestByType = new Map<string, (typeof workerDocuments)[number]>();
-  for (const workerDocument of workerDocuments) {
-    if (!latestByType.has(workerDocument.type)) {
-      latestByType.set(workerDocument.type, workerDocument);
+  // As duas escritas (documento revisado + kyc_status do perfil) numa
+  // transação só — são a mesma decisão em dois campos; sem isso, se a
+  // segunda escrita falhasse, o documento ficaria revisado mas o
+  // perfil continuaria "pending" pra sempre, sem nada no sistema
+  // sabendo corrigir isso depois (mesmo raciocínio de cancel-job.ts).
+  return db.transaction(async (tx) => {
+    const [updated] = await tx
+      .update(documents)
+      .set({ status, reviewedBy: adminUserId, reviewedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(documents.id, documentId), eq(documents.status, 'pending')))
+      .returning();
+    if (!updated) {
+      throw new HttpError(400, 'Esse documento já foi revisado.');
     }
-  }
-  const latestDocuments = [...latestByType.values()];
-  const hasBothTypes = latestByType.has('identity') && latestByType.has('selfie');
-  const anyLatestRejected = latestDocuments.some((workerDocument) => workerDocument.status === 'rejected');
-  const allLatestApproved =
-    hasBothTypes && latestDocuments.every((workerDocument) => workerDocument.status === 'approved');
 
-  const newKycStatus = anyLatestRejected ? 'rejected' : allLatestApproved ? 'approved' : 'pending';
+    const workerDocuments = await tx.query.documents.findMany({
+      where: eq(documents.workerId, document.workerId),
+      orderBy: desc(documents.createdAt),
+    });
+    const latestByType = new Map<string, (typeof workerDocuments)[number]>();
+    for (const workerDocument of workerDocuments) {
+      if (!latestByType.has(workerDocument.type)) {
+        latestByType.set(workerDocument.type, workerDocument);
+      }
+    }
+    const latestDocuments = [...latestByType.values()];
+    const hasBothTypes = latestByType.has('identity') && latestByType.has('selfie');
+    const anyLatestRejected = latestDocuments.some((workerDocument) => workerDocument.status === 'rejected');
+    const allLatestApproved =
+      hasBothTypes && latestDocuments.every((workerDocument) => workerDocument.status === 'approved');
 
-  await db
-    .update(workerProfiles)
-    .set({ kycStatus: newKycStatus, updatedAt: new Date() })
-    .where(eq(workerProfiles.userId, document.workerId));
+    const newKycStatus = anyLatestRejected ? 'rejected' : allLatestApproved ? 'approved' : 'pending';
 
-  return { id: updated.id, status: updated.status };
+    await tx
+      .update(workerProfiles)
+      .set({ kycStatus: newKycStatus, updatedAt: new Date() })
+      .where(eq(workerProfiles.userId, document.workerId));
+
+    return { id: updated.id, status: updated.status };
+  });
 }
