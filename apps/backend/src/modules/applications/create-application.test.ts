@@ -87,6 +87,15 @@ describe('createApplication', () => {
     await expect(createApplication(worker.id, job.id)).rejects.toThrow('Complete a verificação do seu documento');
   });
 
+  it('rejeita quando o dono da empresa tenta se candidatar à própria vaga', async () => {
+    const job = await createJob();
+    const owner = await db.query.users.findFirst({ where: eq(users.phone, OWNER_PHONE) });
+    if (!owner) throw new Error('owner não encontrado');
+    await db.insert(workerProfiles).values({ userId: owner.id, fullName: 'Dono Testando', kycStatus: 'approved' });
+
+    await expect(createApplication(owner.id, job.id)).rejects.toThrow('própria vaga');
+  });
+
   it('rejeita vaga inexistente', async () => {
     const worker = await createWorker();
 

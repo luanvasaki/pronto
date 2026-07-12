@@ -162,6 +162,32 @@ describe('createJob', () => {
     expect(result.toolsRequired).toBeNull();
   });
 
+  it('offersMeal e offersTransport são false por padrão quando não informados', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+
+    const result = await createJob(owner.id, baseInput(category.id), true);
+
+    expect(result.offersMeal).toBe(false);
+    expect(result.offersTransport).toBe(false);
+  });
+
+  it('salva offersMeal e offersTransport quando a empresa marca os benefícios', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+
+    const result = await createJob(
+      owner.id,
+      { ...baseInput(category.id), offersMeal: true, offersTransport: true },
+      true,
+    );
+
+    expect(result.offersMeal).toBe(true);
+    expect(result.offersTransport).toBe(true);
+  });
+
   it('rejeita quando requiresExperience não é informado', async () => {
     const owner = await createTestCompanyOwner();
     await createTestCompany(owner.id);

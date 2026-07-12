@@ -56,6 +56,8 @@ function NovaVagaForm() {
   const [toolsRequired, setToolsRequired] = useState('');
   const [cnhCategory, setCnhCategory] = useState('');
   const [cnhRequired, setCnhRequired] = useState(false);
+  const [offersMeal, setOffersMeal] = useState(false);
+  const [offersTransport, setOffersTransport] = useState(false);
   const [description, setDescription] = useState('');
   const [addressLabel, setAddressLabel] = useState('');
   const [lat, setLat] = useState<number | null>(null);
@@ -116,6 +118,8 @@ function NovaVagaForm() {
     setToolsRequired(template.toolsRequired ?? '');
     setCnhCategory(template.cnhCategory ?? '');
     setCnhRequired(template.cnhRequired);
+    setOffersMeal(template.offersMeal);
+    setOffersTransport(template.offersTransport);
     setDescription(template.description);
     setAddressLabel(template.addressLabel);
     setLat(template.locationLat);
@@ -196,6 +200,8 @@ function NovaVagaForm() {
           toolsRequired: toolsRequired.trim() || undefined,
           cnhCategory: cnhCategory || undefined,
           cnhRequired,
+          offersMeal,
+          offersTransport,
           addressLabel,
           locationLat: lat,
           locationLng: lng,
@@ -400,6 +406,26 @@ function NovaVagaForm() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
+          <p className="font-heading text-sm font-bold text-text">Benefícios oferecidos</p>
+          <label className="flex items-center gap-2 text-sm font-medium text-text">
+            <input
+              type="checkbox"
+              checked={offersMeal}
+              onChange={(event) => setOffersMeal(event.target.checked)}
+            />
+            Oferece alimentação
+          </label>
+          <label className="flex items-center gap-2 text-sm font-medium text-text">
+            <input
+              type="checkbox"
+              checked={offersTransport}
+              onChange={(event) => setOffersTransport(event.target.checked)}
+            />
+            Oferece transporte
+          </label>
         </div>
 
         <div>

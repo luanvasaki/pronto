@@ -50,6 +50,8 @@ export async function createJob(
       toolsRequired: validated.toolsRequired,
       cnhCategory: validated.cnhCategory,
       cnhRequired: validated.cnhRequired,
+      offersMeal: validated.offersMeal,
+      offersTransport: validated.offersTransport,
       addressLabel: validated.addressLabel,
       locationLat: validated.locationLat,
       locationLng: validated.locationLng,

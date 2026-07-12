@@ -17,6 +17,8 @@ export async function createJobHandler(req: Request, res: Response, next: NextFu
       toolsRequired,
       cnhCategory,
       cnhRequired,
+      offersMeal,
+      offersTransport,
       addressLabel,
       locationLat,
       locationLng,
@@ -34,6 +36,8 @@ export async function createJobHandler(req: Request, res: Response, next: NextFu
       toolsRequired?: string;
       cnhCategory?: string;
       cnhRequired?: boolean;
+      offersMeal?: boolean;
+      offersTransport?: boolean;
       addressLabel?: string;
       locationLat?: number;
       locationLng?: number;
@@ -55,6 +59,8 @@ export async function createJobHandler(req: Request, res: Response, next: NextFu
         toolsRequired,
         cnhCategory,
         cnhRequired,
+        offersMeal,
+        offersTransport,
         addressLabel,
         locationLat,
         locationLng,

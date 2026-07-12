@@ -274,6 +274,13 @@
       "when": 1783817886759,
       "tag": "0038_conscious_thanos",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1783822584138,
+      "tag": "0039_dry_doorman",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,9 @@ export interface JobInput {
   cnhCategory: string | undefined;
   /** Só importa quando `cnhCategory` está preenchido — default false (preferência, não bloqueia). */
   cnhRequired: boolean | undefined;
+  /** Ausente = não oferece (default false, mesmo padrão de requiresExperience). */
+  offersMeal: boolean | undefined;
+  offersTransport: boolean | undefined;
   addressLabel: string | undefined;
   locationLat: number | undefined;
   locationLng: number | undefined;
@@ -30,6 +33,8 @@ export interface ValidatedJobFields {
   toolsRequired: string | null;
   cnhCategory: CnhCategory | null;
   cnhRequired: boolean;
+  offersMeal: boolean;
+  offersTransport: boolean;
   addressLabel: string;
   locationLat: number;
   locationLng: number;
@@ -142,6 +147,8 @@ export function validateJobInput(input: JobInput): ValidatedJobFields {
     toolsRequired: toolsRequired || null,
     cnhCategory,
     cnhRequired: Boolean(cnhCategory) && Boolean(input.cnhRequired),
+    offersMeal: Boolean(input.offersMeal),
+    offersTransport: Boolean(input.offersTransport),
     addressLabel,
     locationLat: input.locationLat,
     locationLng: input.locationLng,

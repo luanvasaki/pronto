@@ -42,6 +42,10 @@ export const jobs = pgTable('jobs', {
   // (mostrada como aviso, mas não impede candidatura).
   cnhCategory: cnhCategoryEnum('cnh_category'),
   cnhRequired: boolean('cnh_required').notNull().default(false),
+  // Benefícios oferecidos — só um "sim/não" pra empresa sinalizar, sem
+  // detalhe (ver comentário nos campos de perguntas padronizadas acima).
+  offersMeal: boolean('offers_meal').notNull().default(false),
+  offersTransport: boolean('offers_transport').notNull().default(false),
   addressLabel: varchar('address_label', { length: 255 }).notNull(),
   locationLat: doublePrecision('location_lat').notNull(),
   locationLng: doublePrecision('location_lng').notNull(),

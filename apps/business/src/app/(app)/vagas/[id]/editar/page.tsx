@@ -39,6 +39,8 @@ export default function EditarVagaPage() {
   const [toolsRequired, setToolsRequired] = useState('');
   const [cnhCategory, setCnhCategory] = useState('');
   const [cnhRequired, setCnhRequired] = useState(false);
+  const [offersMeal, setOffersMeal] = useState(false);
+  const [offersTransport, setOffersTransport] = useState(false);
   const [description, setDescription] = useState('');
   const [addressLabel, setAddressLabel] = useState('');
   const [lat, setLat] = useState<number | null>(null);
@@ -92,6 +94,8 @@ export default function EditarVagaPage() {
         setToolsRequired(job.toolsRequired ?? '');
         setCnhCategory(job.cnhCategory ?? '');
         setCnhRequired(job.cnhRequired);
+        setOffersMeal(job.offersMeal);
+        setOffersTransport(job.offersTransport);
         setDescription(job.description);
         setAddressLabel(job.addressLabel);
         setLat(job.locationLat);
@@ -153,6 +157,8 @@ export default function EditarVagaPage() {
         toolsRequired: toolsRequired.trim() || undefined,
         cnhCategory: cnhCategory || undefined,
         cnhRequired,
+        offersMeal,
+        offersTransport,
         addressLabel,
         locationLat: lat,
         locationLng: lng,
@@ -314,6 +320,26 @@ export default function EditarVagaPage() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
+          <p className="font-heading text-sm font-bold text-text">Benefícios oferecidos</p>
+          <label className="flex items-center gap-2 text-sm font-medium text-text">
+            <input
+              type="checkbox"
+              checked={offersMeal}
+              onChange={(event) => setOffersMeal(event.target.checked)}
+            />
+            Oferece alimentação
+          </label>
+          <label className="flex items-center gap-2 text-sm font-medium text-text">
+            <input
+              type="checkbox"
+              checked={offersTransport}
+              onChange={(event) => setOffersTransport(event.target.checked)}
+            />
+            Oferece transporte
+          </label>
         </div>
 
         <div>

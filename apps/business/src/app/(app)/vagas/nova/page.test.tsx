@@ -83,7 +83,7 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Valor por pessoa (R$)'), '130.00');
   await user.type(screen.getByLabelText('Início'), STARTS_AT);
   await user.type(screen.getByLabelText('Término'), ENDS_AT);
-  await user.click(screen.getByRole('checkbox'));
+  await user.click(screen.getByRole('checkbox', { name: /contratação avulsa/i }));
 }
 
 describe('NovaVagaPage', () => {
@@ -371,7 +371,7 @@ describe('NovaVagaPage', () => {
     await user.type(screen.getByLabelText('Valor por pessoa (R$)'), '130.00');
     await user.type(screen.getByLabelText('Início'), STARTS_AT);
     await user.type(screen.getByLabelText('Término'), ENDS_AT);
-    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('checkbox', { name: /contratação avulsa/i }));
     await user.click(screen.getByRole('button', { name: /^publicar$/i }));
 
     await waitFor(() => expect(createSkillCategoryMock).toHaveBeenCalledWith('Manobrista'));

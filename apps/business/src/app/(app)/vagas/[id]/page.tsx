@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { RatingForm, RatingSummary } from '../../../../components/rating-form';
 import { Avatar } from '../../../../components/ui/avatar';
 import { Button } from '../../../../components/ui/button';
+import { createAnnouncement, JobAnnouncement, listJobAnnouncements } from '../../../../lib/announcements-api';
 import {
   JobApplication,
   listJobApplications,
@@ -14,6 +15,7 @@ import {
   updateApplicationStatus,
 } from '../../../../lib/applications-api';
 import { listMyJobs } from '../../../../lib/jobs-api';
+import { answerQuestion, JobQuestion, listJobQuestions } from '../../../../lib/questions-api';
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Em análise',
@@ -72,6 +74,10 @@ interface RatingDraft {
   comment: string;
 }
 
+function formatDateTime(value: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+}
+
 export default function VagaCandidatosPage() {
   const params = useParams<{ id: string }>();
   const jobId = params.id;
@@ -95,6 +101,16 @@ export default function VagaCandidatosPage() {
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState<{ id: string; message: string } | null>(null);
 
+  const [announcements, setAnnouncements] = useState<JobAnnouncement[]>([]);
+  const [newAnnouncement, setNewAnnouncement] = useState('');
+  const [isPostingAnnouncement, setIsPostingAnnouncement] = useState(false);
+  const [announcementError, setAnnouncementError] = useState<string | null>(null);
+
+  const [questions, setQuestions] = useState<JobQuestion[]>([]);
+  const [answerDrafts, setAnswerDrafts] = useState<Record<string, string>>({});
+  const [answeringId, setAnsweringId] = useState<string | null>(null);
+  const [answerError, setAnswerError] = useState<{ id: string; message: string } | null>(null);
+
   useEffect(() => {
     Promise.all([listJobApplications(jobId), listMyJobs()])
       .then(([applicationsResult, jobsResult]) => {
@@ -104,7 +120,52 @@ export default function VagaCandidatosPage() {
       })
       .catch(() => setError('Não foi possível carregar os candidatos.'))
       .finally(() => setIsLoading(false));
+
+    listJobAnnouncements(jobId)
+      .then((result) => setAnnouncements(result.announcements))
+      .catch(() => undefined);
+
+    listJobQuestions(jobId)
+      .then((result) => setQuestions(result.questions))
+      .catch(() => undefined);
   }, [jobId]);
+
+  async function handlePostAnnouncement(): Promise<void> {
+    const message = newAnnouncement.trim();
+    if (!message || isPostingAnnouncement) return;
+
+    setAnnouncementError(null);
+    setIsPostingAnnouncement(true);
+    try {
+      const announcement = await createAnnouncement(jobId, message);
+      setAnnouncements((current) => [announcement, ...current]);
+      setNewAnnouncement('');
+    } catch (err) {
+      setAnnouncementError(err instanceof ApiError ? err.message : 'Não foi possível publicar o aviso.');
+    } finally {
+      setIsPostingAnnouncement(false);
+    }
+  }
+
+  async function handleAnswerQuestion(questionId: string): Promise<void> {
+    const answer = answerDrafts[questionId]?.trim();
+    if (!answer || answeringId) return;
+
+    setAnswerError(null);
+    setAnsweringId(questionId);
+    try {
+      const updated = await answerQuestion(questionId, answer);
+      setQuestions((current) => current.map((question) => (question.id === questionId ? updated : question)));
+      setAnswerDrafts((current) => ({ ...current, [questionId]: '' }));
+    } catch (err) {
+      setAnswerError({
+        id: questionId,
+        message: err instanceof ApiError ? err.message : 'Não foi possível enviar a resposta.',
+      });
+    } finally {
+      setAnsweringId(null);
+    }
+  }
 
   const positionsFilled = applications.filter((application) => application.status === 'approved').length;
 
@@ -434,6 +495,89 @@ export default function VagaCandidatosPage() {
           </li>
         ))}
       </ul>
+
+      <section className="mt-2 flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
+        <p className="font-heading text-[15px] font-bold text-text">Quadro de avisos</p>
+        <p className="text-[13px] text-text-secondary">
+          Publique avisos pra quem se candidatou — todo mundo que se inscreveu (mesmo já rejeitado ou aprovado)
+          consegue ler, a qualquer momento.
+        </p>
+
+        <textarea
+          rows={2}
+          placeholder="Ex.: o local de encontro mudou, chegar 15 min antes..."
+          value={newAnnouncement}
+          onChange={(event) => setNewAnnouncement(event.target.value)}
+          className="w-full rounded-[14px] border border-border bg-background px-3.5 py-3 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+        />
+        {announcementError && <p className="text-sm text-danger">{announcementError}</p>}
+        <Button
+          type="button"
+          isLoading={isPostingAnnouncement}
+          disabled={newAnnouncement.trim().length === 0}
+          onClick={handlePostAnnouncement}
+        >
+          Publicar aviso
+        </Button>
+
+        {announcements.length > 0 && (
+          <ul className="mt-2 flex flex-col gap-2.5">
+            {announcements.map((announcement) => (
+              <li key={announcement.id} className="rounded-xl bg-background p-3">
+                <p className="text-sm text-text">{announcement.message}</p>
+                <p className="mt-1 text-xs text-text-secondary">{formatDateTime(announcement.createdAt)}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="mt-2 mb-4 flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
+        <p className="font-heading text-[15px] font-bold text-text">Perguntas e respostas</p>
+        <p className="text-[13px] text-text-secondary">
+          Perguntas de quem se candidatou — as respostas ficam visíveis pra todos os inscritos, não só quem
+          perguntou.
+        </p>
+
+        {questions.length === 0 && <p className="text-sm text-text-secondary">Nenhuma pergunta ainda.</p>}
+
+        <ul className="flex flex-col gap-3">
+          {questions.map((question) => (
+            <li key={question.id} className="rounded-xl bg-background p-3">
+              <p className="text-[13px] font-semibold text-text-secondary">{question.worker.fullName}</p>
+              <p className="mt-0.5 text-sm text-text">{question.question}</p>
+
+              {question.answer ? (
+                <div className="mt-2 rounded-lg bg-surface p-2.5">
+                  <p className="text-[13px] font-semibold text-success">Sua resposta</p>
+                  <p className="mt-0.5 text-sm text-text">{question.answer}</p>
+                </div>
+              ) : (
+                <div className="mt-2 flex flex-col gap-2">
+                  <textarea
+                    rows={2}
+                    placeholder="Escreva a resposta..."
+                    value={answerDrafts[question.id] ?? ''}
+                    onChange={(event) =>
+                      setAnswerDrafts((current) => ({ ...current, [question.id]: event.target.value }))
+                    }
+                    className="w-full rounded-[14px] border border-border bg-surface px-3.5 py-3 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+                  />
+                  {answerError?.id === question.id && <p className="text-sm text-danger">{answerError.message}</p>}
+                  <Button
+                    type="button"
+                    isLoading={answeringId === question.id}
+                    disabled={!(answerDrafts[question.id] ?? '').trim()}
+                    onClick={() => handleAnswerQuestion(question.id)}
+                  >
+                    Responder
+                  </Button>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
     </main>
   );
 }

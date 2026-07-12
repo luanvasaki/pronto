@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { applications, jobs, workerProfiles } from '../../db/schema';
+import { applications, companies, jobs, workerProfiles } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { areApplicationsClosed } from '../jobs/applications-close';
 import { satisfiesCnhRequirement } from '../jobs/cnh';
@@ -37,6 +37,18 @@ export async function createApplication(workerId: string, jobId: string): Promis
   if (!job) {
     throw new HttpError(404, 'Vaga não encontrada.');
   }
+
+  // Sem isso, um usuário que é dono da empresa E tem perfil de trabalhador
+  // (mesma conta testando os dois lados) pode se candidatar à própria
+  // vaga — o turno resultante teria workerId === company owner, e
+  // createRating (que decide o papel de quem avalia comparando
+  // shift.workerId com quem chama) não conseguiria mais distinguir "a
+  // empresa avaliando" de "o trabalhador avaliando".
+  const jobCompany = await db.query.companies.findFirst({ where: eq(companies.id, job.companyId) });
+  if (jobCompany?.ownerUserId === workerId) {
+    throw new HttpError(400, 'Você não pode se candidatar à própria vaga.');
+  }
+
   if (job.status !== 'open' || job.positionsFilled >= job.positionsTotal) {
     throw new HttpError(400, 'Essa vaga não está mais aceitando candidaturas.');
   }

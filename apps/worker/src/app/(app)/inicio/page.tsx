@@ -420,6 +420,16 @@ export default function InicioPage() {
                     CNH {job.cnhCategory} {job.cnhRequired ? 'obrigatória' : '(preferência)'}
                   </span>
                 )}
+                {job.offersMeal && (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[12.5px] font-semibold text-text">
+                    Alimentação
+                  </span>
+                )}
+                {job.offersTransport && (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[12.5px] font-semibold text-text">
+                    Transporte
+                  </span>
+                )}
               </div>
 
               {!job.matchesSkills && (

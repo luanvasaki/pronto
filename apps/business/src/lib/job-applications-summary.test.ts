@@ -18,6 +18,8 @@ function makeJob(id: string): Job {
     toolsRequired: null,
     cnhCategory: null,
     cnhRequired: false,
+    offersMeal: false,
+    offersTransport: false,
     addressLabel: '',
     locationLat: 0,
     locationLng: 0,

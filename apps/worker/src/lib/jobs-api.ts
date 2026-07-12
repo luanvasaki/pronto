@@ -9,6 +9,8 @@ export interface Job {
   toolsRequired: string | null;
   cnhCategory: string | null;
   cnhRequired: boolean;
+  offersMeal: boolean;
+  offersTransport: boolean;
   addressLabel: string;
   locationLat: number;
   locationLng: number;

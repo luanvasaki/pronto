@@ -5,6 +5,8 @@ export * from './companies';
 export * from './company-documents';
 export * from './skill-categories';
 export * from './jobs';
+export * from './job-announcements';
+export * from './job-questions';
 export * from './applications';
 export * from './shifts';
 export * from './ratings';
