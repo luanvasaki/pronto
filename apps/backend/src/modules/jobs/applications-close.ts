@@ -10,6 +10,11 @@ export function getApplicationsCloseAt(job: { startsAt: Date; applicationsCloseA
   return job.applicationsCloseAt ?? new Date(job.startsAt.getTime() - DEFAULT_APPLICATIONS_CLOSE_BEFORE_MS);
 }
 
+// `.getTime()`/`Date.now()` são sempre milissegundos desde o epoch em
+// UTC, não importa o fuso configurado no processo Node ou no Postgres
+// — comparar por aqui (em vez de por string formatada) já é imune a
+// qualquer diferença de fuso entre servidor e banco, sem precisar de
+// nenhum cuidado extra.
 export function areApplicationsClosed(job: { startsAt: Date; applicationsCloseAt: Date | null }): boolean {
   return getApplicationsCloseAt(job).getTime() <= Date.now();
 }

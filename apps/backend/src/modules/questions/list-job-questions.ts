@@ -1,13 +1,15 @@
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { asc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { applications, companies, jobQuestions, jobs, workerProfiles } from '../../db/schema';
+import { jobQuestions, jobs, workerProfiles } from '../../db/schema';
+import { assertCanViewJob } from '../../shared/assert-can-view-job';
 import { HttpError } from '../../shared/errors/http-error';
 import { JobQuestionResponse, toQuestionResponse } from './question-response';
 
 /**
  * Acesso: dono da empresa da vaga OU qualquer inscrito (qualquer
- * status) — mesma regra de list-job-announcements.ts. As perguntas
- * são públicas entre todos os inscritos, não só de quem perguntou.
+ * status) — mesma regra de list-job-announcements.ts (ver
+ * assert-can-view-job.ts). As perguntas são públicas entre todos os
+ * inscritos, não só de quem perguntou.
  */
 export async function listJobQuestions(userId: string, jobId: string): Promise<JobQuestionResponse[]> {
   const job = await db.query.jobs.findFirst({ where: eq(jobs.id, jobId) });
@@ -15,17 +17,7 @@ export async function listJobQuestions(userId: string, jobId: string): Promise<J
     throw new HttpError(404, 'Vaga não encontrada.');
   }
 
-  const company = await db.query.companies.findFirst({ where: eq(companies.id, job.companyId) });
-  const isOwner = company?.ownerUserId === userId;
-
-  if (!isOwner) {
-    const application = await db.query.applications.findFirst({
-      where: and(eq(applications.jobId, jobId), eq(applications.workerId, userId)),
-    });
-    if (!application) {
-      throw new HttpError(403, 'Você não tem acesso a essa vaga.');
-    }
-  }
+  await assertCanViewJob(userId, jobId, job.companyId);
 
   const rows = await db.query.jobQuestions.findMany({
     where: eq(jobQuestions.jobId, jobId),
