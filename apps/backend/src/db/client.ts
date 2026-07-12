@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { env } from '../config/env';
 import * as schema from './schema';
+import { stripSslModeParam } from './strip-ssl-mode-param';
 
 /**
  * Postgres local (Homebrew) não fala TLS — só bancos remotos (Neon,
@@ -13,9 +14,10 @@ function isLocalHost(hostname: string): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1';
 }
 
-const databaseHost = new URL(env.databaseUrl).hostname;
+const databaseUrl = stripSslModeParam(env.databaseUrl);
+const databaseHost = new URL(databaseUrl).hostname;
 const pool = new Pool({
-  connectionString: env.databaseUrl,
+  connectionString: databaseUrl,
   ssl: isLocalHost(databaseHost) ? undefined : { rejectUnauthorized: true },
 });
 
