@@ -151,6 +151,21 @@ export default function PainelPage() {
     <div className="flex flex-col gap-8">
       {error && <p className="text-sm text-danger">{error}</p>}
 
+      {jobs.length === 0 && !error && (
+        <div className="rounded-[18px] border border-dashed border-border p-6 text-center">
+          <p className="font-heading text-[17px] font-bold text-text">Você ainda não publicou nenhuma escala</p>
+          <p className="mt-1.5 text-[13.5px] text-text-secondary">
+            Publique sua primeira vaga pra começar a receber candidatos.
+          </p>
+          <Link
+            href="/vagas/nova"
+            className="mt-4 inline-flex items-center justify-center rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-90 active:brightness-75"
+          >
+            Publicar vaga
+          </Link>
+        </div>
+      )}
+
       {pendingRatingRows.length > 0 && (
         <div className="rounded-[18px] border border-warning/30 bg-warning/10 p-4">
           <p className="font-heading text-[15px] font-bold text-warning">

@@ -91,6 +91,24 @@ describe('PainelPage', () => {
     vi.useRealTimers();
   });
 
+  it('mostra chamada pra ação quando a empresa ainda não publicou nenhuma vaga', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [] });
+
+    renderPainel();
+
+    expect(await screen.findByText('Você ainda não publicou nenhuma escala')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Publicar vaga' })).toHaveAttribute('href', '/vagas/nova');
+  });
+
+  it('não mostra a chamada pra ação quando já existe alguma vaga', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+
+    renderPainel();
+
+    await screen.findByText('Escalas abertas');
+    expect(screen.queryByText('Você ainda não publicou nenhuma escala')).not.toBeInTheDocument();
+  });
+
   it('mostra o total investido no mês e escalas preenchidas na semana nas estatísticas', async () => {
     listMyJobsMock.mockResolvedValue({ jobs: [{ ...JOB, status: 'filled', positionsFilled: 4 }] });
 
