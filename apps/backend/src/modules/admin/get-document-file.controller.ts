@@ -31,6 +31,11 @@ export async function getDocumentFileHandler(req: Request, res: Response, next: 
 
     const file = await fileStorage.read(document.fileUrl);
     res.setHeader('Content-Type', file.contentType);
+    // Content-Type acima já vem de detecção real de bytes (ver
+    // image-signature.ts), não do que foi declarado no upload — isso
+    // aqui é defesa extra pra impedir o navegador de tentar "adivinhar"
+    // um tipo diferente do declarado (MIME sniffing).
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.send(file.buffer);
   } catch (error) {
     next(error);

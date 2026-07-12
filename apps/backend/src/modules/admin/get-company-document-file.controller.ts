@@ -26,6 +26,7 @@ export async function getCompanyDocumentFileHandler(
 
     const file = await fileStorage.read(document.fileUrl);
     res.setHeader('Content-Type', file.contentType);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.send(file.buffer);
   } catch (error) {
     next(error);
