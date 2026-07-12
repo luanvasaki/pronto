@@ -2,25 +2,10 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, companies, jobs, workerProfiles } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
+import { isUniqueViolation } from '../../shared/is-unique-violation';
 import { areApplicationsClosed } from '../jobs/applications-close';
 import { satisfiesCnhRequirement } from '../jobs/cnh';
 import { ApplicationResponse, toApplicationResponse } from './application-response';
-
-/**
- * A checagem de duplicata abaixo previne o caso comum, mas não fecha a
- * corrida entre duas requisições simultâneas (duplo clique, rede
- * lenta) — as duas passam pela checagem antes de qualquer insert
- * terminar. O índice único do banco pega isso de verdade; aqui só
- * traduz o erro cru do Postgres pra mensagem amigável.
- */
-function isUniqueViolation(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-  const code = (error as { code?: unknown }).code;
-  const causeCode = (error.cause as { code?: unknown } | undefined)?.code;
-  return code === '23505' || causeCode === '23505';
-}
 
 export async function createApplication(workerId: string, jobId: string): Promise<ApplicationResponse> {
   const profile = await db.query.workerProfiles.findFirst({

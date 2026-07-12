@@ -2,22 +2,13 @@ import { eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { users } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
+import { isUniqueViolation } from '../../shared/is-unique-violation';
 import { GoogleTokenVerifier } from './google-token-verifier';
 import { IssuedTokens, issueTokens } from './issue-tokens';
 import { toUserResponse, UserResponse } from './user-response';
 
 export interface GoogleLoginResult extends IssuedTokens {
   user: UserResponse;
-}
-
-/** Mesmo motivo/padrão de register.ts — fecha a corrida de dois logins Google simultâneos criando conta nova. */
-function isUniqueViolation(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-  const code = (error as { code?: unknown }).code;
-  const causeCode = (error.cause as { code?: unknown } | undefined)?.code;
-  return code === '23505' || causeCode === '23505';
 }
 
 /**

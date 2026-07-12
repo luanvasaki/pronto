@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { companies, jobs, shifts } from '../../db/schema';
+import { jobs, shifts } from '../../db/schema';
+import { assertOwnsCompany } from '../../shared/assert-owns-company';
 import { HttpError } from '../../shared/errors/http-error';
 
 export interface SkipRatingResult {
@@ -27,10 +28,7 @@ export async function skipCompanyRating(ownerUserId: string, shiftId: string): P
     throw new HttpError(404, 'Vaga não encontrada.');
   }
 
-  const company = await db.query.companies.findFirst({ where: eq(companies.id, job.companyId) });
-  if (!company || company.ownerUserId !== ownerUserId) {
-    throw new HttpError(403, 'Você não tem acesso a esse turno.');
-  }
+  await assertOwnsCompany(ownerUserId, job.companyId, 'Você não tem acesso a esse turno.');
 
   if (shift.status !== 'completed') {
     throw new HttpError(400, 'Só é possível ignorar a avaliação de turnos concluídos.');

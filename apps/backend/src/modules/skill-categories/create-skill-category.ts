@@ -2,20 +2,11 @@ import { eq, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies, skillCategories, workerProfiles } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
+import { isUniqueViolation } from '../../shared/is-unique-violation';
 
 export interface SkillCategoryResult {
   id: string;
   name: string;
-}
-
-/** Mesmo motivo/padrão de create-application.ts — fecha a corrida de dois pedidos simultâneos da mesma categoria nova. */
-function isUniqueViolation(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-  const code = (error as { code?: unknown }).code;
-  const causeCode = (error.cause as { code?: unknown } | undefined)?.code;
-  return code === '23505' || causeCode === '23505';
 }
 
 /**

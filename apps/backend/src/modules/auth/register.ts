@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { users } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
+import { isUniqueViolation } from '../../shared/is-unique-violation';
 import { isValidEmail } from './email';
 import { IssuedTokens, issueTokens } from './issue-tokens';
 import { hashPassword, isValidPassword } from './password';
@@ -9,23 +10,6 @@ import { toUserResponse, UserResponse } from './user-response';
 
 export interface RegisterResult extends IssuedTokens {
   user: UserResponse;
-}
-
-/**
- * A checagem de "já existe" acima previne o caso comum, mas não fecha a
- * corrida entre dois registros simultâneos com o mesmo e-mail (duplo
- * clique, aba duplicada) — as duas passam pela checagem antes de
- * qualquer insert terminar. O índice único do banco pega isso de
- * verdade; aqui só traduz o erro cru do Postgres pra mensagem amigável,
- * mesmo padrão de create-application.ts.
- */
-function isUniqueViolation(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-  const code = (error as { code?: unknown }).code;
-  const causeCode = (error.cause as { code?: unknown } | undefined)?.code;
-  return code === '23505' || causeCode === '23505';
 }
 
 export async function register(

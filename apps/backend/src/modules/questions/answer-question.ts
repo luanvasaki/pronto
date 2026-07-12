@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { companies, jobQuestions, jobs, workerProfiles } from '../../db/schema';
+import { jobQuestions, jobs, workerProfiles } from '../../db/schema';
+import { assertOwnsCompany } from '../../shared/assert-owns-company';
 import { containsPhoneNumber } from '../../shared/validation/contains-phone-number';
 import { HttpError } from '../../shared/errors/http-error';
 import { JobQuestionResponse, toQuestionResponse } from './question-response';
@@ -21,10 +22,7 @@ export async function answerQuestion(
     throw new HttpError(404, 'Vaga não encontrada.');
   }
 
-  const company = await db.query.companies.findFirst({ where: eq(companies.id, job.companyId) });
-  if (!company || company.ownerUserId !== ownerUserId) {
-    throw new HttpError(403, 'Você não tem acesso a essa vaga.');
-  }
+  await assertOwnsCompany(ownerUserId, job.companyId, 'Você não tem acesso a essa vaga.');
 
   const trimmed = answer?.trim();
   if (!trimmed) {

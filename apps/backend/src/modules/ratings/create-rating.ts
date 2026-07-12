@@ -2,25 +2,10 @@ import { eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies, jobs, ratings, shifts } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
+import { isUniqueViolation } from '../../shared/is-unique-violation';
 import { categoriesForRater } from './rating-categories';
 import { RatingResponse, toRatingResponse } from './rating-response';
 import { updateCompanyRatingAggregate, updateWorkerRatingAggregate } from './update-rating-aggregates';
-
-/**
- * A checagem de duplicata abaixo previne o caso comum, mas não fecha a
- * corrida entre duas requisições simultâneas — o índice único
- * `ratings_shift_id_rater_role_unique` pega isso de verdade; aqui só
- * traduz o erro cru do Postgres pra mensagem amigável (mesmo padrão de
- * create-application.ts).
- */
-function isUniqueViolation(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-  const code = (error as { code?: unknown }).code;
-  const causeCode = (error.cause as { code?: unknown } | undefined)?.code;
-  return code === '23505' || causeCode === '23505';
-}
 
 export interface CreateRatingInput {
   categoryScores: Record<string, number> | undefined;

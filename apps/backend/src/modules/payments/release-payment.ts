@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { companies, jobs, payments, shifts } from '../../db/schema';
+import { jobs, payments, shifts } from '../../db/schema';
+import { assertOwnsCompany } from '../../shared/assert-owns-company';
 import { HttpError } from '../../shared/errors/http-error';
 import { PaymentGateway } from './payment-gateway';
 import { PaymentResponse, toPaymentResponse } from './payment-response';
@@ -26,10 +27,7 @@ export async function releasePayment(
     throw new HttpError(404, 'Vaga não encontrada.');
   }
 
-  const company = await db.query.companies.findFirst({ where: eq(companies.id, job.companyId) });
-  if (!company || company.ownerUserId !== ownerUserId) {
-    throw new HttpError(403, 'Você não tem acesso a esse turno.');
-  }
+  await assertOwnsCompany(ownerUserId, job.companyId, 'Você não tem acesso a esse turno.');
 
   const payment = await db.query.payments.findFirst({ where: eq(payments.shiftId, shiftId) });
   if (!payment) {

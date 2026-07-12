@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { companies, jobs, skillCategories } from '../../db/schema';
+import { jobs, skillCategories } from '../../db/schema';
+import { assertOwnsCompany } from '../../shared/assert-owns-company';
 import { HttpError } from '../../shared/errors/http-error';
 import { JobInput, validateJobInput } from './job-input-validation';
 import { JobResponse, toJobResponse } from './job-response';
@@ -25,10 +26,7 @@ export async function updateJob(
     throw new HttpError(404, 'Vaga não encontrada.');
   }
 
-  const company = await db.query.companies.findFirst({ where: eq(companies.id, job.companyId) });
-  if (!company || company.ownerUserId !== ownerUserId) {
-    throw new HttpError(403, 'Você não tem acesso a essa vaga.');
-  }
+  await assertOwnsCompany(ownerUserId, job.companyId, 'Você não tem acesso a essa vaga.');
 
   if (job.status !== 'open') {
     throw new HttpError(400, 'Só é possível editar vagas abertas.');
