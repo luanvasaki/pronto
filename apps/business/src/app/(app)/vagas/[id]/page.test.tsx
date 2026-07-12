@@ -29,6 +29,11 @@ vi.mock('../../../../lib/applications-api', () => ({
   removeApprovedWorker: (...args: unknown[]) => removeApprovedWorkerMock(...args),
 }));
 
+const listMyJobsMock = vi.fn();
+vi.mock('../../../../lib/jobs-api', () => ({
+  listMyJobs: (...args: unknown[]) => listMyJobsMock(...args),
+}));
+
 const PENDING_APPLICATION = {
   id: 'app-1',
   status: 'pending',
@@ -87,6 +92,8 @@ describe('VagaCandidatosPage', () => {
     rateShiftMock.mockReset();
     releasePaymentMock.mockReset();
     removeApprovedWorkerMock.mockReset();
+    listMyJobsMock.mockReset();
+    listMyJobsMock.mockResolvedValue({ jobs: [] });
   });
 
   it('mostra estado vazio quando não há candidatos', async () => {
@@ -398,6 +405,23 @@ describe('VagaCandidatosPage', () => {
       ),
     );
     expect(await screen.findByText('Você avaliou: 5 de 5.')).toBeInTheDocument();
+  });
+
+  it('mostra quantas vagas já foram preenchidas', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [
+        { ...PENDING_APPLICATION, id: 'app-1', status: 'approved' },
+        { ...PENDING_APPLICATION, id: 'app-2', status: 'approved' },
+        { ...PENDING_APPLICATION, id: 'app-3', status: 'pending' },
+      ],
+    });
+    listMyJobsMock.mockResolvedValue({
+      jobs: [{ id: 'job-1', positionsTotal: 4, positionsFilled: 2 }],
+    });
+
+    render(<VagaCandidatosPage />);
+
+    expect(await screen.findByText('2 de 4 vagas preenchidas')).toBeInTheDocument();
   });
 
   it('não mostra o formulário quando o turno já foi avaliado', async () => {
