@@ -16,5 +16,5 @@ jobsRoutes.post('/jobs', requireAuth, writeRateLimiter, createJobHandler);
 jobsRoutes.get('/jobs/mine', requireAuth, listMyJobsHandler);
 jobsRoutes.get('/jobs/nearby', requireAuth, listNearbyJobsHandler);
 jobsRoutes.get('/jobs/:id', requireAuth, getJobDetailHandler);
-jobsRoutes.patch('/jobs/:id', requireAuth, updateJobHandler);
-jobsRoutes.post('/jobs/:id/cancel', requireAuth, cancelJobHandler);
+jobsRoutes.patch('/jobs/:id', requireAuth, writeRateLimiter, updateJobHandler);
+jobsRoutes.post('/jobs/:id/cancel', requireAuth, writeRateLimiter, cancelJobHandler);
