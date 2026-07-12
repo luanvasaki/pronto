@@ -35,6 +35,7 @@ export interface JobApplication {
     checkOutAt: string | null;
     payment: Payment | null;
     ratings: ShiftRatings;
+    companyRatingSkippedAt: string | null;
   } | null;
 }
 
@@ -68,4 +69,13 @@ export function releasePayment(shiftId: string): Promise<Payment> {
   return apiFetch(`/shifts/${shiftId}/payment/release`, {
     method: 'POST',
   });
+}
+
+export interface SkipRatingResult {
+  shiftId: string;
+  companyRatingSkippedAt: string;
+}
+
+export function skipRating(shiftId: string): Promise<SkipRatingResult> {
+  return apiFetch(`/shifts/${shiftId}/skip-rating`, { method: 'PATCH' });
 }

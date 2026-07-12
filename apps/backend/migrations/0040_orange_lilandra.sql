@@ -1,0 +1,1 @@
+ALTER TABLE "shifts" ADD COLUMN "company_rating_skipped_at" timestamp with time zone;

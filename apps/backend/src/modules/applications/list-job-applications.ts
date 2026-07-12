@@ -32,6 +32,8 @@ export interface JobApplicationResponse {
     checkOutAt: Date | null;
     payment: PaymentResponse | null;
     ratings: ShiftRatings;
+    /** Empresa optou por não avaliar — ver skip-company-rating.ts. Null = ainda não decidiu. */
+    companyRatingSkippedAt: Date | null;
   } | null;
 }
 
@@ -143,6 +145,7 @@ export async function listJobApplications(
                 shift.checkOutAt,
                 'company',
               ),
+              companyRatingSkippedAt: shift.companyRatingSkippedAt,
             }
           : null,
       },

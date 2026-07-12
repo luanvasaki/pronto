@@ -12,6 +12,7 @@ import {
   listJobApplications,
   releasePayment,
   removeApprovedWorker,
+  skipRating,
   updateApplicationStatus,
 } from '../../../../lib/applications-api';
 import { listMyJobs } from '../../../../lib/jobs-api';
@@ -96,6 +97,14 @@ export default function VagaCandidatosPage() {
 
   const [releasingShiftId, setReleasingShiftId] = useState<string | null>(null);
   const [releaseError, setReleaseError] = useState<{ shiftId: string; message: string } | null>(null);
+
+  const [skippingRatingShiftId, setSkippingRatingShiftId] = useState<string | null>(null);
+  const [skipRatingError, setSkipRatingError] = useState<{ shiftId: string; message: string } | null>(null);
+  // Depois de ignorada, a pessoa ainda pode mudar de ideia e avaliar —
+  // esse set só controla se o formulário volta a aparecer nessa sessão,
+  // não desfaz o skip no backend (a avaliação em si sobrescreve o que
+  // importa quando enviada).
+  const [showFormAfterSkip, setShowFormAfterSkip] = useState<Set<string>>(new Set());
 
   const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -252,6 +261,33 @@ export default function VagaCandidatosPage() {
     } finally {
       setRatingSubmittingId(null);
     }
+  }
+
+  async function handleSkipRating(applicationId: string, shiftId: string): Promise<void> {
+    setSkipRatingError(null);
+    setSkippingRatingShiftId(shiftId);
+
+    try {
+      const result = await skipRating(shiftId);
+      setApplications((current) =>
+        current.map((application) =>
+          application.id === applicationId && application.shift
+            ? { ...application, shift: { ...application.shift, companyRatingSkippedAt: result.companyRatingSkippedAt } }
+            : application,
+        ),
+      );
+    } catch (err) {
+      setSkipRatingError({
+        shiftId,
+        message: err instanceof ApiError ? err.message : 'Não foi possível ignorar a avaliação.',
+      });
+    } finally {
+      setSkippingRatingShiftId(null);
+    }
+  }
+
+  function handleShowFormAfterSkip(shiftId: string): void {
+    setShowFormAfterSkip((current) => new Set(current).add(shiftId));
   }
 
   async function handleReleasePayment(applicationId: string, shiftId: string): Promise<void> {
@@ -479,19 +515,50 @@ export default function VagaCandidatosPage() {
               <RatingSummary rating={application.shift.ratings.company} categories={WORKER_RATING_CATEGORIES} />
             )}
 
-            {application.shift?.status === 'completed' && !application.shift.ratings.company && (
-              <RatingForm
-                title="Avaliar o trabalhador"
-                categories={WORKER_RATING_CATEGORIES}
-                scores={ratingDrafts[application.shift.id]?.scores ?? {}}
-                comment={ratingDrafts[application.shift.id]?.comment ?? ''}
-                onChangeScore={(categoryId, score) => setRatingScore(application.shift!.id, categoryId, score)}
-                onChangeComment={(comment) => setRatingComment(application.shift!.id, comment)}
-                onSubmit={() => handleRate(application.id, application.shift!.id)}
-                isSubmitting={ratingSubmittingId === application.shift.id}
-                error={ratingError?.shiftId === application.shift.id ? ratingError.message : undefined}
-              />
-            )}
+            {application.shift?.status === 'completed' &&
+              !application.shift.ratings.company &&
+              application.shift.companyRatingSkippedAt &&
+              !showFormAfterSkip.has(application.shift.id) && (
+                <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-dashed border-border p-3">
+                  <p className="text-sm text-text-secondary">Você optou por não avaliar esse profissional.</p>
+                  <button
+                    type="button"
+                    onClick={() => handleShowFormAfterSkip(application.shift!.id)}
+                    className="w-fit text-sm font-semibold text-primary underline underline-offset-2"
+                  >
+                    Avaliar mesmo assim
+                  </button>
+                </div>
+              )}
+
+            {application.shift?.status === 'completed' &&
+              !application.shift.ratings.company &&
+              (!application.shift.companyRatingSkippedAt || showFormAfterSkip.has(application.shift.id)) && (
+                <>
+                  <RatingForm
+                    title="Avaliar o trabalhador"
+                    categories={WORKER_RATING_CATEGORIES}
+                    scores={ratingDrafts[application.shift.id]?.scores ?? {}}
+                    comment={ratingDrafts[application.shift.id]?.comment ?? ''}
+                    onChangeScore={(categoryId, score) => setRatingScore(application.shift!.id, categoryId, score)}
+                    onChangeComment={(comment) => setRatingComment(application.shift!.id, comment)}
+                    onSubmit={() => handleRate(application.id, application.shift!.id)}
+                    isSubmitting={ratingSubmittingId === application.shift.id}
+                    error={ratingError?.shiftId === application.shift.id ? ratingError.message : undefined}
+                  />
+                  {skipRatingError?.shiftId === application.shift.id && (
+                    <p className="mt-1.5 text-sm text-danger">{skipRatingError.message}</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleSkipRating(application.id, application.shift!.id)}
+                    disabled={skippingRatingShiftId === application.shift.id}
+                    className="mt-1.5 w-fit text-sm text-text-secondary underline underline-offset-2 disabled:opacity-50"
+                  >
+                    {skippingRatingShiftId === application.shift.id ? 'Ignorando...' : 'Agora não'}
+                  </button>
+                </>
+              )}
           </li>
         ))}
       </ul>

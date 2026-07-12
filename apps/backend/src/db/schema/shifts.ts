@@ -52,6 +52,10 @@ export const shifts = pgTable(
     checkOutAt: timestamp('check_out_at', { withTimezone: true }),
     checkOutLat: doublePrecision('check_out_lat'),
     checkOutLng: doublePrecision('check_out_lng'),
+    // Preenchido quando a empresa opta por não avaliar esse turno — some
+    // o formulário de avaliação sem exigir uma nota. Não impede avaliar
+    // depois (só é lido quando `ratings.company` ainda está vazio).
+    companyRatingSkippedAt: timestamp('company_rating_skipped_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

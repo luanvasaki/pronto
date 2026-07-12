@@ -124,7 +124,7 @@ export default function EditarVagaPage() {
   const missingFields: string[] = [];
   if (categoryId === '') missingFields.push('categoria');
   if (requiresExperience === null) missingFields.push('exigência de experiência');
-  if (description.trim().length < 10) missingFields.push('descrição');
+  if (description.trim().length < 10) missingFields.push('descrição (mínimo 10 caracteres)');
   if (addressLabel.trim().length < 2) missingFields.push('endereço');
   if (lat === null || lng === null) missingFields.push('localização (clique em "Usar minha localização atual")');
   if (!Number.isInteger(positionsTotalNumber) || positionsTotalNumber < 1) missingFields.push('número de vagas');
@@ -353,6 +353,7 @@ export default function EditarVagaPage() {
             onChange={(event) => setDescription(event.target.value)}
             className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
           />
+          <p className="mt-1.5 text-xs text-text-secondary">Mínimo de 10 caracteres.</p>
         </div>
 
         <div>
