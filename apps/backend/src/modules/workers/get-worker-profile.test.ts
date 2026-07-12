@@ -167,6 +167,31 @@ describe('getWorkerProfile', () => {
     expect(result.hasSelfie).toBe(true);
   });
 
+  it('indica hasCnhDocument separado dos outros types', async () => {
+    const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await upsertWorkerProfile(user.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      photoUrl: undefined,
+      bio: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
+      cnhCategory: 'B',
+    });
+
+    const beforeUpload = await getWorkerProfile(user.id);
+    expect(beforeUpload.hasCnhDocument).toBe(false);
+
+    await db.insert(documents).values({ workerId: user.id, fileUrl: 'documents/fake-cnh.pdf', type: 'cnh' });
+
+    const afterUpload = await getWorkerProfile(user.id);
+    expect(afterUpload.hasCnhDocument).toBe(true);
+    expect(afterUpload.hasDocument).toBe(false);
+    expect(afterUpload.hasSelfie).toBe(false);
+  });
+
   it('calcula turnos completados e horas trabalhadas ao vivo, a partir dos turnos de verdade', async () => {
     const [worker] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();

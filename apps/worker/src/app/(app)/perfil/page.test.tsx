@@ -51,6 +51,7 @@ const BASE_PROFILE: WorkerProfileDetails = {
   kycStatus: 'approved',
   hasDocument: true,
   hasSelfie: true,
+  hasCnhDocument: false,
   avgRating: '4.5',
   avgCategoryScores: { pontualidade: '4.7', educacao: '4.3' },
   totalShiftsCompleted: 3,

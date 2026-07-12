@@ -5,16 +5,26 @@ import { FormEvent, useEffect, useState } from 'react';
 import { ApiError } from '@shift/shared';
 import { Button } from '../../../components/ui/button';
 import { Logo } from '../../../components/ui/logo';
-import { getWorkerProfile, uploadWorkerDocument, uploadWorkerSelfie } from '../../../lib/worker-profile-api';
+import {
+  getWorkerProfile,
+  uploadWorkerCnhDocument,
+  uploadWorkerDocument,
+  uploadWorkerSelfie,
+} from '../../../lib/worker-profile-api';
 
 export default function DocumentoPage() {
   const router = useRouter();
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
+  const [cnhFile, setCnhFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [documentUploaded, setDocumentUploaded] = useState(false);
   const [selfieUploaded, setSelfieUploaded] = useState(false);
+  const [cnhUploaded, setCnhUploaded] = useState(false);
+  // Preenchido no cadastro anterior — só quem declarou ter CNH precisa
+  // comprovar com o PDF da CNH Digital aqui.
+  const [needsCnh, setNeedsCnh] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
 
   // Cobre não só "tentar de novo depois de um erro" (mesmo carregamento
@@ -26,16 +36,18 @@ export default function DocumentoPage() {
       .then((profile) => {
         setDocumentUploaded(profile.hasDocument);
         setSelfieUploaded(profile.hasSelfie);
+        setCnhUploaded(profile.hasCnhDocument);
+        setNeedsCnh(Boolean(profile.cnhCategory));
       })
       .catch(() => undefined)
       .finally(() => setIsCheckingStatus(false));
   }, []);
 
-  const isValid = Boolean(documentFile && selfieFile);
+  const isValid = Boolean(documentFile && selfieFile && (!needsCnh || cnhFile));
 
-  // Se a selfie falhar depois do documento já ter subido, tentar de novo
-  // não pode reenviar o documento — cada envio cria uma linha nova (sem
-  // upsert), e reenviar duplicaria o documento pendente de revisão.
+  // Se algum envio falhar depois de outro já ter subido, tentar de novo
+  // não pode reenviar o que já deu certo — cada envio cria uma linha
+  // nova (sem upsert), e reenviar duplicaria o documento pendente de revisão.
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
     if (!isValid || isSubmitting || isCheckingStatus) return;
@@ -51,6 +63,10 @@ export default function DocumentoPage() {
       if (!selfieUploaded) {
         await uploadWorkerSelfie(selfieFile!);
         setSelfieUploaded(true);
+      }
+      if (needsCnh && !cnhUploaded) {
+        await uploadWorkerCnhDocument(cnhFile!);
+        setCnhUploaded(true);
       }
       router.push('/inicio');
     } catch (err) {
@@ -106,6 +122,28 @@ export default function DocumentoPage() {
             Uma foto do seu rosto, pra comparar com o documento e confirmar que é você mesmo.
           </p>
         </div>
+
+        {needsCnh && (
+          <div>
+            <label
+              htmlFor="cnh"
+              className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary transition hover:border-primary"
+            >
+              {cnhFile ? cnhFile.name : 'Toque para escolher o PDF da CNH Digital'}
+              <input
+                id="cnh"
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(event) => setCnhFile(event.target.files?.[0] ?? null)}
+              />
+            </label>
+            <p className="mt-1.5 text-xs text-text-secondary">
+              Você indicou que tem CNH — envie o PDF da CNH Digital (baixado no app oficial do governo, não
+              uma foto) pra confirmar a categoria.
+            </p>
+          </div>
+        )}
 
         {error && <p className="text-sm text-danger">{error}</p>}
 

@@ -260,6 +260,20 @@
       "when": 1783800200851,
       "tag": "0036_majestic_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1783817000000,
+      "tag": "0037_tense_hercules",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1783817886759,
+      "tag": "0038_conscious_thanos",
+      "breakpoints": true
     }
   ]
 }

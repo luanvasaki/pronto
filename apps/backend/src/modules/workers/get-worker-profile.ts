@@ -22,6 +22,7 @@ export interface WorkerProfileDetails {
   kycStatus: string;
   hasDocument: boolean;
   hasSelfie: boolean;
+  hasCnhDocument: boolean;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
   totalShiftsCompleted: number;
@@ -48,6 +49,7 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
   const workerDocuments = await db.query.documents.findMany({ where: eq(documents.workerId, userId) });
   const hasDocument = workerDocuments.some((document) => document.type === 'identity');
   const hasSelfie = workerDocuments.some((document) => document.type === 'selfie');
+  const hasCnhDocument = workerDocuments.some((document) => document.type === 'cnh');
 
   // "Horas de voo": calculadas ao vivo a partir dos turnos concluídos —
   // as colunas `totalShiftsCompleted`/`totalNoShows` de `worker_profiles`
@@ -109,6 +111,7 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
     kycStatus: profile.kycStatus,
     hasDocument,
     hasSelfie,
+    hasCnhDocument,
     avgRating: profile.avgRating,
     avgCategoryScores: profile.avgCategoryScores ?? null,
     totalShiftsCompleted,

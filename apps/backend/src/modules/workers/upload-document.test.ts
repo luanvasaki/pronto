@@ -100,6 +100,24 @@ describe('uploadDocument', () => {
     expect(result.type).toBe('selfie');
   });
 
+  it('grava a CNH digital com o type correto quando é PDF', async () => {
+    const user = await createTestUser();
+    await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Beatriz Nunes' });
+    const file = { buffer: Buffer.from('%PDF-1.4\n...'), mimetype: 'application/pdf', size: 12 };
+
+    const result = await uploadDocument(user.id, file, storage, 'cnh');
+
+    expect(result.type).toBe('cnh');
+  });
+
+  it('rejeita foto como CNH — só aceita o PDF da CNH Digital', async () => {
+    const user = await createTestUser();
+    await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Beatriz Nunes' });
+    const file = { buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9]), mimetype: 'image/jpeg', size: 4 };
+
+    await expect(uploadDocument(user.id, file, storage, 'cnh')).rejects.toThrow('PDF da CNH Digital');
+  });
+
   it('rejeita PDF como selfie', async () => {
     const user = await createTestUser();
     await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Beatriz Nunes' });

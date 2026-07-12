@@ -55,6 +55,7 @@ const PROFILE = {
   kycStatus: 'approved',
   hasDocument: true,
   hasSelfie: true,
+  hasCnhDocument: false,
   avgRating: '4.8',
   avgCategoryScores: null,
   totalShiftsCompleted: 10,

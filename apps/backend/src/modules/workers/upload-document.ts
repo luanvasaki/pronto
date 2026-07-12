@@ -28,8 +28,11 @@ export async function uploadDocument(
   }
 
   // Selfie é sempre foto (rosto pra comparar com o documento) — PDF só
-  // faz sentido pro documento de identidade.
-  const documentType = type === 'selfie' ? 'selfie' : 'identity';
+  // faz sentido pro documento de identidade e pra CNH. CNH é o inverso
+  // da selfie: só aceita PDF (a CNH Digital do app oficial do governo),
+  // nunca foto — é o jeito de comprovar que a categoria informada no
+  // cadastro é real, não só uma foto de algo que pode ser qualquer coisa.
+  const documentType = type === 'selfie' ? 'selfie' : type === 'cnh' ? 'cnh' : 'identity';
 
   const profile = await db.query.workerProfiles.findFirst({
     where: eq(workerProfiles.userId, userId),
@@ -44,6 +47,9 @@ export async function uploadDocument(
   }
   if (documentType === 'selfie' && detectedMimeType === 'application/pdf') {
     throw new HttpError(400, 'A selfie precisa ser uma foto (JPEG/PNG), não PDF.');
+  }
+  if (documentType === 'cnh' && detectedMimeType !== 'application/pdf') {
+    throw new HttpError(400, 'Envie o PDF da CNH Digital (baixado no app oficial do governo), não uma foto.');
   }
 
   const key = await storage.save(file.buffer, userId, detectedMimeType);

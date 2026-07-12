@@ -507,7 +507,7 @@ function NovaVagaForm() {
 
         {error && <p className="text-sm text-danger">{error}</p>}
 
-        {!isValid && <p className="text-xs text-text-secondary">Falta preencher: {missingFields.join(', ')}.</p>}
+        {!isValid && <p className="text-xs text-danger">Falta preencher: {missingFields.join(', ')}.</p>}
 
         <Button type="submit" disabled={!isValid} isLoading={isSubmitting}>
           Publicar

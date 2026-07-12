@@ -112,7 +112,6 @@ export default function CadastroPage() {
   if (phone.length < 10 || phone.length > 11) missingFields.push('telefone');
   if (homeAddressFull.trim().length < 8) missingFields.push('endereço completo');
   if (selectedIds.length === 0) missingFields.push('ao menos uma categoria');
-  if (!photoPreviewUrl) missingFields.push('foto de perfil');
 
   const isValid = missingFields.length === 0;
 
@@ -231,7 +230,7 @@ export default function CadastroPage() {
         </div>
 
         <div>
-          <span className="mb-2 block text-sm font-medium text-text-secondary">Foto de perfil (obrigatória)</span>
+          <span className="mb-2 block text-sm font-medium text-text-secondary">Foto de perfil (opcional)</span>
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-border bg-surface">
               {photoPreviewUrl ? (
@@ -398,7 +397,7 @@ export default function CadastroPage() {
         {error && <p className="text-sm text-danger">{error}</p>}
 
         {!isValid && (
-          <p className="text-xs text-text-secondary">Falta preencher: {missingFields.join(', ')}.</p>
+          <p className="text-xs text-danger">Falta preencher: {missingFields.join(', ')}.</p>
         )}
 
         <Button type="submit" disabled={!isValid} isLoading={isSubmitting}>

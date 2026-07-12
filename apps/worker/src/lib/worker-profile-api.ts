@@ -14,6 +14,7 @@ export interface WorkerProfileDetails {
   kycStatus: string;
   hasDocument: boolean;
   hasSelfie: boolean;
+  hasCnhDocument: boolean;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
   totalShiftsCompleted: number;
@@ -95,6 +96,18 @@ export function uploadWorkerSelfie(file: File): Promise<UploadDocumentResponse> 
   const formData = new FormData();
   formData.append('document', file);
   formData.append('type', 'selfie');
+
+  return apiFetch('/worker-profile/document', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+/** Só o PDF da CNH Digital (app oficial do governo) — obrigatório quando cnhCategory está preenchido. */
+export function uploadWorkerCnhDocument(file: File): Promise<UploadDocumentResponse> {
+  const formData = new FormData();
+  formData.append('document', file);
+  formData.append('type', 'cnh');
 
   return apiFetch('/worker-profile/document', {
     method: 'POST',

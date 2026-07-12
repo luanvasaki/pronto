@@ -4,11 +4,15 @@ import { workerProfiles } from './worker-profiles';
 
 export const documentStatusEnum = pgEnum('document_status', ['pending', 'approved', 'rejected']);
 
-// `identity` é o documento oficial (RG/CNH); `selfie` é a foto do rosto
-// enviada junto, pro admin comparar visualmente e confirmar que quem se
-// cadastrou é o dono do documento. Default 'identity' preserva o
+// `identity` é o documento oficial (RG ou CNH, foto ou PDF); `selfie` é
+// a foto do rosto enviada junto, pro admin comparar visualmente e
+// confirmar que quem se cadastrou é o dono do documento. `cnh` é
+// obrigatório à parte quando o trabalhador declara ter CNH no cadastro
+// (worker_profiles.cnh_category preenchido) — o PDF da CNH Digital
+// (app oficial do governo), não uma foto, pra comprovar de verdade que
+// a categoria informada é válida. Default 'identity' preserva o
 // significado dos documentos já enviados antes dessa coluna existir.
-export const documentTypeEnum = pgEnum('document_type', ['identity', 'selfie']);
+export const documentTypeEnum = pgEnum('document_type', ['identity', 'selfie', 'cnh']);
 
 /**
  * Só documento de trabalhador por enquanto — empresa é verificada

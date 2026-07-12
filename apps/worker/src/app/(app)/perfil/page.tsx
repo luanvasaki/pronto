@@ -613,7 +613,7 @@ export default function PerfilPage() {
         {profileError && <p className="text-sm text-danger">{profileError}</p>}
 
         {!isProfileFormValid && (
-          <p className="text-xs text-text-secondary">Falta preencher: {profileMissingFields.join(', ')}.</p>
+          <p className="text-xs text-danger">Falta preencher: {profileMissingFields.join(', ')}.</p>
         )}
 
         {profileSaved ? (
