@@ -182,6 +182,7 @@ describe('rotas de admin', () => {
 
     const adminAgent = await loginAgent(app, ADMIN_EMAIL);
     await makeAdmin(ADMIN_EMAIL);
+    const adminMeResponse = await adminAgent.get('/auth/me');
 
     const response = await adminAgent
       .patch(`/admin/companies/${companyResponse.body.id}/verification`)
@@ -192,6 +193,8 @@ describe('rotas de admin', () => {
 
     const company = await db.query.companies.findFirst({ where: eq(companies.cnpj, TEST_CNPJ) });
     expect(company?.verificationStatus).toBe('approved');
+    expect(company?.reviewedBy).toBe(adminMeResponse.body.user.id);
+    expect(company?.reviewedAt).toBeInstanceOf(Date);
   });
 
   it('GET /admin/companies responde 403 pra quem não é admin', async () => {

@@ -1,5 +1,6 @@
 import { pgEnum, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { companies } from './companies';
+import { users } from './users';
 import { workerProfiles } from './worker-profiles';
 
 export const skillCategoryStatusEnum = pgEnum('skill_category_status', ['approved', 'pending', 'rejected']);
@@ -25,6 +26,10 @@ export const skillCategories = pgTable(
     status: skillCategoryStatusEnum('status').notNull().default('approved'),
     createdByCompanyId: uuid('created_by_company_id').references(() => companies.id),
     createdByWorkerId: uuid('created_by_worker_id').references(() => workerProfiles.userId),
+    // Quem aprovou/rejeitou (com ou sem correção do nome) e quando —
+    // mesmo padrão de documents.reviewedBy/reviewedAt (ver review-skill-category.ts).
+    reviewedBy: uuid('reviewed_by').references(() => users.id),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

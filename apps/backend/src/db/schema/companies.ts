@@ -79,6 +79,10 @@ export const companies = pgTable(
     // campos, mesmo fluxo), só existe pra dar pra remover tudo de
     // uma vez depois (ver admin/demo-data.ts).
     isDemo: boolean('is_demo').notNull().default(false),
+    // Quem aprovou/rejeitou a verificação e quando — mesmo padrão de
+    // documents.reviewedBy/reviewedAt (ver review-company.ts).
+    reviewedBy: uuid('reviewed_by').references(() => users.id),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

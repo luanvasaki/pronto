@@ -6,46 +6,54 @@ import { reviewCompany } from './review-company';
 
 // Fixtures únicas entre arquivos de teste (ver README).
 const OWNER_PHONE = '+5511966660044';
+const ADMIN_PHONE = '+5511966660099';
 const TEST_CNPJ = '11222333000288';
 
 async function setupPendingCompany() {
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
+  const [admin] = await db.insert(users).values({ phone: ADMIN_PHONE, isAdmin: true }).returning();
   const [company] = await db
     .insert(companies)
     .values({ ownerUserId: owner.id, legalName: 'Bar do Zé Ltda', tradeName: 'Bar do Zé', cnpj: TEST_CNPJ })
     .returning();
-  return { owner, company };
+  return { owner, admin, company };
 }
 
 describe('reviewCompany', () => {
   afterEach(async () => {
     await db.delete(users).where(eq(users.phone, OWNER_PHONE));
+    await db.delete(users).where(eq(users.phone, ADMIN_PHONE));
   });
 
   it('rejeita status inválido', async () => {
-    const { company } = await setupPendingCompany();
+    const { admin, company } = await setupPendingCompany();
 
-    await expect(reviewCompany(company.id, 'invalido')).rejects.toThrow('Status inválido');
+    await expect(reviewCompany(admin.id, company.id, 'invalido')).rejects.toThrow('Status inválido');
   });
 
   it('rejeita empresa inexistente', async () => {
+    const { admin } = await setupPendingCompany();
+
     await expect(
-      reviewCompany('00000000-0000-0000-0000-000000000000', 'approved'),
+      reviewCompany(admin.id, '00000000-0000-0000-0000-000000000000', 'approved'),
     ).rejects.toThrow('não encontrada');
   });
 
-  it('aprova a verificação da empresa', async () => {
-    const { company } = await setupPendingCompany();
+  it('aprova a verificação da empresa e registra quem revisou', async () => {
+    const { admin, company } = await setupPendingCompany();
 
-    const result = await reviewCompany(company.id, 'approved');
+    const result = await reviewCompany(admin.id, company.id, 'approved');
 
     expect(result.verificationStatus).toBe('approved');
+    const updated = await db.query.companies.findFirst({ where: eq(companies.id, company.id) });
+    expect(updated?.reviewedBy).toBe(admin.id);
+    expect(updated?.reviewedAt).toBeInstanceOf(Date);
   });
 
   it('rejeita revisar a mesma empresa duas vezes', async () => {
-    const { company } = await setupPendingCompany();
-    await reviewCompany(company.id, 'rejected');
+    const { admin, company } = await setupPendingCompany();
+    await reviewCompany(admin.id, company.id, 'rejected');
 
-    await expect(reviewCompany(company.id, 'approved')).rejects.toThrow('já foi revisada');
+    await expect(reviewCompany(admin.id, company.id, 'approved')).rejects.toThrow('já foi revisada');
   });
 });

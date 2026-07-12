@@ -26,6 +26,7 @@ export interface ReviewSkillCategoryResult {
  * duas revisões simultâneas.
  */
 export async function reviewSkillCategory(
+  adminUserId: string,
   categoryId: string,
   status: string | undefined,
   name: string | undefined,
@@ -49,7 +50,13 @@ export async function reviewSkillCategory(
 
   const [updated] = await db
     .update(skillCategories)
-    .set({ status, name: trimmedName || category.name, updatedAt: new Date() })
+    .set({
+      status,
+      name: trimmedName || category.name,
+      reviewedBy: adminUserId,
+      reviewedAt: new Date(),
+      updatedAt: new Date(),
+    })
     .where(and(eq(skillCategories.id, categoryId), eq(skillCategories.status, 'pending')))
     .returning();
   if (!updated) {

@@ -16,6 +16,7 @@ export interface ReviewCompanyResult {
 
 /** UPDATE condicional (WHERE verification_status = 'pending') fecha a corrida de duas revisões simultâneas. */
 export async function reviewCompany(
+  adminUserId: string,
   companyId: string,
   status: string | undefined,
 ): Promise<ReviewCompanyResult> {
@@ -33,7 +34,7 @@ export async function reviewCompany(
 
   const [updated] = await db
     .update(companies)
-    .set({ verificationStatus: status, updatedAt: new Date() })
+    .set({ verificationStatus: status, reviewedBy: adminUserId, reviewedAt: new Date(), updatedAt: new Date() })
     .where(and(eq(companies.id, companyId), eq(companies.verificationStatus, 'pending')))
     .returning();
   if (!updated) {

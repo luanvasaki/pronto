@@ -21,5 +21,10 @@ export function createGoogleTokenVerifier(): GoogleTokenVerifier {
     );
   }
 
+  console.warn(
+    '[createGoogleTokenVerifier] GOOGLE_CLIENT_ID não configurada — caindo pro UnconfiguredGoogleTokenVerifier ("Entrar com Google" vai falhar em qualquer tentativa real). ' +
+      'Isso é esperado em dev/teste. Se essa mensagem aparecer nos logs de PRODUÇÃO, significa que o login com Google está QUEBRADO (verifique NODE_ENV e GOOGLE_CLIENT_ID no ambiente de deploy).',
+  );
+
   return new UnconfiguredGoogleTokenVerifier();
 }

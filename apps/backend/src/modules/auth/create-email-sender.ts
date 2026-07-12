@@ -22,5 +22,10 @@ export function createEmailSender(): EmailSender {
     );
   }
 
+  console.warn(
+    '[createEmailSender] RESEND_API_KEY não configurada — caindo pro ConsoleEmailSender (loga o link de redefinição em texto puro, não envia e-mail de verdade). ' +
+      'Isso é esperado em dev/teste. Se essa mensagem aparecer nos logs de PRODUÇÃO, significa que o envio de e-mail real está QUEBRADO (verifique NODE_ENV e RESEND_API_KEY no ambiente de deploy).',
+  );
+
   return new ConsoleEmailSender();
 }
