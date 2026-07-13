@@ -7,19 +7,27 @@ import { JobResponse, toJobResponse } from './job-response';
 
 export type CreateJobInput = JobInput;
 
+/** `db` de fora ou uma transação — mesmo formato aceito por `db.transaction`. */
+type DbClient = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 /**
  * companyId sempre vem do dono autenticado, nunca do corpo da requisição.
  *
  * `termsAccepted` fica fora de `CreateJobInput`/`validateJobInput` de
  * propósito: é exigido só na criação, não faz sentido reenviado a cada
  * edição (ver updateJob, que reusa o mesmo validador de campos).
+ *
+ * `dbClient` aceita uma transação (`db.transaction(async (tx) => ...)`) no
+ * lugar da conexão default — usado por duplicateWeek pra criar várias vagas
+ * atomicamente, sem duplicar as regras de negócio daqui.
  */
 export async function createJob(
   ownerUserId: string,
   input: CreateJobInput,
   termsAccepted: boolean | undefined,
+  dbClient: DbClient = db,
 ): Promise<JobResponse> {
-  const company = await db.query.companies.findFirst({ where: eq(companies.ownerUserId, ownerUserId) });
+  const company = await dbClient.query.companies.findFirst({ where: eq(companies.ownerUserId, ownerUserId) });
   if (!company) {
     throw new HttpError(400, 'Complete o cadastro da empresa antes de publicar uma vaga.');
   }
@@ -32,14 +40,14 @@ export async function createJob(
 
   const validated = validateJobInput(input);
 
-  const category = await db.query.skillCategories.findFirst({
+  const category = await dbClient.query.skillCategories.findFirst({
     where: eq(skillCategories.id, validated.categoryId),
   });
   if (!category) {
     throw new HttpError(400, 'Categoria inválida.');
   }
 
-  const [job] = await db
+  const [job] = await dbClient
     .insert(jobs)
     .values({
       companyId: company.id,

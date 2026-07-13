@@ -13,8 +13,10 @@ vi.mock('@shift/shared', async (importOriginal) => {
 });
 
 const listMyJobsMock = vi.fn();
+const duplicateWeekMock = vi.fn();
 vi.mock('../../../lib/jobs-api', () => ({
   listMyJobs: (...args: unknown[]) => listMyJobsMock(...args),
+  duplicateWeek: (...args: unknown[]) => duplicateWeekMock(...args),
 }));
 
 const listJobApplicationsMock = vi.fn();
@@ -51,6 +53,7 @@ describe('EscalaPage', () => {
     listSkillCategoriesMock.mockReset().mockResolvedValue({ categories: [{ id: 'cat-1', name: 'Garçom' }] });
     listMyJobsMock.mockReset();
     listJobApplicationsMock.mockReset().mockResolvedValue({ applications: [] });
+    duplicateWeekMock.mockReset();
   });
 
   it('mostra o mês atual', async () => {
@@ -141,5 +144,66 @@ describe('EscalaPage', () => {
     render(<EscalaPage />);
 
     expect(await screen.findByText('Não foi possível carregar suas escalas.')).toBeInTheDocument();
+  });
+
+  it('alterna pra visão semanal e mostra o turno com posições preenchidas/total', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    const user = userEvent.setup();
+
+    render(<EscalaPage />);
+    await screen.findByText('Agosto de 2026');
+
+    await user.click(screen.getByRole('button', { name: 'Semana' }));
+
+    expect(await screen.findByRole('button', { name: 'Duplicar semana' })).toBeInTheDocument();
+    expect(screen.getByText('1/4')).toBeInTheDocument();
+  });
+
+  it('exige o checkbox de termos marcado antes de habilitar "Confirmar duplicação"', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    const user = userEvent.setup();
+
+    render(<EscalaPage />);
+    await screen.findByText('Agosto de 2026');
+    await user.click(screen.getByRole('button', { name: 'Semana' }));
+    await user.click(await screen.findByRole('button', { name: 'Duplicar semana' }));
+
+    const confirmButton = await screen.findByRole('button', { name: 'Confirmar duplicação' });
+    expect(confirmButton).toBeDisabled();
+
+    await user.click(screen.getByRole('checkbox'));
+    expect(confirmButton).toBeEnabled();
+  });
+
+  it('reseta o checkbox de termos ao cancelar, mesmo tendo marcado antes', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    const user = userEvent.setup();
+
+    render(<EscalaPage />);
+    await screen.findByText('Agosto de 2026');
+    await user.click(screen.getByRole('button', { name: 'Semana' }));
+    await user.click(await screen.findByRole('button', { name: 'Duplicar semana' }));
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    await user.click(screen.getByRole('button', { name: 'Duplicar semana' }));
+    expect(await screen.findByRole('checkbox')).not.toBeChecked();
+  });
+
+  it('duplica a semana e mostra mensagem de sucesso, sem recarregar o histórico inteiro', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    duplicateWeekMock.mockResolvedValue({ jobs: [{ ...JOB, id: 'job-2', startsAt: '2026-08-13T12:00:00.000Z', endsAt: '2026-08-13T18:00:00.000Z', positionsFilled: 0 }] });
+    const user = userEvent.setup();
+
+    render(<EscalaPage />);
+    await screen.findByText('Agosto de 2026');
+    await user.click(screen.getByRole('button', { name: 'Semana' }));
+    await user.click(await screen.findByRole('button', { name: 'Duplicar semana' }));
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Confirmar duplicação' }));
+
+    expect(await screen.findByText('1 escala duplicada pra semana seguinte.')).toBeInTheDocument();
+    // Uma única chamada de listMyJobs (carga inicial) — duplicar não recarrega o histórico inteiro.
+    expect(listMyJobsMock).toHaveBeenCalledTimes(1);
   });
 });

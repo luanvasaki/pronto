@@ -69,3 +69,17 @@ export function cancelJob(jobId: string): Promise<Job> {
     method: 'POST',
   });
 }
+
+export interface DuplicateWeekInput {
+  /** Início (00:00) da semana de origem, no fuso local — mesmo dia usado como âncora da grade. */
+  sourceWeekStart: string;
+  /** Início (00:00) da semana de destino. */
+  targetWeekStart: string;
+}
+
+export function duplicateWeek(input: DuplicateWeekInput, termsAccepted: boolean): Promise<{ jobs: Job[] }> {
+  return apiFetch('/jobs/duplicate-week', {
+    method: 'POST',
+    body: JSON.stringify({ ...input, termsAccepted }),
+  });
+}
