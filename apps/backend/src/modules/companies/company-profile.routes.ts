@@ -5,6 +5,7 @@ import { listCompanyRatingsHandler } from '../ratings/list-company-ratings.contr
 import { getCompanyNotificationsHandler } from './get-notifications.controller';
 import { getCompanyDashboardHandler } from './get-dashboard.controller';
 import { getCompanyProfileHandler } from './get-company-profile.controller';
+import { getCompanyWorkerHistoryHandler } from './get-worker-history.controller';
 import { upsertCompanyProfileHandler } from './upsert-company-profile.controller';
 import { uploadCompanyLogoHandler, uploadCompanyLogoMiddleware } from './upload-company-logo.controller';
 import {
@@ -20,6 +21,7 @@ companyProfileRoutes.get('/company-profile/me', requireAuth, getCompanyProfileHa
 companyProfileRoutes.get('/company-profile/ratings', requireAuth, listCompanyRatingsHandler);
 companyProfileRoutes.get('/company-profile/notifications', requireAuth, getCompanyNotificationsHandler);
 companyProfileRoutes.get('/company-profile/dashboard', requireAuth, getCompanyDashboardHandler);
+companyProfileRoutes.get('/company-profile/worker-history', requireAuth, getCompanyWorkerHistoryHandler);
 companyProfileRoutes.put('/company-profile', requireAuth, writeRateLimiter, upsertCompanyProfileHandler);
 companyProfileRoutes.post(
   '/company-profile/logo',

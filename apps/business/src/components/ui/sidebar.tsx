@@ -54,6 +54,19 @@ const NAV_ITEMS: NavItem[] = [
       </>
     ),
   },
+  {
+    href: '/trabalhadores',
+    label: 'Trabalhadores',
+    available: true,
+    icon: (
+      <>
+        <circle cx="8.5" cy="8" r="3" stroke="currentColor" strokeWidth="2" />
+        <path d="M3 20c0-3.6 2.5-6 5.5-6s5.5 2.4 5.5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="17" cy="7" r="2.3" stroke="currentColor" strokeWidth="2" />
+        <path d="M14.8 13.3c2.6.3 4.7 2.6 4.7 5.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </>
+    ),
+  },
 ];
 
 const ADMIN_NAV_ITEM: NavItem = {
