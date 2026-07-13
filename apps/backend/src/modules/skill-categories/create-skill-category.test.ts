@@ -34,10 +34,16 @@ describe('createSkillCategory', () => {
     await db.delete(users).where(eq(users.phone, WORKER_PHONE));
   });
 
-  it('rejeita quando o usuário não tem empresa nem perfil de trabalhador', async () => {
+  it('cria a categoria mesmo quando o usuário ainda não tem empresa nem perfil de trabalhador (cadastro em andamento)', async () => {
     const [owner] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
 
-    await expect(createSkillCategory(owner.id, TEST_CATEGORY_NAME)).rejects.toThrow('Complete seu cadastro');
+    const result = await createSkillCategory(owner.id, TEST_CATEGORY_NAME);
+
+    expect(result.name).toBe(TEST_CATEGORY_NAME);
+    const row = await db.query.skillCategories.findFirst({ where: eq(skillCategories.id, result.id) });
+    expect(row?.status).toBe('pending');
+    expect(row?.createdByCompanyId).toBeNull();
+    expect(row?.createdByWorkerId).toBeNull();
   });
 
   it('rejeita nome vazio ou muito curto', async () => {

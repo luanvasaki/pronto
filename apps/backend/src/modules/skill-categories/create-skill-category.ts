@@ -24,13 +24,15 @@ export async function createSkillCategory(userId: string, name: string | undefin
     throw new HttpError(400, 'Nome da categoria precisa ter entre 2 e 100 caracteres.');
   }
 
+  // Sem exigir empresa/perfil já existente: o próprio cadastro (de
+  // empresa ou de trabalhador) usa isso ANTES de existir uma linha em
+  // companies/workerProfiles — ver docstring acima. requireAuth já
+  // garante que é alguém autenticado de verdade; nesse caso
+  // createdByCompanyId/createdByWorkerId abaixo ficam nulos.
   const company = await db.query.companies.findFirst({ where: eq(companies.ownerUserId, userId) });
   const workerProfile = company
     ? null
     : await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, userId) });
-  if (!company && !workerProfile) {
-    throw new HttpError(400, 'Complete seu cadastro antes de criar uma categoria.');
-  }
 
   const existing = await db.query.skillCategories.findFirst({
     where: sql`lower(${skillCategories.name}) = lower(${trimmedName})`,
