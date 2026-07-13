@@ -89,6 +89,32 @@ export function getCompanyNotifications(): Promise<CompanyNotifications> {
   return apiFetch('/company-profile/notifications');
 }
 
+export interface CoverageWindow {
+  windowHours: number;
+  totalPositions: number;
+  filledPositions: number;
+  percentage: number | null;
+}
+
+export interface OpenPositionJob {
+  jobId: string;
+  categoryName: string;
+  startsAt: string;
+  positionsTotal: number;
+  positionsFilled: number;
+  openPositions: number;
+}
+
+export interface CompanyDashboard {
+  coverage: CoverageWindow;
+  openPositionJobs: OpenPositionJob[];
+  notifications: CompanyNotifications;
+}
+
+export function getCompanyDashboard(): Promise<CompanyDashboard> {
+  return apiFetch('/company-profile/dashboard');
+}
+
 export function markShiftCheckInSeen(shiftId: string): Promise<{ id: string; status: string }> {
   return apiFetch(`/shifts/${shiftId}/check-in/seen`, { method: 'PATCH' });
 }

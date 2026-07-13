@@ -55,9 +55,16 @@ export interface CompanyNotifications {
  * Avaliação pendente também não precisa de "lido/não lido" próprio —
  * o próprio ato de avaliar (criar a linha em `ratings`) já tira o
  * turno da lista, igual às candidaturas pendentes.
+ *
+ * `preloadedCompany` deixa quem já resolveu a empresa (ex: getCompanyDashboard)
+ * pular essa mesma busca de novo — sem mudar o comportamento de quem chama
+ * só com `ownerUserId`, que continua buscando sozinho.
  */
-export async function getCompanyNotifications(ownerUserId: string): Promise<CompanyNotifications> {
-  const company = await db.query.companies.findFirst({ where: eq(companies.ownerUserId, ownerUserId) });
+export async function getCompanyNotifications(
+  ownerUserId: string,
+  preloadedCompany?: typeof companies.$inferSelect,
+): Promise<CompanyNotifications> {
+  const company = preloadedCompany ?? (await db.query.companies.findFirst({ where: eq(companies.ownerUserId, ownerUserId) }));
   if (!company) {
     throw new HttpError(404, 'Complete o cadastro da empresa antes de ver notificações.');
   }

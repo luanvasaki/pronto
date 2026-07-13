@@ -3,6 +3,7 @@ import { requireAuth } from '../auth/require-auth';
 import { createWriteRateLimiter } from '../../shared/middlewares/rate-limit';
 import { listCompanyRatingsHandler } from '../ratings/list-company-ratings.controller';
 import { getCompanyNotificationsHandler } from './get-notifications.controller';
+import { getCompanyDashboardHandler } from './get-dashboard.controller';
 import { getCompanyProfileHandler } from './get-company-profile.controller';
 import { upsertCompanyProfileHandler } from './upsert-company-profile.controller';
 import { uploadCompanyLogoHandler, uploadCompanyLogoMiddleware } from './upload-company-logo.controller';
@@ -18,6 +19,7 @@ const writeRateLimiter = createWriteRateLimiter();
 companyProfileRoutes.get('/company-profile/me', requireAuth, getCompanyProfileHandler);
 companyProfileRoutes.get('/company-profile/ratings', requireAuth, listCompanyRatingsHandler);
 companyProfileRoutes.get('/company-profile/notifications', requireAuth, getCompanyNotificationsHandler);
+companyProfileRoutes.get('/company-profile/dashboard', requireAuth, getCompanyDashboardHandler);
 companyProfileRoutes.put('/company-profile', requireAuth, writeRateLimiter, upsertCompanyProfileHandler);
 companyProfileRoutes.post(
   '/company-profile/logo',

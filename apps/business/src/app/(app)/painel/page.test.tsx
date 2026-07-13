@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CompanyProfileDetails } from '../../../lib/company-profile-api';
+import { CompanyDashboard, CompanyProfileDetails } from '../../../lib/company-profile-api';
 import { CompanyProfileProvider } from '../company-profile-context';
 import PainelPage from './page';
 
@@ -27,6 +27,30 @@ const listJobApplicationsMock = vi.fn();
 vi.mock('../../../lib/applications-api', () => ({
   listJobApplications: (...args: unknown[]) => listJobApplicationsMock(...args),
 }));
+
+const getCompanyDashboardMock = vi.fn();
+vi.mock('../../../lib/company-profile-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/company-profile-api')>();
+  return {
+    ...actual,
+    getCompanyDashboard: (...args: unknown[]) => getCompanyDashboardMock(...args),
+  };
+});
+
+// Cobertura com percentual definido (não nulo) por padrão — só "Mais
+// contratado(a)" deveria mostrar "—" nos testes que não mexem nisso.
+const DASHBOARD: CompanyDashboard = {
+  coverage: { windowHours: 48, totalPositions: 4, filledPositions: 2, percentage: 50 },
+  openPositionJobs: [],
+  notifications: {
+    pendingApplicationsCount: 0,
+    pendingApplications: [],
+    checkedInCount: 0,
+    checkedInNotifications: [],
+    pendingRatingsCount: 0,
+    pendingRatingsNotifications: [],
+  },
+};
 
 const PROFILE: CompanyProfileDetails = {
   id: 'company-1',
@@ -85,6 +109,7 @@ describe('PainelPage', () => {
     listSkillCategoriesMock.mockReset().mockResolvedValue({ categories: [{ id: 'cat-1', name: 'Garçom' }] });
     listMyJobsMock.mockReset();
     listJobApplicationsMock.mockReset().mockResolvedValue({ applications: [] });
+    getCompanyDashboardMock.mockReset().mockResolvedValue(DASHBOARD);
   });
 
   afterEach(() => {
@@ -149,6 +174,48 @@ describe('PainelPage', () => {
 
     await screen.findByText('Resumo do mês');
     expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
+  it('mostra a cobertura das próximas 48h vinda do dashboard', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [] });
+
+    renderPainel();
+
+    expect(await screen.findByText('50%')).toBeInTheDocument();
+    expect(screen.getByText('2/4 posições preenchidas')).toBeInTheDocument();
+  });
+
+  it('mostra a central de ações com vagas de posição em aberto e candidatos aguardando', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    getCompanyDashboardMock.mockResolvedValue({
+      ...DASHBOARD,
+      openPositionJobs: [
+        { jobId: 'job-2', categoryName: 'Garçom', startsAt: '2026-08-06T18:00:00.000Z', positionsTotal: 3, positionsFilled: 1, openPositions: 2 },
+      ],
+      notifications: {
+        ...DASHBOARD.notifications,
+        pendingApplicationsCount: 1,
+        pendingApplications: [{ applicationId: 'app-2', jobId: 'job-2', workerName: 'Beatriz Lima', categoryName: 'Garçom' }],
+      },
+    });
+
+    renderPainel();
+
+    expect(await screen.findByText('Vagas com posição em aberto')).toBeInTheDocument();
+    expect(screen.getByText(/2 posição\(ões\) em aberto/)).toBeInTheDocument();
+    expect(screen.getByText('Candidatos aguardando resposta')).toBeInTheDocument();
+    expect(screen.getByText(/Beatriz Lima aguardando resposta/)).toBeInTheDocument();
+  });
+
+  it('não falha a página inteira quando só o dashboard falha — vagas continuam aparecendo', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    getCompanyDashboardMock.mockRejectedValue(new Error('falha no dashboard'));
+
+    renderPainel();
+
+    await screen.findByText('Escalas abertas');
+    expect(screen.queryByText('Não foi possível carregar suas escalas.')).not.toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument(); // Cobertura sem dado, sem travar o resto
   });
 
   it('mostra mensagem de erro quando a listagem falha', async () => {

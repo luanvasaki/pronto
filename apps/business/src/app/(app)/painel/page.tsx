@@ -6,11 +6,62 @@ import { useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { StatCard } from '../../../components/ui/stat-card';
 import { JobApplication } from '../../../lib/applications-api';
+import { CompanyDashboard, getCompanyDashboard } from '../../../lib/company-profile-api';
+import { startOfWeek } from '../../../lib/date-utils';
 import { fetchApplicationsByJobId } from '../../../lib/job-applications-summary';
 import { Job, listMyJobs } from '../../../lib/jobs-api';
 import { useCompanyProfile } from '../company-profile-context';
 
-const MAX_PENDING_RATINGS_SHOWN = 3;
+const MAX_ACTION_ITEMS_SHOWN = 3;
+
+/**
+ * Cores fixas (não interpoladas) de propósito — o Tailwind só inclui no CSS
+ * final as classes que aparecem como texto literal no código.
+ */
+const ACTION_GROUP_STYLES = {
+  warning: { border: 'border-warning/30', bg: 'bg-warning/10', text: 'text-warning' },
+  primary: { border: 'border-primary/30', bg: 'bg-primary/10', text: 'text-primary' },
+  success: { border: 'border-success/30', bg: 'bg-success/10', text: 'text-success' },
+} as const;
+
+interface ActionGroupItem {
+  key: string;
+  href: string;
+  label: string;
+}
+
+interface ActionGroupProps {
+  title: string;
+  items: ActionGroupItem[];
+  color: keyof typeof ACTION_GROUP_STYLES;
+}
+
+/** Um grupo da Central de Ações — a mesma vaga com posição em aberto, candidatura
+ * pendente etc. vira uma lista clicável, capada, com contador do excedente. */
+function ActionGroup({ title, items, color }: ActionGroupProps) {
+  if (items.length === 0) {
+    return null;
+  }
+  const styles = ACTION_GROUP_STYLES[color];
+  const shown = items.slice(0, MAX_ACTION_ITEMS_SHOWN);
+  const overflow = items.length - shown.length;
+
+  return (
+    <div className={`rounded-[18px] border ${styles.border} ${styles.bg} p-4`}>
+      <p className={`font-heading text-[15px] font-bold ${styles.text}`}>{title}</p>
+      <ul className="mt-2.5 flex flex-col gap-1.5">
+        {shown.map((item) => (
+          <li key={item.key}>
+            <Link href={item.href} className={`text-[13.5px] ${styles.text} underline underline-offset-2`}>
+              {item.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {overflow > 0 && <p className={`mt-1.5 text-[12.5px] ${styles.text}`}>+{overflow} item(ns)</p>}
+    </div>
+  );
+}
 
 const DAY_LABEL = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
 
@@ -23,13 +74,8 @@ function formatTimeRange(startsAt: string, endsAt: string): string {
   return `${formatter.format(new Date(startsAt))}–${formatter.format(new Date(endsAt))}`;
 }
 
-function startOfWeek(reference: Date): Date {
-  const date = new Date(reference);
-  const day = date.getDay();
-  const diff = day === 0 ? -6 : 1 - day; // segunda como início da semana
-  date.setDate(date.getDate() + diff);
-  date.setHours(0, 0, 0, 0);
-  return date;
+function formatTime(iso: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
 }
 
 function isSameMonth(date: Date, reference: Date): boolean {
@@ -61,6 +107,7 @@ export default function PainelPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
   const [applicationsByJobId, setApplicationsByJobId] = useState<Record<string, JobApplication[]>>({});
+  const [dashboard, setDashboard] = useState<CompanyDashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,6 +124,14 @@ export default function PainelPage() {
         setError('Não foi possível carregar suas escalas.');
       } finally {
         setIsLoading(false);
+      }
+
+      // Cobertura/central de ações são um complemento ao resto do painel —
+      // uma falha aqui não pode derrubar a lista de vagas, que já carregou.
+      try {
+        setDashboard(await getCompanyDashboard());
+      } catch {
+        // dashboard fica null; StatCard e ActionGroup já tratam esse caso.
       }
     }
 
@@ -147,6 +202,31 @@ export default function PainelPage() {
       })),
   );
 
+  // Central de ações — os quatro tipos de "precisa de você agora" que hoje
+  // exigiriam abrir /escalas, /vagas/[id] um por um, ou o sino do topbar.
+  const openPositionItems: ActionGroupItem[] = (dashboard?.openPositionJobs ?? []).map((job) => ({
+    key: job.jobId,
+    href: `/vagas/${job.jobId}`,
+    label: `${job.categoryName} · ${job.openPositions} posição(ões) em aberto · ${DAY_LABEL[new Date(job.startsAt).getDay()]} ${formatTime(job.startsAt)}`,
+  }));
+  const pendingApplicationItems: ActionGroupItem[] = (dashboard?.notifications.pendingApplications ?? []).map((n) => ({
+    key: n.applicationId,
+    href: `/vagas/${n.jobId}`,
+    label: `${n.workerName} aguardando resposta · ${n.categoryName}`,
+  }));
+  const checkedInItems: ActionGroupItem[] = (dashboard?.notifications.checkedInNotifications ?? []).map((n) => ({
+    key: n.shiftId,
+    href: `/vagas/${n.jobId}`,
+    label: `${n.workerName} fez check-in · ${n.categoryName}`,
+  }));
+  const pendingRatingItems: ActionGroupItem[] = pendingRatingRows.map((row) => ({
+    key: row.key,
+    href: `/vagas/${row.jobId}`,
+    label: `Avalie ${row.workerName} · ${row.categoryName}`,
+  }));
+  const hasAnyAction =
+    openPositionItems.length + pendingApplicationItems.length + checkedInItems.length + pendingRatingItems.length > 0;
+
   return (
     <div className="flex flex-col gap-8">
       {error && <p className="text-sm text-danger">{error}</p>}
@@ -166,31 +246,41 @@ export default function PainelPage() {
         </div>
       )}
 
-      {pendingRatingRows.length > 0 && (
-        <div className="rounded-[18px] border border-warning/30 bg-warning/10 p-4">
-          <p className="font-heading text-[15px] font-bold text-warning">
-            {pendingRatingRows.length === 1
-              ? '1 escala concluída esperando sua avaliação'
-              : `${pendingRatingRows.length} escalas concluídas esperando sua avaliação`}
-          </p>
-          <ul className="mt-2.5 flex flex-col gap-1.5">
-            {pendingRatingRows.slice(0, MAX_PENDING_RATINGS_SHOWN).map((row) => (
-              <li key={row.key}>
-                <Link href={`/vagas/${row.jobId}`} className="text-[13.5px] text-warning underline underline-offset-2">
-                  Avalie {row.workerName} · {row.categoryName}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {pendingRatingRows.length > MAX_PENDING_RATINGS_SHOWN && (
-            <p className="mt-1.5 text-[12.5px] text-warning">
-              +{pendingRatingRows.length - MAX_PENDING_RATINGS_SHOWN} escala(s)
-            </p>
+      {jobs.length > 0 && !error && (
+        <div>
+          <h2 className="font-heading text-[19px] font-bold text-text">Central de ações</h2>
+          {hasAnyAction ? (
+            <div className="mt-3.5 flex flex-col gap-3">
+              <ActionGroup title="Vagas com posição em aberto" items={openPositionItems} color="warning" />
+              <ActionGroup title="Candidatos aguardando resposta" items={pendingApplicationItems} color="primary" />
+              <ActionGroup title="Check-ins aguardando confirmação" items={checkedInItems} color="success" />
+              <ActionGroup
+                title={
+                  pendingRatingItems.length === 1
+                    ? '1 escala concluída esperando sua avaliação'
+                    : `${pendingRatingItems.length} escalas concluídas esperando sua avaliação`
+                }
+                items={pendingRatingItems}
+                color="warning"
+              />
+            </div>
+          ) : (
+            <p className="mt-3.5 text-[13.5px] text-text-secondary">Tudo em dia — nenhuma ação pendente agora.</p>
           )}
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <StatCard
+          label={`Cobertura ${dashboard?.coverage.windowHours ?? 48}h`}
+          value={dashboard?.coverage.percentage !== null && dashboard?.coverage.percentage !== undefined ? `${dashboard.coverage.percentage}%` : '—'}
+          hint={
+            dashboard && dashboard.coverage.totalPositions > 0
+              ? `${dashboard.coverage.filledPositions}/${dashboard.coverage.totalPositions} posições preenchidas`
+              : 'Nenhuma escala nas próximas 48h'
+          }
+          variant="dark"
+        />
         <StatCard
           label="Escalas abertas"
           value={String(openJobs.length)}
