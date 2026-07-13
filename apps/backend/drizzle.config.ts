@@ -1,21 +1,18 @@
 import 'dotenv/config';
 import { defineConfig } from 'drizzle-kit';
-import { stripSslModeParam } from './src/db/strip-ssl-mode-param';
 
-const databaseUrl = stripSslModeParam(process.env.DATABASE_URL as string);
-const databaseHost = new URL(databaseUrl).hostname;
-const isLocalHost = databaseHost === 'localhost' || databaseHost === '127.0.0.1';
-
+// NÃO usar stripSslModeParam aqui: tirar o sslmode da URL faz o
+// `drizzle-kit migrate` do deploy travar tentando conexão sem TLS num
+// Postgres gerenciado que exige SSL — sem erro nenhum, só preso em
+// "applying migrations..." até o Railway desistir. O aviso de depreciação
+// do pg-connection-string é só ruído nos logs; melhor isso do que o
+// deploy inteiro travado. db/client.ts continua usando stripSslModeParam
+// normalmente — lá o ssl já é decidido explícito, sem depender da URL.
 export default defineConfig({
   schema: './src/db/schema/index.ts',
   out: './migrations',
   dialect: 'postgresql',
   dbCredentials: {
-    url: databaseUrl,
-    // `sslmode` saiu da URL (ver strip-ssl-mode-param.ts) — sem isso aqui,
-    // o `drizzle-kit migrate` do deploy perde o único sinal que dizia pra
-    // usar TLS e trava tentando conexão sem SSL num Postgres que exige,
-    // sem erro nenhum, só "applying migrations..." até o Railway desistir.
-    ssl: isLocalHost ? undefined : 'require',
+    url: process.env.DATABASE_URL as string,
   },
 });
