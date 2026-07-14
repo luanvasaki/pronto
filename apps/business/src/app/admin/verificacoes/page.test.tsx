@@ -146,6 +146,20 @@ describe('AdminVerificacoesPage', () => {
     await waitFor(() => expect(screen.queryByText('Rafael Lima')).not.toBeInTheDocument());
   });
 
+  it('mostra erro e mantém o documento na lista quando revisar falha', async () => {
+    listPendingVerificationsMock.mockResolvedValue({ documents: [PENDING_DOCUMENT], companies: [], skillCategories: [] });
+    reviewDocumentMock.mockRejectedValue(new Error('falha de rede'));
+    const user = userEvent.setup();
+
+    render(<AdminVerificacoesPage />);
+    await screen.findByText('Rafael Lima');
+    await user.click(screen.getByRole('button', { name: /^aprovar$/i }));
+    await user.click(await screen.findByRole('button', { name: /confirmar aprovação/i }));
+
+    expect(await screen.findByText('Não foi possível revisar o documento.')).toBeInTheDocument();
+    expect(screen.getByText('Rafael Lima')).toBeInTheDocument();
+  });
+
   it('cancela a confirmação de aprovar um documento sem chamar a API', async () => {
     listPendingVerificationsMock.mockResolvedValue({ documents: [PENDING_DOCUMENT], companies: [], skillCategories: [] });
     const user = userEvent.setup();
@@ -178,6 +192,20 @@ describe('AdminVerificacoesPage', () => {
 
     await waitFor(() => expect(reviewCompanyMock).toHaveBeenCalledWith('company-1', 'rejected'));
     await waitFor(() => expect(screen.queryByText('Bar do Zé')).not.toBeInTheDocument());
+  });
+
+  it('mostra erro e mantém a empresa na lista quando revisar falha', async () => {
+    listPendingVerificationsMock.mockResolvedValue({ documents: [], companies: [PENDING_COMPANY], skillCategories: [] });
+    reviewCompanyMock.mockRejectedValue(new Error('falha de rede'));
+    const user = userEvent.setup();
+
+    render(<AdminVerificacoesPage />);
+    await screen.findByText('Bar do Zé');
+    await user.click(screen.getByRole('button', { name: /^rejeitar$/i }));
+    await user.click(await screen.findByRole('button', { name: /confirmar rejeição/i }));
+
+    expect(await screen.findByText('Não foi possível revisar a empresa.')).toBeInTheDocument();
+    expect(screen.getByText('Bar do Zé')).toBeInTheDocument();
   });
 
   it('mostra CNPJ pra empresa jurídica', async () => {
@@ -278,5 +306,19 @@ describe('AdminVerificacoesPage', () => {
 
     await waitFor(() => expect(reviewSkillCategoryMock).toHaveBeenCalledWith('cat-1', 'rejected', 'Manobrista'));
     await waitFor(() => expect(screen.queryByDisplayValue('Manobrista')).not.toBeInTheDocument());
+  });
+
+  it('mostra erro e mantém a categoria na lista quando revisar falha', async () => {
+    listPendingVerificationsMock.mockResolvedValue({ documents: [], companies: [], skillCategories: [PENDING_CATEGORY] });
+    reviewSkillCategoryMock.mockRejectedValue(new Error('falha de rede'));
+    const user = userEvent.setup();
+
+    render(<AdminVerificacoesPage />);
+    await screen.findByDisplayValue('Manobrista');
+    await user.click(screen.getByRole('button', { name: /^aprovar$/i }));
+    await user.click(await screen.findByRole('button', { name: /confirmar aprovação/i }));
+
+    expect(await screen.findByText('Não foi possível revisar a categoria.')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Manobrista')).toBeInTheDocument();
   });
 });

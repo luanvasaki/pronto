@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../../db/client';
 import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { getLiveEventStatus } from './get-live-event-status';
@@ -78,6 +78,20 @@ describe('getLiveEventStatus', () => {
     '+5511966660505',
     '+5511966660506',
   ];
+
+  // Fixado à tarde (não perto da meia-noite) — os testes usam offsets de
+  // até 3h antes de "agora" (ex.: turno concluído) pra montar cenários,
+  // e um "agora" real perto da meia-noite empurraria esse startsAt pro
+  // dia anterior, saindo do intervalo [startOfToday, endOfToday) e
+  // quebrando o teste de forma dependente só do horário em que roda.
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date('2026-07-14T15:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   afterEach(async () => {
     const owner = await db.query.users.findFirst({ where: eq(users.phone, OWNER_PHONE) });

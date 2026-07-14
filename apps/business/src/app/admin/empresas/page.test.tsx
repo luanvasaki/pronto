@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AdminEmpresasPage from './page';
 
@@ -68,5 +69,47 @@ describe('AdminEmpresasPage', () => {
 
     expect(await screen.findByText('CPF 11122233344')).toBeInTheDocument();
     expect(screen.queryByText(/^CNPJ/)).not.toBeInTheDocument();
+  });
+
+  it('pede confirmação antes de resetar a senha, e só chama a API no segundo clique', async () => {
+    listAdminCompaniesMock.mockResolvedValue({ companies: [COMPANY] });
+    resetUserPasswordMock.mockResolvedValue({ email: 'owner@example.com' });
+    const user = userEvent.setup();
+
+    render(<AdminEmpresasPage />);
+    await screen.findByText('Bar do Zé');
+    await user.click(screen.getByRole('button', { name: 'Resetar senha' }));
+
+    expect(resetUserPasswordMock).not.toHaveBeenCalled();
+    await user.click(await screen.findByRole('button', { name: 'Confirmar envio' }));
+
+    expect(resetUserPasswordMock).toHaveBeenCalledWith('owner-1');
+    expect(await screen.findByText('Link de redefinição enviado pra owner@example.com.')).toBeInTheDocument();
+  });
+
+  it('cancela a confirmação de resetar senha sem chamar a API', async () => {
+    listAdminCompaniesMock.mockResolvedValue({ companies: [COMPANY] });
+    const user = userEvent.setup();
+
+    render(<AdminEmpresasPage />);
+    await screen.findByText('Bar do Zé');
+    await user.click(screen.getByRole('button', { name: 'Resetar senha' }));
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }));
+
+    expect(screen.queryByRole('button', { name: 'Confirmar envio' })).not.toBeInTheDocument();
+    expect(resetUserPasswordMock).not.toHaveBeenCalled();
+  });
+
+  it('mostra erro quando resetar a senha falha', async () => {
+    listAdminCompaniesMock.mockResolvedValue({ companies: [COMPANY] });
+    resetUserPasswordMock.mockRejectedValue(new Error('falha de rede'));
+    const user = userEvent.setup();
+
+    render(<AdminEmpresasPage />);
+    await screen.findByText('Bar do Zé');
+    await user.click(screen.getByRole('button', { name: 'Resetar senha' }));
+    await user.click(await screen.findByRole('button', { name: 'Confirmar envio' }));
+
+    expect(await screen.findByText('Não foi possível enviar o link.')).toBeInTheDocument();
   });
 });

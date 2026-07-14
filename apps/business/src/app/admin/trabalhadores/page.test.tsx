@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AdminTrabalhadoresPage from './page';
 
@@ -62,5 +63,47 @@ describe('AdminTrabalhadoresPage', () => {
 
     await screen.findByText('Rafael Lima');
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('pede confirmação antes de resetar a senha, e só chama a API no segundo clique', async () => {
+    listAdminWorkersMock.mockResolvedValue({ workers: [WORKER] });
+    resetUserPasswordMock.mockResolvedValue({ email: 'rafael@example.com' });
+    const user = userEvent.setup();
+
+    render(<AdminTrabalhadoresPage />);
+    await screen.findByText('Rafael Lima');
+    await user.click(screen.getByRole('button', { name: 'Resetar senha' }));
+
+    expect(resetUserPasswordMock).not.toHaveBeenCalled();
+    await user.click(await screen.findByRole('button', { name: 'Confirmar envio' }));
+
+    expect(resetUserPasswordMock).toHaveBeenCalledWith('worker-1');
+    expect(await screen.findByText('Link de redefinição enviado pra rafael@example.com.')).toBeInTheDocument();
+  });
+
+  it('cancela a confirmação de resetar senha sem chamar a API', async () => {
+    listAdminWorkersMock.mockResolvedValue({ workers: [WORKER] });
+    const user = userEvent.setup();
+
+    render(<AdminTrabalhadoresPage />);
+    await screen.findByText('Rafael Lima');
+    await user.click(screen.getByRole('button', { name: 'Resetar senha' }));
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }));
+
+    expect(screen.queryByRole('button', { name: 'Confirmar envio' })).not.toBeInTheDocument();
+    expect(resetUserPasswordMock).not.toHaveBeenCalled();
+  });
+
+  it('mostra erro quando resetar a senha falha', async () => {
+    listAdminWorkersMock.mockResolvedValue({ workers: [WORKER] });
+    resetUserPasswordMock.mockRejectedValue(new Error('falha de rede'));
+    const user = userEvent.setup();
+
+    render(<AdminTrabalhadoresPage />);
+    await screen.findByText('Rafael Lima');
+    await user.click(screen.getByRole('button', { name: 'Resetar senha' }));
+    await user.click(await screen.findByRole('button', { name: 'Confirmar envio' }));
+
+    expect(await screen.findByText('Não foi possível enviar o link.')).toBeInTheDocument();
   });
 });

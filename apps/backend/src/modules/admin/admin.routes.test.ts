@@ -42,12 +42,22 @@ async function makeAdmin(email: string): Promise<void> {
 describe('rotas de admin', () => {
   afterEach(async () => {
     const worker = await db.query.users.findFirst({ where: eq(users.email, WORKER_EMAIL) });
+    const owner = await db.query.users.findFirst({ where: eq(users.email, OWNER_EMAIL) });
+    const company = owner
+      ? await db.query.companies.findFirst({ where: eq(companies.ownerUserId, owner.id) })
+      : undefined;
     await db.delete(users).where(eq(users.email, WORKER_EMAIL));
     await db.delete(users).where(eq(users.email, OWNER_EMAIL));
     await db.delete(users).where(eq(users.email, ADMIN_EMAIL));
     await db.delete(skillCategories).where(eq(skillCategories.name, TEST_CATEGORY_NAME));
     if (worker) {
       await rm(path.join(process.cwd(), 'uploads', 'documents', worker.id), {
+        recursive: true,
+        force: true,
+      });
+    }
+    if (company) {
+      await rm(path.join(process.cwd(), 'uploads', 'documents', company.id), {
         recursive: true,
         force: true,
       });
@@ -173,6 +183,59 @@ describe('rotas de admin', () => {
       .send({ status: 'approved' });
     expect(reviewResponse.status).toBe(200);
     expect(reviewResponse.body.status).toBe('approved');
+  });
+
+  it('GET /admin/documents/:id/file responde 401 sem sessão e 403 pra quem não é admin — só admin baixa documento de KYC de outra pessoa', async () => {
+    const app = createApp();
+    const workerAgent = await loginAgent(app, WORKER_EMAIL);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await workerAgent.put('/worker-profile').send({
+      fullName: 'Rafael Lima',
+      categoryIds: [category.id],
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
+    });
+    const documentBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
+    const uploadResponse = await workerAgent
+      .post('/worker-profile/document')
+      .attach('document', documentBuffer, { filename: 'rg.jpg', contentType: 'image/jpeg' });
+
+    const noSessionResponse = await request(app).get(`/admin/documents/${uploadResponse.body.id}/file`);
+    expect(noSessionResponse.status).toBe(401);
+
+    // O próprio dono do documento, autenticado mas sem ser admin, não
+    // pode baixar o documento de identidade de outra pessoa por essa rota.
+    const otherWorkerAgent = await loginAgent(app, OWNER_EMAIL);
+    const forbiddenResponse = await otherWorkerAgent.get(`/admin/documents/${uploadResponse.body.id}/file`);
+    expect(forbiddenResponse.status).toBe(403);
+  });
+
+  it('GET /admin/company-documents/:id/file: admin baixa o documento da empresa, mas sem sessão dá 401 e sem ser admin dá 403', async () => {
+    const app = createApp();
+    const ownerAgent = await loginAgent(app, OWNER_EMAIL);
+    await ownerAgent
+      .put('/company-profile')
+      .send({ legalName: 'Bar do Zé Ltda', tradeName: 'Bar do Zé', cnpj: TEST_CNPJ });
+    const documentBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
+    const uploadResponse = await ownerAgent
+      .post('/company-profile/document')
+      .attach('document', documentBuffer, { filename: 'rg.jpg', contentType: 'image/jpeg' });
+    expect(uploadResponse.status).toBe(201);
+
+    const noSessionResponse = await request(app).get(`/admin/company-documents/${uploadResponse.body.id}/file`);
+    expect(noSessionResponse.status).toBe(401);
+
+    const otherWorkerAgent = await loginAgent(app, WORKER_EMAIL);
+    const forbiddenResponse = await otherWorkerAgent.get(`/admin/company-documents/${uploadResponse.body.id}/file`);
+    expect(forbiddenResponse.status).toBe(403);
+
+    const adminAgent = await loginAgent(app, ADMIN_EMAIL);
+    await makeAdmin(ADMIN_EMAIL);
+    const fileResponse = await adminAgent.get(`/admin/company-documents/${uploadResponse.body.id}/file`);
+    expect(fileResponse.status).toBe(200);
+    expect(Buffer.compare(fileResponse.body, documentBuffer)).toBe(0);
   });
 
   it('aprova a verificação de uma empresa', async () => {
