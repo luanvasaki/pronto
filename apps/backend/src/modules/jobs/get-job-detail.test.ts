@@ -8,7 +8,7 @@ import { getJobDetailForWorker } from './get-job-detail';
 
 const WORKER_PHONE = '+5511966660070';
 const OWNER_PHONE = '+5511966660071';
-const TEST_CNPJ = '11222333000266';
+const TEST_CNPJ = '11112223340421';
 const TEST_CATEGORY_NAME = 'Categoria de teste — get-job-detail';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);

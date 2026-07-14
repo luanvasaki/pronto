@@ -9,7 +9,7 @@ import { uploadCompanyLogo } from './upload-company-logo';
 
 // Fixture única entre arquivos de teste (ver README).
 const TEST_PHONE = '+5511955550004';
-const TEST_CNPJ = '11222333000260';
+const TEST_CNPJ = '11112223340502';
 
 async function createTestUser() {
   const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();

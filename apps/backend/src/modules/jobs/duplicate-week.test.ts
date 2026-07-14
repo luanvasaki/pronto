@@ -8,7 +8,7 @@ import { duplicateWeek } from './duplicate-week';
 // Fixtures únicas entre arquivos de teste (ver README).
 const OWNER_PHONE = '+5511966660097';
 const WORKER_PHONE = '+5511966660098';
-const TEST_CNPJ = '11222333000262';
+const TEST_CNPJ = '11112223341231';
 const TEST_CATEGORY_NAME = 'Categoria de teste — duplicate-week';
 
 // Semana de origem começa daqui a 3 dias — bem dentro do futuro, longe o

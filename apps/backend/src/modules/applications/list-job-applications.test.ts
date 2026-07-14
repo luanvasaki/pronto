@@ -15,7 +15,7 @@ const WORKER_PHONE = '+5511966660014';
 const OWNER_PHONE = '+5511966660015';
 const OTHER_OWNER_PHONE = '+5511966660016';
 const SECOND_WORKER_PHONE = '+5511966660017';
-const TEST_CNPJ = '11222333000200';
+const TEST_CNPJ = '11112223341070';
 const TEST_CATEGORY_NAME = 'Categoria de teste — list-job-applications';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);

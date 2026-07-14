@@ -7,7 +7,7 @@ import { answerQuestion } from './answer-question';
 const OWNER_PHONE = '+5511966660040';
 const WORKER_PHONE = '+5511966660041';
 const OUTSIDER_PHONE = '+5511966660042';
-const TEST_CNPJ = '11222333000222';
+const TEST_CNPJ = '11112223340855';
 const TEST_CATEGORY_NAME = 'Categoria de teste — answer-question';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);

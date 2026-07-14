@@ -13,7 +13,7 @@ import { getAdminMetrics } from './get-metrics';
 // Fixtures únicas entre arquivos de teste (ver README).
 const WORKER_PHONE = '+5511966660050';
 const OWNER_PHONE = '+5511966660051';
-const TEST_CNPJ = '11222333000277';
+const TEST_CNPJ = '11112223340340';
 const TEST_CATEGORY_NAME = 'Categoria de teste — get-metrics';
 const PAY_AMOUNT = '150.00';
 

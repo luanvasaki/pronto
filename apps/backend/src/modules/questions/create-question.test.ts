@@ -7,7 +7,7 @@ import { createQuestion } from './create-question';
 const OWNER_PHONE = '+5511966660030';
 const WORKER_PHONE = '+5511966660031';
 const OUTSIDER_PHONE = '+5511966660032';
-const TEST_CNPJ = '11222333000211';
+const TEST_CNPJ = '11112223340936';
 const TEST_CATEGORY_NAME = 'Categoria de teste — create-question';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);

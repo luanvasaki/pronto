@@ -8,7 +8,7 @@ import { listMyApplications } from './list-my-applications';
 // Fixtures únicas entre arquivos de teste (ver README).
 const WORKER_PHONE = '+5511966660012';
 const OWNER_PHONE = '+5511966660013';
-const TEST_CNPJ = '11222333000199';
+const TEST_CNPJ = '11112223341150';
 const TEST_CATEGORY_NAME = 'Categoria de teste — list-my-applications';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);

@@ -11,7 +11,7 @@ import { skipCompanyRating } from './skip-company-rating';
 const WORKER_PHONE = '+5511966660060';
 const OUTSIDER_PHONE = '+5511966660061';
 const OWNER_PHONE = '+5511966660062';
-const TEST_CNPJ = '11222333000255';
+const TEST_CNPJ = '11112223340693';
 const TEST_CATEGORY_NAME = 'Categoria de teste — skip-company-rating';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);

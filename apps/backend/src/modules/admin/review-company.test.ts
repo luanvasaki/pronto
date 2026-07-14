@@ -7,7 +7,7 @@ import { reviewCompany } from './review-company';
 // Fixtures únicas entre arquivos de teste (ver README).
 const OWNER_PHONE = '+5511966660044';
 const ADMIN_PHONE = '+5511966660099';
-const TEST_CNPJ = '11222333000288';
+const TEST_CNPJ = '11112223340260';
 
 async function setupPendingCompany() {
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();

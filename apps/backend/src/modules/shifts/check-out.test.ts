@@ -11,7 +11,7 @@ import { checkOut } from './check-out';
 const WORKER_PHONE = '+5511966660024';
 const OTHER_WORKER_PHONE = '+5511966660025';
 const OWNER_PHONE = '+5511966660026';
-const TEST_CNPJ = '11222333000233';
+const TEST_CNPJ = '11112223340774';
 const TEST_CATEGORY_NAME = 'Categoria de teste — check-out';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
