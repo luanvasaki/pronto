@@ -90,7 +90,8 @@ describe('EditarVagaPage', () => {
     render(<EditarVagaPage />);
 
     await screen.findByDisplayValue('Vaga de garçom pra evento');
-    expect(screen.getByRole('button', { name: 'Sim' })).toHaveClass('bg-primary');
+    expect(screen.getByRole('button', { name: 'Sim' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Não' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByDisplayValue('Social completo')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Câmera própria')).toBeInTheDocument();
   });

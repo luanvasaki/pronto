@@ -38,6 +38,7 @@ export function JobRequirementsFields({
         <div className="flex gap-2">
           <button
             type="button"
+            aria-pressed={requiresExperience === true}
             onClick={() => onRequiresExperienceChange(true)}
             className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
               requiresExperience === true
@@ -49,6 +50,7 @@ export function JobRequirementsFields({
           </button>
           <button
             type="button"
+            aria-pressed={requiresExperience === false}
             onClick={() => onRequiresExperienceChange(false)}
             className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
               requiresExperience === false
@@ -104,6 +106,7 @@ export function JobRequirementsFields({
             <div className="flex gap-2">
               <button
                 type="button"
+                aria-pressed={cnhRequired}
                 onClick={() => onCnhRequiredChange(true)}
                 className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
                   cnhRequired
@@ -115,6 +118,7 @@ export function JobRequirementsFields({
               </button>
               <button
                 type="button"
+                aria-pressed={!cnhRequired}
                 onClick={() => onCnhRequiredChange(false)}
                 className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
                   !cnhRequired

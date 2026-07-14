@@ -50,6 +50,8 @@ describe('getAdminGrowthMetrics', () => {
     const weekStarts = metrics.companies.map((w) => w.weekStart);
     expect(weekStarts).toEqual([...weekStarts].sort());
     for (const week of [...metrics.companies, ...metrics.workers, ...metrics.dealsClosed]) {
+      expect(typeof week.count).toBe('number');
+      expect(Number.isInteger(week.count)).toBe(true);
       expect(week.count).toBeGreaterThanOrEqual(0);
     }
   });

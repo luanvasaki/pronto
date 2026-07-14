@@ -404,8 +404,9 @@ describe('VagaCandidatosPage', () => {
 
     render(<VagaCandidatosPage />);
 
-    expect(await screen.findByText('Profissional confirmou o recebimento')).toBeInTheDocument();
+    const message = await screen.findByText('Profissional confirmou o recebimento');
     expect(screen.queryByRole('button', { name: /marcar como pago/i })).not.toBeInTheDocument();
+    expect(message).not.toHaveClass('text-danger');
   });
 
   it('destaca quando o profissional avisa que não recebeu', async () => {
@@ -420,7 +421,7 @@ describe('VagaCandidatosPage', () => {
     render(<VagaCandidatosPage />);
 
     const message = await screen.findByText('Profissional avisou que não recebeu');
-    expect(message).toHaveClass('text-danger');
+    expect(message).toHaveClass('font-semibold', 'text-danger');
   });
 
   it('mostra o formulário de avaliação pra turno concluído ainda não avaliado', async () => {

@@ -137,7 +137,8 @@ describe('confirmPayment', () => {
     const result = await confirmPayment(worker.id, shift.id, true);
 
     expect(result.status).toBe('confirmed');
-    expect(result.confirmedAt).not.toBeNull();
+    expect(result.confirmedAt).toBeInstanceOf(Date);
+    expect(result.confirmedAt!.getTime()).toBeGreaterThan(Date.now() - 5000);
     expect(result.disputedAt).toBeNull();
     expect(result.amount).toBe('150.00');
   });
@@ -171,7 +172,8 @@ describe('confirmPayment', () => {
     const result = await confirmPayment(worker.id, shift.id, false);
 
     expect(result.status).toBe('disputed');
-    expect(result.disputedAt).not.toBeNull();
+    expect(result.disputedAt).toBeInstanceOf(Date);
+    expect(result.disputedAt!.getTime()).toBeGreaterThan(Date.now() - 5000);
     expect(result.confirmedAt).toBeNull();
   });
 

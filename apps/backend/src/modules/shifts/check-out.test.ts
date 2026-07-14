@@ -120,7 +120,8 @@ describe('checkOut', () => {
 
     expect(result.status).toBe('completed');
     expect(result.checkOutLat).toBe(-23.5501);
-    expect(result.checkOutAt).not.toBeNull();
+    expect(result.checkOutAt).toBeInstanceOf(Date);
+    expect(result.checkOutAt!.getTime()).toBeGreaterThan(Date.now() - 5000);
   });
 
   it('rejeita check-out longe do local da vaga', async () => {
