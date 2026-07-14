@@ -139,6 +139,30 @@ describe('confirmPayment', () => {
     expect(result.status).toBe('confirmed');
     expect(result.confirmedAt).not.toBeNull();
     expect(result.disputedAt).toBeNull();
+    expect(result.amount).toBe('150.00');
+  });
+
+  it('rejeita confirmar duas vezes mesmo em corrida (duas chamadas simultâneas)', async () => {
+    const { worker, shift } = await setupReleasedShift();
+
+    const results = await Promise.allSettled([
+      confirmPayment(worker.id, shift.id, true),
+      confirmPayment(worker.id, shift.id, true),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    // A leitura antes do UPDATE condicional não é travada por linha —
+    // dependendo do timing exato, a chamada perdedora vê o status ainda
+    // "released" (cai no UPDATE condicional, "não está pronto pra
+    // confirmação") ou já vê "confirmed"/"disputed" (cai na checagem
+    // anterior, "ainda não foi marcado como pago"). As duas são a mesma
+    // proteção contra corrida funcionando, só timings diferentes.
+    expect((rejected[0] as PromiseRejectedResult).reason.message).toMatch(
+      /não está pronto pra confirmação|ainda não foi marcado como pago/,
+    );
   });
 
   it('contesta quando não recebeu', async () => {

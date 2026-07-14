@@ -10,15 +10,21 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('../../components/ui/google-login-button', () => ({
-  GoogleLoginButton: () => null,
+  GoogleLoginButton: ({ onSuccess }: { onSuccess: (idToken: string) => void }) => (
+    <button type="button" onClick={() => onSuccess('fake-id-token')}>
+      Simular sucesso do Google
+    </button>
+  ),
 }));
 
 const loginMock = vi.fn();
+const googleLoginMock = vi.fn();
 vi.mock('@shift/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shift/shared')>();
   return {
     ...actual,
     login: (...args: unknown[]) => loginMock(...args),
+    googleLogin: (...args: unknown[]) => googleLoginMock(...args),
   };
 });
 
@@ -26,6 +32,28 @@ describe('EntrarPage', () => {
   beforeEach(() => {
     pushMock.mockClear();
     loginMock.mockReset();
+    googleLoginMock.mockReset();
+  });
+
+  it('manda o aceite dos termos pro login com Google quando o checkbox está marcado', async () => {
+    googleLoginMock.mockResolvedValue({ user: { id: '1' } });
+    const user = userEvent.setup();
+    render(<EntrarPage />);
+
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /simular sucesso do google/i }));
+
+    await waitFor(() => expect(googleLoginMock).toHaveBeenCalledWith('fake-id-token', true));
+  });
+
+  it('não manda o aceite dos termos pro login com Google quando o checkbox não está marcado', async () => {
+    googleLoginMock.mockResolvedValue({ user: { id: '1' } });
+    const user = userEvent.setup();
+    render(<EntrarPage />);
+
+    await user.click(screen.getByRole('button', { name: /simular sucesso do google/i }));
+
+    await waitFor(() => expect(googleLoginMock).toHaveBeenCalledWith('fake-id-token', false));
   });
 
   it('começa com o botão desabilitado', () => {

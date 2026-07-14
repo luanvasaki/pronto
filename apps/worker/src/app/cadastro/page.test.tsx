@@ -112,6 +112,28 @@ describe('CadastroPage', () => {
     expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
   });
 
+  it('mantém o botão desabilitado e avisa quando o trabalhador é menor de 18 anos', async () => {
+    const user = userEvent.setup();
+    render(<CadastroPage />);
+    await screen.findByLabelText('Garçom');
+
+    const tenYearsAgo = new Date();
+    tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10);
+    const underageBirthDate = `${tenYearsAgo.getFullYear()}-${String(tenYearsAgo.getMonth() + 1).padStart(2, '0')}-${String(tenYearsAgo.getDate()).padStart(2, '0')}`;
+
+    await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
+    await user.type(screen.getByLabelText('CPF'), '52998224725');
+    await user.type(screen.getByLabelText('Telefone'), '11912345678');
+    await user.type(screen.getByLabelText('Endereço completo'), 'Rua das Flores, 123, Centro, São Paulo - SP');
+    fireEvent.change(screen.getByLabelText('Data de nascimento'), { target: { value: underageBirthDate } });
+    await user.click(screen.getByLabelText('Garçom'));
+
+    expect(
+      screen.getByText('É preciso ter 18 anos ou mais pra se cadastrar como trabalhador no Pronto.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
+  });
+
   it('libera a URL do blob anterior ao trocar de foto, e a última ao desmontar', async () => {
     const user = userEvent.setup();
     const { unmount } = render(<CadastroPage />);

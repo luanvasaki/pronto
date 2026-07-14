@@ -1,3 +1,4 @@
+import { ApiError } from '@shift/shared';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -347,9 +348,49 @@ describe('VagaCandidatosPage', () => {
     render(<VagaCandidatosPage />);
     await screen.findByRole('button', { name: /marcar como pago/i });
     await user.click(screen.getByRole('button', { name: /marcar como pago/i }));
+    await user.click(await screen.findByRole('button', { name: /sim, marcar como pago/i }));
 
     expect(await screen.findByText(/marcado como pago/i)).toBeInTheDocument();
     expect(releasePaymentMock).toHaveBeenCalledWith('shift-1');
+  });
+
+  it('cancela a confirmação de "marcar como pago" sem chamar a API', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [
+        makeCompletedApplication({
+          payment: { id: 'p1', shiftId: 'shift-1', amount: '130.00', status: 'charged', chargedAt: null, releasedAt: null },
+        }),
+      ],
+    });
+    const user = userEvent.setup();
+
+    render(<VagaCandidatosPage />);
+    await screen.findByRole('button', { name: /marcar como pago/i });
+    await user.click(screen.getByRole('button', { name: /marcar como pago/i }));
+    await user.click(await screen.findByRole('button', { name: /cancelar/i }));
+
+    expect(screen.queryByRole('button', { name: /sim, marcar como pago/i })).not.toBeInTheDocument();
+    expect(releasePaymentMock).not.toHaveBeenCalled();
+  });
+
+  it('mostra erro e mantém o pagamento como "charged" quando marcar como pago falha', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [
+        makeCompletedApplication({
+          payment: { id: 'p1', shiftId: 'shift-1', amount: '130.00', status: 'charged', chargedAt: null, releasedAt: null },
+        }),
+      ],
+    });
+    releasePaymentMock.mockRejectedValue(new ApiError(400, 'Esse pagamento não está pronto pra liberação.'));
+    const user = userEvent.setup();
+
+    render(<VagaCandidatosPage />);
+    await screen.findByRole('button', { name: /marcar como pago/i });
+    await user.click(screen.getByRole('button', { name: /marcar como pago/i }));
+    await user.click(await screen.findByRole('button', { name: /sim, marcar como pago/i }));
+
+    expect(await screen.findByText('Esse pagamento não está pronto pra liberação.')).toBeInTheDocument();
+    expect(screen.queryByText(/marcado como pago/i)).not.toBeInTheDocument();
   });
 
   it('mostra quando o profissional confirmou o recebimento', async () => {

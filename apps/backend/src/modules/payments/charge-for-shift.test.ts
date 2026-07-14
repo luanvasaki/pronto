@@ -96,6 +96,8 @@ describe('chargeForShift', () => {
     expect(payment?.status).toBe('charged');
     expect(payment?.pspChargeId).toBe('psp_123');
     expect(payment?.chargedAt).not.toBeNull();
+    expect(payment?.amount).toBe(shift.payAmountSnapshot);
+    expect(payment?.amount).toBe('150.00');
   });
 
   it('marca o pagamento como "failed" quando o gateway falha', async () => {

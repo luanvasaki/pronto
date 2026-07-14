@@ -105,6 +105,27 @@ describe('EntrarPage', () => {
     expect(screen.getByLabelText(/senha/i)).not.toHaveAttribute('aria-invalid', 'true');
   });
 
+  it('manda o aceite dos termos pro login com Google quando o checkbox está marcado', async () => {
+    googleLoginMock.mockResolvedValue({ user: { id: '1' } });
+    const user = userEvent.setup();
+    render(<EntrarPage />);
+
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /simular sucesso do google/i }));
+
+    await waitFor(() => expect(googleLoginMock).toHaveBeenCalledWith('fake-id-token', true));
+  });
+
+  it('não manda o aceite dos termos pro login com Google quando o checkbox não está marcado', async () => {
+    googleLoginMock.mockResolvedValue({ user: { id: '1' } });
+    const user = userEvent.setup();
+    render(<EntrarPage />);
+
+    await user.click(screen.getByRole('button', { name: /simular sucesso do google/i }));
+
+    await waitFor(() => expect(googleLoginMock).toHaveBeenCalledWith('fake-id-token', false));
+  });
+
   it('mostra a mensagem da API no slot do Google quando o login com Google falha', async () => {
     googleLoginMock.mockRejectedValue(new ApiError(400, 'Termos ainda não aceitos.'));
     const user = userEvent.setup();

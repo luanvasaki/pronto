@@ -107,6 +107,7 @@ export default function VagaCandidatosPage() {
   const [showFormAfterSkip, setShowFormAfterSkip] = useState<Set<string>>(new Set());
 
   const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
+  const [confirmingReleaseShiftId, setConfirmingReleaseShiftId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState<{ id: string; message: string } | null>(null);
 
@@ -302,6 +303,7 @@ export default function VagaCandidatosPage() {
   }
 
   async function handleReleasePayment(applicationId: string, shiftId: string): Promise<void> {
+    setConfirmingReleaseShiftId(null);
     setReleaseError(null);
     setReleasingShiftId(shiftId);
 
@@ -523,14 +525,37 @@ export default function VagaCandidatosPage() {
                 {releaseError?.shiftId === application.shift.id && (
                   <p className="mb-2 text-sm text-danger">{releaseError.message}</p>
                 )}
-                <Button
-                  type="button"
-                  variant="outlined"
-                  isLoading={releasingShiftId === application.shift.id}
-                  onClick={() => handleReleasePayment(application.id, application.shift!.id)}
-                >
-                  Marcar como pago
-                </Button>
+                {confirmingReleaseShiftId === application.shift.id ? (
+                  <div className="flex flex-col gap-2 rounded-2xl border border-dashed border-danger/40 p-3">
+                    <p className="text-sm text-text">
+                      Confirma que o pagamento já foi feito de verdade pro profissional? Essa ação não pode ser desfeita.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        isLoading={releasingShiftId === application.shift.id}
+                        onClick={() => handleReleasePayment(application.id, application.shift!.id)}
+                      >
+                        Sim, marcar como pago
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingReleaseShiftId(null)}
+                        className="text-sm text-text-secondary underline underline-offset-2"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    onClick={() => setConfirmingReleaseShiftId(application.shift!.id)}
+                  >
+                    Marcar como pago
+                  </Button>
+                )}
               </div>
             )}
 
