@@ -142,4 +142,29 @@ describe('removeApprovedWorker', () => {
     const updatedJob = await db.query.jobs.findFirst({ where: eq(jobs.id, job.id) });
     expect(updatedJob?.positionsFilled).toBe(1);
   });
+
+  it('decrementa positionsFilled corretamente mesmo removendo 2 candidatos aprovados em corrida (duas chamadas simultâneas)', async () => {
+    const { owner, job, application } = await setup(2);
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+    const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: otherWorker.id, fullName: 'Beatriz Lima' });
+    const otherApplication = await createApplication(otherWorker.id, job.id, true);
+    await updateApplicationStatus(owner.id, otherApplication.id, 'approved');
+    const filledJob = await db.query.jobs.findFirst({ where: eq(jobs.id, job.id) });
+    expect(filledJob?.positionsFilled).toBe(2);
+
+    const results = await Promise.allSettled([
+      removeApprovedWorker(owner.id, application.id),
+      removeApprovedWorker(owner.id, otherApplication.id),
+    ]);
+
+    expect(results.every((result) => result.status === 'fulfilled')).toBe(true);
+
+    // O ponto da corrida: sem UPDATE atômico, as duas remoções liam o
+    // mesmo positionsFilled=2 e as duas escreviam 1 — perdendo um dos
+    // decrementos. Com a expressão SQL, o resultado tem que ser 0.
+    const finalJob = await db.query.jobs.findFirst({ where: eq(jobs.id, job.id) });
+    expect(finalJob?.positionsFilled).toBe(0);
+    expect(finalJob?.status).toBe('open');
+  });
 });

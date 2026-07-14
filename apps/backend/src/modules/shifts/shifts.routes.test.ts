@@ -128,3 +128,57 @@ describe('POST /shifts/:id/check-out (fiação real com cobrança)', () => {
     expect(payment?.pspChargeId).not.toBeNull();
   });
 });
+
+describe('POST /shifts/:id/payment/release e /payment/confirm (fiação real)', () => {
+  afterEach(async () => {
+    const owner = await db.query.users.findFirst({ where: eq(users.email, OWNER_EMAIL) });
+    if (owner) {
+      const [company] = await db.query.companies.findMany({ where: eq(companies.ownerUserId, owner.id) });
+      if (company) {
+        const companyJobs = await db.query.jobs.findMany({ where: eq(jobs.companyId, company.id) });
+        for (const job of companyJobs) {
+          const jobShifts = await db.query.shifts.findMany({ where: eq(shifts.jobId, job.id) });
+          for (const shift of jobShifts) {
+            await db.delete(payments).where(eq(payments.shiftId, shift.id));
+          }
+          await db.delete(shifts).where(eq(shifts.jobId, job.id));
+          await db.delete(applications).where(eq(applications.jobId, job.id));
+        }
+        await db.delete(jobs).where(eq(jobs.companyId, company.id));
+      }
+    }
+    await db.delete(users).where(eq(users.email, WORKER_EMAIL));
+    await db.delete(users).where(eq(users.email, OWNER_EMAIL));
+    await db.delete(skillCategories).where(eq(skillCategories.name, TEST_CATEGORY_NAME));
+  });
+
+  async function setupChargedShift(app: ReturnType<typeof createApp>) {
+    const { ownerAgent, workerAgent, shiftId } = await setupApprovedApplication(app);
+    await workerAgent.post(`/shifts/${shiftId}/check-in`).send({ lat: JOB_LAT, lng: JOB_LNG });
+    await workerAgent.post(`/shifts/${shiftId}/check-out`).send({ lat: JOB_LAT, lng: JOB_LNG });
+    return { ownerAgent, workerAgent, shiftId };
+  }
+
+  it('libera e confirma o pagamento via HTTP real (requireAuth + rate limiter + params reais)', async () => {
+    const app = createApp();
+    const { ownerAgent, workerAgent, shiftId } = await setupChargedShift(app);
+
+    const noSessionRelease = await request(app).post(`/shifts/${shiftId}/payment/release`);
+    expect(noSessionRelease.status).toBe(401);
+
+    const releaseResponse = await ownerAgent.post(`/shifts/${shiftId}/payment/release`);
+    expect(releaseResponse.status).toBe(200);
+    expect(releaseResponse.body.status).toBe('released');
+
+    const noSessionConfirm = await request(app).post(`/shifts/${shiftId}/payment/confirm`).send({ received: true });
+    expect(noSessionConfirm.status).toBe(401);
+
+    const confirmResponse = await workerAgent.post(`/shifts/${shiftId}/payment/confirm`).send({ received: true });
+    expect(confirmResponse.status).toBe(200);
+    expect(confirmResponse.body.status).toBe('confirmed');
+    expect(confirmResponse.body.amount).toBe('150.00');
+
+    const payment = await db.query.payments.findFirst({ where: eq(payments.shiftId, shiftId) });
+    expect(payment?.status).toBe('confirmed');
+  });
+});

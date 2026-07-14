@@ -19,6 +19,20 @@ describe('googleLogin', () => {
     await db.delete(users).where(eq(users.email, TEST_EMAIL));
   });
 
+  it('rejeita e-mail do Google não verificado, sem criar conta', async () => {
+    const verifier = fakeVerifier({
+      email: TEST_EMAIL,
+      googleId: TEST_GOOGLE_ID,
+      emailVerified: false,
+      picture: 'https://example.com/photo.jpg',
+    });
+
+    await expect(googleLogin('fake-token', true, verifier)).rejects.toThrow('E-mail do Google não verificado');
+
+    const rows = await db.query.users.findMany({ where: eq(users.email, TEST_EMAIL) });
+    expect(rows).toHaveLength(0);
+  });
+
   it('mesmo em corrida (duas chamadas simultâneas com o mesmo Google ID), as duas logam na mesma conta em vez de uma falhar', async () => {
     const verifier = fakeVerifier({
       email: TEST_EMAIL,

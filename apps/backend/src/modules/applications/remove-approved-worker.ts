@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, jobs, shifts } from '../../db/schema';
 import { assertOwnsCompany } from '../../shared/assert-owns-company';
@@ -52,11 +52,16 @@ export async function removeApprovedWorker(ownerUserId: string, applicationId: s
       await tx.update(shifts).set({ status: 'cancelled', updatedAt: new Date() }).where(eq(shifts.id, shift.id));
     }
 
-    const positionsFilled = Math.max(0, job.positionsFilled - 1);
+    // Decremento via expressão SQL (não um valor lido antes da
+    // transação) — assim o UPDATE opera sobre o valor atual da linha
+    // no banco, não uma cópia potencialmente desatualizada. Sem isso,
+    // duas remoções simultâneas do mesmo job liam o mesmo
+    // positionsFilled e as duas escreviam "total - 1", perdendo um dos
+    // dois decrementos.
     await tx
       .update(jobs)
       .set({
-        positionsFilled,
+        positionsFilled: sql`greatest(${jobs.positionsFilled} - 1, 0)`,
         status: job.status === 'filled' ? 'open' : job.status,
         updatedAt: new Date(),
       })

@@ -39,7 +39,19 @@ export async function refreshSession(providedToken: string | undefined): Promise
     throw new HttpError(401, INVALID_SESSION_MESSAGE);
   }
 
-  await db.update(refreshTokens).set({ revokedAt: new Date() }).where(eq(refreshTokens.id, stored.id));
+  // Condicional em isNull(revokedAt) fecha a corrida entre duas chamadas
+  // simultâneas com o mesmo token: só uma UPDATE afeta linha (a outra
+  // vê 0 linhas e cai no "sessão inválida" em vez de também emitir
+  // tokens novos — sem isso um único refresh token vira duas sessões.
+  const revoked = await db
+    .update(refreshTokens)
+    .set({ revokedAt: new Date() })
+    .where(and(eq(refreshTokens.id, stored.id), isNull(refreshTokens.revokedAt)))
+    .returning({ id: refreshTokens.id });
+
+  if (revoked.length === 0) {
+    throw new HttpError(401, INVALID_SESSION_MESSAGE);
+  }
 
   return issueTokens(stored.userId);
 }

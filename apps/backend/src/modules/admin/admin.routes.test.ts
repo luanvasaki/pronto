@@ -5,7 +5,7 @@ import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../app';
 import { db } from '../../db/client';
-import { companies, skillCategories, users } from '../../db/schema';
+import { companies, skillCategories, users, workerSkills } from '../../db/schema';
 import { EmailSender } from '../auth/email-sender';
 
 class CapturingEmailSender implements EmailSender {
@@ -46,10 +46,20 @@ describe('rotas de admin', () => {
     const company = owner
       ? await db.query.companies.findFirst({ where: eq(companies.ownerUserId, owner.id) })
       : undefined;
+    // skill_categories.reviewed_by referencia users.id — precisa
+    // deletar antes do usuário admin, senão a FK trava a limpeza
+    // depois de um teste que aprova/rejeita a categoria de teste.
+    // worker_skills.category_id não tem cascade, então precisa ser
+    // limpo antes da categoria também (senão o teste de "trabalhador
+    // com métricas" deixa linha órfã bloqueando a próxima limpeza).
+    const testCategory = await db.query.skillCategories.findFirst({ where: eq(skillCategories.name, TEST_CATEGORY_NAME) });
+    if (testCategory) {
+      await db.delete(workerSkills).where(eq(workerSkills.categoryId, testCategory.id));
+    }
+    await db.delete(skillCategories).where(eq(skillCategories.name, TEST_CATEGORY_NAME));
     await db.delete(users).where(eq(users.email, WORKER_EMAIL));
     await db.delete(users).where(eq(users.email, OWNER_EMAIL));
     await db.delete(users).where(eq(users.email, ADMIN_EMAIL));
-    await db.delete(skillCategories).where(eq(skillCategories.name, TEST_CATEGORY_NAME));
     if (worker) {
       await rm(path.join(process.cwd(), 'uploads', 'documents', worker.id), {
         recursive: true,
@@ -141,6 +151,52 @@ describe('rotas de admin', () => {
     expect(response.body).toHaveProperty('workers');
     expect(response.body).toHaveProperty('dealsClosed');
     expect(response.body.companies).toHaveLength(8);
+  });
+
+  it('PATCH /admin/skill-categories/:id responde 401 sem sessão e 403 pra quem não é admin', async () => {
+    const app = createApp();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME, status: 'pending' }).returning();
+
+    const noSession = await request(app).patch(`/admin/skill-categories/${category.id}`).send({ status: 'approved' });
+    expect(noSession.status).toBe(401);
+
+    const workerAgent = await loginAgent(app, WORKER_EMAIL);
+    const nonAdmin = await workerAgent.patch(`/admin/skill-categories/${category.id}`).send({ status: 'approved' });
+    expect(nonAdmin.status).toBe(403);
+  });
+
+  it('PATCH /admin/skill-categories/:id aprova a categoria pro admin', async () => {
+    const app = createApp();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME, status: 'pending' }).returning();
+    const adminAgent = await loginAgent(app, ADMIN_EMAIL);
+    await makeAdmin(ADMIN_EMAIL);
+
+    const response = await adminAgent.patch(`/admin/skill-categories/${category.id}`).send({ status: 'approved' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe('approved');
+  });
+
+  it('GET /admin/failed-payments responde 401 sem sessão e 403 pra quem não é admin', async () => {
+    const app = createApp();
+
+    const noSession = await request(app).get('/admin/failed-payments');
+    expect(noSession.status).toBe(401);
+
+    const workerAgent = await loginAgent(app, WORKER_EMAIL);
+    const nonAdmin = await workerAgent.get('/admin/failed-payments');
+    expect(nonAdmin.status).toBe(403);
+  });
+
+  it('GET /admin/failed-payments responde 200 com a lista pro admin', async () => {
+    const app = createApp();
+    const adminAgent = await loginAgent(app, ADMIN_EMAIL);
+    await makeAdmin(ADMIN_EMAIL);
+
+    const response = await adminAgent.get('/admin/failed-payments');
+
+    expect(response.status).toBe(200);
+    expect(Array.isArray(response.body.payments)).toBe(true);
   });
 
   it('lista documento pendente e o admin consegue baixar o arquivo e aprovar', async () => {

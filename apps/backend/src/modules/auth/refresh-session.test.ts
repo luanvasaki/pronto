@@ -69,4 +69,20 @@ describe('refreshSession', () => {
     expect(sessionBRow?.revokedAt).not.toBeNull();
     await expect(refreshSession(sessionB.refreshToken)).rejects.toThrow('Sessão inválida');
   });
+
+  it('nunca gira o mesmo token pra duas sessões novas mesmo em corrida (duas chamadas simultâneas)', async () => {
+    const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const session = await issueTokens(user.id);
+
+    const results = await Promise.allSettled([
+      refreshSession(session.refreshToken),
+      refreshSession(session.refreshToken),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason.message).toContain('Sessão inválida');
+  });
 });
