@@ -462,17 +462,6 @@ export default function PerfilPage() {
         )}
       </div>
 
-      <div className="border-t border-border pt-6">
-        <h2 className="font-heading text-[17px] font-bold text-text">Localização</h2>
-        <p className="mt-1 text-xs text-text-secondary">
-          Usada pra mostrar escalas perto de você. Pra atualizar ou trocar o raio de busca, use o botão na tela de
-          Início.
-        </p>
-        <p className="mt-2.5 text-sm text-text">
-          {profile.homeAddressLabel ?? 'Nenhum endereço definido ainda.'}
-        </p>
-      </div>
-
       <form onSubmit={handleSaveProfile} className="flex flex-col gap-4 border-t border-border pt-6">
         <h2 className="font-heading text-[17px] font-bold text-text">Editar perfil</h2>
 

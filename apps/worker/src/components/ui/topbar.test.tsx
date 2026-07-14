@@ -9,6 +9,12 @@ const NOTIFICATIONS = [
 ];
 
 describe('Topbar', () => {
+  it('mostra a saudação com o nome do trabalhador perto do sino', () => {
+    render(<Topbar calledCount={0} workerName="Ana Souza" />);
+
+    expect(screen.getByText(/, Ana Souza/)).toBeInTheDocument();
+  });
+
   it('mostra o contador de chamadas no sino', () => {
     render(<Topbar calledCount={2} />);
 

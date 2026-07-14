@@ -130,13 +130,12 @@ describe('InicioPage', () => {
     expect(await screen.findByText('Nenhuma vaga disponível com esse filtro.')).toBeInTheDocument();
   });
 
-  it('mostra saudação, nome e localização do trabalhador', async () => {
+  it('mostra a localização usada pra buscar vagas', async () => {
     listNearbyJobsMock.mockResolvedValue({ jobs: [] });
 
     renderPage();
 
-    expect(await screen.findByText('Ana Souza')).toBeInTheDocument();
-    expect(screen.getByText('Campolim, Sorocaba')).toBeInTheDocument();
+    expect(await screen.findByText('Campolim, Sorocaba')).toBeInTheDocument();
   });
 
   it('avisa que o documento está em análise e ainda não pode se candidatar', async () => {
@@ -169,7 +168,7 @@ describe('InicioPage', () => {
 
     renderPage();
 
-    await screen.findByText('Ana Souza');
+    await screen.findByText('Campolim, Sorocaba');
     expect(screen.queryByText(/documento em análise/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/documento recusado/i)).not.toBeInTheDocument();
   });

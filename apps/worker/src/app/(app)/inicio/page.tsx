@@ -3,7 +3,6 @@
 import { ApiError, listSkillCategories } from '@shift/shared';
 import Link from 'next/link';
 import { ChangeEvent, useEffect, useState } from 'react';
-import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
 import { Chip } from '../../../components/ui/chip';
 import { MapLink } from '../../../components/ui/map-link';
@@ -29,13 +28,6 @@ function formatDateRange(startsAt: string, endsAt: string): string {
 function formatHours(startsAt: string, endsAt: string): string {
   const hours = (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / (60 * 60 * 1000);
   return `${Math.round(hours)}h`;
-}
-
-function greeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Bom dia,';
-  if (hour < 18) return 'Boa tarde,';
-  return 'Boa noite,';
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -349,28 +341,15 @@ export default function InicioPage() {
         </Link>
       )}
 
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-text-secondary">{greeting()}</p>
-          <p className="font-heading text-[28px] leading-tight font-bold tracking-[-0.02em] text-text">
-            {profile?.fullName ?? ''}
-          </p>
-          {profile?.homeAddressLabel && (
-            <p className="mt-1 flex items-center gap-1.5 text-[13px] text-text-secondary">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-                <circle cx="12" cy="10" r="2.4" stroke="currentColor" strokeWidth="2" />
-              </svg>
-              {profile.homeAddressLabel}
-            </p>
-          )}
-        </div>
-        {profile && <Avatar name={profile.fullName} photoUrl={profile.photoUrl} size="md" color="bg-secondary" />}
-      </div>
+      {profile?.homeAddressLabel && (
+        <p className="flex items-center gap-1.5 text-[13px] text-text-secondary">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z" stroke="currentColor" strokeWidth="2" />
+            <circle cx="12" cy="10" r="2.4" stroke="currentColor" strokeWidth="2" />
+          </svg>
+          {profile.homeAddressLabel}
+        </p>
+      )}
 
       <div className="scrollbar-none mt-5 flex gap-2.5 overflow-x-auto pb-1">
         <Chip active={filter === 'todos'} onClick={() => setFilter('todos')}>

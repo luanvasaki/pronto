@@ -122,7 +122,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <WorkerProfileProvider initialProfile={profile}>
       <div className="flex flex-1 flex-col">
-        <Topbar calledCount={calledCount} calledNotifications={calledNotifications} />
+        <Topbar
+          calledCount={calledCount}
+          calledNotifications={calledNotifications}
+          workerName={profile.fullName}
+          photoUrl={profile.photoUrl}
+        />
         <div className="flex flex-1 flex-col">{children}</div>
         <TabBar />
       </div>
