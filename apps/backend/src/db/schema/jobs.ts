@@ -63,6 +63,9 @@ export const jobs = pgTable('jobs', {
   // users.termsAcceptedAt, mas por vaga: dá respaldo jurídico de que a
   // empresa confirmou isso pra cada escala publicada, não só uma vez no cadastro.
   termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
+  // Qual redação do texto foi aceita (ver shared/terms-version.ts) —
+  // nulo pras vagas criadas antes desse campo existir.
+  termsVersion: varchar('terms_version', { length: 20 }),
   status: jobStatusEnum('status').notNull().default('open'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

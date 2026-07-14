@@ -29,6 +29,10 @@ export const users = pgTable(
     // Aceite da cláusula "Pronto é só intermediário, sem vínculo
     // empregatício" — obrigatório no registro/primeiro login com Google.
     termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
+    // Qual redação do texto foi aceita (ver shared/terms-version.ts) —
+    // nulo pras contas criadas antes desse campo existir, já que não dá
+    // pra saber retroativamente qual versão elas viram.
+    termsVersion: varchar('terms_version', { length: 20 }),
     phoneVerifiedAt: timestamp('phone_verified_at', { withTimezone: true }),
     status: userStatusEnum('status').notNull().default('active'),
     // Sem self-serve pra virar admin — só concedido via update direto

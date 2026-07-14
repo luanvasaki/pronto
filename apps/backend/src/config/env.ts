@@ -72,4 +72,10 @@ export const env = {
   // erro é importante, mas sua ausência não é um risco de segurança/perda
   // de dado como os outros dois.
   sentryDsn: process.env.SENTRY_DSN,
+  // Par VAPID do Web Push — opcionais como o Sentry: sem eles,
+  // sendPushToUser() vira no-op (ver push/send-push-notification.ts).
+  // Notificação é um complemento, não um caminho crítico do produto.
+  vapidPublicKey: process.env.VAPID_PUBLIC_KEY,
+  vapidPrivateKey: process.env.VAPID_PRIVATE_KEY,
+  vapidSubject: process.env.VAPID_SUBJECT,
 };

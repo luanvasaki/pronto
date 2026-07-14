@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { pgEnum, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { jobs } from './jobs';
 import { workerProfiles } from './worker-profiles';
 
@@ -26,6 +26,12 @@ export const applications = pgTable(
       .notNull()
       .references(() => workerProfiles.userId),
     status: applicationStatusEnum('status').notNull().default('pending'),
+    // Aceite explícito de que essa candidatura é intermediação avulsa,
+    // sem vínculo empregatício — mesmo padrão de jobs.termsAcceptedAt
+    // (ver create-job.ts), agora do lado do trabalhador: cada
+    // candidatura reforça a ciência, não só o cadastro da conta.
+    termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
+    termsVersion: varchar('terms_version', { length: 20 }),
     // Nulo = trabalhador ainda não viu que foi aprovado — alimenta o
     // alerta "você foi chamado pra esse turno" na tela dele. Só
     // preenchido quando a candidatura já está aprovada.

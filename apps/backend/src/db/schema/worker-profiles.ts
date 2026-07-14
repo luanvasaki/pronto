@@ -1,4 +1,5 @@
 import {
+  date,
   doublePrecision,
   integer,
   jsonb,
@@ -26,6 +27,10 @@ export const workerProfiles = pgTable(
       .primaryKey()
       .references(() => users.id, { onDelete: 'cascade' }),
     fullName: varchar('full_name', { length: 255 }).notNull(),
+    // Exigida no cadastro pra bloquear menor de 18 anos (ver
+    // MIN_WORKER_AGE_YEARS em upsert-worker-profile.ts) — nula só pra
+    // perfis criados antes desse campo existir.
+    birthDate: date('birth_date', { mode: 'string' }),
     // Foto exibida pra empresa decidir se aprova o candidato — diferente
     // do documento de KYC (que é privado, só pro admin ver). Pública de
     // propósito, guardada com `access: 'public'` no Blob.

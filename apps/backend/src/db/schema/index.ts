@@ -15,3 +15,4 @@ export * from './documents';
 export * from './refresh-tokens';
 export * from './worker-skills';
 export * from './password-reset-tokens';
+export * from './push-subscriptions';
