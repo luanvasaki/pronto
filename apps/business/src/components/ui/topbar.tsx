@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { Avatar } from './avatar';
 
 export interface PendingApplicationNotification {
   applicationId: string;
@@ -29,6 +30,8 @@ export interface PendingRatingNotification {
 export interface TopbarProps {
   title: string;
   subtitle?: string;
+  companyName?: string;
+  logoUrl?: string | null;
   onMenuClick: () => void;
   pendingApplicationsCount?: number;
   pendingApplications?: PendingApplicationNotification[];
@@ -41,6 +44,13 @@ export interface TopbarProps {
 
 function formatCheckInTime(iso: string): string {
   return new Intl.DateTimeFormat('pt-BR', { timeStyle: 'short' }).format(new Date(iso));
+}
+
+function greeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Bom dia';
+  if (hour < 18) return 'Boa tarde';
+  return 'Boa noite';
 }
 
 /**
@@ -63,6 +73,8 @@ function formatCheckInTime(iso: string): string {
 export function Topbar({
   title,
   subtitle,
+  companyName = 'sua empresa',
+  logoUrl = null,
   onMenuClick,
   pendingApplicationsCount = 0,
   pendingApplications = [],
@@ -110,6 +122,12 @@ export function Topbar({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2 sm:gap-3.5">
+        <div className="hidden items-center gap-2.5 sm:flex">
+          <Avatar name={companyName} photoUrl={logoUrl} size="sm" shape="square" color="bg-secondary" />
+          <p className="max-w-[160px] truncate text-[13.5px] font-semibold text-text">
+            {greeting()}, {companyName}
+          </p>
+        </div>
         <div ref={notificationsRef} className="relative">
           <button
             type="button"

@@ -4,8 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AppLayout from './layout';
 
 const replaceMock = vi.fn();
+const usePathnameMock = vi.fn(() => '/painel');
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/painel',
+  usePathname: () => usePathnameMock(),
   useRouter: () => ({ replace: replaceMock }),
 }));
 
@@ -37,6 +38,7 @@ vi.mock('../../lib/company-profile-api', async (importOriginal) => {
 describe('AppLayout', () => {
   beforeEach(() => {
     replaceMock.mockClear();
+    usePathnameMock.mockReset().mockReturnValue('/painel');
     useRequireAuthMock.mockReset().mockReturnValue({ isChecking: false });
     getCompanyProfileMock.mockReset();
     getCompanyNotificationsMock
@@ -129,5 +131,30 @@ describe('AppLayout', () => {
 
     await screen.findByText('conteúdo');
     expect(await screen.findByRole('link', { name: /administrador/i })).toHaveAttribute('href', '/admin');
+  });
+
+  it('mostra "Trabalhadores" como título em /trabalhadores, em vez do fallback genérico "Pronto"', async () => {
+    usePathnameMock.mockReturnValue('/trabalhadores');
+    getCompanyProfileMock.mockResolvedValue({
+      id: '1',
+      legalName: 'Bar do Zé Ltda',
+      tradeName: 'Bar do Zé',
+      cnpj: '11222333000181',
+      logoUrl: null,
+      addressLabel: null,
+      businessSegment: null,
+      verificationStatus: 'approved',
+      avgRating: null,
+      totalJobsPosted: 0,
+    });
+
+    render(
+      <AppLayout>
+        <p>conteúdo</p>
+      </AppLayout>,
+    );
+
+    expect(await screen.findByText('Todo mundo com quem você já trabalhou')).toBeInTheDocument();
+    expect(screen.queryByText('Pronto')).not.toBeInTheDocument();
   });
 });

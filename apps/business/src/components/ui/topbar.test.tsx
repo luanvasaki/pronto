@@ -17,6 +17,12 @@ const PENDING_RATINGS_NOTIFICATIONS = [
 ];
 
 describe('Topbar', () => {
+  it('mostra a saudação com o nome da empresa perto do sino', () => {
+    render(<Topbar title="Início" onMenuClick={vi.fn()} companyName="Bar do Zé" />);
+
+    expect(screen.getByText(/, Bar do Zé/)).toBeInTheDocument();
+  });
+
   it('não esconde o sino em telas pequenas (sem classe "hidden" no container)', () => {
     render(<Topbar title="Painel" onMenuClick={vi.fn()} pendingApplicationsCount={0} />);
 

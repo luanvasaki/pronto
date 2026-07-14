@@ -6,6 +6,8 @@ import {
   extractDigits,
   formatCnpj,
   formatCpf,
+  isValidCnpj,
+  isValidCpf,
   isValidPassword,
   listSkillCategories,
   logout,
@@ -16,6 +18,7 @@ import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
+import { NotificationsToggle } from '../../../components/ui/notifications-toggle';
 import {
   BUSINESS_SEGMENTS,
   changePassword,
@@ -54,7 +57,6 @@ export default function PerfilPage() {
   const isIndividual = profile?.personType === 'fisica';
   const [cnpj, setCnpj] = useState(profile?.cnpj ?? '');
   const [cpf, setCpf] = useState(profile?.cpf ?? '');
-  const [addressLabel, setAddressLabel] = useState(profile?.addressLabel ?? '');
   const [businessSegment, setBusinessSegment] = useState(profile?.businessSegment ?? '');
   const [businessSegmentOther, setBusinessSegmentOther] = useState(profile?.businessSegmentOther ?? '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -79,7 +81,7 @@ export default function PerfilPage() {
   useEffect(() => {
     setProfileSaved(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [legalName, tradeName, cnpj, cpf, addressLabel, businessSegment, businessSegmentOther]);
+  }, [legalName, tradeName, cnpj, cpf, businessSegment, businessSegmentOther]);
 
   useEffect(() => {
     listSkillCategories()
@@ -122,7 +124,7 @@ export default function PerfilPage() {
   const isProfileValid =
     legalName.trim().length >= 2 &&
     tradeName.trim().length >= 2 &&
-    (isIndividual ? cpf.trim().length === 11 : cnpj.trim().length === 14) &&
+    (isIndividual ? isValidCpf(cpf.trim()) : isValidCnpj(cnpj.trim())) &&
     (businessSegment !== 'outro' || businessSegmentOther.trim().length >= 2);
 
   async function handleSaveProfile(event: FormEvent): Promise<void> {
@@ -140,7 +142,6 @@ export default function PerfilPage() {
         personType: profile.personType,
         cnpj: isIndividual ? undefined : cnpj,
         cpf: isIndividual ? cpf : undefined,
-        addressLabel: addressLabel.trim() || undefined,
         businessSegment: businessSegment || undefined,
         businessSegmentOther: businessSegment === 'outro' ? businessSegmentOther.trim() : undefined,
       });
@@ -306,6 +307,11 @@ export default function PerfilPage() {
         </div>
       )}
 
+      <div className="flex flex-col gap-4 border-t border-border pt-6">
+        <h2 className="font-heading text-lg font-bold text-text">Notificações</h2>
+        <NotificationsToggle />
+      </div>
+
       <form onSubmit={handleSaveProfile} className="flex flex-col gap-4 border-t border-border pt-6">
         <h2 className="font-heading text-lg font-bold text-text">Dados da empresa</h2>
 
@@ -346,14 +352,6 @@ export default function PerfilPage() {
             onChange={(event) => setCnpj(extractDigits(event.target.value).slice(0, 14))}
           />
         )}
-        <Input
-          id="addressLabel"
-          label="Endereço (opcional)"
-          type="text"
-          placeholder="Vila Madalena, São Paulo"
-          value={addressLabel}
-          onChange={(event) => setAddressLabel(event.target.value)}
-        />
         <div>
           <label htmlFor="businessSegment" className="mb-1.5 block text-sm font-medium text-text-secondary">
             Ramo de atividade (opcional)

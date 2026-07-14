@@ -97,7 +97,7 @@ export function AdminNav({ isOpen, onClose, pendingVerificationsCount = 0 }: Adm
         }`}
       >
         <div className="flex items-end gap-2 px-2 pt-1 pb-6">
-          <Logo />
+          <Logo variant="inverted" />
           <span className="mb-0.5 text-[10px] font-semibold tracking-[0.14em] text-background/50 uppercase">
             Admin
           </span>

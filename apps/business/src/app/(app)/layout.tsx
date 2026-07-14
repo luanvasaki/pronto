@@ -21,21 +21,14 @@ import { CompanyProfileProvider } from './company-profile-context';
 // painel fica aberto é o suficiente pro volume do MVP.
 const NOTIFICATIONS_POLL_INTERVAL_MS = 60_000;
 
-function greeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Bom dia';
-  if (hour < 18) return 'Boa tarde';
-  return 'Boa noite';
-}
-
 /**
- * Não existe nome de responsável cadastrado (só razão social/nome
- * fantasia/CNPJ) — a saudação usa o nome fantasia da empresa em vez de
- * um nome de pessoa, já que não há esse dado hoje.
+ * A saudação ("Boa noite, {empresa}") mora no Topbar agora, fixa no
+ * canto superior direito ao lado do sino — não é mais o título da
+ * página, então /painel usa um título neutro como as outras rotas.
  */
-function pageHeader(pathname: string, tradeName: string): { title: string; subtitle?: string } {
+function pageHeader(pathname: string): { title: string; subtitle?: string } {
   if (pathname === '/painel') {
-    return { title: `${greeting()}, ${tradeName}`, subtitle: 'Um resumo geral de como está sua operação' };
+    return { title: 'Início', subtitle: 'Um resumo geral de como está sua operação' };
   }
   if (pathname === '/perfil') {
     return { title: 'Perfil da empresa' };
@@ -45,6 +38,9 @@ function pageHeader(pathname: string, tradeName: string): { title: string; subti
   }
   if (pathname === '/escalas') {
     return { title: 'Escalas', subtitle: 'Todas as suas escalas em aberto' };
+  }
+  if (pathname === '/trabalhadores') {
+    return { title: 'Trabalhadores', subtitle: 'Todo mundo com quem você já trabalhou' };
   }
   if (pathname === '/vagas/nova') {
     return { title: 'Publicar escala' };
@@ -144,7 +140,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const tradeName = profile?.tradeName ?? 'sua empresa';
-  const { title, subtitle } = pageHeader(pathname, tradeName);
+  const { title, subtitle } = pageHeader(pathname);
 
   // Marca como vista em segundo plano — o sino/lista continuam mostrando
   // o que já estava ali até o próximo poll (60s) confirmar que sumiu, pra
@@ -169,6 +165,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Topbar
             title={title}
             subtitle={subtitle}
+            companyName={tradeName}
+            logoUrl={profile?.logoUrl ?? null}
             onMenuClick={() => setIsMobileNavOpen(true)}
             pendingApplicationsCount={pendingApplicationsCount}
             pendingApplications={pendingApplications}

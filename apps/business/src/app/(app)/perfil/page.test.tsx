@@ -181,7 +181,6 @@ describe('PerfilPage', () => {
     const legalNameInput = screen.getByLabelText('Razão social');
     await user.clear(legalNameInput);
     await user.type(legalNameInput, 'Bar do Zé Eventos Ltda');
-    await user.type(screen.getByLabelText(/endereço/i), 'Vila Madalena, São Paulo');
     await user.selectOptions(screen.getByLabelText(/ramo de atividade/i), 'bar');
     await user.click(screen.getByRole('button', { name: /salvar dados da empresa/i }));
 
@@ -191,7 +190,6 @@ describe('PerfilPage', () => {
         tradeName: 'Bar do Zé',
         personType: 'juridica',
         cnpj: '11222333000181',
-        addressLabel: 'Vila Madalena, São Paulo',
         businessSegment: 'bar',
       }),
     );
