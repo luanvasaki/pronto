@@ -142,4 +142,19 @@ describe('checkOut', () => {
       'não está esperando check-out',
     );
   });
+
+  it('rejeita check-out duplicado mesmo em corrida (duas chamadas simultâneas)', async () => {
+    const { worker, shift } = await setupCheckedInShift();
+
+    const results = await Promise.allSettled([
+      checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 }),
+      checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 }),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason.message).toContain('não está esperando check-out');
+  });
 });

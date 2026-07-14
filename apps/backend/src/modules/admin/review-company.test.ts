@@ -56,4 +56,19 @@ describe('reviewCompany', () => {
 
     await expect(reviewCompany(admin.id, company.id, 'approved')).rejects.toThrow('já foi revisada');
   });
+
+  it('rejeita revisar a mesma empresa duas vezes mesmo em corrida (duas chamadas simultâneas)', async () => {
+    const { admin, company } = await setupPendingCompany();
+
+    const results = await Promise.allSettled([
+      reviewCompany(admin.id, company.id, 'approved'),
+      reviewCompany(admin.id, company.id, 'rejected'),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason.message).toContain('já foi revisada');
+  });
 });

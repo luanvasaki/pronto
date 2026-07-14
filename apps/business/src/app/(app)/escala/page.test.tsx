@@ -227,4 +227,20 @@ describe('EscalaPage', () => {
     // Uma única chamada de listMyJobs (carga inicial) — duplicar não recarrega o histórico inteiro.
     expect(listMyJobsMock).toHaveBeenCalledTimes(1);
   });
+
+  it('mostra erro e não fecha o formulário quando duplicar a semana falha', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    duplicateWeekMock.mockRejectedValue(new Error('Não foi possível duplicar a semana.'));
+    const user = userEvent.setup();
+
+    render(<EscalaPage />);
+    await screen.findByText('Agosto de 2026');
+    await user.click(screen.getByRole('button', { name: 'Semana' }));
+    await user.click(await screen.findByRole('button', { name: 'Duplicar semana' }));
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Confirmar duplicação' }));
+
+    expect(await screen.findByText('Não foi possível duplicar a semana.')).toBeInTheDocument();
+    expect(screen.queryByText(/escala duplicada pra semana seguinte/)).not.toBeInTheDocument();
+  });
 });

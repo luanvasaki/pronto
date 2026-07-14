@@ -56,6 +56,21 @@ describe('reviewDocument', () => {
     await expect(reviewDocument(admin.id, document.id, 'approved')).rejects.toThrow('já foi revisado');
   });
 
+  it('rejeita revisar o mesmo documento duas vezes mesmo em corrida (duas chamadas simultâneas)', async () => {
+    const { admin, document } = await setupPendingDocument();
+
+    const results = await Promise.allSettled([
+      reviewDocument(admin.id, document.id, 'approved'),
+      reviewDocument(admin.id, document.id, 'rejected'),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason.message).toContain('já foi revisado');
+  });
+
   it('só marca o kycStatus como aprovado quando identidade e selfie estão aprovadas', async () => {
     const { admin, document: identityDocument, worker } = await setupPendingDocument();
     const [selfieDocument] = await db

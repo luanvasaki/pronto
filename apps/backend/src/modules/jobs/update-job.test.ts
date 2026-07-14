@@ -106,6 +106,38 @@ describe('updateJob', () => {
     );
   });
 
+  it('nunca deixa uma edição escrever silenciosamente numa vaga preenchida por uma aprovação simultânea (duas chamadas simultâneas)', async () => {
+    const { owner, category, job } = await setup();
+    const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
+    const application = await createApplication(worker.id, job.id, true);
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+
+    const [secondWorkerUser] = await db.insert(users).values({ phone: SECOND_WORKER_PHONE }).returning();
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: secondWorkerUser.id, fullName: 'Beatriz Lima' });
+    const secondApplication = await createApplication(secondWorkerUser.id, job.id, true);
+
+    // A docstring de updateJob promete fechar "a corrida de editar bem
+    // no instante em que uma candidatura é aprovada" — isso é
+    // literalmente essa aprovação (a 2ª de 2 posições, que preenche a
+    // vaga) rodando ao mesmo tempo que uma edição.
+    const results = await Promise.allSettled([
+      updateJob(owner.id, job.id, { ...baseInput(category.id), description: 'Descrição editada durante a corrida.' }),
+      updateApplicationStatus(owner.id, secondApplication.id, 'approved'),
+    ]);
+
+    const [updateJobResult] = results;
+    if (updateJobResult.status === 'rejected') {
+      expect(updateJobResult.reason.message).toContain('Só é possível editar vagas abertas');
+    }
+
+    const finalJob = await db.query.jobs.findFirst({ where: eq(jobs.id, job.id) });
+    // A aprovação sempre devia ter conseguido preencher a vaga, não
+    // importa a ordem — nenhum turno "sumiu" por causa da corrida.
+    expect(finalJob?.status).toBe('filled');
+    expect(finalJob?.positionsFilled).toBe(2);
+  });
+
   it('rejeita reduzir positionsTotal abaixo do já aprovado', async () => {
     const { owner, category, job } = await setup();
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();

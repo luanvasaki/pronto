@@ -84,4 +84,20 @@ describe('reviewSkillCategory', () => {
       'já foi revisada',
     );
   });
+
+  it('rejeita revisar a mesma categoria duas vezes mesmo em corrida (duas chamadas simultâneas)', async () => {
+    const admin = await setupAdmin();
+    const category = await setupPendingCategory();
+
+    const results = await Promise.allSettled([
+      reviewSkillCategory(admin.id, category.id, 'approved', undefined),
+      reviewSkillCategory(admin.id, category.id, 'rejected', undefined),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason.message).toContain('já foi revisada');
+  });
 });
