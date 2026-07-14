@@ -24,6 +24,11 @@ vi.mock('../../../lib/applications-api', () => ({
   listJobApplications: (...args: unknown[]) => listJobApplicationsMock(...args),
 }));
 
+const getLiveEventStatusMock = vi.fn();
+vi.mock('../../../lib/live-event-api', () => ({
+  getLiveEventStatus: (...args: unknown[]) => getLiveEventStatusMock(...args),
+}));
+
 // Quinta-feira, meio-dia UTC — evita qualquer ambiguidade de fuso horário
 // no cálculo do dia do mês.
 const NOW = new Date('2026-08-06T12:00:00.000Z');
@@ -54,6 +59,7 @@ describe('EscalaPage', () => {
     listMyJobsMock.mockReset();
     listJobApplicationsMock.mockReset().mockResolvedValue({ applications: [] });
     duplicateWeekMock.mockReset();
+    getLiveEventStatusMock.mockReset().mockResolvedValue({ jobs: [] });
   });
 
   it('mostra o mês atual', async () => {
@@ -188,6 +194,21 @@ describe('EscalaPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Duplicar semana' }));
     expect(await screen.findByRole('checkbox')).not.toBeChecked();
+  });
+
+  it('alterna pra visão "Ao vivo" e esconde a grade de mês/semana', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    const user = userEvent.setup();
+
+    render(<EscalaPage />);
+    await screen.findByText('Agosto de 2026');
+
+    await user.click(screen.getByRole('button', { name: 'Ao vivo' }));
+
+    expect(await screen.findByRole('heading', { name: 'Ao vivo' })).toBeInTheDocument();
+    expect(getLiveEventStatusMock).toHaveBeenCalled();
+    // Cabeçalho de dias da semana da grade de mês some da tela nessa visão.
+    expect(screen.queryByText('Seg')).not.toBeInTheDocument();
   });
 
   it('duplica a semana e mostra mensagem de sucesso, sem recarregar o histórico inteiro', async () => {

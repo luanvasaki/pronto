@@ -11,6 +11,7 @@ import { companyProfileRoutes } from './modules/companies/company-profile.routes
 import { jobsRoutes } from './modules/jobs/jobs.routes';
 import { healthRoutes } from './modules/health/health.routes';
 import { paymentsRoutes } from './modules/payments/payments.routes';
+import { pushRoutes } from './modules/push/push.routes';
 import { questionsRoutes } from './modules/questions/questions.routes';
 import { ratingsRoutes } from './modules/ratings/ratings.routes';
 import { skillCategoriesRoutes } from './modules/skill-categories/skill-categories.routes';
@@ -67,6 +68,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
   app.use(shiftsRoutes);
   app.use(ratingsRoutes);
   app.use(paymentsRoutes);
+  app.use(pushRoutes);
   app.use(workerProfileRoutes);
   app.use(workerDocumentRoutes);
   app.use(createAdminRoutes(options.adminRoutes));

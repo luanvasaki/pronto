@@ -1,8 +1,9 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { jobs, shifts } from '../../db/schema';
+import { companies, jobs, shifts, skillCategories, workerProfiles } from '../../db/schema';
 import { haversineDistanceKm } from '../jobs/haversine';
 import { HttpError } from '../../shared/errors/http-error';
+import { sendPushToUser } from '../push/send-push-notification';
 import { CHECK_IN_RADIUS_METERS } from './check-in-radius';
 import { ShiftResponse, toShiftResponse } from './shift-response';
 
@@ -59,5 +60,32 @@ export async function checkIn(
     throw new HttpError(400, 'Esse turno não está esperando check-in.');
   }
 
+  await notifyCompanyOfCheckIn(job, workerId);
+
   return toShiftResponse(updated);
+}
+
+/**
+ * Só loga, nunca lança: o check-in do trabalhador precisa sempre suceder
+ * mesmo que essa notificação falhe (sendPushToUser já não lança por
+ * conta própria — esse try/catch cobre as buscas de company/worker/
+ * category, que ficam fora dele).
+ */
+async function notifyCompanyOfCheckIn(job: typeof jobs.$inferSelect, workerId: string): Promise<void> {
+  try {
+    const [company, worker, category] = await Promise.all([
+      db.query.companies.findFirst({ where: eq(companies.id, job.companyId) }),
+      db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, workerId) }),
+      db.query.skillCategories.findFirst({ where: eq(skillCategories.id, job.categoryId) }),
+    ]);
+    if (!company || !worker) return;
+
+    await sendPushToUser(company.ownerUserId, {
+      title: `${worker.fullName} fez check-in`,
+      body: category?.name ?? 'Turno',
+      url: '/escala',
+    });
+  } catch (error) {
+    console.error('[checkIn] falha ao notificar a empresa do check-in:', error);
+  }
 }

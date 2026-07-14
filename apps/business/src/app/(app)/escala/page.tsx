@@ -7,6 +7,7 @@ import { JobApplication } from '../../../lib/applications-api';
 import { startOfWeek } from '../../../lib/date-utils';
 import { fetchApplicationsByJobId } from '../../../lib/job-applications-summary';
 import { duplicateWeek, Job, listMyJobs } from '../../../lib/jobs-api';
+import { LiveEventView } from './live-event-view';
 
 const WEEKDAY_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 /** Semana começa na segunda pra bater com "Preenchidas na semana" do painel — visão de operação, não de calendário. */
@@ -73,7 +74,7 @@ interface WeekWorkerChip {
 }
 
 export default function EscalaPage() {
-  const [viewMode, setViewMode] = useState<'mes' | 'semana'>('mes');
+  const [viewMode, setViewMode] = useState<'mes' | 'semana' | 'vivo'>('mes');
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -192,7 +193,9 @@ export default function EscalaPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="font-heading text-[19px] font-bold text-text">
-            {viewMode === 'mes' ? monthLabel(currentMonth) : weekRangeLabel(currentWeekStart)}
+            {viewMode === 'mes' && monthLabel(currentMonth)}
+            {viewMode === 'semana' && weekRangeLabel(currentWeekStart)}
+            {viewMode === 'vivo' && 'Ao vivo'}
           </h1>
           <div className="flex rounded-[10px] border border-border p-0.5">
             <button
@@ -213,10 +216,19 @@ export default function EscalaPage() {
             >
               Semana
             </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('vivo')}
+              className={`rounded-[8px] px-3 py-1 text-[12.5px] font-semibold transition ${
+                viewMode === 'vivo' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text'
+              }`}
+            >
+              Ao vivo
+            </button>
           </div>
         </div>
 
-        {viewMode === 'mes' ? (
+        {viewMode === 'mes' && (
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -245,7 +257,8 @@ export default function EscalaPage() {
               ›
             </button>
           </div>
-        ) : (
+        )}
+        {viewMode === 'semana' && (
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -358,7 +371,9 @@ export default function EscalaPage() {
           );
         })()}
 
-      {viewMode === 'mes' ? (
+      {viewMode === 'vivo' && <LiveEventView />}
+
+      {viewMode === 'mes' && (
         <>
           <div className="grid grid-cols-7 gap-2 text-center text-[11px] font-semibold tracking-[0.06em] text-text-secondary uppercase">
             {WEEKDAY_LABEL.map((label) => (
@@ -438,7 +453,9 @@ export default function EscalaPage() {
             })}
           </div>
         </>
-      ) : (
+      )}
+
+      {viewMode === 'semana' && (
         <div className="grid flex-1 grid-cols-1 gap-2 lg:grid-cols-7">
           {Array.from({ length: 7 }, (_, index) => {
             const date = new Date(currentWeekStart);

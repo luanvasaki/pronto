@@ -1,10 +1,15 @@
 import { eq } from 'drizzle-orm';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { db } from '../../db/client';
 import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
 import { checkIn } from './check-in';
+
+const sendPushToUserMock = vi.fn();
+vi.mock('../push/send-push-notification', () => ({
+  sendPushToUser: (...args: unknown[]) => sendPushToUserMock(...args),
+}));
 
 // Fixtures únicas entre arquivos de teste (ver README).
 const WORKER_PHONE = '+5511966660021';
@@ -40,7 +45,7 @@ async function setupScheduledShift() {
       endsAt: TOMORROW_PLUS_5H,
     })
     .returning();
-  const application = await createApplication(worker.id, job.id);
+  const application = await createApplication(worker.id, job.id, true);
   await updateApplicationStatus(owner.id, application.id, 'approved');
   const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
   if (!shift) {
@@ -51,6 +56,7 @@ async function setupScheduledShift() {
 
 describe('checkIn', () => {
   afterEach(async () => {
+    sendPushToUserMock.mockReset();
     const owner = await db.query.users.findFirst({ where: eq(users.phone, OWNER_PHONE) });
     if (owner) {
       const [company] = await db.query.companies.findMany({ where: eq(companies.ownerUserId, owner.id) });
@@ -130,6 +136,29 @@ describe('checkIn', () => {
     await expect(checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 })).rejects.toThrow(
       'não está esperando check-in',
     );
+  });
+
+  it('notifica o dono da empresa por push quando o check-in é feito', async () => {
+    const { worker, job, shift } = await setupScheduledShift();
+
+    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+
+    const company = await db.query.companies.findFirst({ where: eq(companies.id, job.companyId) });
+    expect(sendPushToUserMock).toHaveBeenCalledTimes(1);
+    expect(sendPushToUserMock).toHaveBeenCalledWith(company?.ownerUserId, {
+      title: 'Ana Souza fez check-in',
+      body: TEST_CATEGORY_NAME,
+      url: '/escala',
+    });
+  });
+
+  it('o check-in continua valendo mesmo se a notificação por push falhar', async () => {
+    sendPushToUserMock.mockRejectedValue(new Error('push service fora do ar'));
+    const { worker, shift } = await setupScheduledShift();
+
+    const result = await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+
+    expect(result.status).toBe('checked_in');
   });
 
   it('só um check-in vence quando duas chamadas chegam juntas', async () => {
