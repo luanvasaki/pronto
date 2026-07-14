@@ -1,14 +1,12 @@
 'use client';
 
-import { ApiError, extractDigits, formatCnpj, formatCpf } from '@shift/shared';
+import { ApiError, extractDigits, formatCnpj, formatCpf, isValidCnpj, isValidCpf } from '@shift/shared';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Logo } from '../../components/ui/logo';
 import { uploadCompanyDocument, upsertCompanyProfile } from '../../lib/company-profile-api';
-import { isValidCnpj } from './cnpj';
-import { isValidCpf } from './cpf';
 
 type PersonType = 'juridica' | 'fisica';
 

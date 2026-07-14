@@ -47,6 +47,17 @@ describe('CadastroPage', () => {
     expect(screen.getByRole('button', { name: /continuar/i })).toBeEnabled();
   });
 
+  it('mantém o botão desabilitado quando o CNPJ tem 14 dígitos mas o dígito verificador é inválido', async () => {
+    const user = userEvent.setup();
+    render(<CadastroPage />);
+
+    await user.type(screen.getByLabelText('Razão social'), 'Bar do Zé Ltda');
+    await user.type(screen.getByLabelText('Nome fantasia'), 'Bar do Zé');
+    await user.type(screen.getByLabelText('CNPJ'), '11111111111111');
+
+    expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
+  });
+
   it('ignora caracteres que não são número e aplica a máscara no CNPJ', async () => {
     const user = userEvent.setup();
     render(<CadastroPage />);
@@ -104,6 +115,20 @@ describe('CadastroPage', () => {
       expect(screen.queryByLabelText('CNPJ')).not.toBeInTheDocument();
     });
 
+    it('mantém o botão desabilitado quando o CPF tem 11 dígitos mas o dígito verificador é inválido', async () => {
+      const user = userEvent.setup();
+      render(<CadastroPage />);
+
+      await switchToPessoaFisica(user);
+      await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
+      await user.type(screen.getByLabelText('Como quer aparecer'), 'Ana Freelas');
+      await user.type(screen.getByLabelText('CPF'), '11111111111');
+      const file = new File(['doc'], 'rg.jpg', { type: 'image/jpeg' });
+      await user.upload(screen.getByLabelText(/toque para escolher uma foto/i), file);
+
+      expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
+    });
+
     it('exige o documento pra habilitar o botão', async () => {
       const user = userEvent.setup();
       render(<CadastroPage />);
@@ -111,7 +136,7 @@ describe('CadastroPage', () => {
       await switchToPessoaFisica(user);
       await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
       await user.type(screen.getByLabelText('Como quer aparecer'), 'Ana Freelas');
-      await user.type(screen.getByLabelText('CPF'), '11122233344');
+      await user.type(screen.getByLabelText('CPF'), '52998224725');
       expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
 
       const file = new File(['doc'], 'rg.jpg', { type: 'image/jpeg' });
@@ -128,7 +153,7 @@ describe('CadastroPage', () => {
       await switchToPessoaFisica(user);
       await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
       await user.type(screen.getByLabelText('Como quer aparecer'), 'Ana Freelas');
-      await user.type(screen.getByLabelText('CPF'), '11122233344');
+      await user.type(screen.getByLabelText('CPF'), '52998224725');
       const file = new File(['doc'], 'rg.jpg', { type: 'image/jpeg' });
       await user.upload(screen.getByLabelText(/toque para escolher uma foto/i), file);
       await user.click(screen.getByRole('button', { name: /continuar/i }));
@@ -139,7 +164,7 @@ describe('CadastroPage', () => {
         tradeName: 'Ana Freelas',
         personType: 'fisica',
         cnpj: undefined,
-        cpf: '11122233344',
+        cpf: '52998224725',
       });
       expect(uploadCompanyDocumentMock).toHaveBeenCalledWith(file);
     });
@@ -153,7 +178,7 @@ describe('CadastroPage', () => {
       await switchToPessoaFisica(user);
       await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
       await user.type(screen.getByLabelText('Como quer aparecer'), 'Ana Freelas');
-      await user.type(screen.getByLabelText('CPF'), '11122233344');
+      await user.type(screen.getByLabelText('CPF'), '52998224725');
       const file = new File(['doc'], 'rg.jpg', { type: 'image/jpeg' });
       await user.upload(screen.getByLabelText(/toque para escolher uma foto/i), file);
       await user.click(screen.getByRole('button', { name: /continuar/i }));
