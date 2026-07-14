@@ -15,6 +15,7 @@ vi.mock('next/navigation', () => ({
 
 const listSkillCategoriesMock = vi.fn();
 const createSkillCategoryMock = vi.fn();
+const lookupCepMock = vi.fn();
 vi.mock('@shift/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shift/shared')>();
   return {
@@ -22,6 +23,7 @@ vi.mock('@shift/shared', async (importOriginal) => {
     getCurrentUser: vi.fn().mockResolvedValue({ user: { id: '1' } }),
     listSkillCategories: (...args: unknown[]) => listSkillCategoriesMock(...args),
     createSkillCategory: (...args: unknown[]) => createSkillCategoryMock(...args),
+    lookupCep: (...args: unknown[]) => lookupCepMock(...args),
   };
 });
 
@@ -75,7 +77,8 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.selectOptions(screen.getByLabelText('Categoria'), 'cat-1');
   await user.click(screen.getByRole('button', { name: 'Não' }));
   await user.type(screen.getByLabelText('Descrição'), 'Detalhes adicionais sobre o turno.');
-  await user.type(screen.getByLabelText('Endereço completo'), 'Vila Madalena, São Paulo');
+  await user.type(screen.getByLabelText('Rua'), 'Vila Madalena');
+  await user.type(screen.getByLabelText('Número'), '100');
   await user.click(screen.getByRole('button', { name: /usar minha localização atual/i }));
   await screen.findByText('Localização definida ✓');
   await user.clear(screen.getByLabelText('Número de vagas'));
@@ -94,6 +97,7 @@ describe('NovaVagaPage', () => {
     createJobMock.mockReset();
     listMyJobsMock.mockReset().mockResolvedValue({ jobs: [] });
     createSkillCategoryMock.mockReset();
+    lookupCepMock.mockReset();
     Object.defineProperty(window.navigator, 'geolocation', {
       value: {
         getCurrentPosition: vi.fn((success) => success({ coords: { latitude: -23.55, longitude: -46.63 } })),
@@ -143,7 +147,8 @@ describe('NovaVagaPage', () => {
     await user.selectOptions(screen.getByLabelText('Categoria'), 'cat-1');
     await user.click(screen.getByRole('button', { name: 'Não' }));
     await user.type(screen.getByLabelText('Descrição'), 'Detalhes adicionais sobre o turno.');
-    await user.type(screen.getByLabelText('Endereço completo'), 'Vila Madalena, São Paulo');
+    await user.type(screen.getByLabelText('Rua'), 'Vila Madalena');
+    await user.type(screen.getByLabelText('Número'), '100');
     // Propositalmente não clica em "Usar minha localização atual".
 
     expect(screen.getByText(/falta preencher:/i)).toHaveTextContent(/localização/i);
@@ -177,6 +182,45 @@ describe('NovaVagaPage', () => {
     expect(createJobMock).toHaveBeenCalledWith(
       expect.objectContaining({ categoryId: 'cat-1', positionsTotal: 4, payAmount: '130.00' }),
       true,
+    );
+  });
+
+  it('busca o CEP, preenche a rua, e monta o endereço final com número/complemento/bairro/cidade/UF', async () => {
+    lookupCepMock.mockResolvedValue({
+      cep: '01305100',
+      street: 'Rua Augusta',
+      neighborhood: 'Consolação',
+      city: 'São Paulo',
+      state: 'SP',
+    });
+    createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Garçom');
+
+    await user.selectOptions(screen.getByLabelText('Categoria'), 'cat-1');
+    await user.click(screen.getByRole('button', { name: 'Não' }));
+    await user.type(screen.getByLabelText('Descrição'), 'Detalhes adicionais sobre o turno.');
+    await user.type(screen.getByLabelText('CEP'), '01305100');
+    await user.tab();
+    expect(await screen.findByDisplayValue('Rua Augusta')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Número'), '1200');
+    await user.type(screen.getByLabelText('Complemento (opcional)'), 'Sala 4');
+    await user.click(screen.getByRole('button', { name: /usar minha localização atual/i }));
+    await screen.findByText('Localização definida ✓');
+    await user.clear(screen.getByLabelText('Número de vagas'));
+    await user.type(screen.getByLabelText('Número de vagas'), '4');
+    await user.type(screen.getByLabelText('Valor por pessoa (R$)'), '130.00');
+    await user.type(screen.getByLabelText('Início'), STARTS_AT);
+    await user.type(screen.getByLabelText('Término'), ENDS_AT);
+    await user.click(screen.getByRole('checkbox', { name: /contratação avulsa/i }));
+    await user.click(screen.getByRole('button', { name: /^publicar$/i }));
+
+    await waitFor(() =>
+      expect(createJobMock).toHaveBeenCalledWith(
+        expect.objectContaining({ addressLabel: 'Rua Augusta, 1200 - Sala 4 - Consolação, São Paulo - SP' }),
+        true,
+      ),
     );
   });
 
@@ -269,7 +313,7 @@ describe('NovaVagaPage', () => {
 
     expect(screen.getByLabelText('Categoria')).toHaveValue('cat-1');
     expect(screen.getByLabelText('Descrição')).toHaveValue('Vaga anterior com descrição detalhada o suficiente.');
-    expect(screen.getByLabelText('Endereço completo')).toHaveValue('Itaim Bibi, São Paulo');
+    expect(screen.getByLabelText('Rua')).toHaveValue('Itaim Bibi, São Paulo');
     expect(screen.getByLabelText(/vestimenta exigida/i)).toHaveValue('Social completo');
     expect(screen.getByLabelText('Valor por pessoa (R$)')).toHaveValue('150.00');
     expect(screen.getByLabelText(/exige cnh/i)).toHaveValue('B');
@@ -309,7 +353,7 @@ describe('NovaVagaPage', () => {
     // Sem nenhuma interação com o dropdown — o template já vem aplicado.
     expect(await screen.findByLabelText('Categoria')).toHaveValue('cat-1');
     expect(screen.getByLabelText('Descrição')).toHaveValue('Vaga anterior com descrição detalhada o suficiente.');
-    expect(screen.getByLabelText('Endereço completo')).toHaveValue('Itaim Bibi, São Paulo');
+    expect(screen.getByLabelText('Rua')).toHaveValue('Itaim Bibi, São Paulo');
     expect(screen.getByLabelText(/vestimenta exigida/i)).toHaveValue('Social completo');
     expect(screen.getByLabelText('Valor por pessoa (R$)')).toHaveValue('150.00');
     expect(screen.getByLabelText(/exige cnh/i)).toHaveValue('B');
@@ -363,7 +407,8 @@ describe('NovaVagaPage', () => {
     await user.type(screen.getByLabelText(/nome da nova categoria/i), 'Manobrista');
     await user.click(screen.getByRole('button', { name: 'Não' }));
     await user.type(screen.getByLabelText('Descrição'), 'Detalhes adicionais sobre o turno.');
-    await user.type(screen.getByLabelText('Endereço completo'), 'Vila Madalena, São Paulo');
+    await user.type(screen.getByLabelText('Rua'), 'Vila Madalena');
+    await user.type(screen.getByLabelText('Número'), '100');
     await user.click(screen.getByRole('button', { name: /usar minha localização atual/i }));
     await screen.findByText('Localização definida ✓');
     await user.clear(screen.getByLabelText('Número de vagas'));

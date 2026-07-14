@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCnpj, formatCpf, formatPhone } from './masks';
+import { formatCep, formatCnpj, formatCpf, formatPhone } from './masks';
 
 describe('formatCpf', () => {
   it('aplica a máscara progressivamente conforme os dígitos aparecem', () => {
@@ -52,5 +52,18 @@ describe('formatPhone', () => {
 
   it('ignora dígitos além do 11º', () => {
     expect(formatPhone('113912345679999')).toBe('(11) 39123-4567');
+  });
+});
+
+describe('formatCep', () => {
+  it('aplica a máscara progressivamente conforme os dígitos aparecem', () => {
+    expect(formatCep('1')).toBe('1');
+    expect(formatCep('12345')).toBe('12345');
+    expect(formatCep('123456')).toBe('12345-6');
+    expect(formatCep('12345678')).toBe('12345-678');
+  });
+
+  it('ignora dígitos além do 8º', () => {
+    expect(formatCep('123456789999')).toBe('12345-678');
   });
 });

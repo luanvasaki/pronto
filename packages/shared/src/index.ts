@@ -13,8 +13,10 @@ export {
 } from './auth-api';
 export type { UserResponse } from './auth-api';
 export { isValidCnpj, isValidCpf } from './cpf-cnpj';
+export { lookupCep } from './cep-api';
+export type { CepLookupResult } from './cep-api';
 export { extractDigits } from './digits';
-export { formatCnpj, formatCpf, formatPhone } from './masks';
+export { formatCep, formatCnpj, formatCpf, formatPhone } from './masks';
 export { isValidPassword } from './password';
 export {
   COMPANY_RATING_CATEGORIES,

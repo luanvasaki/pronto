@@ -3,6 +3,7 @@
 import { ApiError, createSkillCategory, listSkillCategories, SkillCategory } from '@shift/shared';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useEffect, useRef, useState } from 'react';
+import { AddressFields, buildAddressLabel } from '../../../../components/ui/address-fields';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { JobBenefitsFields } from '../../../../components/ui/job-benefits-fields';
@@ -61,7 +62,14 @@ function NovaVagaForm() {
   const [offersMeal, setOffersMeal] = useState(false);
   const [offersTransport, setOffersTransport] = useState(false);
   const [description, setDescription] = useState('');
-  const [addressLabel, setAddressLabel] = useState('');
+  const [cep, setCep] = useState('');
+  const [street, setStreet] = useState('');
+  const [number, setNumber] = useState('');
+  const [complement, setComplement] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const addressLabel = buildAddressLabel({ street, number, complement, neighborhood, city, state });
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [isLocating, setIsLocating] = useState(false);
@@ -123,7 +131,16 @@ function NovaVagaForm() {
     setOffersMeal(template.offersMeal);
     setOffersTransport(template.offersTransport);
     setDescription(template.description);
-    setAddressLabel(template.addressLabel);
+    // O endereço salvo é um texto livre (formato antigo) — não dá pra
+    // separar em CEP/número/complemento de volta, então só joga tudo
+    // em "Rua" como ponto de partida; a pessoa refaz pelo CEP se quiser.
+    setCep('');
+    setStreet(template.addressLabel);
+    setNumber('');
+    setComplement('');
+    setNeighborhood('');
+    setCity('');
+    setState('');
     setLat(template.locationLat);
     setLng(template.locationLng);
     setPositionsTotal(String(template.positionsTotal));
@@ -323,16 +340,27 @@ function NovaVagaForm() {
         </div>
 
         <div>
-          <Input
-            id="addressLabel"
-            label="Endereço completo"
-            type="text"
-            placeholder="Rua Augusta, 1200 - Consolação, São Paulo"
-            value={addressLabel}
-            onChange={(event) => setAddressLabel(event.target.value)}
+          <p className="mb-1.5 text-sm font-medium text-text-secondary">Endereço</p>
+          <AddressFields
+            cep={cep}
+            onChangeCep={setCep}
+            street={street}
+            onChangeStreet={setStreet}
+            number={number}
+            onChangeNumber={setNumber}
+            complement={complement}
+            onChangeComplement={setComplement}
+            neighborhood={neighborhood}
+            city={city}
+            state={state}
+            onResolvedCep={(result) => {
+              setNeighborhood(result.neighborhood);
+              setCity(result.city);
+              setState(result.state);
+            }}
           />
           <p className="mt-1.5 text-xs text-text-secondary">
-            Inclua rua, número e bairro — é o endereço que o trabalhador vai usar pra chegar até você.
+            Digite o CEP pra preencher a rua automaticamente — é o endereço que o trabalhador vai usar pra chegar até você.
           </p>
         </div>
 
