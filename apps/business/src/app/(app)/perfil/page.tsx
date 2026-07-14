@@ -61,7 +61,14 @@ export default function PerfilPage() {
   const [businessSegmentOther, setBusinessSegmentOther] = useState(profile?.businessSegmentOther ?? '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const [profileSaved, setProfileSaved] = useState(false);
+  const [savedSnapshot, setSavedSnapshot] = useState<{
+    legalName: string;
+    tradeName: string;
+    cnpj: string;
+    cpf: string;
+    businessSegment: string;
+    businessSegmentOther: string;
+  } | null>(null);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -74,14 +81,18 @@ export default function PerfilPage() {
   const [ratingHistory, setRatingHistory] = useState<CompanyRatingHistoryEntry[]>([]);
   const [isLoadingRatingHistory, setIsLoadingRatingHistory] = useState(true);
 
-  // "Dados salvos." é sobre o último save — mexer em qualquer campo
-  // depois disso já é uma edição não salva, então o aviso não vale
-  // mais. Sem isso, a mensagem de sucesso ficava na tela mesmo depois
-  // de o usuário mudar algo e ainda não ter salvo de novo.
-  useEffect(() => {
-    setProfileSaved(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [legalName, tradeName, cnpj, cpf, businessSegment, businessSegmentOther]);
+  // "Dados salvos." é sobre o último save — derivado comparando os
+  // campos atuais com o snapshot salvo, em vez de um booleano próprio
+  // resetado por efeito: mexer em qualquer campo depois de salvar já
+  // deixa de bater com o snapshot, escondendo o aviso sozinho.
+  const profileSaved =
+    savedSnapshot !== null &&
+    savedSnapshot.legalName === legalName &&
+    savedSnapshot.tradeName === tradeName &&
+    savedSnapshot.cnpj === cnpj &&
+    savedSnapshot.cpf === cpf &&
+    savedSnapshot.businessSegment === businessSegment &&
+    savedSnapshot.businessSegmentOther === businessSegmentOther;
 
   useEffect(() => {
     listSkillCategories()
@@ -132,7 +143,6 @@ export default function PerfilPage() {
     if (!isProfileValid || isSavingProfile || !profile) return;
 
     setProfileError(null);
-    setProfileSaved(false);
     setIsSavingProfile(true);
 
     try {
@@ -146,7 +156,7 @@ export default function PerfilPage() {
         businessSegmentOther: businessSegment === 'outro' ? businessSegmentOther.trim() : undefined,
       });
       setProfile({ ...profile, ...updated });
-      setProfileSaved(true);
+      setSavedSnapshot({ legalName, tradeName, cnpj, cpf, businessSegment, businessSegmentOther });
     } catch (err) {
       setProfileError(err instanceof ApiError ? err.message : 'Não foi possível salvar os dados da empresa.');
     } finally {

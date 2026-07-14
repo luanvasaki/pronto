@@ -146,9 +146,17 @@ export default function VagaCandidatosPage() {
       .catch(() => setError('Não foi possível carregar os candidatos.'))
       .finally(() => setIsLoading(false));
 
-    loadAnnouncements();
-    loadQuestions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Não usa loadAnnouncements()/loadQuestions() aqui (só nos botões
+    // de "tentar de novo") — elas resetam o erro de forma síncrona, o
+    // que não faz sentido no efeito de carga inicial (o erro já começa
+    // false) e o React não recomenda setState síncrono direto no corpo
+    // do efeito.
+    listJobAnnouncements(jobId)
+      .then((result) => setAnnouncements(result.announcements))
+      .catch(() => setAnnouncementsLoadError(true));
+    listJobQuestions(jobId)
+      .then((result) => setQuestions(result.questions))
+      .catch(() => setQuestionsLoadError(true));
   }, [jobId]);
 
   async function handlePostAnnouncement(): Promise<void> {

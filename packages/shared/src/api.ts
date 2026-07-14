@@ -27,10 +27,11 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     headers: isFormData ? options.headers : { 'Content-Type': 'application/json', ...options.headers },
   });
 
-  const body = await response.json().catch(() => ({}));
+  const body: unknown = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const message = typeof body.error === 'string' ? body.error : 'Algo deu errado. Tente de novo.';
+    const errorMessage = body && typeof body === 'object' && 'error' in body ? body.error : undefined;
+    const message = typeof errorMessage === 'string' ? errorMessage : 'Algo deu errado. Tente de novo.';
     throw new ApiError(response.status, message);
   }
 

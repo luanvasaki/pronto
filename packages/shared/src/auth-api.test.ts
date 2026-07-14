@@ -13,14 +13,14 @@ describe('register', () => {
     apiFetchMock.mockReset();
   });
 
-  it('chama POST /auth/register com email e senha no corpo', async () => {
+  it('chama POST /auth/register com email, senha e aceite dos termos no corpo', async () => {
     apiFetchMock.mockResolvedValue({ user: { id: '1' } });
 
-    await register('pessoa@example.com', 'senha12345');
+    await register('pessoa@example.com', 'senha12345', true);
 
     expect(apiFetchMock).toHaveBeenCalledWith('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email: 'pessoa@example.com', password: 'senha12345' }),
+      body: JSON.stringify({ email: 'pessoa@example.com', password: 'senha12345', termsAccepted: true }),
     });
   });
 });
@@ -47,14 +47,14 @@ describe('googleLogin', () => {
     apiFetchMock.mockReset();
   });
 
-  it('chama POST /auth/google com o idToken no corpo', async () => {
+  it('chama POST /auth/google com o idToken e o aceite dos termos no corpo', async () => {
     apiFetchMock.mockResolvedValue({ user: { id: '1' } });
 
-    await googleLogin('token-do-google');
+    await googleLogin('token-do-google', true);
 
     expect(apiFetchMock).toHaveBeenCalledWith('/auth/google', {
       method: 'POST',
-      body: JSON.stringify({ idToken: 'token-do-google' }),
+      body: JSON.stringify({ idToken: 'token-do-google', termsAccepted: true }),
     });
   });
 });

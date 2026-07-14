@@ -1,0 +1,70 @@
+name: frontend-ci
+
+on:
+  pull_request:
+    paths:
+      - 'apps/business/**'
+      - 'apps/worker/**'
+      - 'packages/shared/**'
+      - 'package.json'
+      - 'package-lock.json'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/business/**'
+      - 'apps/worker/**'
+      - 'packages/shared/**'
+
+jobs:
+  shared:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npm run lint --workspace=packages/shared
+      - run: npm run typecheck --workspace=packages/shared
+      - run: npm test --workspace=packages/shared
+
+  # business e worker importam @shift/shared — se ele quebrar (tipo ou
+  # runtime), essas duas rodam mesmo assim, pra pegar o problema onde
+  # ele realmente aparece pra quem usa (não só no pacote isolado).
+  business:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npm run lint --workspace=apps/business
+      - run: npm run typecheck --workspace=apps/business
+      - run: npm test --workspace=apps/business
+      - run: npm run build --workspace=apps/business
+
+  worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npm run lint --workspace=apps/worker
+      - run: npm run typecheck --workspace=apps/worker
+      - run: npm test --workspace=apps/worker
+      - run: npm run build --workspace=apps/worker

@@ -8,7 +8,8 @@
     "start": "next start -p 3200",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",

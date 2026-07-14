@@ -70,9 +70,16 @@ export default function VagaDetalhePage() {
 
   useEffect(() => {
     if (!applied) return;
-    loadAnnouncements();
-    loadQuestions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Não usa loadAnnouncements()/loadQuestions() aqui (só nos botões
+    // de "tentar de novo") — elas resetam o erro de forma síncrona, o
+    // que não faz sentido nesse efeito (o erro já começa false) e o
+    // React não recomenda setState síncrono direto no corpo do efeito.
+    listJobAnnouncements(jobId)
+      .then((result) => setAnnouncements(result.announcements))
+      .catch(() => setAnnouncementsLoadError(true));
+    listJobQuestions(jobId)
+      .then((result) => setQuestions(result.questions))
+      .catch(() => setQuestionsLoadError(true));
   }, [jobId, applied]);
 
   async function handleApply(): Promise<void> {

@@ -48,6 +48,7 @@ jobs:
       - run: npm ci
 
       - run: npm run lint --workspace=apps/backend
+      - run: npm run typecheck --workspace=apps/backend
       - run: npm run db:migrate --workspace=apps/backend
       - run: npm test --workspace=apps/backend
       - run: npm run build --workspace=apps/backend

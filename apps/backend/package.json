@@ -10,6 +10,7 @@
     "start": "drizzle-kit migrate && node dist/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
     "db:generate": "drizzle-kit generate",
