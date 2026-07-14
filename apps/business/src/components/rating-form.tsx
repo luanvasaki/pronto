@@ -27,7 +27,7 @@ export function RatingForm({
   isSubmitting,
   error,
 }: RatingFormProps) {
-  const isComplete = categories.every((category) => Boolean(scores[category.id]));
+  const isComplete = categories.length > 0 && categories.every((category) => Boolean(scores[category.id]));
 
   return (
     <div className="mt-3 flex flex-col gap-4 rounded-2xl border border-border p-4">
