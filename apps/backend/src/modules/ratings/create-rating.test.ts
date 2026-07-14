@@ -70,7 +70,7 @@ async function setupCompletedShift() {
   }
   await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
   await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
-  return { worker, owner, company, shift };
+  return { worker, owner, company, job, shift };
 }
 
 describe('createRating', () => {
@@ -213,6 +213,36 @@ describe('createRating', () => {
     const afterBoth = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
     expect(afterBoth?.avgRating).toBe('5.0');
     expect(afterBoth?.avgCategoryScores?.[WORKER_RATING_CATEGORIES[0].id]).toBe('5.0');
+  });
+
+  it('a média da empresa é recalculada sobre TODAS as avaliações reveladas, não só a mais recente', async () => {
+    const { worker, owner, company, job, shift } = await setupCompletedShift();
+    await createRating(worker.id, shift.id, { categoryScores: companyCategoryScores(4), comment: undefined });
+    await createRating(owner.id, shift.id, { categoryScores: workerCategoryScores(5), comment: undefined });
+    const afterFirstShift = await db.query.companies.findFirst({ where: eq(companies.id, company.id) });
+    expect(afterFirstShift?.avgRating).toBe('4.0');
+
+    // Segundo turno concluído, mesma vaga (positionsTotal: 2), segundo
+    // trabalhador — avalia a empresa com nota bem diferente da primeira.
+    // Se o recálculo estivesse considerando só a avaliação mais recente
+    // (ou somando errado), a média não bateria com a conta manual abaixo.
+    const [secondWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: secondWorker.id, fullName: 'Beatriz Lima' });
+    const secondApplication = await createApplication(secondWorker.id, job.id, true);
+    await updateApplicationStatus(owner.id, secondApplication.id, 'approved');
+    const secondShift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, secondApplication.id) });
+    if (!secondShift) throw new Error('Segundo turno não foi criado no setup do teste.');
+    await checkIn(secondWorker.id, secondShift.id, { lat: -23.55, lng: -46.63 });
+    await checkOut(secondWorker.id, secondShift.id, { lat: -23.55, lng: -46.63 });
+
+    await createRating(secondWorker.id, secondShift.id, { categoryScores: companyCategoryScores(2), comment: undefined });
+    await createRating(owner.id, secondShift.id, { categoryScores: workerCategoryScores(3), comment: undefined });
+
+    const afterBothShifts = await db.query.companies.findFirst({ where: eq(companies.id, company.id) });
+    // (4 + 2) / 2 = 3.0 — prova que a segunda avaliação foi somada à
+    // primeira, não a substituiu.
+    expect(afterBothShifts?.avgRating).toBe('3.0');
+    expect(afterBothShifts?.avgCategoryScores?.[COMPANY_RATING_CATEGORIES[0].id]).toBe('3.0');
   });
 
   it('nota geral é a média arredondada das categorias', async () => {
