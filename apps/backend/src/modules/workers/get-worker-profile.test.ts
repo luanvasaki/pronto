@@ -50,7 +50,7 @@ async function createCompanyAndJob(ownerPhone: string, cnpj: string, categoryId:
 }
 
 async function completeShift(workerId: string, ownerId: string, jobId: string) {
-  const application = await createApplication(workerId, jobId);
+  const application = await createApplication(workerId, jobId, true);
   await updateApplicationStatus(ownerId, application.id, 'approved');
   const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
   if (!shift) throw new Error('Turno não foi criado no setup do teste.');
@@ -69,6 +69,7 @@ const TEST_CNPJ2 = '11222333000702';
 const TEST_CPF = '11122233396';
 const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
 const TEST_WORKER_PHONE = '11912345678';
+const TEST_BIRTH_DATE = '2000-01-01';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const TOMORROW_PLUS_5H = new Date(TOMORROW.getTime() + 5 * 60 * 60 * 1000);
@@ -113,6 +114,7 @@ describe('getWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
 
     const result = await getWorkerProfile(user.id);
@@ -141,6 +143,7 @@ describe('getWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
     await db.insert(documents).values({ workerId: user.id, fileUrl: 'documents/fake.jpg' });
 
@@ -161,6 +164,7 @@ describe('getWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
     await db.insert(documents).values({ workerId: user.id, fileUrl: 'documents/fake-selfie.jpg', type: 'selfie' });
 
@@ -181,6 +185,7 @@ describe('getWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
       cnhCategory: 'B',
     });
 
@@ -206,6 +211,7 @@ describe('getWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
     await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
 
@@ -230,7 +236,7 @@ describe('getWorkerProfile', () => {
       })
       .returning();
 
-    const application = await createApplication(worker.id, job.id);
+    const application = await createApplication(worker.id, job.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
@@ -260,6 +266,7 @@ describe('getWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
     await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
 
@@ -296,11 +303,12 @@ describe('getWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
     await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
 
     const { owner, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
-    const application = await createApplication(worker.id, job.id);
+    const application = await createApplication(worker.id, job.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
@@ -323,6 +331,7 @@ describe('getWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
     await db.update(workerProfiles).set({ avgRating: '4.5' }).where(eq(workerProfiles.userId, user.id));
 
@@ -342,6 +351,7 @@ describe('getWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
     await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
     const { owner, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
@@ -364,6 +374,7 @@ describe('getWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
     await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
     const { owner, company, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
@@ -388,6 +399,7 @@ describe('getWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
     await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
     const first = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
@@ -414,10 +426,11 @@ describe('getWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
     await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
     const { job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
-    const application = await createApplication(worker.id, job.id);
+    const application = await createApplication(worker.id, job.id, true);
     await withdrawApplication(worker.id, application.id);
 
     const result = await getWorkerProfile(worker.id);
@@ -439,19 +452,20 @@ describe('getWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
     await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
     const { owner, company, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
     await completeShift(worker.id, owner.id, job.id);
 
     const noShowJob = await createJobForCompany(company.id, category.id);
-    const noShowApplication = await createApplication(worker.id, noShowJob.id);
+    const noShowApplication = await createApplication(worker.id, noShowJob.id, true);
     await updateApplicationStatus(owner.id, noShowApplication.id, 'approved');
     const noShowShift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, noShowApplication.id) });
     await db.update(shifts).set({ status: 'no_show' }).where(eq(shifts.id, noShowShift!.id));
 
     const cancelledJob = await createJobForCompany(company.id, category.id);
-    const cancelledApplication = await createApplication(worker.id, cancelledJob.id);
+    const cancelledApplication = await createApplication(worker.id, cancelledJob.id, true);
     await updateApplicationStatus(owner.id, cancelledApplication.id, 'approved');
     const cancelledShift = await db.query.shifts.findFirst({
       where: eq(shifts.applicationId, cancelledApplication.id),

@@ -102,7 +102,7 @@ describe('deleteDemoData', () => {
         endsAt: TOMORROW_PLUS_5H,
       })
       .returning();
-    const application = await createApplication(worker.id, demoJob.id);
+    const application = await createApplication(worker.id, demoJob.id, true);
     await updateApplicationStatus(demoOwner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');

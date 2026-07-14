@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { users } from '../../db/schema';
+import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
 import { register } from './register';
 
 // Fixtures únicas entre arquivos de teste (ver README).
@@ -32,5 +33,20 @@ describe('register', () => {
 
     const rows = await db.query.users.findMany({ where: eq(users.email, TEST_EMAIL) });
     expect(rows).toHaveLength(1);
+  });
+
+  it('grava o momento e a versão do aceite dos termos ao criar a conta', async () => {
+    const before = new Date();
+    await register(TEST_EMAIL, TEST_PASSWORD, true);
+
+    const [row] = await db.query.users.findMany({ where: eq(users.email, TEST_EMAIL) });
+    expect(row.termsAcceptedAt).not.toBeNull();
+    expect(row.termsAcceptedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(row.termsVersion).toBe(CURRENT_TERMS_VERSION);
+  });
+
+  it('rejeita quando os termos não são aceitos', async () => {
+    await expect(register(TEST_EMAIL, TEST_PASSWORD, false)).rejects.toThrow('aceitar os Termos de Uso');
+    await expect(register(TEST_EMAIL, TEST_PASSWORD, undefined)).rejects.toThrow('aceitar os Termos de Uso');
   });
 });

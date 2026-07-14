@@ -10,6 +10,7 @@ import {
   formatCpf,
   formatPhone,
   getCurrentUser,
+  isValidCpf,
   listSkillCategories,
   SkillCategory,
 } from '@shift/shared';
@@ -18,12 +19,24 @@ import { Input } from '../../components/ui/input';
 import { Logo } from '../../components/ui/logo';
 import { upsertWorkerProfile, uploadWorkerPhoto } from '../../lib/worker-profile-api';
 
+const MIN_WORKER_AGE_YEARS = 18;
+
+/** Mesmo cálculo do backend (ver upsertWorkerProfile) — evita mandar o formulário só pra levar 400 de volta. */
+function calculateAge(birthDate: string, now: Date): number {
+  const [year, month, day] = birthDate.split('-').map(Number);
+  let age = now.getFullYear() - year;
+  const hasHadBirthdayThisYear = now.getMonth() + 1 > month || (now.getMonth() + 1 === month && now.getDate() >= day);
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+}
+
 export default function CadastroPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState('');
   const [cpf, setCpf] = useState('');
   const [phone, setPhone] = useState('');
   const [homeAddressFull, setHomeAddressFull] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   const [cnhCategory, setCnhCategory] = useState('');
   const [categories, setCategories] = useState<SkillCategory[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -108,12 +121,14 @@ export default function CadastroPage() {
 
   const missingFields: string[] = [];
   if (fullName.trim().length < 2) missingFields.push('nome completo');
-  if (cpf.length !== 11) missingFields.push('CPF');
+  if (!isValidCpf(cpf)) missingFields.push('CPF');
   if (phone.length < 10 || phone.length > 11) missingFields.push('telefone');
   if (homeAddressFull.trim().length < 8) missingFields.push('endereço completo');
+  if (!birthDate) missingFields.push('data de nascimento');
   if (selectedIds.length === 0) missingFields.push('ao menos uma categoria');
 
-  const isValid = missingFields.length === 0;
+  const isUnderage = birthDate.length > 0 && calculateAge(birthDate, new Date()) < MIN_WORKER_AGE_YEARS;
+  const isValid = missingFields.length === 0 && !isUnderage;
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -131,6 +146,7 @@ export default function CadastroPage() {
         cpf,
         phone,
         homeAddressFull: homeAddressFull.trim(),
+        birthDate,
         cnhCategory: cnhCategory || undefined,
         experienceByCategory,
       });
@@ -205,6 +221,26 @@ export default function CadastroPage() {
           <p className="mt-1.5 text-xs text-text-secondary">
             Só pra confirmar sua identidade — protegido, empresas nunca veem esse endereço.
           </p>
+        </div>
+
+        <div>
+          <Input
+            id="birthDate"
+            label="Data de nascimento"
+            type="date"
+            max={new Date().toISOString().slice(0, 10)}
+            value={birthDate}
+            onChange={(event) => setBirthDate(event.target.value)}
+          />
+          {isUnderage ? (
+            <p className="mt-1.5 text-xs text-danger">
+              É preciso ter 18 anos ou mais pra se cadastrar como trabalhador no Pronto.
+            </p>
+          ) : (
+            <p className="mt-1.5 text-xs text-text-secondary">
+              Só pra confirmar que você tem 18 anos ou mais — nunca aparece pra empresas.
+            </p>
+          )}
         </div>
 
         <div>

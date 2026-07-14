@@ -86,7 +86,7 @@ describe('getJobDetailForWorker', () => {
 
   it('marca hasApplied quando o trabalhador já se candidatou', async () => {
     const { worker, job } = await setup();
-    await createApplication(worker.id, job.id);
+    await createApplication(worker.id, job.id, true);
 
     const result = await getJobDetailForWorker(worker.id, job.id);
 
@@ -102,7 +102,7 @@ describe('getJobDetailForWorker', () => {
 
   it('deixa ver vaga não aberta se o trabalhador já se candidatou antes', async () => {
     const { worker, job } = await setup();
-    await createApplication(worker.id, job.id);
+    await createApplication(worker.id, job.id, true);
     await db.update(jobs).set({ status: 'filled' }).where(eq(jobs.id, job.id));
 
     const result = await getJobDetailForWorker(worker.id, job.id);

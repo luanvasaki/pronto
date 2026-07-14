@@ -39,7 +39,7 @@ async function createJobForCompany(companyId: string, categoryId: string) {
 }
 
 async function completeShift(workerId: string, ownerId: string, jobId: string) {
-  const application = await createApplication(workerId, jobId);
+  const application = await createApplication(workerId, jobId, true);
   await updateApplicationStatus(ownerId, application.id, 'approved');
   const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
   if (!shift) throw new Error('Turno não foi criado no setup do teste.');

@@ -64,7 +64,7 @@ describe('listMyApplications', () => {
         endsAt: TOMORROW_PLUS_5H,
       })
       .returning();
-    await createApplication(worker.id, job.id);
+    await createApplication(worker.id, job.id, true);
 
     const result = await listMyApplications(worker.id);
 

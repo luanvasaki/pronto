@@ -40,7 +40,7 @@ async function setup() {
       endsAt: TOMORROW_PLUS_5H,
     })
     .returning();
-  const application = await createApplication(worker.id, job.id);
+  const application = await createApplication(worker.id, job.id, true);
   await updateApplicationStatus(owner.id, application.id, 'approved');
   await removeApprovedWorker(owner.id, application.id);
   return { worker, owner, application };

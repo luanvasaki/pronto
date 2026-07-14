@@ -40,7 +40,7 @@ async function setup(positionsTotal = 2) {
       endsAt: TOMORROW_PLUS_5H,
     })
     .returning();
-  const application = await createApplication(worker.id, job.id);
+  const application = await createApplication(worker.id, job.id, true);
   return { worker, owner, job, application };
 }
 
@@ -145,7 +145,7 @@ describe('updateApplicationStatus', () => {
     const { owner, job, application } = await setup(1);
     const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: otherWorker.id, fullName: 'Beatriz Lima' });
-    const otherApplication = await createApplication(otherWorker.id, job.id);
+    const otherApplication = await createApplication(otherWorker.id, job.id, true);
 
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
@@ -167,7 +167,7 @@ describe('updateApplicationStatus', () => {
     const { owner, job, application } = await setup(1);
     const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: otherWorker.id, fullName: 'Beatriz Lima' });
-    const otherApplication = await createApplication(otherWorker.id, job.id);
+    const otherApplication = await createApplication(otherWorker.id, job.id, true);
 
     const results = await Promise.allSettled([
       updateApplicationStatus(owner.id, application.id, 'approved'),
@@ -200,7 +200,7 @@ describe('updateApplicationStatus', () => {
     const { owner, job, application } = await setup(1);
     const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: otherWorker.id, fullName: 'Beatriz Lima' });
-    const otherApplication = await createApplication(otherWorker.id, job.id);
+    const otherApplication = await createApplication(otherWorker.id, job.id, true);
 
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const result = await updateApplicationStatus(owner.id, otherApplication.id, 'rejected');

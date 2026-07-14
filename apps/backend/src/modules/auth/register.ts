@@ -3,6 +3,7 @@ import { db } from '../../db/client';
 import { users } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { isUniqueViolation } from '../../shared/is-unique-violation';
+import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
 import { isValidEmail } from './email';
 import { IssuedTokens, issueTokens } from './issue-tokens';
 import { hashPassword, isValidPassword } from './password';
@@ -37,7 +38,7 @@ export async function register(
   try {
     [createdUser] = await db
       .insert(users)
-      .values({ email, passwordHash, termsAcceptedAt: new Date() })
+      .values({ email, passwordHash, termsAcceptedAt: new Date(), termsVersion: CURRENT_TERMS_VERSION })
       .returning();
   } catch (error) {
     if (isUniqueViolation(error)) {

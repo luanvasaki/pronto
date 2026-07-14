@@ -11,6 +11,7 @@ const TEST_CATEGORY_NAME = 'Categoria de teste — worker-profile-routes';
 const TEST_CPF = '11122233809';
 const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
 const TEST_WORKER_PHONE = '11912345678';
+const TEST_BIRTH_DATE = '2000-01-01';
 
 async function loginAgent(app: ReturnType<typeof createApp>) {
   const agent = request.agent(app);
@@ -48,6 +49,7 @@ describe('PUT /worker-profile', () => {
         cpf: TEST_CPF,
         homeAddressFull: TEST_ADDRESS,
         phone: TEST_WORKER_PHONE,
+        birthDate: TEST_BIRTH_DATE,
       });
 
     expect(response.status).toBe(200);
@@ -84,6 +86,7 @@ describe('GET /worker-profile/me', () => {
         cpf: TEST_CPF,
         homeAddressFull: TEST_ADDRESS,
         phone: TEST_WORKER_PHONE,
+        birthDate: TEST_BIRTH_DATE,
       });
 
     const response = await agent.get('/worker-profile/me');

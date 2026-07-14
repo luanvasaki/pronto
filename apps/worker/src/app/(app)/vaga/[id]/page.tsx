@@ -30,6 +30,7 @@ export default function VagaDetalhePage() {
   const [error, setError] = useState<string | null>(null);
 
   const [applied, setApplied] = useState(false);
+  const [termsConfirmed, setTermsConfirmed] = useState(false);
   const [experienceConfirmed, setExperienceConfirmed] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
@@ -210,11 +211,25 @@ export default function VagaDetalhePage() {
             </p>
           )}
 
+          <label className="flex items-start gap-2 text-[12.5px] text-text-secondary">
+            <input
+              type="checkbox"
+              checked={termsConfirmed}
+              onChange={() => setTermsConfirmed((current) => !current)}
+              className="mt-0.5 shrink-0"
+            />
+            Sei que essa é uma escala avulsa, sem vínculo empregatício com a empresa nem com o Pronto.
+          </label>
+
           {applyError && <p className="text-sm text-danger">{applyError}</p>}
 
           <Button
             type="button"
-            disabled={(job.experienceMismatch && !experienceConfirmed) || (job.cnhMismatch && job.cnhRequired)}
+            disabled={
+              !termsConfirmed ||
+              (job.experienceMismatch && !experienceConfirmed) ||
+              (job.cnhMismatch && job.cnhRequired)
+            }
             isLoading={isApplying}
             onClick={handleApply}
           >

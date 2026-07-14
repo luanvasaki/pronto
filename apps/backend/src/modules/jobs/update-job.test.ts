@@ -90,7 +90,7 @@ describe('updateJob', () => {
     const { owner, category, job } = await setup();
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
-    const application = await createApplication(worker.id, job.id);
+    const application = await createApplication(worker.id, job.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     // baseInput usa positionsTotal 2 — preenche a segunda posição também pra fechar a vaga.
     const [secondWorkerUser] = await db
@@ -98,7 +98,7 @@ describe('updateJob', () => {
       .values({ phone: SECOND_WORKER_PHONE })
       .returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: secondWorkerUser.id, fullName: 'Beatriz Lima' });
-    const secondApplication = await createApplication(secondWorkerUser.id, job.id);
+    const secondApplication = await createApplication(secondWorkerUser.id, job.id, true);
     await updateApplicationStatus(owner.id, secondApplication.id, 'approved');
 
     await expect(updateJob(owner.id, job.id, baseInput(category.id))).rejects.toThrow(
@@ -110,7 +110,7 @@ describe('updateJob', () => {
     const { owner, category, job } = await setup();
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
-    const application = await createApplication(worker.id, job.id);
+    const application = await createApplication(worker.id, job.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
     await expect(

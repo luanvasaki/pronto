@@ -83,7 +83,7 @@ describe('cancelJob', () => {
     const { owner, job } = await setup(1);
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
-    const application = await createApplication(worker.id, job.id);
+    const application = await createApplication(worker.id, job.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     await checkIn(worker.id, shift!.id, { lat: -23.546, lng: -46.69 });
@@ -95,12 +95,12 @@ describe('cancelJob', () => {
     const { owner, job } = await setup(2);
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
-    const approvedApplication = await createApplication(worker.id, job.id);
+    const approvedApplication = await createApplication(worker.id, job.id, true);
     await updateApplicationStatus(owner.id, approvedApplication.id, 'approved');
 
     const [secondWorker] = await db.insert(users).values({ phone: SECOND_WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: secondWorker.id, fullName: 'Beatriz Lima' });
-    const pendingApplication = await createApplication(secondWorker.id, job.id);
+    const pendingApplication = await createApplication(secondWorker.id, job.id, true);
 
     const result = await cancelJob(owner.id, job.id);
 

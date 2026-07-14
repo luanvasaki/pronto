@@ -39,7 +39,7 @@ async function setup() {
       endsAt: TOMORROW_PLUS_5H,
     })
     .returning();
-  const application = await createApplication(worker.id, job.id);
+  const application = await createApplication(worker.id, job.id, true);
   return { worker, owner, job, application };
 }
 

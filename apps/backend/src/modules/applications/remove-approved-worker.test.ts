@@ -40,7 +40,7 @@ async function setup(positionsTotal = 2) {
       endsAt: TOMORROW_PLUS_5H,
     })
     .returning();
-  const application = await createApplication(worker.id, job.id);
+  const application = await createApplication(worker.id, job.id, true);
   return { worker, owner, job, application };
 }
 

@@ -61,5 +61,8 @@ export interface ApplicationResponse {
 }
 
 export function applyToJob(jobId: string): Promise<ApplicationResponse> {
-  return apiFetch(`/jobs/${jobId}/applications`, { method: 'POST' });
+  return apiFetch(`/jobs/${jobId}/applications`, {
+    method: 'POST',
+    body: JSON.stringify({ termsAccepted: true }),
+  });
 }

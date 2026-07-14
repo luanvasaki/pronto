@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { companies, jobs, skillCategories, users } from '../../db/schema';
+import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
 import { createJob } from './create-job';
 
 // Fixtures únicas entre arquivos de teste (ver README).
@@ -145,6 +146,7 @@ describe('createJob', () => {
     const [row] = await db.query.jobs.findMany({ where: eq(jobs.id, result.id) });
     expect(row.termsAcceptedAt).not.toBeNull();
     expect(row.termsAcceptedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(row.termsVersion).toBe(CURRENT_TERMS_VERSION);
   });
 
   it('cria a vaga com status "open" por padrão', async () => {

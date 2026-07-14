@@ -6,6 +6,24 @@ import { isValidCpf } from '../../shared/cpf-cnpj';
 import { HttpError } from '../../shared/errors/http-error';
 
 const PHONE_REGEX = /^\d{10,11}$/;
+const BIRTH_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+// Trabalho avulso intermediado pelo Pronto não tem estrutura pra cumprir
+// as restrições legais de trabalho de menor (proibição de horário
+// noturno/insalubre, autorização formal dos responsáveis etc. — ver
+// reunião jurídica) — bloqueado até existir um fluxo dedicado com
+// orientação jurídica própria.
+const MIN_WORKER_AGE_YEARS = 18;
+
+// Assume BIRTH_DATE_REGEX já validado pelo chamador — garante os 3
+// grupos numéricos que o non-null assertion abaixo depende.
+function calculateAge(birthDate: string, now: Date): number {
+  const [year, month, day] = birthDate.split('-').map(Number) as [number, number, number];
+  let age = now.getFullYear() - year;
+  const hasHadBirthdayThisYear =
+    now.getMonth() + 1 > month || (now.getMonth() + 1 === month && now.getDate() >= day);
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+}
 
 export interface UpsertWorkerProfileInput {
   fullName: string | undefined;
@@ -23,6 +41,10 @@ export interface UpsertWorkerProfileInput {
   // Telefone de contato — mesma regra de privacidade e obrigatoriedade
   // do endereço completo (ver comentário do schema).
   phone: string | undefined;
+  // "YYYY-MM-DD" — obrigatória só no cadastro inicial, mesma regra do
+  // CPF/endereço/telefone. Usada só pra bloquear menor de 18 anos (ver
+  // MIN_WORKER_AGE_YEARS); não reaparece em nenhuma tela de empresa.
+  birthDate: string | undefined;
   // Categoria de CNH do trabalhador — opcional (nem todo mundo tem
   // carteira), string vazia limpa um valor já salvo. Usada só pra bater
   // com o requisito de CNH de uma vaga (ver jobs/cnh.ts).
@@ -42,6 +64,7 @@ export interface WorkerProfileResponse {
   cpf: string | null;
   homeAddressFull: string | null;
   phone: string | null;
+  birthDate: string | null;
   cnhCategory: string | null;
   experienceByCategory: Record<string, boolean>;
 }
@@ -122,6 +145,20 @@ export async function upsertWorkerProfile(
     throw new HttpError(400, 'Telefone inválido — envie só os números, com DDD.');
   }
 
+  const birthDate = input.birthDate?.trim();
+  // Mesma regra do CPF/endereço/telefone: obrigatório só quando ainda não existe perfil.
+  if (!existingProfile && !birthDate) {
+    throw new HttpError(400, 'Data de nascimento é obrigatória.');
+  }
+  if (birthDate) {
+    if (!BIRTH_DATE_REGEX.test(birthDate) || Number.isNaN(new Date(birthDate).getTime())) {
+      throw new HttpError(400, 'Data de nascimento inválida.');
+    }
+    if (calculateAge(birthDate, new Date()) < MIN_WORKER_AGE_YEARS) {
+      throw new HttpError(400, 'É preciso ter 18 anos ou mais pra se cadastrar como trabalhador.');
+    }
+  }
+
   const rawCnhCategory = input.cnhCategory?.trim();
   if (rawCnhCategory && !isCnhCategory(rawCnhCategory)) {
     throw new HttpError(400, 'Categoria de CNH inválida.');
@@ -152,13 +189,14 @@ export async function upsertWorkerProfile(
         cpf: cpf || null,
         homeAddressFull: homeAddressFull || null,
         phone: phone || null,
+        birthDate: birthDate || null,
         cnhCategory,
       })
       .onConflictDoUpdate({
         target: workerProfiles.userId,
-        // bio/cpf/homeAddressFull/phone/cnhCategory só entram no UPDATE
-        // quando enviados de verdade — editar só o nome ou as categorias
-        // não pode apagar valor já salvo.
+        // bio/cpf/homeAddressFull/phone/birthDate/cnhCategory só entram
+        // no UPDATE quando enviados de verdade — editar só o nome ou as
+        // categorias não pode apagar valor já salvo.
         set: {
           fullName,
           updatedAt: new Date(),
@@ -167,6 +205,7 @@ export async function upsertWorkerProfile(
           ...(input.cpf !== undefined ? { cpf: cpf || null } : {}),
           ...(input.homeAddressFull !== undefined ? { homeAddressFull: homeAddressFull || null } : {}),
           ...(input.phone !== undefined ? { phone: phone || null } : {}),
+          ...(input.birthDate !== undefined ? { birthDate: birthDate || null } : {}),
           ...(input.cnhCategory !== undefined ? { cnhCategory } : {}),
         },
       })
@@ -204,6 +243,7 @@ export async function upsertWorkerProfile(
     cpf: profile?.cpf ?? null,
     homeAddressFull: profile?.homeAddressFull ?? null,
     phone: profile?.phone ?? null,
+    birthDate: profile?.birthDate ?? null,
     cnhCategory: profile?.cnhCategory ?? null,
     experienceByCategory,
   };

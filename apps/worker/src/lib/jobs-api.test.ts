@@ -26,11 +26,14 @@ describe('applyToJob', () => {
     apiFetchMock.mockReset();
   });
 
-  it('chama POST /jobs/:jobId/applications', async () => {
+  it('chama POST /jobs/:jobId/applications com o aceite dos termos', async () => {
     apiFetchMock.mockResolvedValue({ id: '1', status: 'pending' });
 
     await applyToJob('job-1');
 
-    expect(apiFetchMock).toHaveBeenCalledWith('/jobs/job-1/applications', { method: 'POST' });
+    expect(apiFetchMock).toHaveBeenCalledWith('/jobs/job-1/applications', {
+      method: 'POST',
+      body: JSON.stringify({ termsAccepted: true }),
+    });
   });
 });

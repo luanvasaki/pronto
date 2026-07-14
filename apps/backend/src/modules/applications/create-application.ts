@@ -3,11 +3,16 @@ import { db } from '../../db/client';
 import { applications, companies, jobs, workerProfiles } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { isUniqueViolation } from '../../shared/is-unique-violation';
+import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
 import { areApplicationsClosed } from '../jobs/applications-close';
 import { satisfiesCnhRequirement } from '../jobs/cnh';
 import { ApplicationResponse, toApplicationResponse } from './application-response';
 
-export async function createApplication(workerId: string, jobId: string): Promise<ApplicationResponse> {
+export async function createApplication(
+  workerId: string,
+  jobId: string,
+  termsAccepted: boolean | undefined,
+): Promise<ApplicationResponse> {
   const profile = await db.query.workerProfiles.findFirst({
     where: eq(workerProfiles.userId, workerId),
   });
@@ -16,6 +21,9 @@ export async function createApplication(workerId: string, jobId: string): Promis
   }
   if (profile.kycStatus !== 'approved') {
     throw new HttpError(403, 'Complete a verificação do seu documento antes de se candidatar.');
+  }
+  if (!termsAccepted) {
+    throw new HttpError(400, 'É preciso confirmar que essa candidatura é intermediação avulsa antes de se candidatar.');
   }
 
   const job = await db.query.jobs.findFirst({ where: eq(jobs.id, jobId) });
@@ -53,7 +61,10 @@ export async function createApplication(workerId: string, jobId: string): Promis
 
   let application;
   try {
-    [application] = await db.insert(applications).values({ jobId, workerId }).returning();
+    [application] = await db
+      .insert(applications)
+      .values({ jobId, workerId, termsAcceptedAt: new Date(), termsVersion: CURRENT_TERMS_VERSION })
+      .returning();
   } catch (error) {
     if (isUniqueViolation(error)) {
       throw new HttpError(400, 'Você já se candidatou a essa vaga.');

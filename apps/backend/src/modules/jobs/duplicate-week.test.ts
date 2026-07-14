@@ -109,7 +109,7 @@ describe('duplicateWeek', () => {
       startsAt: jobStartsAt(4, 20), // sexta-feira 20h da semana de origem
       positionsTotal: 3,
     });
-    await createApplication(worker.id, sourceJob.id);
+    await createApplication(worker.id, sourceJob.id, true);
 
     const result = await duplicateWeek(owner.id, {
       sourceWeekStart: SOURCE_WEEK_START,

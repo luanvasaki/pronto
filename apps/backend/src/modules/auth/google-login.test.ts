@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { users } from '../../db/schema';
+import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
 import { googleLogin } from './google-login';
 import { GoogleTokenVerifier, GoogleUserInfo } from './google-token-verifier';
 
@@ -56,6 +57,23 @@ describe('googleLogin', () => {
     const result = await googleLogin('fake-token', true, verifier);
 
     expect(result.user.id).toBe(existing.id);
+  });
+
+  it('grava o momento e a versão do aceite dos termos ao criar a conta', async () => {
+    const before = new Date();
+    const verifier = fakeVerifier({
+      email: TEST_EMAIL,
+      googleId: TEST_GOOGLE_ID,
+      emailVerified: true,
+      picture: 'https://example.com/photo.jpg',
+    });
+
+    await googleLogin('fake-token', true, verifier);
+
+    const [row] = await db.query.users.findMany({ where: eq(users.email, TEST_EMAIL) });
+    expect(row.termsAcceptedAt).not.toBeNull();
+    expect(row.termsAcceptedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(row.termsVersion).toBe(CURRENT_TERMS_VERSION);
   });
 
   it('continua recusando quando o e-mail já é de uma conta de senha de verdade (sem googleId)', async () => {

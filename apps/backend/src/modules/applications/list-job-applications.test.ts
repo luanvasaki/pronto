@@ -91,7 +91,7 @@ describe('listJobApplications', () => {
 
   it('lista os candidatos com nome do worker, sinalizando que ele não tem a especialidade da vaga', async () => {
     const { worker, owner, job } = await setup();
-    await createApplication(worker.id, job.id);
+    await createApplication(worker.id, job.id, true);
 
     const result = await listJobApplications(owner.id, job.id);
 
@@ -105,7 +105,7 @@ describe('listJobApplications', () => {
   it('sinaliza quando o worker tem a especialidade da vaga', async () => {
     const { worker, owner, job } = await setup();
     await db.insert(workerSkills).values({ workerId: worker.id, categoryId: job.categoryId });
-    await createApplication(worker.id, job.id);
+    await createApplication(worker.id, job.id, true);
 
     const result = await listJobApplications(owner.id, job.id);
 
@@ -115,7 +115,7 @@ describe('listJobApplications', () => {
   it('sinaliza experienceMismatch quando a vaga exige experiência e o worker não declarou ter', async () => {
     const { worker, owner, job } = await setup(true);
     await db.insert(workerSkills).values({ workerId: worker.id, categoryId: job.categoryId, hasExperience: false });
-    await createApplication(worker.id, job.id);
+    await createApplication(worker.id, job.id, true);
 
     const result = await listJobApplications(owner.id, job.id);
 
@@ -125,7 +125,7 @@ describe('listJobApplications', () => {
   it('não sinaliza experienceMismatch quando o worker declarou experiência', async () => {
     const { worker, owner, job } = await setup(true);
     await db.insert(workerSkills).values({ workerId: worker.id, categoryId: job.categoryId, hasExperience: true });
-    await createApplication(worker.id, job.id);
+    await createApplication(worker.id, job.id, true);
 
     const result = await listJobApplications(owner.id, job.id);
 
@@ -134,7 +134,7 @@ describe('listJobApplications', () => {
 
   it('não sinaliza experienceMismatch quando a vaga não exige experiência', async () => {
     const { worker, owner, job } = await setup(false);
-    await createApplication(worker.id, job.id);
+    await createApplication(worker.id, job.id, true);
 
     const result = await listJobApplications(owner.id, job.id);
 
@@ -172,7 +172,7 @@ describe('listJobApplications', () => {
     });
     await db.update(shifts).set({ status: 'completed' }).where(eq(shifts.id, previousShift!.id));
 
-    await createApplication(worker.id, job.id);
+    await createApplication(worker.id, job.id, true);
     const result = await listJobApplications(owner.id, job.id);
 
     expect(result[0].worker.previousShiftsWithCompany).toBe(1);
@@ -196,10 +196,10 @@ describe('listJobApplications', () => {
         endsAt: TOMORROW_PLUS_5H,
       })
       .returning();
-    const previousApplication = await createApplication(worker.id, previousJob.id);
+    const previousApplication = await createApplication(worker.id, previousJob.id, true);
     await updateApplicationStatus(owner.id, previousApplication.id, 'approved');
 
-    await createApplication(worker.id, job.id);
+    await createApplication(worker.id, job.id, true);
     const result = await listJobApplications(owner.id, job.id);
 
     expect(result[0].worker.previousShiftsWithCompany).toBe(0);
@@ -207,7 +207,7 @@ describe('listJobApplications', () => {
 
   it('inclui o turno quando a candidatura já foi aprovada', async () => {
     const { worker, owner, job } = await setup();
-    const application = await createApplication(worker.id, job.id);
+    const application = await createApplication(worker.id, job.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
     const result = await listJobApplications(owner.id, job.id);
@@ -220,11 +220,11 @@ describe('listJobApplications', () => {
   it('ordena candidatos por nota média (melhor avaliado primeiro)', async () => {
     const { worker, owner, job } = await setup();
     await db.update(workerProfiles).set({ avgRating: '3.0' }).where(eq(workerProfiles.userId, worker.id));
-    await createApplication(worker.id, job.id);
+    await createApplication(worker.id, job.id, true);
 
     const [secondWorker] = await db.insert(users).values({ phone: SECOND_WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: secondWorker.id, fullName: 'Beatriz Lima', avgRating: '4.8' });
-    await createApplication(secondWorker.id, job.id);
+    await createApplication(secondWorker.id, job.id, true);
 
     const result = await listJobApplications(owner.id, job.id);
 
@@ -235,7 +235,7 @@ describe('listJobApplications', () => {
 
   it('avaliação às cegas: não mostra a nota que o trabalhador deu até a empresa também avaliar', async () => {
     const { worker, owner, job } = await setup();
-    const application = await createApplication(worker.id, job.id);
+    const application = await createApplication(worker.id, job.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');

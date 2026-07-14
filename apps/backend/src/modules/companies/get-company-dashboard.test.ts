@@ -97,7 +97,7 @@ describe('getCompanyDashboard', () => {
       endsAt: IN_15H,
       positionsTotal: 2,
     });
-    const application = await createApplication(worker.id, nearJob.id);
+    const application = await createApplication(worker.id, nearJob.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
     // Fora da janela de 48h — não deve entrar na conta de cobertura.
@@ -148,7 +148,7 @@ describe('getCompanyDashboard', () => {
       endsAt: IN_15H,
       positionsTotal: 1,
     });
-    const application = await createApplication(worker.id, job.id);
+    const application = await createApplication(worker.id, job.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
     const result = await getCompanyDashboard(owner.id);
@@ -164,7 +164,7 @@ describe('getCompanyDashboard', () => {
       endsAt: IN_15H,
       positionsTotal: 1,
     });
-    await createApplication(worker.id, job.id);
+    await createApplication(worker.id, job.id, true);
 
     const result = await getCompanyDashboard(owner.id);
 

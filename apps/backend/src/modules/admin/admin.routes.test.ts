@@ -27,6 +27,7 @@ const TEST_CNPJ = '11222333003016';
 const TEST_CPF = '11122233477';
 const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
 const TEST_WORKER_PHONE = '11912345678';
+const TEST_BIRTH_DATE = '2000-01-01';
 
 async function loginAgent(app: ReturnType<typeof createApp>, email: string) {
   const agent = request.agent(app);
@@ -144,6 +145,7 @@ describe('rotas de admin', () => {
         cpf: TEST_CPF,
         homeAddressFull: TEST_ADDRESS,
         phone: TEST_WORKER_PHONE,
+        birthDate: TEST_BIRTH_DATE,
       });
     const documentBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
     const uploadResponse = await workerAgent
@@ -245,6 +247,7 @@ describe('rotas de admin', () => {
         cpf: TEST_CPF,
         homeAddressFull: TEST_ADDRESS,
         phone: TEST_WORKER_PHONE,
+        birthDate: TEST_BIRTH_DATE,
       });
     const meResponse = await workerAgent.get('/auth/me');
 

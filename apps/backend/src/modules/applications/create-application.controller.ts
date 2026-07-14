@@ -18,7 +18,7 @@ export async function createApplicationHandler(
       throw new HttpError(400, 'Vaga não encontrada.');
     }
 
-    const result = await createApplication(userId, jobId);
+    const result = await createApplication(userId, jobId, req.body?.termsAccepted);
     res.status(201).json(result);
   } catch (error) {
     next(error);

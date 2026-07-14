@@ -3,6 +3,7 @@ import { db } from '../../db/client';
 import { users } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { isUniqueViolation } from '../../shared/is-unique-violation';
+import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
 import { GoogleTokenVerifier } from './google-token-verifier';
 import { IssuedTokens, issueTokens } from './issue-tokens';
 import { toUserResponse, UserResponse } from './user-response';
@@ -83,6 +84,7 @@ export async function googleLogin(
         googleId: googleUser.googleId,
         googlePhotoUrl: googleUser.picture,
         termsAcceptedAt: new Date(),
+        termsVersion: CURRENT_TERMS_VERSION,
       })
       .returning();
   } catch (error) {

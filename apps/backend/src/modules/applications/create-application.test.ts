@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { applications, companies, jobs, skillCategories, users, workerProfiles } from '../../db/schema';
+import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
 import { createApplication } from './create-application';
 
 // Fixtures únicas entre arquivos de teste (ver README).
@@ -77,14 +78,39 @@ describe('createApplication', () => {
     const [user] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
     const job = await createJob();
 
-    await expect(createApplication(user.id, job.id)).rejects.toThrow('Complete seu cadastro');
+    await expect(createApplication(user.id, job.id, true)).rejects.toThrow('Complete seu cadastro');
   });
 
   it('rejeita quando o trabalhador ainda não teve o documento aprovado', async () => {
     const worker = await createWorker(undefined, 'pending');
     const job = await createJob();
 
-    await expect(createApplication(worker.id, job.id)).rejects.toThrow('Complete a verificação do seu documento');
+    await expect(createApplication(worker.id, job.id, true)).rejects.toThrow('Complete a verificação do seu documento');
+  });
+
+  it('rejeita quando o trabalhador não confirma o aceite dos termos', async () => {
+    const worker = await createWorker();
+    const job = await createJob();
+
+    await expect(createApplication(worker.id, job.id, false)).rejects.toThrow(
+      'preciso confirmar que essa candidatura',
+    );
+    await expect(createApplication(worker.id, job.id, undefined)).rejects.toThrow(
+      'preciso confirmar que essa candidatura',
+    );
+  });
+
+  it('grava o momento e a versão do aceite dos termos ao criar a candidatura', async () => {
+    const worker = await createWorker();
+    const job = await createJob();
+
+    const before = new Date();
+    const result = await createApplication(worker.id, job.id, true);
+
+    const [row] = await db.query.applications.findMany({ where: eq(applications.id, result.id) });
+    expect(row.termsAcceptedAt).not.toBeNull();
+    expect(row.termsAcceptedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(row.termsVersion).toBe(CURRENT_TERMS_VERSION);
   });
 
   it('rejeita quando o dono da empresa tenta se candidatar à própria vaga', async () => {
@@ -93,13 +119,13 @@ describe('createApplication', () => {
     if (!owner) throw new Error('owner não encontrado');
     await db.insert(workerProfiles).values({ userId: owner.id, fullName: 'Dono Testando', kycStatus: 'approved' });
 
-    await expect(createApplication(owner.id, job.id)).rejects.toThrow('própria vaga');
+    await expect(createApplication(owner.id, job.id, true)).rejects.toThrow('própria vaga');
   });
 
   it('rejeita vaga inexistente', async () => {
     const worker = await createWorker();
 
-    await expect(createApplication(worker.id, '00000000-0000-0000-0000-000000000000')).rejects.toThrow(
+    await expect(createApplication(worker.id, '00000000-0000-0000-0000-000000000000', true)).rejects.toThrow(
       'Vaga não encontrada',
     );
   });
@@ -108,15 +134,15 @@ describe('createApplication', () => {
     const worker = await createWorker();
     const job = await createJob({ status: 'filled', positionsFilled: 2 });
 
-    await expect(createApplication(worker.id, job.id)).rejects.toThrow('não está mais aceitando');
+    await expect(createApplication(worker.id, job.id, true)).rejects.toThrow('não está mais aceitando');
   });
 
   it('rejeita candidatura duplicada', async () => {
     const worker = await createWorker();
     const job = await createJob();
-    await createApplication(worker.id, job.id);
+    await createApplication(worker.id, job.id, true);
 
-    await expect(createApplication(worker.id, job.id)).rejects.toThrow('já se candidatou');
+    await expect(createApplication(worker.id, job.id, true)).rejects.toThrow('já se candidatou');
   });
 
   it('rejeita candidatura duplicada mesmo em corrida (duas chamadas simultâneas)', async () => {
@@ -124,8 +150,8 @@ describe('createApplication', () => {
     const job = await createJob();
 
     const results = await Promise.allSettled([
-      createApplication(worker.id, job.id),
-      createApplication(worker.id, job.id),
+      createApplication(worker.id, job.id, true),
+      createApplication(worker.id, job.id, true),
     ]);
 
     const fulfilled = results.filter((result) => result.status === 'fulfilled');
@@ -139,7 +165,7 @@ describe('createApplication', () => {
     const worker = await createWorker();
     const job = await createJob();
 
-    const result = await createApplication(worker.id, job.id);
+    const result = await createApplication(worker.id, job.id, true);
 
     expect(result.status).toBe('pending');
     expect(result.jobId).toBe(job.id);
@@ -150,28 +176,28 @@ describe('createApplication', () => {
     const worker = await createWorker();
     const job = await createJob({ applicationsCloseAt: new Date(Date.now() - 60 * 1000) });
 
-    await expect(createApplication(worker.id, job.id)).rejects.toThrow('já fecharam');
+    await expect(createApplication(worker.id, job.id, true)).rejects.toThrow('já fecharam');
   });
 
   it('rejeita quando o padrão de prazo (1h antes do início) já passou', async () => {
     const worker = await createWorker();
     const job = await createJob({ startsAt: new Date(Date.now() + 30 * 60 * 1000) });
 
-    await expect(createApplication(worker.id, job.id)).rejects.toThrow('já fecharam');
+    await expect(createApplication(worker.id, job.id, true)).rejects.toThrow('já fecharam');
   });
 
   it('rejeita candidatura quando a vaga exige CNH que o trabalhador não tem', async () => {
     const worker = await createWorker();
     const job = await createJob({ cnhCategory: 'B', cnhRequired: true });
 
-    await expect(createApplication(worker.id, job.id)).rejects.toThrow('exige CNH categoria B');
+    await expect(createApplication(worker.id, job.id, true)).rejects.toThrow('exige CNH categoria B');
   });
 
   it('aceita candidatura quando o trabalhador tem a categoria de CNH exigida', async () => {
     const worker = await createWorker('B');
     const job = await createJob({ cnhCategory: 'B', cnhRequired: true });
 
-    const result = await createApplication(worker.id, job.id);
+    const result = await createApplication(worker.id, job.id, true);
 
     expect(result.status).toBe('pending');
   });
@@ -180,7 +206,7 @@ describe('createApplication', () => {
     const worker = await createWorker();
     const job = await createJob({ cnhCategory: 'B', cnhRequired: false });
 
-    const result = await createApplication(worker.id, job.id);
+    const result = await createApplication(worker.id, job.id, true);
 
     expect(result.status).toBe('pending');
   });
@@ -189,7 +215,7 @@ describe('createApplication', () => {
     const worker = await createWorker('AB');
     const job = await createJob({ cnhCategory: 'A', cnhRequired: true });
 
-    const result = await createApplication(worker.id, job.id);
+    const result = await createApplication(worker.id, job.id, true);
 
     expect(result.status).toBe('pending');
   });

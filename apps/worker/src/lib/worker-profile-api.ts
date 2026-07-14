@@ -13,6 +13,7 @@ export interface WorkerProfileDetails {
   searchRadiusKm: number;
   homeAddressFull: string | null;
   phone: string | null;
+  birthDate: string | null;
   cnhCategory: string | null;
   kycStatus: string;
   hasDocument: boolean;
@@ -55,6 +56,7 @@ export interface UpsertWorkerProfileInput {
   cpf?: string;
   homeAddressFull?: string;
   phone?: string;
+  birthDate?: string;
   cnhCategory?: string;
   experienceByCategory?: Record<string, boolean>;
 }
@@ -67,6 +69,7 @@ export interface UpsertWorkerProfileResponse {
   cpf: string | null;
   homeAddressFull: string | null;
   phone: string | null;
+  birthDate: string | null;
   cnhCategory: string | null;
   experienceByCategory: Record<string, boolean>;
 }

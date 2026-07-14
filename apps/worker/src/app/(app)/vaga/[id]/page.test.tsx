@@ -91,12 +91,19 @@ describe('VagaDetalhePage', () => {
     expect(screen.queryByText('Avisos da empresa')).not.toBeInTheDocument();
   });
 
+  it('mantém "Aceitar escala" desabilitado até confirmar o aceite dos termos', async () => {
+    render(<VagaDetalhePage />);
+
+    expect(await screen.findByRole('button', { name: 'Aceitar escala' })).toBeDisabled();
+  });
+
   it('candidata-se e passa a mostrar avisos e perguntas', async () => {
     applyToJobMock.mockResolvedValue({ id: 'app-1' });
     const user = userEvent.setup();
 
     render(<VagaDetalhePage />);
-    await user.click(await screen.findByRole('button', { name: 'Aceitar escala' }));
+    await user.click(await screen.findByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Aceitar escala' }));
 
     await waitFor(() => expect(applyToJobMock).toHaveBeenCalledWith('job-1'));
     expect(await screen.findByText('Candidatura enviada ✓')).toBeInTheDocument();

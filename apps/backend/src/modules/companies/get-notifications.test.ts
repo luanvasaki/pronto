@@ -94,8 +94,8 @@ describe('getCompanyNotifications', () => {
     const { owner, job } = await setup();
     const worker = await createWorker(WORKER_PHONE, 'Ana Souza');
     const otherWorker = await createWorker(OTHER_WORKER_PHONE, 'Beatriz Lima');
-    await createApplication(worker.id, job.id);
-    await createApplication(otherWorker.id, job.id);
+    await createApplication(worker.id, job.id, true);
+    await createApplication(otherWorker.id, job.id, true);
 
     const result = await getCompanyNotifications(owner.id);
 
@@ -111,8 +111,8 @@ describe('getCompanyNotifications', () => {
     const { owner, job } = await setup();
     const worker = await createWorker(WORKER_PHONE, 'Ana Souza');
     const otherWorker = await createWorker(OTHER_WORKER_PHONE, 'Beatriz Lima');
-    const application = await createApplication(worker.id, job.id);
-    await createApplication(otherWorker.id, job.id);
+    const application = await createApplication(worker.id, job.id, true);
+    await createApplication(otherWorker.id, job.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
     const result = await getCompanyNotifications(owner.id);
@@ -125,7 +125,7 @@ describe('getCompanyNotifications', () => {
   it('avisa quando um trabalhador faz check-in, e some depois de marcado como visto', async () => {
     const { owner, job } = await setup();
     const worker = await createWorker(WORKER_PHONE, 'Ana Souza');
-    const application = await createApplication(worker.id, job.id);
+    const application = await createApplication(worker.id, job.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
@@ -147,7 +147,7 @@ describe('getCompanyNotifications', () => {
   it('avisa de escala concluída aguardando avaliação da empresa, e some depois que ela avalia', async () => {
     const { owner, job } = await setup();
     const worker = await createWorker(WORKER_PHONE, 'Ana Souza');
-    const application = await createApplication(worker.id, job.id);
+    const application = await createApplication(worker.id, job.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
@@ -180,7 +180,7 @@ describe('getCompanyNotifications', () => {
   it('não conta escala agendada ou em andamento como avaliação pendente', async () => {
     const { owner, job } = await setup();
     const worker = await createWorker(WORKER_PHONE, 'Ana Souza');
-    const application = await createApplication(worker.id, job.id);
+    const application = await createApplication(worker.id, job.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
     const result = await getCompanyNotifications(owner.id);

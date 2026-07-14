@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies, jobs, skillCategories } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
+import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
 import { JobInput, validateJobInput } from './job-input-validation';
 import { JobResponse, toJobResponse } from './job-response';
 
@@ -69,6 +70,7 @@ export async function createJob(
       endsAt: validated.endsAt,
       applicationsCloseAt: validated.applicationsCloseAt,
       termsAcceptedAt: new Date(),
+      termsVersion: CURRENT_TERMS_VERSION,
     })
     .returning();
 

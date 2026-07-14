@@ -56,6 +56,7 @@ const PROFILE = {
   searchRadiusKm: 10,
   homeAddressFull: 'Rua das Flores, 123, Centro, Sorocaba - SP',
   phone: '11912345678',
+  birthDate: '2000-01-01',
   cnhCategory: null,
   kycStatus: 'approved',
   hasDocument: true,

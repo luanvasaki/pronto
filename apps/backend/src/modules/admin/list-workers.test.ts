@@ -73,12 +73,18 @@ describe('listAdminWorkers', () => {
         endsAt: TOMORROW_PLUS_5H,
       })
       .returning();
-    const application = await createApplication(worker.id, job.id);
+    const application = await createApplication(worker.id, job.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
     await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
     await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    // Sobrescreve os horários reais (quase instantâneos no teste) por um
+    // intervalo de 3h exatas — mesma técnica de get-worker-profile.test.ts,
+    // pra conferir o valor certo em vez de só "não é negativo".
+    const checkInTime = new Date();
+    const checkOutTime = new Date(checkInTime.getTime() + 3 * 60 * 60 * 1000);
+    await db.update(shifts).set({ checkInAt: checkInTime, checkOutAt: checkOutTime }).where(eq(shifts.id, shift.id));
 
     const result = await listAdminWorkers();
 
@@ -87,7 +93,50 @@ describe('listAdminWorkers', () => {
     expect(found?.email).toBe(WORKER_EMAIL);
     expect(found?.photoUrl).toBe('/uploads/public/camila.jpg');
     expect(found?.phone).toBe('11912345678');
-    expect(found?.shiftsCompleted).toBeGreaterThanOrEqual(1);
-    expect(found?.hoursWorked).toBeGreaterThanOrEqual(0);
+    expect(found?.shiftsCompleted).toBe(1);
+    expect(found?.hoursWorked).toBe(3);
+  });
+
+  it('não conta horas de turno ainda em andamento (checked_in sem check-out)', async () => {
+    const [worker] = await db.insert(users).values({ phone: WORKER_PHONE, email: WORKER_EMAIL }).returning();
+    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Camila Souza', kycStatus: 'approved' });
+    const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
+    const [company] = await db
+      .insert(companies)
+      .values({
+        ownerUserId: owner.id,
+        legalName: 'Espaço de Eventos Gama Ltda',
+        tradeName: 'Espaço Gama',
+        cnpj: TEST_CNPJ,
+        verificationStatus: 'approved',
+      })
+      .returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    const [job] = await db
+      .insert(jobs)
+      .values({
+        companyId: company.id,
+        categoryId: category.id,
+        description: 'Vaga de teste com descrição detalhada o suficiente.',
+        addressLabel: 'Endereço de teste',
+        locationLat: -23.55,
+        locationLng: -46.63,
+        positionsTotal: 1,
+        payAmount: '150.00',
+        startsAt: TOMORROW,
+        endsAt: TOMORROW_PLUS_5H,
+      })
+      .returning();
+    const application = await createApplication(worker.id, job.id, true);
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+    const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
+    if (!shift) throw new Error('Turno não foi criado no setup do teste.');
+    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+
+    const result = await listAdminWorkers();
+
+    const found = result.find((row) => row.userId === worker.id);
+    expect(found?.shiftsCompleted).toBe(0);
+    expect(found?.hoursWorked).toBe(0);
   });
 });

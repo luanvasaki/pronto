@@ -13,6 +13,18 @@ const TEST_CPF = '11122233396';
 const OTHER_CPF = '55566677720';
 const TEST_ADDRESS = 'Rua das Flores, 123, Centro, São Paulo - SP';
 const TEST_WORKER_PHONE = '11912345678';
+const TEST_BIRTH_DATE = '2000-01-01';
+
+// Evita usar toISOString() aqui: ele converte pra UTC, o que pode
+// empurrar a data pro dia seguinte dependendo do fuso da máquina que
+// roda o teste — exatamente o tipo de off-by-one que faria o teste do
+// aniversário de hoje falhar de forma não determinística.
+function toDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 async function createTestUser() {
   const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
@@ -49,6 +61,7 @@ describe('upsertWorkerProfile', () => {
         cpf: TEST_CPF,
         homeAddressFull: TEST_ADDRESS,
         phone: TEST_WORKER_PHONE,
+        birthDate: TEST_BIRTH_DATE,
       }),
     ).rejects.toThrow('Foto de perfil inválida');
   });
@@ -68,6 +81,7 @@ describe('upsertWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
 
     expect(result.photoUrl).toBe(googlePhotoUrl);
@@ -139,6 +153,92 @@ describe('upsertWorkerProfile', () => {
     ).rejects.toThrow('Telefone inválido');
   });
 
+  it('rejeita data de nascimento ausente no cadastro inicial', async () => {
+    const user = await createTestUser();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+    await expect(
+      upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
+      }),
+    ).rejects.toThrow('Data de nascimento é obrigatória');
+  });
+
+  it('rejeita data de nascimento com formato inválido', async () => {
+    const user = await createTestUser();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+    await expect(
+      upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
+        birthDate: '01/01/2000',
+      }),
+    ).rejects.toThrow('Data de nascimento inválida');
+  });
+
+  it('rejeita trabalhador menor de 18 anos', async () => {
+    const user = await createTestUser();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+    const seventeenYearsAgo = new Date();
+    seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+    const birthDate = toDateString(seventeenYearsAgo);
+
+    await expect(
+      upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
+        birthDate,
+      }),
+    ).rejects.toThrow('18 anos ou mais');
+  });
+
+  it('aceita trabalhador que completa 18 anos exatamente hoje', async () => {
+    const user = await createTestUser();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+    const eighteenYearsAgoToday = new Date();
+    eighteenYearsAgoToday.setFullYear(eighteenYearsAgoToday.getFullYear() - 18);
+    const birthDate = toDateString(eighteenYearsAgoToday);
+
+    const result = await upsertWorkerProfile(user.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
+      birthDate,
+    });
+
+    expect(result.birthDate).toBe(birthDate);
+  });
+
+  it('preserva data de nascimento já salva quando uma atualização posterior não a reenvia', async () => {
+    const user = await createTestUser();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+    await upsertWorkerProfile(user.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
+    });
+
+    const updated = await upsertWorkerProfile(user.id, { fullName: 'Ana Souza Lima', categoryIds: [category.id] });
+
+    expect(updated.birthDate).toBe(TEST_BIRTH_DATE);
+  });
+
   it('cria o perfil com as categorias associadas', async () => {
     const user = await createTestUser();
     const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
@@ -149,6 +249,7 @@ describe('upsertWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
 
     expect(result.fullName).toBe('Ana Souza');
@@ -169,6 +270,7 @@ describe('upsertWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
     const updated = await upsertWorkerProfile(user.id, {
       fullName: 'Ana Souza Lima',
@@ -194,6 +296,7 @@ describe('upsertWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
 
     expect(result.bio).toBe('Garçonete com 5 anos de experiência em eventos.');
@@ -230,6 +333,7 @@ describe('upsertWorkerProfile', () => {
       cpf: OTHER_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
 
     await expect(
@@ -247,6 +351,7 @@ describe('upsertWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
 
     const updated = await upsertWorkerProfile(user.id, { fullName: 'Ana Souza Lima', categoryIds: [category.id] });
@@ -270,6 +375,7 @@ describe('upsertWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
 
     expect(result.experienceByCategory[categoryA.id]).toBe(true);
@@ -291,6 +397,7 @@ describe('upsertWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
     });
 
     // Adiciona categoryB sem reenviar experienceByCategory — igual ao
@@ -315,6 +422,7 @@ describe('upsertWorkerProfile', () => {
         cpf: TEST_CPF,
         homeAddressFull: TEST_ADDRESS,
         phone: TEST_WORKER_PHONE,
+        birthDate: TEST_BIRTH_DATE,
         cnhCategory: 'Z',
       }),
     ).rejects.toThrow('Categoria de CNH inválida');
@@ -330,6 +438,7 @@ describe('upsertWorkerProfile', () => {
       cpf: TEST_CPF,
       homeAddressFull: TEST_ADDRESS,
       phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
       cnhCategory: 'AB',
     });
     expect(created.cnhCategory).toBe('AB');
