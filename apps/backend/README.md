@@ -31,7 +31,9 @@ npm run test:watch --workspace=apps/backend
 
 Os testes de rota usam `supertest` contra o `app` exportado de `src/app.ts` (nenhuma porta de rede real é aberta). Os testes de schema/repositório usam o Postgres real do `.env` — por isso precisam do banco local de pé.
 
-**Cuidado com fixture entre arquivos de teste**: o Vitest roda arquivos em paralelo contra o mesmo banco. Um valor fixo (telefone, CNPJ) reusado em dois arquivos diferentes colide sob concorrência de forma intermitente — cada arquivo de teste precisa dos seus próprios valores únicos, não só únicos dentro do próprio arquivo.
+**Cuidado com fixture entre arquivos de teste**: todo teste bate no mesmo Postgres, sem schema isolado por arquivo. `fileParallelism: false` (`vitest.config.ts`) faz os arquivos rodarem em sequência hoje, então um valor fixo (telefone, CNPJ) reusado em dois arquivos diferentes não colide na prática — mas continua sendo uma colisão esperando acontecer se a suíte crescer e alguém precisar ligar paralelismo de novo por velocidade. Por isso a regra continua: cada arquivo de teste precisa dos seus próprios valores únicos, não só únicos dentro do próprio arquivo. Não existe rede de segurança automática pra isso — é disciplina manual, e um arquivo que esquece um `afterEach` completo pode deixar linha órfã que enviesa silenciosamente um teste de métricas rodando depois dele.
+
+**Limpando o que um teste criou**: cada teste que insere `users`/`companies`/`jobs` precisa desfazer isso no `afterEach`, na ordem certa — `jobs.company_id`/`category_id` não têm `onDelete: cascade` de propósito (ver `db/schema/jobs.ts`), então deletar o usuário dono sem apagar `payments`/`shifts`/`applications`/`jobs` primeiro derruba com violação de FK. `src/test-helpers/cleanup.ts` tem `deleteCompanyJobsAndDependents(ownerUserId)` fazendo exatamente essa cascata — reduz o boilerplate repetido em testes novos (testes existentes não foram migrados pra usar isso, é opt-in).
 
 ## Armazenamento de arquivos (Vercel Blob)
 
