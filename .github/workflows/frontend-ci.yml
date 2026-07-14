@@ -5,6 +5,7 @@ on:
     paths:
       - 'apps/business/**'
       - 'apps/worker/**'
+      - 'apps/admin/**'
       - 'packages/shared/**'
       - 'package.json'
       - 'package-lock.json'
@@ -13,6 +14,7 @@ on:
     paths:
       - 'apps/business/**'
       - 'apps/worker/**'
+      - 'apps/admin/**'
       - 'packages/shared/**'
 
 jobs:
@@ -68,3 +70,20 @@ jobs:
       - run: npm run typecheck --workspace=apps/worker
       - run: npm test --workspace=apps/worker
       - run: npm run build --workspace=apps/worker
+
+  admin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npm run lint --workspace=apps/admin
+      - run: npm run typecheck --workspace=apps/admin
+      - run: npm test --workspace=apps/admin
+      - run: npm run build --workspace=apps/admin

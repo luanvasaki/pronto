@@ -7,13 +7,16 @@ Marketplace de contratação de freelancers sob demanda — conecta empresas (ba
 ```
 apps/
   backend/    API (Node.js + TypeScript)
-  worker/     PWA do trabalhador (Next.js) — instalável via navegador, sem loja de app
-  business/   PWA da empresa + painel admin (Next.js) — também instalável via navegador
+  worker/     PWA do trabalhador (Next.js) — instalável via navegador, sem loja de app — porta 3000
+  business/   PWA da empresa (Next.js) — também instalável via navegador — porta 3200
+  admin/      Site dedicado do painel administrativo (Next.js) — login próprio, só isAdmin — porta 3400
 packages/
-  shared/     Tipos TypeScript compartilhados entre os três apps acima
+  shared/     Tipos TypeScript compartilhados entre os apps acima
 ```
 
-Nenhum dos dois frontends é um app nativo (React Native/Expo) — ambos são PWAs para evitar custo e fila de revisão de loja de app nesta fase.
+Nenhum dos frontends é um app nativo (React Native/Expo) — todos são PWAs para evitar custo e fila de revisão de loja de app nesta fase.
+
+`apps/admin` reaproveita as telas de `/admin` que já existiam dentro de `apps/business` (ainda lá, sem mudança) — é só um ponto de entrada dedicado, com o próprio login, pra quem só usa o painel admin não precisar passar pelo app de empresa. `CORS_ORIGINS` no backend precisa incluir `http://localhost:3400` (já em `.env.example`, mas confira seu `.env` local).
 
 ## Banco de dados local
 

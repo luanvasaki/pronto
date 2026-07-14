@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+/*
+ * Tokens do design system (handoff "Pronto", ver design_handoff_pronto/README.md).
+ * Cada cor tem um par claro/escuro — nenhum componente deveria usar
+ * hex direto, só essas variáveis, pra dark mode ser automático em
+ * todo lugar. Dark mode é quente (near-black amarronzado), não cinza.
+ */
+:root {
+  --color-primary: #f5531e;
+  --color-secondary: #1a1712;
+  --color-accent: #c2410c;
+  --color-success: #17a860;
+  --color-warning: #e0900f;
+  --color-danger: #c0392b;
+  --color-background: #f7f4ee;
+  --color-surface: #ffffff;
+  --color-border: #e4ded2;
+  --color-text: #1a1712;
+  --color-text-secondary: #7a7264;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #ff6b3d;
+    --color-secondary: #f0ece2;
+    --color-accent: #ff8a4c;
+    --color-success: #35c489;
+    --color-warning: #f5b93d;
+    --color-danger: #f07567;
+    --color-background: #14120d;
+    --color-surface: #201c16;
+    --color-border: #322d24;
+    --color-text: #f2eee5;
+    --color-text-secondary: #a79e8c;
+  }
+}
+
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-accent: var(--color-accent);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-border: var(--color-border);
+  --color-text: var(--color-text);
+  --color-text-secondary: var(--color-text-secondary);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  --font-sans: var(--font-hanken);
+  --font-heading: var(--font-bricolage);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-sans), sans-serif;
+}
