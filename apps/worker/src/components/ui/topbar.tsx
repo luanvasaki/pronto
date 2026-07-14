@@ -55,14 +55,6 @@ export function Topbar({ calledCount, calledNotifications = [], workerName, phot
         <Logo />
       </Link>
       <div className="flex shrink-0 items-center gap-2.5 sm:gap-3.5">
-        {workerName && (
-          <div className="hidden items-center gap-2.5 sm:flex">
-            <Avatar name={workerName} photoUrl={photoUrl} size="sm" />
-            <p className="max-w-[160px] truncate text-[13.5px] font-semibold text-text">
-              {greeting()}, {workerName}
-            </p>
-          </div>
-        )}
         <div ref={notificationsRef} className="relative">
           <button
             type="button"
@@ -110,6 +102,14 @@ export function Topbar({ calledCount, calledNotifications = [], workerName, phot
             </div>
           )}
         </div>
+        {workerName && (
+          <div className="hidden items-center gap-2.5 sm:flex">
+            <Avatar name={workerName} photoUrl={photoUrl} size="sm" />
+            <p className="max-w-[160px] truncate text-[13.5px] font-semibold text-text">
+              {greeting()}, {workerName}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
