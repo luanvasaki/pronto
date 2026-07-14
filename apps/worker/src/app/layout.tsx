@@ -28,6 +28,7 @@ export const metadata: Metadata = {
   title: "Pronto — vagas de trabalho avulso",
   description: "Encontre vagas de trabalho avulso perto de você.",
   icons: {
+    icon: "/icon.svg",
     apple: "/icons/icon-180.png",
   },
   appleWebApp: {

@@ -129,9 +129,9 @@ export function Sidebar({ companyName, logoUrl, isOpen, onClose, isAdmin = false
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-end gap-2 px-2 pt-1 pb-6">
+        <div className="flex items-end gap-1.5 px-2 pt-1 pb-6">
           <Logo variant="inverted" />
-          <span className="mb-0.5 text-[10px] font-semibold tracking-[0.14em] text-background/50 uppercase">
+          <span className="font-heading text-2xl leading-[0.8] font-extrabold tracking-[-0.03em] text-background">
             Empresa
           </span>
         </div>

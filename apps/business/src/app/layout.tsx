@@ -28,6 +28,7 @@ export const metadata: Metadata = {
   title: "Pronto para empresas",
   description: "Publique vagas e gerencie candidatos em minutos.",
   icons: {
+    icon: "/icon.svg",
     apple: "/icons/icon-180.png",
   },
   appleWebApp: {

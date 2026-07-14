@@ -23,6 +23,12 @@ describe('Topbar', () => {
     expect(bell.compareDocumentPosition(greeting) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('a foto/saudação leva pro perfil ao clicar', () => {
+    render(<Topbar calledCount={0} workerName="Ana Souza" />);
+
+    expect(screen.getByRole('link', { name: 'Ir para o perfil' })).toHaveAttribute('href', '/perfil');
+  });
+
   it('mostra o contador de chamadas no sino', () => {
     render(<Topbar calledCount={2} />);
 

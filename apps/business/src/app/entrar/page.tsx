@@ -63,7 +63,12 @@ export default function EntrarPage() {
   return (
     <main className="flex flex-1 items-center justify-center px-4">
       <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-5">
-        <Logo className="mb-2" />
+        <div className="mb-2 flex items-end gap-1.5">
+          <Logo />
+          <span className="font-heading text-2xl leading-[0.8] font-extrabold tracking-[-0.03em] text-text">
+            Empresa
+          </span>
+        </div>
         <div>
           <h1 className="font-heading text-2xl font-bold text-text">Entre na sua conta</h1>
           <p className="mt-1 text-[15px] text-text-secondary">Acesse o painel da sua empresa.</p>
