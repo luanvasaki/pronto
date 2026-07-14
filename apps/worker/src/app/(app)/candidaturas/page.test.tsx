@@ -146,6 +146,22 @@ describe('CandidaturasPage', () => {
     expect(await screen.findByText('Retirada')).toBeInTheDocument();
   });
 
+  it('"Voltar" desiste da confirmação sem chamar a API', async () => {
+    const user = userEvent.setup();
+    listMyApplicationsMock.mockResolvedValue({ applications: [APPLICATION] });
+
+    render(<CandidaturasPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Cancelar candidatura' }));
+    expect(screen.getByRole('button', { name: 'Confirmar cancelamento' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Voltar' }));
+
+    expect(screen.getByRole('button', { name: 'Cancelar candidatura' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Confirmar cancelamento' })).not.toBeInTheDocument();
+    expect(withdrawApplicationMock).not.toHaveBeenCalled();
+  });
+
   it('mostra erro quando o cancelamento falha', async () => {
     const user = userEvent.setup();
     listMyApplicationsMock.mockResolvedValue({ applications: [APPLICATION] });

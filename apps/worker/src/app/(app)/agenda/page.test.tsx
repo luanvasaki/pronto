@@ -1,6 +1,7 @@
+import { ApiError } from '@shift/shared';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AgendaPage from './page';
 
 const listSkillCategoriesMock = vi.fn();
@@ -163,6 +164,70 @@ describe('AgendaPage', () => {
     expect(screen.getByRole('button', { name: /fazer check-out/i })).toBeInTheDocument();
   });
 
+  describe('lembrete de início de turno (getUpcomingReminder)', () => {
+    // JOB.startsAt é fixo em '2026-08-01T18:00:00.000Z' — trava o
+    // relógio em vários pontos antes/depois disso pra cobrir os
+    // limiares (24h de janela, 2h de "urgente").
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('não mostra lembrete quando faltam mais de 24h pro início', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date('2026-07-31T10:00:00.000Z')); // 32h antes
+      listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'scheduled' })] });
+
+      render(<AgendaPage />);
+
+      await screen.findByText('Agendado');
+      expect(screen.queryByText(/Sua escala começa/)).not.toBeInTheDocument();
+    });
+
+    it('mostra lembrete não-urgente ("Não esqueça!") entre 2h e 24h antes do início', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date('2026-08-01T15:00:00.000Z')); // 3h antes
+      listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'scheduled' })] });
+
+      render(<AgendaPage />);
+
+      const reminder = await screen.findByText(/Sua escala começa em 3h.*Não esqueça!/);
+      expect(reminder.className).toContain('text-warning');
+    });
+
+    it('mostra lembrete urgente ("não perca o horário!") faltando 2h ou menos', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date('2026-08-01T17:15:00.000Z')); // 45min antes
+      listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'scheduled' })] });
+
+      render(<AgendaPage />);
+
+      const reminder = await screen.findByText(/Sua escala começa em 45 min.*não perca o horário!/);
+      expect(reminder.className).toContain('text-danger');
+    });
+
+    it('não mostra mais lembrete depois que o horário de início já passou', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date('2026-08-01T18:30:00.000Z')); // 30min depois do início
+      listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'scheduled' })] });
+
+      render(<AgendaPage />);
+
+      await screen.findByText('Agendado');
+      expect(screen.queryByText(/Sua escala começa/)).not.toBeInTheDocument();
+    });
+
+    it('não mostra lembrete pra turno que não está mais "scheduled" (já em andamento)', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date('2026-08-01T17:15:00.000Z')); // 45min antes, dentro da janela urgente
+      listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'checked_in' })] });
+
+      render(<AgendaPage />);
+
+      await screen.findAllByText('Em andamento');
+      expect(screen.queryByText(/Sua escala começa/)).not.toBeInTheDocument();
+    });
+  });
+
   it('não mostra botão de check-in/check-out pra turno concluído', async () => {
     listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'completed' })] });
 
@@ -306,6 +371,47 @@ describe('AgendaPage', () => {
       await screen.findByText('Precisamos da sua localização para confirmar o check-in.'),
     ).toBeInTheDocument();
     expect(checkInMock).not.toHaveBeenCalled();
+  });
+
+  it('mostra a mensagem da API quando o check-in é rejeitado por estar longe do local (geofence)', async () => {
+    listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'scheduled' })] });
+    checkInMock.mockRejectedValue(new ApiError(400, 'Você precisa estar no local do turno pra fazer check-in.'));
+    Object.defineProperty(window.navigator, 'geolocation', {
+      value: {
+        getCurrentPosition: vi.fn((success) => success({ coords: { latitude: -23.55, longitude: -46.63 } })),
+      },
+      configurable: true,
+    });
+    const user = userEvent.setup();
+
+    render(<AgendaPage />);
+    await screen.findByText('Agendado');
+    await user.click(screen.getByRole('button', { name: /fazer check-in/i }));
+
+    expect(
+      await screen.findByText('Você precisa estar no local do turno pra fazer check-in.'),
+    ).toBeInTheDocument();
+    // Rejeição da API não muda o status pra "checked_in" na tela.
+    expect(screen.getByText('Agendado')).toBeInTheDocument();
+  });
+
+  it('mostra a mensagem da API quando o check-out é rejeitado por estar longe do local (geofence)', async () => {
+    listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'checked_in' })] });
+    checkOutMock.mockRejectedValue(new ApiError(400, 'Você precisa estar no local do turno pra fazer check-out.'));
+    Object.defineProperty(window.navigator, 'geolocation', {
+      value: {
+        getCurrentPosition: vi.fn((success) => success({ coords: { latitude: -23.55, longitude: -46.63 } })),
+      },
+      configurable: true,
+    });
+    const user = userEvent.setup();
+
+    render(<AgendaPage />);
+    await user.click(await screen.findByRole('button', { name: /fazer check-out/i }));
+
+    expect(
+      await screen.findByText('Você precisa estar no local do turno pra fazer check-out.'),
+    ).toBeInTheDocument();
   });
 
   it('busca os turnos de novo depois do check-out, pra mostrar o status do pagamento', async () => {

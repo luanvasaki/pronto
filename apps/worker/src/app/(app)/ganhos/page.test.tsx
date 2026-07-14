@@ -79,6 +79,18 @@ describe('GanhosPage', () => {
     expect(screen.getByText('Nenhum ganho registrado ainda')).toBeInTheDocument();
   });
 
+  it('mostra mensagem de erro (não o estado vazio) quando buscar os turnos falha', async () => {
+    listMyShiftsMock.mockRejectedValue(new Error('falha de rede'));
+
+    render(<GanhosPage />);
+
+    expect(await screen.findByText('Não foi possível carregar seus ganhos.')).toBeInTheDocument();
+    // Sem isso, uma falha real podia renderizar silenciosamente como
+    // "nada pra mostrar" em vez de erro — os dois parecem vazios, mas
+    // são estados bem diferentes.
+    expect(screen.queryByText('Nenhum ganho ainda')).not.toBeInTheDocument();
+  });
+
   it('soma corretamente turnos concluídos de mais de um mês, mais recente primeiro', async () => {
     listMyShiftsMock.mockResolvedValue({
       shifts: [

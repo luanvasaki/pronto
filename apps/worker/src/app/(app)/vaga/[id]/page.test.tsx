@@ -1,3 +1,4 @@
+import { ApiError } from '@shift/shared';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -97,6 +98,58 @@ describe('VagaDetalhePage', () => {
     expect(await screen.findByRole('button', { name: 'Aceitar escala' })).toBeDisabled();
   });
 
+  it('nunca destrava "Aceitar escala" quando a vaga exige CNH que o trabalhador não tem, mesmo confirmando os termos', async () => {
+    getJobDetailMock.mockReset().mockResolvedValue({
+      ...JOB,
+      cnhMismatch: true,
+      cnhRequired: true,
+      cnhCategory: 'B',
+    });
+    const user = userEvent.setup();
+
+    render(<VagaDetalhePage />);
+    expect(
+      await screen.findByText(/Essa vaga exige CNH categoria B — você não tem essa categoria no perfil/),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox'));
+
+    expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeDisabled();
+  });
+
+  it('deixa candidatar quando a CNH é só preferência (cnhRequired: false), mesmo com cnhMismatch', async () => {
+    getJobDetailMock.mockReset().mockResolvedValue({
+      ...JOB,
+      cnhMismatch: true,
+      cnhRequired: false,
+      cnhCategory: 'B',
+    });
+    const user = userEvent.setup();
+
+    render(<VagaDetalhePage />);
+    expect(
+      await screen.findByText(/Essa vaga prefere CNH categoria B — você pode se candidatar mesmo assim/),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox'));
+
+    expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeEnabled();
+  });
+
+  it('exige marcar a confirmação de experiência (além dos termos) quando experienceMismatch é true', async () => {
+    getJobDetailMock.mockReset().mockResolvedValue({ ...JOB, experienceMismatch: true });
+    const user = userEvent.setup();
+
+    render(<VagaDetalhePage />);
+    const checkboxes = await screen.findAllByRole('checkbox');
+    expect(checkboxes).toHaveLength(2);
+
+    // Só marcar os termos não é suficiente — falta a confirmação de experiência.
+    await user.click(checkboxes[1]);
+    expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeDisabled();
+
+    await user.click(checkboxes[0]);
+    expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeEnabled();
+  });
+
   it('candidata-se e passa a mostrar avisos e perguntas', async () => {
     applyToJobMock.mockResolvedValue({ id: 'app-1' });
     const user = userEvent.setup();
@@ -108,6 +161,19 @@ describe('VagaDetalhePage', () => {
     await waitFor(() => expect(applyToJobMock).toHaveBeenCalledWith('job-1'));
     expect(await screen.findByText('Candidatura enviada ✓')).toBeInTheDocument();
     await waitFor(() => expect(listJobAnnouncementsMock).toHaveBeenCalledWith('job-1'));
+  });
+
+  it('mostra o erro da API e não marca como candidatado quando a candidatura falha', async () => {
+    applyToJobMock.mockRejectedValue(new ApiError(400, 'Essa vaga já está preenchida.'));
+    const user = userEvent.setup();
+
+    render(<VagaDetalhePage />);
+    await user.click(await screen.findByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Aceitar escala' }));
+
+    expect(await screen.findByText('Essa vaga já está preenchida.')).toBeInTheDocument();
+    expect(screen.queryByText('Candidatura enviada ✓')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeInTheDocument();
   });
 
   it('já mostra avisos/perguntas de cara quando já se candidatou (hasApplied)', async () => {

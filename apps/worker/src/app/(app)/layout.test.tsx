@@ -1,5 +1,6 @@
 import { ApiError } from '@shift/shared';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AppLayout from './layout';
 
@@ -226,6 +227,51 @@ describe('AppLayout', () => {
 
     await screen.findByText('Conteúdo protegido');
     expect(await screen.findByLabelText('1 chamada(s) pra trabalhar')).toBeInTheDocument();
+  });
+
+  it('mostra candidatura removida no sino, com o nome da empresa e link pro Início', async () => {
+    getCurrentUserMock.mockResolvedValue({ user: { id: '1' } });
+    getWorkerProfileMock.mockResolvedValue({
+      fullName: 'Ana Souza',
+      bio: null,
+      cpf: null,
+      categoryIds: ['cat-1'],
+      photoUrl: null,
+      homeAddressLabel: null,
+      kycStatus: 'approved',
+      hasDocument: true,
+      hasSelfie: true,
+      avgRating: null,
+      totalShiftsCompleted: 0,
+      totalHoursWorked: 0,
+    });
+    listMyApplicationsMock.mockResolvedValue({
+      applications: [
+        {
+          id: 'a1',
+          status: 'rejected',
+          companyName: 'Bar do Zé',
+          workerSeenAt: '2026-07-01T12:00:00.000Z',
+          removedAt: '2026-07-02T12:00:00.000Z',
+          workerSeenRemovalAt: null,
+          createdAt: '2026-07-01T12:00:00.000Z',
+        },
+      ],
+    });
+    const user = userEvent.setup();
+
+    render(
+      <AppLayout>
+        <p>Conteúdo protegido</p>
+      </AppLayout>,
+    );
+
+    await screen.findByText('Conteúdo protegido');
+    const bell = await screen.findByLabelText('1 chamada(s) pra trabalhar');
+    await user.click(bell);
+
+    const link = screen.getByRole('link', { name: /Bar do Zé removeu você da escala/i });
+    expect(link).toHaveAttribute('href', '/inicio');
   });
 
   it('mostra escala concluída sem avaliação no sino, levando pra Agenda', async () => {
