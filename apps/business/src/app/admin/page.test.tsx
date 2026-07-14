@@ -101,6 +101,24 @@ describe('AdminOverviewPage', () => {
     expect(await screen.findByText('3 empresa(s) de demonstração removida(s).')).toBeInTheDocument();
   });
 
+  it('mostra erro e volta a pedir confirmação (não fica travado) quando remover falha', async () => {
+    deleteDemoDataMock.mockRejectedValue(new Error('falha de rede'));
+    const user = userEvent.setup();
+
+    render(<AdminOverviewPage />);
+    await screen.findByText('Dados de demonstração');
+    await user.click(screen.getByRole('button', { name: /remover dados de demonstração/i }));
+    await user.click(screen.getByRole('button', { name: /confirmar remoção/i }));
+
+    expect(await screen.findByText('Não foi possível remover os dados de demonstração.')).toBeInTheDocument();
+
+    // finally reseta confirmingDemoDelete mesmo na falha — o botão
+    // volta a pedir confirmação em vez de ficar travado em "Confirmar
+    // remoção" (o que arriscaria um segundo delete num clique perdido).
+    expect(screen.getByRole('button', { name: /remover dados de demonstração/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /confirmar remoção/i })).not.toBeInTheDocument();
+  });
+
   it('cancela sem chamar a API', async () => {
     const user = userEvent.setup();
 

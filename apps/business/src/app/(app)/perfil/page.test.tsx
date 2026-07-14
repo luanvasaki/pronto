@@ -1,3 +1,4 @@
+import { ApiError } from '@shift/shared';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -165,6 +166,20 @@ describe('PerfilPage', () => {
     expect(screen.getByAltText('Bar do Zé')).toHaveAttribute('src', '/uploads/public/logo.jpg');
   });
 
+  it('mostra erro e mantém o logo atual quando o upload falha', async () => {
+    uploadCompanyLogoMock.mockRejectedValue(new Error('falha de rede'));
+    const user = userEvent.setup();
+    renderWithProfile(BASE_PROFILE);
+
+    const file = new File(['logo'], 'logo.jpg', { type: 'image/jpeg' });
+    await user.upload(screen.getByLabelText(/adicionar logo/i), file);
+
+    expect(await screen.findByText('Não foi possível enviar o logo.')).toBeInTheDocument();
+    // Sem logoUrl novo devolvido, continua mostrando "Adicionar logo"
+    // (não corrompe pra um estado de "tem logo" sem imagem de verdade).
+    expect(screen.getByText('Adicionar logo')).toBeInTheDocument();
+  });
+
   it('salva os dados da empresa com os valores editados', async () => {
     upsertCompanyProfileMock.mockResolvedValue({
       id: '1',
@@ -272,6 +287,25 @@ describe('PerfilPage', () => {
 
     await waitFor(() => expect(changePasswordMock).toHaveBeenCalledWith('senha-atual-123', 'senha-nova-456'));
     expect(await screen.findByText('Senha alterada.')).toBeInTheDocument();
+  });
+
+  it('mostra o erro da API e mantém os campos preenchidos quando trocar a senha falha (ex.: senha atual errada)', async () => {
+    changePasswordMock.mockRejectedValue(new ApiError(401, 'Senha atual incorreta.'));
+    const user = userEvent.setup();
+    renderWithProfile(BASE_PROFILE);
+
+    await user.type(screen.getByLabelText('Senha atual'), 'senha-atual-errada');
+    await user.type(screen.getByLabelText('Nova senha'), 'senha-nova-456');
+    await user.type(screen.getByLabelText('Confirme a nova senha'), 'senha-nova-456');
+    await user.click(screen.getByRole('button', { name: /^alterar senha$/i }));
+
+    expect(await screen.findByText('Senha atual incorreta.')).toBeInTheDocument();
+    expect(screen.queryByText('Senha alterada.')).not.toBeInTheDocument();
+    // Só limpa os campos no sucesso — numa falha o usuário não devia
+    // ter que redigitar tudo de novo.
+    expect(screen.getByLabelText('Senha atual')).toHaveValue('senha-atual-errada');
+    expect(screen.getByLabelText('Nova senha')).toHaveValue('senha-nova-456');
+    expect(screen.getByLabelText('Confirme a nova senha')).toHaveValue('senha-nova-456');
   });
 
   it('mostra erro quando a confirmação de senha não bate', async () => {

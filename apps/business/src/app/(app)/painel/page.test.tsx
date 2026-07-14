@@ -144,6 +144,29 @@ describe('PainelPage', () => {
     expect(screen.getAllByText('1').length).toBeGreaterThan(0);
   });
 
+  it('exclui vaga de outro mês do "Gasto no mês" (não soma tudo, só o mês atual)', async () => {
+    listMyJobsMock.mockResolvedValue({
+      jobs: [
+        { ...JOB, id: 'job-current-month', status: 'filled', positionsFilled: 4 },
+        {
+          ...JOB,
+          id: 'job-other-month',
+          status: 'filled',
+          positionsFilled: 10,
+          payAmount: '999.00',
+          startsAt: '2026-07-06T18:00:00.000Z',
+          endsAt: '2026-07-06T23:00:00.000Z',
+        },
+      ],
+    });
+
+    renderPainel();
+
+    await screen.findByText('Escalas abertas');
+    // Se a vaga de julho entrasse na soma, daria muito mais que 520.
+    expect(screen.getByText('R$ 520,00')).toBeInTheDocument();
+  });
+
   it('mostra a avaliação da casa vinda do perfil da empresa', async () => {
     listMyJobsMock.mockResolvedValue({ jobs: [] });
 

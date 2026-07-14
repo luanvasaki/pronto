@@ -75,4 +75,24 @@ describe('useJobFormValidation', () => {
     const { result } = renderHook(() => useJobFormValidation({ ...baseInput(), payAmount: '0' }));
     expect(result.current.showEstimate).toBe(false);
   });
+
+  it('aceita vírgula como separador decimal (forma natural de digitar valor em reais)', () => {
+    const { result } = renderHook(() =>
+      useJobFormValidation({ ...baseInput(), positionsTotal: '2', payAmount: '130,50' }),
+    );
+    expect(result.current.missingFields).not.toContain('valor por pessoa');
+    expect(result.current.showEstimate).toBe(true);
+    expect(result.current.payAmountNumber).toBe(130.5);
+    expect(result.current.estimateTotal).toBe(261);
+  });
+
+  it('rejeita valor negativo', () => {
+    const { result } = renderHook(() => useJobFormValidation({ ...baseInput(), payAmount: '-50.00' }));
+    expect(result.current.missingFields).toContain('valor por pessoa');
+  });
+
+  it('rejeita mais de 2 casas decimais', () => {
+    const { result } = renderHook(() => useJobFormValidation({ ...baseInput(), payAmount: '130.999' }));
+    expect(result.current.missingFields).toContain('valor por pessoa');
+  });
 });

@@ -147,7 +147,7 @@ export default function EditarVagaPage() {
         locationLat: lat,
         locationLng: lng,
         positionsTotal: positionsTotalNumber,
-        payAmount,
+        payAmount: payAmount.replace(',', '.'),
         startsAt: new Date(startsAt).toISOString(),
         endsAt: new Date(endsAt).toISOString(),
         applicationsCloseAt: applicationsCloseAt ? new Date(applicationsCloseAt).toISOString() : undefined,

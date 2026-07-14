@@ -42,11 +42,15 @@ export interface JobFormValidationResult {
  */
 export function useJobFormValidation(input: JobFormValidationInput): JobFormValidationResult {
   const positionsTotalNumber = Number(input.positionsTotal);
-  const payAmountNumber = Number(input.payAmount);
+  // Aceita vírgula como separador decimal (forma natural de digitar
+  // valor em reais) além do ponto — sem isso "130,50" caía num erro
+  // genérico de "valor por pessoa" sem explicar o formato esperado.
+  const normalizedPayAmount = input.payAmount.replace(',', '.');
+  const payAmountNumber = Number(normalizedPayAmount);
   const showEstimate =
     Number.isInteger(positionsTotalNumber) &&
     positionsTotalNumber >= 1 &&
-    PAY_AMOUNT_REGEX.test(input.payAmount) &&
+    PAY_AMOUNT_REGEX.test(normalizedPayAmount) &&
     payAmountNumber > 0;
   const estimateTotal = positionsTotalNumber * payAmountNumber;
 
@@ -62,7 +66,7 @@ export function useJobFormValidation(input: JobFormValidationInput): JobFormVali
     missingFields.push('localização (clique em "Usar minha localização atual")');
   }
   if (!Number.isInteger(positionsTotalNumber) || positionsTotalNumber < 1) missingFields.push('número de vagas');
-  if (!PAY_AMOUNT_REGEX.test(input.payAmount) || Number(input.payAmount) <= 0) {
+  if (!PAY_AMOUNT_REGEX.test(normalizedPayAmount) || payAmountNumber <= 0) {
     missingFields.push('valor por pessoa');
   }
   if (input.startsAt === '') missingFields.push('início');

@@ -60,4 +60,21 @@ describe('fetchApplicationsByJobId', () => {
     expect(result).toEqual({});
     expect(listJobApplicationsMock).not.toHaveBeenCalled();
   });
+
+  it('mantém as vagas que carregaram mesmo quando uma falha isolada (não derruba tudo)', async () => {
+    listJobApplicationsMock.mockImplementation((jobId: string) => {
+      if (jobId === 'job-2') {
+        return Promise.reject(new Error('falha de rede'));
+      }
+      return Promise.resolve({ applications: [{ id: `app-${jobId}` }] });
+    });
+
+    const result = await fetchApplicationsByJobId([makeJob('job-1'), makeJob('job-2'), makeJob('job-3')]);
+
+    expect(result).toEqual({
+      'job-1': [{ id: 'app-job-1' }],
+      'job-3': [{ id: 'app-job-3' }],
+    });
+    expect(result).not.toHaveProperty('job-2');
+  });
 });
