@@ -19,7 +19,10 @@ import { Input } from '../../components/ui/input';
 import { Logo } from '../../components/ui/logo';
 import { upsertWorkerProfile, uploadWorkerPhoto } from '../../lib/worker-profile-api';
 
-const MIN_WORKER_AGE_YEARS = 18;
+// Mesmos valores do backend (ver upsertWorkerProfile) — evita mandar o
+// formulário só pra levar 400 de volta.
+const MIN_WORKER_AGE_YEARS = 16;
+const ADULT_AGE_YEARS = 18;
 
 /** Mesmo cálculo do backend (ver upsertWorkerProfile) — evita mandar o formulário só pra levar 400 de volta. */
 function calculateAge(birthDate: string, now: Date): number {
@@ -38,6 +41,10 @@ export default function CadastroPage() {
   const [homeAddressFull, setHomeAddressFull] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [cnhCategory, setCnhCategory] = useState('');
+  const [guardianFullName, setGuardianFullName] = useState('');
+  const [guardianCpf, setGuardianCpf] = useState('');
+  const [guardianPhone, setGuardianPhone] = useState('');
+  const [guardianAuthorized, setGuardianAuthorized] = useState(false);
   const [categories, setCategories] = useState<SkillCategory[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
@@ -119,6 +126,8 @@ export default function CadastroPage() {
     setPhotoPreviewUrl(URL.createObjectURL(file));
   }
 
+  const isMinor = birthDate.length > 0 && calculateAge(birthDate, new Date()) < ADULT_AGE_YEARS;
+
   const missingFields: string[] = [];
   if (fullName.trim().length < 2) missingFields.push('nome completo');
   if (!isValidCpf(cpf)) missingFields.push('CPF');
@@ -126,6 +135,12 @@ export default function CadastroPage() {
   if (homeAddressFull.trim().length < 8) missingFields.push('endereço completo');
   if (!birthDate) missingFields.push('data de nascimento');
   if (selectedIds.length === 0) missingFields.push('ao menos uma categoria');
+  if (isMinor) {
+    if (guardianFullName.trim().length < 2) missingFields.push('nome do responsável');
+    if (!isValidCpf(guardianCpf)) missingFields.push('CPF do responsável');
+    if (guardianPhone.length < 10 || guardianPhone.length > 11) missingFields.push('telefone do responsável');
+    if (!guardianAuthorized) missingFields.push('autorização do responsável');
+  }
 
   const isUnderage = birthDate.length > 0 && calculateAge(birthDate, new Date()) < MIN_WORKER_AGE_YEARS;
   const isValid = missingFields.length === 0 && !isUnderage;
@@ -149,6 +164,10 @@ export default function CadastroPage() {
         birthDate,
         cnhCategory: cnhCategory || undefined,
         experienceByCategory,
+        guardianFullName: isMinor ? guardianFullName.trim() : undefined,
+        guardianCpf: isMinor ? guardianCpf : undefined,
+        guardianPhone: isMinor ? guardianPhone : undefined,
+        guardianAuthorized: isMinor ? guardianAuthorized : undefined,
       });
       if (photoFile) {
         await uploadWorkerPhoto(photoFile);
@@ -234,14 +253,73 @@ export default function CadastroPage() {
           />
           {isUnderage ? (
             <p className="mt-1.5 text-xs text-danger">
-              É preciso ter 18 anos ou mais pra se cadastrar como trabalhador no Pronto.
+              É preciso ter 16 anos ou mais pra se cadastrar como trabalhador no Pronto.
+            </p>
+          ) : isMinor ? (
+            <p className="mt-1.5 text-xs text-text-secondary">
+              Como você tem menos de 18 anos, também vamos pedir os dados do seu responsável logo abaixo — nunca
+              aparece pra empresas.
             </p>
           ) : (
             <p className="mt-1.5 text-xs text-text-secondary">
-              Só pra confirmar que você tem 18 anos ou mais — nunca aparece pra empresas.
+              Só pra confirmar que você tem 16 anos ou mais — nunca aparece pra empresas.
             </p>
           )}
         </div>
+
+        {isMinor && (
+          <div className="flex flex-col gap-4 rounded-[18px] border border-border bg-surface p-4">
+            <div>
+              <h2 className="font-heading text-base font-bold text-text">Dados do responsável</h2>
+              <p className="mt-1 text-xs text-text-secondary">
+                Como você é menor de idade, precisamos dos dados de quem autoriza seu trabalho — protegido, empresas
+                nunca veem.
+              </p>
+            </div>
+
+            <Input
+              id="guardianFullName"
+              label="Nome completo do responsável"
+              type="text"
+              autoComplete="off"
+              placeholder="Nome do pai, mãe ou responsável legal"
+              value={guardianFullName}
+              onChange={(event) => setGuardianFullName(event.target.value)}
+            />
+
+            <Input
+              id="guardianCpf"
+              label="CPF do responsável"
+              type="text"
+              inputMode="numeric"
+              placeholder="000.000.000-00"
+              maxLength={14}
+              value={formatCpf(guardianCpf)}
+              onChange={(event) => setGuardianCpf(extractDigits(event.target.value).slice(0, 11))}
+            />
+
+            <Input
+              id="guardianPhone"
+              label="Telefone do responsável"
+              type="tel"
+              inputMode="numeric"
+              placeholder="(11) 91234-5678"
+              maxLength={16}
+              value={formatPhone(guardianPhone)}
+              onChange={(event) => setGuardianPhone(extractDigits(event.target.value).slice(0, 11))}
+            />
+
+            <label className="flex items-start gap-2 text-[12.5px] text-text-secondary">
+              <input
+                type="checkbox"
+                checked={guardianAuthorized}
+                onChange={() => setGuardianAuthorized((current) => !current)}
+                className="mt-0.5 shrink-0"
+              />
+              Eu, na condição de responsável legal, autorizo esse cadastro e o trabalho do menor no Pronto.
+            </label>
+          </div>
+        )}
 
         <div>
           <label htmlFor="cnhCategory" className="mb-1.5 block text-sm font-medium text-text-secondary">

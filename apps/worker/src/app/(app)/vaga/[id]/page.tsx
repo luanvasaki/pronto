@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiError, listSkillCategories } from '@shift/shared';
+import { ApiError, formatBenefitLabel, listSkillCategories } from '@shift/shared';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../../components/ui/button';
@@ -158,14 +158,14 @@ export default function VagaDetalhePage() {
             CNH {job.cnhCategory} {job.cnhRequired ? 'obrigatória' : '(preferência)'}
           </span>
         )}
-        {job.offersMeal && (
+        {formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação') && (
           <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[12.5px] font-semibold text-text">
-            Alimentação
+            {formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação')}
           </span>
         )}
-        {job.offersTransport && (
+        {formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte') && (
           <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[12.5px] font-semibold text-text">
-            Transporte
+            {formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte')}
           </span>
         )}
       </div>
@@ -218,6 +218,12 @@ export default function VagaDetalhePage() {
             </p>
           )}
 
+          {job.minorMismatch && (
+            <p className="rounded-lg bg-danger/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-danger">
+              Essa vaga não está disponível pra menores de idade.
+            </p>
+          )}
+
           <label className="flex items-start gap-2 text-[12.5px] text-text-secondary">
             <input
               type="checkbox"
@@ -235,7 +241,8 @@ export default function VagaDetalhePage() {
             disabled={
               !termsConfirmed ||
               (job.experienceMismatch && !experienceConfirmed) ||
-              (job.cnhMismatch && job.cnhRequired)
+              (job.cnhMismatch && job.cnhRequired) ||
+              job.minorMismatch
             }
             isLoading={isApplying}
             onClick={handleApply}

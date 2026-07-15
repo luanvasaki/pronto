@@ -9,6 +9,7 @@ import {
   getWorkerProfile,
   uploadWorkerCnhDocument,
   uploadWorkerDocument,
+  uploadWorkerGuardianDocument,
   uploadWorkerSelfie,
 } from '../../../lib/worker-profile-api';
 
@@ -17,14 +18,20 @@ export default function DocumentoPage() {
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [cnhFile, setCnhFile] = useState<File | null>(null);
+  const [guardianFile, setGuardianFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [documentUploaded, setDocumentUploaded] = useState(false);
   const [selfieUploaded, setSelfieUploaded] = useState(false);
   const [cnhUploaded, setCnhUploaded] = useState(false);
+  const [guardianUploaded, setGuardianUploaded] = useState(false);
   // Preenchido no cadastro anterior — só quem declarou ter CNH precisa
   // comprovar com o PDF da CNH Digital aqui.
   const [needsCnh, setNeedsCnh] = useState(false);
+  // Calculado no servidor a partir da idade — trabalhador menor de idade
+  // também precisa comprovar a autorização do responsável (ver cadastro,
+  // que já coletou os dados do responsável).
+  const [needsGuardianDocument, setNeedsGuardianDocument] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
 
   // Cobre não só "tentar de novo depois de um erro" (mesmo carregamento
@@ -38,12 +45,16 @@ export default function DocumentoPage() {
         setSelfieUploaded(profile.hasSelfie);
         setCnhUploaded(profile.hasCnhDocument);
         setNeedsCnh(Boolean(profile.cnhCategory));
+        setGuardianUploaded(profile.hasGuardianDocument);
+        setNeedsGuardianDocument(profile.isMinor);
       })
       .catch(() => undefined)
       .finally(() => setIsCheckingStatus(false));
   }, []);
 
-  const isValid = Boolean(documentFile && selfieFile && (!needsCnh || cnhFile));
+  const isValid = Boolean(
+    documentFile && selfieFile && (!needsCnh || cnhFile) && (!needsGuardianDocument || guardianFile),
+  );
 
   // Se algum envio falhar depois de outro já ter subido, tentar de novo
   // não pode reenviar o que já deu certo — cada envio cria uma linha
@@ -67,6 +78,10 @@ export default function DocumentoPage() {
       if (needsCnh && !cnhUploaded) {
         await uploadWorkerCnhDocument(cnhFile!);
         setCnhUploaded(true);
+      }
+      if (needsGuardianDocument && !guardianUploaded) {
+        await uploadWorkerGuardianDocument(guardianFile!);
+        setGuardianUploaded(true);
       }
       router.push('/inicio');
     } catch (err) {
@@ -141,6 +156,28 @@ export default function DocumentoPage() {
             <p className="mt-1.5 text-xs text-text-secondary">
               Você indicou que tem CNH — envie o PDF da CNH Digital (baixado no app oficial do governo, não
               uma foto) pra confirmar a categoria.
+            </p>
+          </div>
+        )}
+
+        {needsGuardianDocument && (
+          <div>
+            <label
+              htmlFor="guardianDocument"
+              className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary transition hover:border-primary"
+            >
+              {guardianFile ? guardianFile.name : 'Toque para escolher o documento do responsável'}
+              <input
+                id="guardianDocument"
+                type="file"
+                accept="image/jpeg,image/png,application/pdf"
+                className="hidden"
+                onChange={(event) => setGuardianFile(event.target.files?.[0] ?? null)}
+              />
+            </label>
+            <p className="mt-1.5 text-xs text-text-secondary">
+              Como você é menor de idade, envie também uma foto ou PDF do documento (RG ou CNH) do seu
+              responsável — isso confirma a autorização pro seu trabalho.
             </p>
           </div>
         )}

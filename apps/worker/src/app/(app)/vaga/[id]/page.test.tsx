@@ -45,8 +45,11 @@ const JOB: Awaited<ReturnType<typeof getJobDetailMock>> = {
   toolsRequired: null,
   cnhCategory: null,
   cnhRequired: false,
-  offersMeal: true,
-  offersTransport: false,
+  mealProvision: 'on_site',
+  mealAmount: null,
+  transportProvision: 'none',
+  transportAmount: null,
+  minorsAllowed: false,
   addressLabel: 'Vila Madalena, São Paulo',
   locationLat: -23.55,
   locationLng: -46.63,
@@ -63,6 +66,7 @@ const JOB: Awaited<ReturnType<typeof getJobDetailMock>> = {
   matchesSkills: true,
   experienceMismatch: false,
   cnhMismatch: false,
+  minorMismatch: false,
   hasApplied: false,
 };
 
@@ -81,7 +85,7 @@ describe('VagaDetalhePage', () => {
 
     expect(await screen.findByText('Descrição bem detalhada da vaga de garçom.')).toBeInTheDocument();
     expect(screen.getByText('Garçom')).toBeInTheDocument();
-    expect(screen.getByText('Alimentação')).toBeInTheDocument();
+    expect(screen.getByText('Alimentação no local')).toBeInTheDocument();
   });
 
   it('não busca avisos/perguntas antes de se candidatar', async () => {
@@ -132,6 +136,32 @@ describe('VagaDetalhePage', () => {
     await user.click(screen.getByRole('checkbox'));
 
     expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeEnabled();
+  });
+
+  it('nunca destrava "Aceitar escala" quando minorMismatch é true, mesmo confirmando os termos', async () => {
+    getJobDetailMock.mockReset().mockResolvedValue({ ...JOB, minorMismatch: true });
+    const user = userEvent.setup();
+
+    render(<VagaDetalhePage />);
+    expect(await screen.findByText('Essa vaga não está disponível pra menores de idade.')).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox'));
+
+    expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeDisabled();
+  });
+
+  it('mostra o valor do benefício pago em vez de "no local"', async () => {
+    getJobDetailMock.mockReset().mockResolvedValue({
+      ...JOB,
+      mealProvision: 'paid',
+      mealAmount: '20.00',
+      transportProvision: 'paid',
+      transportAmount: '15.50',
+    });
+
+    render(<VagaDetalhePage />);
+
+    expect(await screen.findByText('Alimentação: R$ 20,00')).toBeInTheDocument();
+    expect(screen.getByText('Transporte: R$ 15,50')).toBeInTheDocument();
   });
 
   it('exige marcar a confirmação de experiência (além dos termos) quando experienceMismatch é true', async () => {

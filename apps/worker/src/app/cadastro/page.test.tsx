@@ -112,7 +112,7 @@ describe('CadastroPage', () => {
     expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
   });
 
-  it('mantém o botão desabilitado e avisa quando o trabalhador é menor de 18 anos', async () => {
+  it('mantém o botão desabilitado e avisa quando o trabalhador é menor de 16 anos', async () => {
     const user = userEvent.setup();
     render(<CadastroPage />);
     await screen.findByLabelText('Garçom');
@@ -129,9 +129,70 @@ describe('CadastroPage', () => {
     await user.click(screen.getByLabelText('Garçom'));
 
     expect(
-      screen.getByText('É preciso ter 18 anos ou mais pra se cadastrar como trabalhador no Pronto.'),
+      screen.getByText('É preciso ter 16 anos ou mais pra se cadastrar como trabalhador no Pronto.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
+  });
+
+  describe('trabalhador entre 16 e 17 anos (exige dados do responsável)', () => {
+    function seventeenYearsAgoBirthDate(): string {
+      const seventeenYearsAgo = new Date();
+      seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+      return `${seventeenYearsAgo.getFullYear()}-${String(seventeenYearsAgo.getMonth() + 1).padStart(2, '0')}-${String(seventeenYearsAgo.getDate()).padStart(2, '0')}`;
+    }
+
+    async function fillBaseFields(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+      await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
+      await user.type(screen.getByLabelText('CPF'), '52998224725');
+      await user.type(screen.getByLabelText('Telefone'), '11912345678');
+      await user.type(screen.getByLabelText('Endereço completo'), 'Rua das Flores, 123, Centro, São Paulo - SP');
+      fireEvent.change(screen.getByLabelText('Data de nascimento'), { target: { value: seventeenYearsAgoBirthDate() } });
+      await user.click(screen.getByLabelText('Garçom'));
+    }
+
+    it('mostra o formulário do responsável e mantém o botão desabilitado até preencher tudo', async () => {
+      const user = userEvent.setup();
+      render(<CadastroPage />);
+      await screen.findByLabelText('Garçom');
+
+      await fillBaseFields(user);
+
+      expect(screen.getByLabelText('Nome completo do responsável')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
+
+      await user.type(screen.getByLabelText('Nome completo do responsável'), 'José Souza');
+      await user.type(screen.getByLabelText('CPF do responsável'), '11122283148');
+      await user.type(screen.getByLabelText('Telefone do responsável'), '11988887777');
+      expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
+
+      await user.click(screen.getByText(/autorizo esse cadastro/i));
+      expect(screen.getByRole('button', { name: /continuar/i })).toBeEnabled();
+    });
+
+    it('envia os dados do responsável ao salvar', async () => {
+      upsertWorkerProfileMock.mockResolvedValue({ fullName: 'Ana Souza', categoryIds: ['cat-1'], photoUrl: null });
+      const user = userEvent.setup();
+      render(<CadastroPage />);
+      await screen.findByLabelText('Garçom');
+
+      await fillBaseFields(user);
+      await user.type(screen.getByLabelText('Nome completo do responsável'), 'José Souza');
+      await user.type(screen.getByLabelText('CPF do responsável'), '11122283148');
+      await user.type(screen.getByLabelText('Telefone do responsável'), '11988887777');
+      await user.click(screen.getByText(/autorizo esse cadastro/i));
+      await user.click(screen.getByRole('button', { name: /continuar/i }));
+
+      await waitFor(() =>
+        expect(upsertWorkerProfileMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            guardianFullName: 'José Souza',
+            guardianCpf: '11122283148',
+            guardianPhone: '11988887777',
+            guardianAuthorized: true,
+          }),
+        ),
+      );
+    });
   });
 
   it('libera a URL do blob anterior ao trocar de foto, e a última ao desmontar', async () => {

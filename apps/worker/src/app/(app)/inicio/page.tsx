@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiError, listSkillCategories } from '@shift/shared';
+import { ApiError, formatBenefitLabel, listSkillCategories } from '@shift/shared';
 import Link from 'next/link';
 import { ChangeEvent, useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
@@ -474,14 +474,14 @@ export default function InicioPage() {
                     CNH {job.cnhCategory} {job.cnhRequired ? 'obrigatória' : '(preferência)'}
                   </span>
                 )}
-                {job.offersMeal && (
+                {formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação') && (
                   <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[12.5px] font-semibold text-text">
-                    Alimentação
+                    {formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação')}
                   </span>
                 )}
-                {job.offersTransport && (
+                {formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte') && (
                   <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[12.5px] font-semibold text-text">
-                    Transporte
+                    {formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte')}
                   </span>
                 )}
               </div>

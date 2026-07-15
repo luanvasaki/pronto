@@ -12,11 +12,13 @@ vi.mock('next/navigation', () => ({
 const uploadWorkerDocumentMock = vi.fn();
 const uploadWorkerSelfieMock = vi.fn();
 const uploadWorkerCnhDocumentMock = vi.fn();
+const uploadWorkerGuardianDocumentMock = vi.fn();
 const getWorkerProfileMock = vi.fn();
 vi.mock('../../../lib/worker-profile-api', () => ({
   uploadWorkerDocument: (...args: unknown[]) => uploadWorkerDocumentMock(...args),
   uploadWorkerSelfie: (...args: unknown[]) => uploadWorkerSelfieMock(...args),
   uploadWorkerCnhDocument: (...args: unknown[]) => uploadWorkerCnhDocumentMock(...args),
+  uploadWorkerGuardianDocument: (...args: unknown[]) => uploadWorkerGuardianDocumentMock(...args),
   getWorkerProfile: (...args: unknown[]) => getWorkerProfileMock(...args),
 }));
 
@@ -39,9 +41,15 @@ describe('DocumentoPage', () => {
     uploadWorkerDocumentMock.mockReset();
     uploadWorkerSelfieMock.mockReset();
     uploadWorkerCnhDocumentMock.mockReset();
-    getWorkerProfileMock
-      .mockReset()
-      .mockResolvedValue({ hasDocument: false, hasSelfie: false, hasCnhDocument: false, cnhCategory: null });
+    uploadWorkerGuardianDocumentMock.mockReset();
+    getWorkerProfileMock.mockReset().mockResolvedValue({
+      hasDocument: false,
+      hasSelfie: false,
+      hasCnhDocument: false,
+      cnhCategory: null,
+      isMinor: false,
+      hasGuardianDocument: false,
+    });
   });
 
   it('começa com o botão desabilitado', () => {
@@ -201,5 +209,79 @@ describe('DocumentoPage', () => {
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/inicio'));
     expect(uploadWorkerCnhDocumentMock).not.toHaveBeenCalled();
+  });
+
+  it('não pede o documento do responsável quando o trabalhador não é menor de idade', async () => {
+    render(<DocumentoPage />);
+
+    await waitFor(() => expect(getWorkerProfileMock).toHaveBeenCalled());
+    expect(screen.queryByText(/documento do responsável/i)).not.toBeInTheDocument();
+  });
+
+  it('exige o documento do responsável quando o trabalhador é menor de idade', async () => {
+    getWorkerProfileMock.mockResolvedValue({
+      hasDocument: false,
+      hasSelfie: false,
+      hasCnhDocument: false,
+      cnhCategory: null,
+      isMinor: true,
+      hasGuardianDocument: false,
+    });
+    const user = userEvent.setup();
+    render(<DocumentoPage />);
+
+    await screen.findByText(/toque para escolher o documento do responsável/i);
+    await uploadBoth(user);
+
+    // Documento + selfie escolhidos, mas falta o documento do responsável — continua desabilitado.
+    expect(screen.getByRole('button', { name: /enviar/i })).toBeDisabled();
+
+    await user.upload(screen.getByLabelText(/toque para escolher o documento do responsável/i), createTestFile('rg-pai.jpg'));
+    expect(screen.getByRole('button', { name: /enviar/i })).toBeEnabled();
+  });
+
+  it('envia o documento do responsável junto quando exigido, e navega pra /inicio', async () => {
+    getWorkerProfileMock.mockResolvedValue({
+      hasDocument: false,
+      hasSelfie: false,
+      hasCnhDocument: false,
+      cnhCategory: null,
+      isMinor: true,
+      hasGuardianDocument: false,
+    });
+    uploadWorkerDocumentMock.mockResolvedValue({ id: '1', status: 'pending', type: 'identity' });
+    uploadWorkerSelfieMock.mockResolvedValue({ id: '2', status: 'pending', type: 'selfie' });
+    uploadWorkerGuardianDocumentMock.mockResolvedValue({ id: '4', status: 'pending', type: 'guardian_identity' });
+    const user = userEvent.setup();
+    render(<DocumentoPage />);
+
+    await screen.findByText(/toque para escolher o documento do responsável/i);
+    await uploadBoth(user);
+    await user.upload(screen.getByLabelText(/toque para escolher o documento do responsável/i), createTestFile('rg-pai.jpg'));
+    await user.click(screen.getByRole('button', { name: /enviar/i }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/inicio'));
+    expect(uploadWorkerGuardianDocumentMock).toHaveBeenCalledWith(expect.any(File));
+  });
+
+  it('não reenvia o documento do responsável se ele já tinha sido enviado antes', async () => {
+    getWorkerProfileMock.mockResolvedValue({
+      hasDocument: true,
+      hasSelfie: true,
+      hasCnhDocument: false,
+      cnhCategory: null,
+      isMinor: true,
+      hasGuardianDocument: true,
+    });
+    const user = userEvent.setup();
+    render(<DocumentoPage />);
+
+    await screen.findByText(/toque para escolher o documento do responsável/i);
+    await uploadBoth(user);
+    await user.upload(screen.getByLabelText(/toque para escolher o documento do responsável/i), createTestFile('rg-pai.jpg'));
+    await user.click(screen.getByRole('button', { name: /enviar/i }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/inicio'));
+    expect(uploadWorkerGuardianDocumentMock).not.toHaveBeenCalled();
   });
 });

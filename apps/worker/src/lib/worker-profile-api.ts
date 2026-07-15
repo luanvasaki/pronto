@@ -19,6 +19,12 @@ export interface WorkerProfileDetails {
   hasDocument: boolean;
   hasSelfie: boolean;
   hasCnhDocument: boolean;
+  isMinor: boolean;
+  guardianFullName: string | null;
+  guardianCpf: string | null;
+  guardianPhone: string | null;
+  guardianAuthorizedAt: string | null;
+  hasGuardianDocument: boolean;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
   totalShiftsCompleted: number;
@@ -59,6 +65,10 @@ export interface UpsertWorkerProfileInput {
   birthDate?: string;
   cnhCategory?: string;
   experienceByCategory?: Record<string, boolean>;
+  guardianFullName?: string;
+  guardianCpf?: string;
+  guardianPhone?: string;
+  guardianAuthorized?: boolean;
 }
 
 export interface UpsertWorkerProfileResponse {
@@ -72,6 +82,10 @@ export interface UpsertWorkerProfileResponse {
   birthDate: string | null;
   cnhCategory: string | null;
   experienceByCategory: Record<string, boolean>;
+  guardianFullName: string | null;
+  guardianCpf: string | null;
+  guardianPhone: string | null;
+  guardianAuthorizedAt: string | null;
 }
 
 export function upsertWorkerProfile(input: UpsertWorkerProfileInput): Promise<UpsertWorkerProfileResponse> {
@@ -114,6 +128,18 @@ export function uploadWorkerCnhDocument(file: File): Promise<UploadDocumentRespo
   const formData = new FormData();
   formData.append('document', file);
   formData.append('type', 'cnh');
+
+  return apiFetch('/worker-profile/document', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+/** Documento do responsável — obrigatório quando o trabalhador é menor de idade (ver isMinor). */
+export function uploadWorkerGuardianDocument(file: File): Promise<UploadDocumentResponse> {
+  const formData = new FormData();
+  formData.append('document', file);
+  formData.append('type', 'guardian_identity');
 
   return apiFetch('/worker-profile/document', {
     method: 'POST',

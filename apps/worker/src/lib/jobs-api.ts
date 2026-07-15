@@ -9,8 +9,11 @@ export interface Job {
   toolsRequired: string | null;
   cnhCategory: string | null;
   cnhRequired: boolean;
-  offersMeal: boolean;
-  offersTransport: boolean;
+  mealProvision: 'none' | 'on_site' | 'paid';
+  mealAmount: string | null;
+  transportProvision: 'none' | 'on_site' | 'paid';
+  transportAmount: string | null;
+  minorsAllowed: boolean;
   addressLabel: string;
   locationLat: number;
   locationLng: number;
@@ -45,6 +48,7 @@ export interface JobDetail extends Job {
   matchesSkills: boolean;
   experienceMismatch: boolean;
   cnhMismatch: boolean;
+  minorMismatch: boolean;
   hasApplied: boolean;
 }
 
