@@ -124,13 +124,26 @@ describe('reviewDocument', () => {
   });
 
   describe('trabalhador menor de idade — exige também o documento do responsável', () => {
-    async function setupMinorWithPendingDocument() {
+    async function setupMinorWithPendingDocument(options: { withGuardianConsent?: boolean } = {}) {
+      const { withGuardianConsent = true } = options;
       const seventeenYearsAgo = new Date();
       seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
       const birthDate = seventeenYearsAgo.toISOString().slice(0, 10);
 
       const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-      await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza', birthDate });
+      await db.insert(workerProfiles).values({
+        userId: worker.id,
+        fullName: 'Ana Souza',
+        birthDate,
+        ...(withGuardianConsent
+          ? {
+              guardianFullName: 'José Souza',
+              guardianCpf: '11122283148',
+              guardianPhone: '11988887777',
+              guardianAuthorizedAt: new Date(),
+            }
+          : {}),
+      });
       const [admin] = await db.insert(users).values({ phone: ADMIN_PHONE, isAdmin: true }).returning();
       const [document] = await db
         .insert(documents)
@@ -172,6 +185,32 @@ describe('reviewDocument', () => {
       await reviewDocument(admin.id, guardianDocument.id, 'approved');
       profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
       expect(profile?.kycStatus).toBe('approved');
+    });
+
+    it('não aprova o kycStatus mesmo com os 3 documentos aprovados se o perfil não tiver o consentimento do responsável registrado', async () => {
+      // Reproduz o cenário do bug: um documento do tipo guardian_identity
+      // aprovado não é prova nenhuma de que os dados do responsável
+      // (nome/CPF/telefone) e a autorização explícita (guardianAuthorizedAt)
+      // realmente existem no perfil — checar só o TIPO do documento deixava
+      // passar isso.
+      const { admin, document: identityDocument, worker } = await setupMinorWithPendingDocument({
+        withGuardianConsent: false,
+      });
+      const [selfieDocument] = await db
+        .insert(documents)
+        .values({ workerId: worker.id, fileUrl: 'documents/x/selfie.jpg', type: 'selfie' })
+        .returning();
+      const [guardianDocument] = await db
+        .insert(documents)
+        .values({ workerId: worker.id, fileUrl: 'documents/x/responsavel.jpg', type: 'guardian_identity' })
+        .returning();
+
+      await reviewDocument(admin.id, identityDocument.id, 'approved');
+      await reviewDocument(admin.id, selfieDocument.id, 'approved');
+      await reviewDocument(admin.id, guardianDocument.id, 'approved');
+
+      const profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
+      expect(profile?.kycStatus).toBe('pending');
     });
   });
 });

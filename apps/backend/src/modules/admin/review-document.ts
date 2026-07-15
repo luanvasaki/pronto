@@ -86,11 +86,19 @@ export async function reviewDocument(
     }
     const latestDocuments = [...latestByType.values()];
     // Trabalhador menor (16-17) precisa também do documento do
-    // responsável aprovado — sem isso, "identity" + "selfie" aprovados
-    // já bastavam pra aprovar o KYC de um menor sem verificar quem
-    // autorizou o cadastro (ver upsert-worker-profile.ts).
+    // responsável aprovado E do registro de autorização em si
+    // (guardianAuthorizedAt) — checar só o TIPO do documento enviado
+    // não prova que os dados do responsável (nome/CPF/telefone) e a
+    // autorização explícita existem; um perfil pode ter um documento
+    // `guardian_identity` pendente de revisão sem nunca ter passado
+    // pela validação de upsert-worker-profile.ts (ex.: dado corrompido,
+    // chamada direta à API). Sem essa segunda checagem, "identity" +
+    // "selfie" + "guardian_identity" aprovados já bastavam pra aprovar
+    // o KYC de um menor mesmo sem consentimento registrado.
     const hasRequiredTypes =
-      latestByType.has('identity') && latestByType.has('selfie') && (!isMinor || latestByType.has('guardian_identity'));
+      latestByType.has('identity') &&
+      latestByType.has('selfie') &&
+      (!isMinor || (latestByType.has('guardian_identity') && Boolean(workerProfile?.guardianAuthorizedAt)));
     const anyLatestRejected = latestDocuments.some((workerDocument) => workerDocument.status === 'rejected');
     const allLatestApproved =
       hasRequiredTypes && latestDocuments.every((workerDocument) => workerDocument.status === 'approved');

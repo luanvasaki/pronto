@@ -1,10 +1,13 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { jobs, skillCategories } from '../../db/schema';
+import { applications, jobs, skillCategories, workerProfiles } from '../../db/schema';
 import { assertOwnsCompany } from '../../shared/assert-owns-company';
+import { calculateAge } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
 import { JobInput, validateJobInput } from './job-input-validation';
 import { JobResponse, toJobResponse } from './job-response';
+
+const ADULT_AGE_YEARS = 18;
 
 export type UpdateJobInput = JobInput;
 
@@ -39,6 +42,35 @@ export async function updateJob(
       400,
       `Já existem ${job.positionsFilled} candidato(s) aprovado(s) — não dá pra reduzir o número de vagas abaixo disso.`,
     );
+  }
+
+  // Mesma lógica do guard de positionsTotal acima: não dá pra tirar uma
+  // permissão já usada. Sem isso, a empresa podia desmarcar "disponível
+  // pra menores" com um trabalhador de 16-17 anos já aprovado e
+  // trabalhando na vaga — o front nunca mostra esse estado (a tela de
+  // detalhe já bloqueia candidatura nova de menor quando minorsAllowed é
+  // false, ver get-job-detail.ts), mas ninguém tira o turno já criado.
+  if (job.minorsAllowed && !validated.minorsAllowed) {
+    const approvedApplications = await db.query.applications.findMany({
+      where: and(eq(applications.jobId, jobId), eq(applications.status, 'approved')),
+    });
+    if (approvedApplications.length > 0) {
+      const approvedWorkers = await db.query.workerProfiles.findMany({
+        where: inArray(
+          workerProfiles.userId,
+          approvedApplications.map((application) => application.workerId),
+        ),
+      });
+      const hasApprovedMinor = approvedWorkers.some(
+        (worker) => Boolean(worker.birthDate) && calculateAge(worker.birthDate!, new Date()) < ADULT_AGE_YEARS,
+      );
+      if (hasApprovedMinor) {
+        throw new HttpError(
+          400,
+          'Não é possível desmarcar "disponível pra menores de idade" — já existe um trabalhador menor de idade aprovado nessa vaga.',
+        );
+      }
+    }
   }
 
   const category = await db.query.skillCategories.findFirst({

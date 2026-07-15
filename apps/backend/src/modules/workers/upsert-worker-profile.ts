@@ -173,7 +173,13 @@ export async function upsertWorkerProfile(
   const guardianFullName = input.guardianFullName?.trim();
   const guardianCpf = input.guardianCpf?.trim();
   const guardianPhone = input.guardianPhone?.trim();
-  if (isMinor && !existingProfile) {
+  // Exige os dados do responsável sempre que o trabalhador é menor e
+  // ainda não tem autorização registrada — não só no cadastro inicial.
+  // Antes isso só rodava com `!existingProfile`, então um perfil criado
+  // com uma data de nascimento de maior (verdadeira ou não) e corrigido
+  // depois pra 16-17 anos numa edição pulava a exigência inteira, porque
+  // a partir daí `existingProfile` já existe.
+  if (isMinor && !existingProfile?.guardianAuthorizedAt) {
     if (!guardianFullName || guardianFullName.length < 2) {
       throw new HttpError(400, 'Nome do responsável é obrigatório.');
     }
@@ -190,9 +196,27 @@ export async function upsertWorkerProfile(
   if (guardianCpf && !isValidCpf(guardianCpf)) {
     throw new HttpError(400, 'CPF do responsável inválido — envie só os 11 números.');
   }
+  // Evita que o próprio trabalhador se "autorize" enviando o CPF dele
+  // como se fosse o do responsável.
+  if (guardianCpf && cpf && guardianCpf === cpf) {
+    throw new HttpError(400, 'O CPF do responsável não pode ser igual ao seu próprio CPF.');
+  }
   if (guardianPhone && !PHONE_REGEX.test(guardianPhone)) {
     throw new HttpError(400, 'Telefone do responsável inválido — envie só os números, com DDD.');
   }
+
+  // Se a idade "de verdade" mudou de status (virou menor ou deixou de
+  // ser menor) numa edição que já tinha KYC aprovado, força nova revisão
+  // — sem isso, um perfil aprovado como adulto que depois revela ser
+  // menor (ou o contrário) continuaria "approved" sem nunca ter passado
+  // pela exigência de guardian_identity (ver review-document.ts).
+  const previousBirthDate = existingProfile?.birthDate;
+  const previousIsMinor = previousBirthDate != null && calculateAge(previousBirthDate, new Date()) < ADULT_AGE_YEARS;
+  const requiresKycReReview =
+    existingProfile != null &&
+    existingProfile.kycStatus === 'approved' &&
+    input.birthDate !== undefined &&
+    previousIsMinor !== isMinor;
 
   const rawCnhCategory = input.cnhCategory?.trim();
   if (rawCnhCategory && !isCnhCategory(rawCnhCategory)) {
@@ -235,11 +259,13 @@ export async function upsertWorkerProfile(
         target: workerProfiles.userId,
         // bio/cpf/homeAddressFull/phone/birthDate/cnhCategory só entram
         // no UPDATE quando enviados de verdade — editar só o nome ou as
-        // categorias não pode apagar valor já salvo. Responsável segue a
-        // mesma regra, e só grava/mantém quando ainda é menor — se já
-        // fez 18, os dados antigos do responsável não são mais exigidos
-        // (mas também não somem sozinhos por uma edição que nem toca
-        // neles, graças ao `!== undefined`).
+        // categorias não pode apagar valor já salvo. Responsável segue
+        // essa mesma regra ENQUANTO o trabalhador é menor (preserva o
+        // que já tinha se a edição não reenviar); mas assim que deixa de
+        // ser menor, os 4 campos são sempre zerados aqui — não dá pra
+        // deixar CPF/telefone de terceiro (o responsável) parado no
+        // banco só porque a edição que tirou o trabalhador da faixa de
+        // menor não reenviou esses campos.
         set: {
           fullName,
           updatedAt: new Date(),
@@ -250,14 +276,22 @@ export async function upsertWorkerProfile(
           ...(input.phone !== undefined ? { phone: phone || null } : {}),
           ...(input.birthDate !== undefined ? { birthDate: birthDate || null } : {}),
           ...(input.cnhCategory !== undefined ? { cnhCategory } : {}),
-          ...(input.guardianFullName !== undefined
-            ? { guardianFullName: isMinor ? guardianFullName || null : null }
-            : {}),
-          ...(input.guardianCpf !== undefined ? { guardianCpf: isMinor ? guardianCpf || null : null } : {}),
-          ...(input.guardianPhone !== undefined ? { guardianPhone: isMinor ? guardianPhone || null : null } : {}),
-          ...(input.guardianAuthorized !== undefined
-            ? { guardianAuthorizedAt: isMinor && input.guardianAuthorized ? new Date() : null }
-            : {}),
+          ...(isMinor
+            ? {
+                ...(input.guardianFullName !== undefined ? { guardianFullName: guardianFullName || null } : {}),
+                ...(input.guardianCpf !== undefined ? { guardianCpf: guardianCpf || null } : {}),
+                ...(input.guardianPhone !== undefined ? { guardianPhone: guardianPhone || null } : {}),
+                ...(input.guardianAuthorized !== undefined
+                  ? { guardianAuthorizedAt: input.guardianAuthorized ? new Date() : null }
+                  : {}),
+              }
+            : {
+                guardianFullName: null,
+                guardianCpf: null,
+                guardianPhone: null,
+                guardianAuthorizedAt: null,
+              }),
+          ...(requiresKycReReview ? { kycStatus: 'pending' as const } : {}),
         },
       })
       .returning();

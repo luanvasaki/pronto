@@ -1,9 +1,12 @@
 import { and, eq, lt } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { applications, jobs, shifts } from '../../db/schema';
+import { applications, jobs, shifts, workerProfiles } from '../../db/schema';
 import { assertOwnsCompany } from '../../shared/assert-owns-company';
+import { calculateAge } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
 import { ApplicationResponse, toApplicationResponse } from './application-response';
+
+const ADULT_AGE_YEARS = 18;
 
 type ApprovalStatus = 'approved' | 'rejected';
 
@@ -60,6 +63,22 @@ export async function updateApplicationStatus(
 
   if (status === 'approved' && job.positionsFilled >= job.positionsTotal) {
     throw new HttpError(400, 'Essa vaga já está preenchida.');
+  }
+
+  // Reconfere no momento da aprovação, não só na hora de se candidatar
+  // (ver create-application.ts) — a empresa pode ter desmarcado
+  // "disponível pra menores" (ou o trabalhador pode ter revelado ser
+  // menor numa correção de data de nascimento) depois que a candidatura
+  // pendente já existia.
+  if (status === 'approved') {
+    const workerProfile = await db.query.workerProfiles.findFirst({
+      where: eq(workerProfiles.userId, application.workerId),
+    });
+    const isMinor =
+      Boolean(workerProfile?.birthDate) && calculateAge(workerProfile!.birthDate!, new Date()) < ADULT_AGE_YEARS;
+    if (isMinor && !job.minorsAllowed) {
+      throw new HttpError(400, 'Essa vaga não está disponível pra menores de idade.');
+    }
   }
 
   return db.transaction(async (tx) => {

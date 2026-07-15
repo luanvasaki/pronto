@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
-import { skillCategories, users, workerSkills } from '../../db/schema';
+import { skillCategories, users, workerProfiles, workerSkills } from '../../db/schema';
 import { upsertWorkerProfile } from './upsert-worker-profile';
 
 // Fixtures únicas entre arquivos de teste (ver README).
@@ -330,6 +330,128 @@ describe('upsertWorkerProfile', () => {
       expect(result.guardianCpf).toBe(OTHER_CPF);
       expect(result.guardianPhone).toBe('11988887777');
       expect(result.guardianAuthorizedAt).not.toBeNull();
+    });
+
+    it('rejeita CPF do responsável igual ao CPF do próprio trabalhador', async () => {
+      const user = await createTestUser();
+      const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+      await expect(
+        upsertWorkerProfile(user.id, {
+          fullName: 'Ana Souza',
+          categoryIds: [category.id],
+          cpf: TEST_CPF,
+          homeAddressFull: TEST_ADDRESS,
+          phone: TEST_WORKER_PHONE,
+          birthDate: seventeenYearsAgoBirthDate(),
+          guardianFullName: 'Marcos Souza',
+          guardianCpf: TEST_CPF,
+          guardianPhone: '11988887777',
+          guardianAuthorized: true,
+        }),
+      ).rejects.toThrow('não pode ser igual ao seu próprio CPF');
+    });
+
+    it('exige os dados do responsável numa EDIÇÃO que revela idade de menor, não só no cadastro inicial', async () => {
+      // Fecha o bypass: um perfil criado com uma data de nascimento de
+      // maior (sem dados do responsável) não pode escapar da exigência
+      // só porque `existingProfile` já existe numa chamada seguinte que
+      // "corrige" a data pra 16-17 anos.
+      const user = await createTestUser();
+      const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+      await upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
+        birthDate: TEST_BIRTH_DATE,
+      });
+
+      await expect(
+        upsertWorkerProfile(user.id, {
+          fullName: 'Ana Souza',
+          categoryIds: [category.id],
+          birthDate: seventeenYearsAgoBirthDate(),
+        }),
+      ).rejects.toThrow('Nome do responsável é obrigatório');
+    });
+
+    it('não exige os dados do responsável de novo numa edição que não mexe na data, já com autorização registrada', async () => {
+      const user = await createTestUser();
+      const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+      await upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
+        birthDate: seventeenYearsAgoBirthDate(),
+        guardianFullName: 'Marcos Souza',
+        guardianCpf: OTHER_CPF,
+        guardianPhone: '11988887777',
+        guardianAuthorized: true,
+      });
+
+      const updated = await upsertWorkerProfile(user.id, { fullName: 'Ana Souza Lima', categoryIds: [category.id] });
+
+      expect(updated.fullName).toBe('Ana Souza Lima');
+      expect(updated.guardianFullName).toBe('Marcos Souza');
+    });
+
+    it('zera os dados do responsável quando uma edição de data de nascimento tira o trabalhador da faixa de menor, mesmo sem reenviar os campos', async () => {
+      const user = await createTestUser();
+      const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+      await upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
+        birthDate: seventeenYearsAgoBirthDate(),
+        guardianFullName: 'Marcos Souza',
+        guardianCpf: OTHER_CPF,
+        guardianPhone: '11988887777',
+        guardianAuthorized: true,
+      });
+
+      const updated = await upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        birthDate: TEST_BIRTH_DATE,
+      });
+
+      expect(updated.guardianFullName).toBeNull();
+      expect(updated.guardianCpf).toBeNull();
+      expect(updated.guardianPhone).toBeNull();
+      expect(updated.guardianAuthorizedAt).toBeNull();
+    });
+
+    it('volta o kycStatus pra "pending" quando uma edição de data de nascimento muda se o trabalhador é menor, mesmo já aprovado', async () => {
+      const user = await createTestUser();
+      const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+      await upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
+        birthDate: TEST_BIRTH_DATE,
+      });
+      await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, user.id));
+
+      await upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        birthDate: seventeenYearsAgoBirthDate(),
+        guardianFullName: 'Marcos Souza',
+        guardianCpf: OTHER_CPF,
+        guardianPhone: '11988887777',
+        guardianAuthorized: true,
+      });
+
+      const profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, user.id) });
+      expect(profile?.kycStatus).toBe('pending');
     });
   });
 

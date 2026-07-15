@@ -150,6 +150,37 @@ describe('updateJob', () => {
     ).rejects.toThrow('Número de vagas precisa ser pelo menos 1');
   });
 
+  it('rejeita desmarcar minorsAllowed quando já existe trabalhador menor de idade aprovado nessa vaga', async () => {
+    const { owner, category } = await setup();
+    const job = await createJob(owner.id, { ...baseInput(category.id), minorsAllowed: true }, true);
+    const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
+    const seventeenYearsAgo = new Date();
+    seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+    const birthDate = seventeenYearsAgo.toISOString().slice(0, 10);
+    await db
+      .insert(workerProfiles)
+      .values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza', birthDate });
+    const application = await createApplication(worker.id, job.id, true);
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+
+    await expect(
+      updateJob(owner.id, job.id, { ...baseInput(category.id), minorsAllowed: false }),
+    ).rejects.toThrow('já existe um trabalhador menor de idade aprovado');
+  });
+
+  it('permite desmarcar minorsAllowed quando os aprovados na vaga são todos maiores de idade', async () => {
+    const { owner, category } = await setup();
+    const job = await createJob(owner.id, { ...baseInput(category.id), minorsAllowed: true }, true);
+    const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
+    await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
+    const application = await createApplication(worker.id, job.id, true);
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+
+    const updated = await updateJob(owner.id, job.id, { ...baseInput(category.id), minorsAllowed: false });
+
+    expect(updated.minorsAllowed).toBe(false);
+  });
+
   it('rejeita categoria inválida', async () => {
     const { owner, job } = await setup();
 

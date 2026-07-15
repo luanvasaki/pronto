@@ -208,6 +208,48 @@ describe('updateApplicationStatus', () => {
     expect(result.status).toBe('rejected');
   });
 
+  it('rejeita aprovar candidatura de menor de idade se a vaga deixou de aceitar menores depois da candidatura já criada', async () => {
+    // create-application.ts já bloqueia isso na hora de se candidatar —
+    // esse teste cobre o caso da empresa editar a vaga (tirando
+    // minorsAllowed) DEPOIS que a candidatura pendente já existia.
+    const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
+    const seventeenYearsAgo = new Date();
+    seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+    const birthDate = seventeenYearsAgo.toISOString().slice(0, 10);
+    await db
+      .insert(workerProfiles)
+      .values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza', birthDate });
+    const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
+    const [company] = await db
+      .insert(companies)
+      .values({ ownerUserId: owner.id, legalName: 'Buffet Aurora Ltda', tradeName: 'Buffet Aurora', cnpj: TEST_CNPJ })
+      .returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    const [job] = await db
+      .insert(jobs)
+      .values({
+        companyId: company.id,
+        categoryId: category.id,
+        description: 'Vaga de teste com descrição detalhada o suficiente.',
+        addressLabel: 'Endereço de teste',
+        locationLat: -23.55,
+        locationLng: -46.63,
+        positionsTotal: 2,
+        payAmount: '100.00',
+        startsAt: TOMORROW,
+        endsAt: TOMORROW_PLUS_5H,
+        minorsAllowed: true,
+      })
+      .returning();
+    const application = await createApplication(worker.id, job.id, true);
+
+    await db.update(jobs).set({ minorsAllowed: false }).where(eq(jobs.id, job.id));
+
+    await expect(updateApplicationStatus(owner.id, application.id, 'approved')).rejects.toThrow(
+      'não está disponível pra menores de idade',
+    );
+  });
+
   it('rejeita candidatura duplicada mesmo em corrida (duas chamadas simultâneas)', async () => {
     const { owner, application } = await setup();
 
