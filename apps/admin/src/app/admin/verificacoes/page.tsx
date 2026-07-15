@@ -1,5 +1,6 @@
 'use client';
 
+import { formatCpf, formatPhone } from '@shift/shared';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
@@ -19,11 +20,16 @@ import {
 const DOCUMENT_TYPE_LABEL: Record<string, string> = {
   identity: 'Documento (RG/CNH)',
   selfie: 'Selfie',
+  guardian_identity: 'Documento do responsável',
 };
 
 interface WorkerDocumentGroup {
   workerId: string;
   workerFullName: string;
+  isMinor: boolean;
+  guardianFullName: string | null;
+  guardianCpf: string | null;
+  guardianPhone: string | null;
   documents: PendingDocument[];
 }
 
@@ -53,6 +59,10 @@ function groupDocumentsByWorker(documents: PendingDocument[]): WorkerDocumentGro
       groups.set(document.workerId, {
         workerId: document.workerId,
         workerFullName: document.workerFullName,
+        isMinor: document.isMinor,
+        guardianFullName: document.guardianFullName,
+        guardianCpf: document.guardianCpf,
+        guardianPhone: document.guardianPhone,
         documents: [document],
       });
     }
@@ -192,12 +202,23 @@ export default function AdminVerificacoesPage() {
           <p className="mt-2 text-sm text-text-secondary">Nenhum documento pendente.</p>
         )}
         <ul className="mt-3 flex flex-col gap-3">
-          {documentsByWorker.map(({ workerId, workerFullName, documents: workerDocuments }) => (
+          {documentsByWorker.map(
+            ({ workerId, workerFullName, isMinor, guardianFullName, guardianCpf, guardianPhone, documents: workerDocuments }) => (
             <li
               key={workerId}
               className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
             >
               <p className="font-heading text-[15.5px] font-bold text-text">{workerFullName}</p>
+              {isMinor && (
+                <div className="mt-1.5 rounded-lg bg-warning/10 px-2.5 py-2 text-[13px] text-warning">
+                  <p className="font-semibold">Trabalhador menor de idade (16-17 anos)</p>
+                  <p className="mt-0.5">
+                    Responsável: {guardianFullName ?? '—'}
+                    {guardianCpf && ` · CPF ${formatCpf(guardianCpf)}`}
+                    {guardianPhone && ` · ${formatPhone(guardianPhone)}`}
+                  </p>
+                </div>
+              )}
               <div className="mt-2.5 flex flex-wrap gap-4">
                 {workerDocuments.map((document) => (
                   <div key={document.id} className="flex flex-col gap-2">
