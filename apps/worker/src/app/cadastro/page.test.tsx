@@ -132,6 +132,11 @@ describe('CadastroPage', () => {
       screen.getByText('É preciso ter 16 anos ou mais pra se cadastrar como trabalhador no Pronto.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
+    // Abaixo de 16 anos o cadastro já está bloqueado por outro motivo —
+    // não faz sentido mostrar (nem exigir) o formulário do responsável,
+    // que é só pra faixa de 16-17.
+    expect(screen.queryByLabelText('Nome completo do responsável')).not.toBeInTheDocument();
+    expect(screen.queryByText(/nome do responsável/i)).not.toBeInTheDocument();
   });
 
   describe('trabalhador entre 16 e 17 anos (exige dados do responsável)', () => {

@@ -135,14 +135,18 @@ export default function CadastroPage() {
   if (homeAddressFull.trim().length < 8) missingFields.push('endereço completo');
   if (!birthDate) missingFields.push('data de nascimento');
   if (selectedIds.length === 0) missingFields.push('ao menos uma categoria');
-  if (isMinor) {
+  const isUnderage = birthDate.length > 0 && calculateAge(birthDate, new Date()) < MIN_WORKER_AGE_YEARS;
+  // Só pede os campos do responsável quando o formulário do responsável
+  // realmente aparece na tela (isMinor && !isUnderage, ver JSX abaixo)
+  // — abaixo de 16 anos o cadastro já é bloqueado por outro motivo, e
+  // listar "nome do responsável" faltando ali só confundiria quem nem
+  // vê esse formulário.
+  if (isMinor && !isUnderage) {
     if (guardianFullName.trim().length < 2) missingFields.push('nome do responsável');
     if (!isValidCpf(guardianCpf)) missingFields.push('CPF do responsável');
     if (guardianPhone.length < 10 || guardianPhone.length > 11) missingFields.push('telefone do responsável');
     if (!guardianAuthorized) missingFields.push('autorização do responsável');
   }
-
-  const isUnderage = birthDate.length > 0 && calculateAge(birthDate, new Date()) < MIN_WORKER_AGE_YEARS;
   const isValid = missingFields.length === 0 && !isUnderage;
 
   async function handleSubmit(event: FormEvent): Promise<void> {
@@ -267,7 +271,7 @@ export default function CadastroPage() {
           )}
         </div>
 
-        {isMinor && (
+        {isMinor && !isUnderage && (
           <div className="flex flex-col gap-4 rounded-[18px] border border-border bg-surface p-4">
             <div>
               <h2 className="font-heading text-base font-bold text-text">Dados do responsável</h2>

@@ -167,6 +167,64 @@ describe('AppLayout', () => {
     expect(screen.queryByText('Conteúdo protegido')).not.toBeInTheDocument();
   });
 
+  it('redireciona pro upload de documento quando o trabalhador é menor e o documento do responsável ainda não foi enviado, mesmo com identidade+selfie prontos', async () => {
+    getCurrentUserMock.mockResolvedValue({ user: { id: '1' } });
+    getWorkerProfileMock.mockResolvedValue({
+      fullName: 'Ana Souza',
+      bio: null,
+      cpf: null,
+      categoryIds: ['cat-1'],
+      photoUrl: null,
+      homeAddressLabel: null,
+      kycStatus: 'pending',
+      hasDocument: true,
+      hasSelfie: true,
+      isMinor: true,
+      hasGuardianDocument: false,
+      avgRating: null,
+      totalShiftsCompleted: 0,
+      totalHoursWorked: 0,
+    });
+
+    render(
+      <AppLayout>
+        <p>Conteúdo protegido</p>
+      </AppLayout>,
+    );
+
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/cadastro/documento'));
+    expect(screen.queryByText('Conteúdo protegido')).not.toBeInTheDocument();
+  });
+
+  it('não redireciona pro upload de documento quando o trabalhador é menor mas já enviou o documento do responsável', async () => {
+    getCurrentUserMock.mockResolvedValue({ user: { id: '1' } });
+    getWorkerProfileMock.mockResolvedValue({
+      fullName: 'Ana Souza',
+      bio: null,
+      cpf: null,
+      categoryIds: ['cat-1'],
+      photoUrl: null,
+      homeAddressLabel: null,
+      kycStatus: 'pending',
+      hasDocument: true,
+      hasSelfie: true,
+      isMinor: true,
+      hasGuardianDocument: true,
+      avgRating: null,
+      totalShiftsCompleted: 0,
+      totalHoursWorked: 0,
+    });
+
+    render(
+      <AppLayout>
+        <p>Conteúdo protegido</p>
+      </AppLayout>,
+    );
+
+    expect(await screen.findByText('Conteúdo protegido')).toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalledWith('/cadastro/documento');
+  });
+
   it('mostra a tab bar também na tela de perfil, pra dar um jeito de voltar pro resto do app', async () => {
     pathnameMock = '/perfil';
     getCurrentUserMock.mockResolvedValue({ user: { id: '1' } });

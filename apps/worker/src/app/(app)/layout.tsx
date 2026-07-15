@@ -51,7 +51,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     getWorkerProfile()
       .then((data) => {
-        if (!data.hasDocument || !data.hasSelfie) {
+        // Trabalhador menor de idade também precisa do documento do
+        // responsável — sem checar isso aqui, quem sobe identidade+selfie
+        // mas fecha o app antes do passo do responsável fica "preso" na
+        // tela de espera de verificação pra sempre, já que o backend
+        // nunca aprova o KYC dele sem esse terceiro documento (ver
+        // review-document.ts) e nada nunca manda essa pessoa de volta
+        // pro upload que falta.
+        if (!data.hasDocument || !data.hasSelfie || (data.isMinor && !data.hasGuardianDocument)) {
           setIsRedirecting(true);
           router.replace('/cadastro/documento');
           return;

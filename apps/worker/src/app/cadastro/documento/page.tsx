@@ -33,12 +33,20 @@ export default function DocumentoPage() {
   // que já coletou os dados do responsável).
   const [needsGuardianDocument, setNeedsGuardianDocument] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   // Cobre não só "tentar de novo depois de um erro" (mesmo carregamento
   // de página) mas também "recarregou ou saiu e voltou no meio do
   // caminho" — sem isso, um documento já enviado com sucesso seria
   // reenviado (e duplicado) só porque o estado local zerou.
-  useEffect(() => {
+  //
+  // Uma falha aqui (rede instável, etc.) NÃO pode ser engolida em
+  // silêncio: sem saber o estado real, `needsGuardianDocument`
+  // continuaria `false` mesmo pra quem é menor de idade, deixando o
+  // formulário "válido" e enviável sem o documento do responsável — daí
+  // o estado de erro + botão de tentar de novo, em vez de só seguir com
+  // os valores padrão.
+  function fetchStatus(): void {
     getWorkerProfile()
       .then((profile) => {
         setDocumentUploaded(profile.hasDocument);
@@ -48,12 +56,20 @@ export default function DocumentoPage() {
         setGuardianUploaded(profile.hasGuardianDocument);
         setNeedsGuardianDocument(profile.isMinor);
       })
-      .catch(() => undefined)
+      .catch(() => setLoadError(true))
       .finally(() => setIsCheckingStatus(false));
-  }, []);
+  }
+
+  useEffect(fetchStatus, []);
+
+  function handleRetryLoad(): void {
+    setLoadError(false);
+    setIsCheckingStatus(true);
+    fetchStatus();
+  }
 
   const isValid = Boolean(
-    documentFile && selfieFile && (!needsCnh || cnhFile) && (!needsGuardianDocument || guardianFile),
+    !loadError && documentFile && selfieFile && (!needsCnh || cnhFile) && (!needsGuardianDocument || guardianFile),
   );
 
   // Se algum envio falhar depois de outro já ter subido, tentar de novo
@@ -88,6 +104,20 @@ export default function DocumentoPage() {
       setError(err instanceof ApiError ? err.message : 'Não foi possível enviar seus documentos.');
       setIsSubmitting(false);
     }
+  }
+
+  if (loadError) {
+    return (
+      <main className="flex flex-1 items-center justify-center px-4 py-8">
+        <div className="flex w-full max-w-sm flex-col items-center gap-4 text-center">
+          <Logo className="mb-2" />
+          <p className="text-sm text-danger">Não foi possível carregar o status do seu cadastro.</p>
+          <Button type="button" onClick={handleRetryLoad}>
+            Tentar de novo
+          </Button>
+        </div>
+      </main>
+    );
   }
 
   return (

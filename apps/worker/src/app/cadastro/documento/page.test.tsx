@@ -58,6 +58,27 @@ describe('DocumentoPage', () => {
     expect(screen.getByRole('button', { name: /enviar/i })).toBeDisabled();
   });
 
+  it('mostra erro e um botão de tentar de novo quando falha ao carregar o status do cadastro, em vez de assumir que nada é exigido', async () => {
+    getWorkerProfileMock.mockReset().mockRejectedValueOnce(new Error('falha de rede'));
+    render(<DocumentoPage />);
+
+    expect(await screen.findByText('Não foi possível carregar o status do seu cadastro.')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/toque para escolher uma foto/i)).not.toBeInTheDocument();
+
+    getWorkerProfileMock.mockResolvedValueOnce({
+      hasDocument: false,
+      hasSelfie: false,
+      hasCnhDocument: false,
+      cnhCategory: null,
+      isMinor: true,
+      hasGuardianDocument: false,
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /tentar de novo/i }));
+
+    expect(await screen.findByText(/toque para escolher o documento do responsável/i)).toBeInTheDocument();
+  });
+
   it('continua desabilitado só com o documento, sem a selfie', async () => {
     const user = userEvent.setup();
     render(<DocumentoPage />);
