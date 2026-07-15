@@ -248,6 +248,90 @@ describe('listNearbyJobs', () => {
     expect(found?.cnhMismatch).toBe(false);
   });
 
+  describe('trabalhador menor de idade (16-17 anos)', () => {
+    function seventeenYearsAgoBirthDate(): string {
+      const seventeenYearsAgo = new Date();
+      seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+      return seventeenYearsAgo.toISOString().slice(0, 10);
+    }
+
+    it('não mostra vaga sem minorsAllowed', async () => {
+      const worker = await createWorker();
+      await db.insert(workerProfiles).values({
+        kycStatus: 'approved',
+        userId: worker.id,
+        fullName: 'Ana Souza',
+        homeLat: WORKER_LAT,
+        homeLng: WORKER_LNG,
+        searchRadiusKm: 20,
+        birthDate: seventeenYearsAgoBirthDate(),
+      });
+      const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
+      const owner = await createCompanyOwner();
+      const job = await createTestJob(owner.id, categoryNear.id, NEAR_JOB_LAT, NEAR_JOB_LNG);
+
+      const result = await listNearbyJobs(worker.id);
+
+      expect(result.find((j) => j.id === job.id)).toBeUndefined();
+    });
+
+    it('mostra vaga com minorsAllowed', async () => {
+      const worker = await createWorker();
+      await db.insert(workerProfiles).values({
+        kycStatus: 'approved',
+        userId: worker.id,
+        fullName: 'Ana Souza',
+        homeLat: WORKER_LAT,
+        homeLng: WORKER_LNG,
+        searchRadiusKm: 20,
+        birthDate: seventeenYearsAgoBirthDate(),
+      });
+      const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
+      const owner = await createCompanyOwner();
+      const job = await createJob(
+        owner.id,
+        {
+          categoryId: categoryNear.id,
+          description: 'Vaga de teste com descrição detalhada o suficiente.',
+          requiresExperience: false,
+          addressLabel: 'Endereço de teste',
+          locationLat: NEAR_JOB_LAT,
+          locationLng: NEAR_JOB_LNG,
+          positionsTotal: 2,
+          payAmount: '100.00',
+          startsAt: TOMORROW.toISOString(),
+          endsAt: TOMORROW_PLUS_5H.toISOString(),
+          minorsAllowed: true,
+        },
+        true,
+      );
+
+      const result = await listNearbyJobs(worker.id);
+
+      expect(result.find((j) => j.id === job.id)).toBeDefined();
+    });
+
+    it('trabalhador maior de idade vê vaga mesmo sem minorsAllowed', async () => {
+      const worker = await createWorker();
+      await db.insert(workerProfiles).values({
+        kycStatus: 'approved',
+        userId: worker.id,
+        fullName: 'Ana Souza',
+        homeLat: WORKER_LAT,
+        homeLng: WORKER_LNG,
+        searchRadiusKm: 20,
+        birthDate: '2000-01-01',
+      });
+      const [categoryNear] = await db.insert(skillCategories).values({ name: CATEGORY_NEAR }).returning();
+      const owner = await createCompanyOwner();
+      const job = await createTestJob(owner.id, categoryNear.id, NEAR_JOB_LAT, NEAR_JOB_LNG);
+
+      const result = await listNearbyJobs(worker.id);
+
+      expect(result.find((j) => j.id === job.id)).toBeDefined();
+    });
+  });
+
   it('não retorna vaga cujo prazo de candidatura (escolhido pela empresa) já passou', async () => {
     const worker = await createWorker();
     await db

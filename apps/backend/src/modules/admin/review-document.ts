@@ -1,7 +1,10 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { documents, workerProfiles } from '../../db/schema';
+import { calculateAge } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
+
+const ADULT_AGE_YEARS = 18;
 
 type ReviewStatus = 'approved' | 'rejected';
 
@@ -65,6 +68,12 @@ export async function reviewDocument(
       throw new HttpError(400, 'Esse documento já foi revisado.');
     }
 
+    const workerProfile = await tx.query.workerProfiles.findFirst({
+      where: eq(workerProfiles.userId, document.workerId),
+    });
+    const isMinor =
+      Boolean(workerProfile?.birthDate) && calculateAge(workerProfile!.birthDate!, new Date()) < ADULT_AGE_YEARS;
+
     const workerDocuments = await tx.query.documents.findMany({
       where: eq(documents.workerId, document.workerId),
       orderBy: desc(documents.createdAt),
@@ -76,10 +85,15 @@ export async function reviewDocument(
       }
     }
     const latestDocuments = [...latestByType.values()];
-    const hasBothTypes = latestByType.has('identity') && latestByType.has('selfie');
+    // Trabalhador menor (16-17) precisa também do documento do
+    // responsável aprovado — sem isso, "identity" + "selfie" aprovados
+    // já bastavam pra aprovar o KYC de um menor sem verificar quem
+    // autorizou o cadastro (ver upsert-worker-profile.ts).
+    const hasRequiredTypes =
+      latestByType.has('identity') && latestByType.has('selfie') && (!isMinor || latestByType.has('guardian_identity'));
     const anyLatestRejected = latestDocuments.some((workerDocument) => workerDocument.status === 'rejected');
     const allLatestApproved =
-      hasBothTypes && latestDocuments.every((workerDocument) => workerDocument.status === 'approved');
+      hasRequiredTypes && latestDocuments.every((workerDocument) => workerDocument.status === 'approved');
 
     const newKycStatus = anyLatestRejected ? 'rejected' : allLatestApproved ? 'approved' : 'pending';
 

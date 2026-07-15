@@ -10,9 +10,13 @@ export const documentStatusEnum = pgEnum('document_status', ['pending', 'approve
 // obrigatório à parte quando o trabalhador declara ter CNH no cadastro
 // (worker_profiles.cnh_category preenchido) — o PDF da CNH Digital
 // (app oficial do governo), não uma foto, pra comprovar de verdade que
-// a categoria informada é válida. Default 'identity' preserva o
-// significado dos documentos já enviados antes dessa coluna existir.
-export const documentTypeEnum = pgEnum('document_type', ['identity', 'selfie', 'cnh']);
+// a categoria informada é válida. `guardian_identity` é obrigatório à
+// parte quando o trabalhador tem 16-17 anos (worker_profiles.birth_date
+// indica menor) — documento oficial do responsável, mesmo formato do
+// `identity` normal, prova de quem está autorizando o cadastro do
+// menor. Default 'identity' preserva o significado dos documentos já
+// enviados antes dessa coluna existir.
+export const documentTypeEnum = pgEnum('document_type', ['identity', 'selfie', 'cnh', 'guardian_identity']);
 
 /**
  * Só documento de trabalhador por enquanto — empresa é verificada

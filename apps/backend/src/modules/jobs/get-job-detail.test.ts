@@ -122,4 +122,42 @@ describe('getJobDetailForWorker', () => {
     expect(result.matchesSkills).toBe(true);
     expect(result.experienceMismatch).toBe(true);
   });
+
+  it('marca minorMismatch quando o trabalhador é menor e a vaga não aceita menor', async () => {
+    const { worker, job } = await setup();
+    const seventeenYearsAgo = new Date();
+    seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+    await db
+      .update(workerProfiles)
+      .set({ birthDate: seventeenYearsAgo.toISOString().slice(0, 10) })
+      .where(eq(workerProfiles.userId, worker.id));
+
+    const result = await getJobDetailForWorker(worker.id, job.id);
+
+    expect(result.minorMismatch).toBe(true);
+  });
+
+  it('não marca minorMismatch quando a vaga aceita menor', async () => {
+    const { worker, job } = await setup();
+    const seventeenYearsAgo = new Date();
+    seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+    await db
+      .update(workerProfiles)
+      .set({ birthDate: seventeenYearsAgo.toISOString().slice(0, 10) })
+      .where(eq(workerProfiles.userId, worker.id));
+    await db.update(jobs).set({ minorsAllowed: true }).where(eq(jobs.id, job.id));
+
+    const result = await getJobDetailForWorker(worker.id, job.id);
+
+    expect(result.minorMismatch).toBe(false);
+  });
+
+  it('não marca minorMismatch pra trabalhador maior de idade, mesmo sem minorsAllowed', async () => {
+    const { worker, job } = await setup();
+    await db.update(workerProfiles).set({ birthDate: '2000-01-01' }).where(eq(workerProfiles.userId, worker.id));
+
+    const result = await getJobDetailForWorker(worker.id, job.id);
+
+    expect(result.minorMismatch).toBe(false);
+  });
 });

@@ -316,6 +316,20 @@
       "when": 1783990185911,
       "tag": "0044_magical_payback",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1784076004886,
+      "tag": "0045_old_vision",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1784076063572,
+      "tag": "0046_aspiring_maginty",
+      "breakpoints": true
     }
   ]
 }

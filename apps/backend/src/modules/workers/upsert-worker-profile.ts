@@ -2,28 +2,19 @@ import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { skillCategories, users, workerProfiles, workerSkills } from '../../db/schema';
 import { CnhCategory, isCnhCategory } from '../jobs/cnh';
+import { calculateAge } from '../../shared/age';
 import { isValidCpf } from '../../shared/cpf-cnpj';
 import { HttpError } from '../../shared/errors/http-error';
 
 const PHONE_REGEX = /^\d{10,11}$/;
 const BIRTH_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-// Trabalho avulso intermediado pelo Pronto não tem estrutura pra cumprir
-// as restrições legais de trabalho de menor (proibição de horário
-// noturno/insalubre, autorização formal dos responsáveis etc. — ver
-// reunião jurídica) — bloqueado até existir um fluxo dedicado com
-// orientação jurídica própria.
-const MIN_WORKER_AGE_YEARS = 18;
-
-// Assume BIRTH_DATE_REGEX já validado pelo chamador — garante os 3
-// grupos numéricos que o non-null assertion abaixo depende.
-function calculateAge(birthDate: string, now: Date): number {
-  const [year, month, day] = birthDate.split('-').map(Number) as [number, number, number];
-  let age = now.getFullYear() - year;
-  const hasHadBirthdayThisYear =
-    now.getMonth() + 1 > month || (now.getMonth() + 1 === month && now.getDate() >= day);
-  if (!hasHadBirthdayThisYear) age -= 1;
-  return age;
-}
+// Abaixo de 16, bloqueado sem exceção — sem estrutura legal pra isso
+// (proibição de horário noturno/insalubre etc.). De 16 a 17, permitido
+// só com dado + documento + autorização explícita do responsável (ver
+// GUARDIAN_MIN_AGE_YEARS abaixo e reunião jurídica).
+const MIN_WORKER_AGE_YEARS = 16;
+// A partir daqui não precisa mais de responsável.
+const ADULT_AGE_YEARS = 18;
 
 export interface UpsertWorkerProfileInput {
   fullName: string | undefined;
@@ -49,6 +40,16 @@ export interface UpsertWorkerProfileInput {
   // carteira), string vazia limpa um valor já salvo. Usada só pra bater
   // com o requisito de CNH de uma vaga (ver jobs/cnh.ts).
   cnhCategory: string | undefined;
+  // Dados do responsável — exigidos só no cadastro inicial de quem tem
+  // 16-17 anos (ver isMinor abaixo). Ignorados/zerados se o trabalhador
+  // já é maior de idade, mesmo que enviados.
+  guardianFullName: string | undefined;
+  guardianCpf: string | undefined;
+  guardianPhone: string | undefined;
+  // Aceite explícito ("meu responsável autoriza") — mesmo espírito de
+  // termsAccepted em createJob, mas guardado como timestamp
+  // (guardianAuthorizedAt), não só um booleano solto.
+  guardianAuthorized: boolean | undefined;
   // Opcional — quando uma categoria de `categoryIds` não aparece aqui,
   // o valor anterior dela é preservado (troca de categoria pelo /perfil
   // não reseta a experiência já declarada); categoria nova sem entrada
@@ -66,6 +67,10 @@ export interface WorkerProfileResponse {
   phone: string | null;
   birthDate: string | null;
   cnhCategory: string | null;
+  guardianFullName: string | null;
+  guardianCpf: string | null;
+  guardianPhone: string | null;
+  guardianAuthorizedAt: Date | null;
   experienceByCategory: Record<string, boolean>;
 }
 
@@ -155,8 +160,38 @@ export async function upsertWorkerProfile(
       throw new HttpError(400, 'Data de nascimento inválida.');
     }
     if (calculateAge(birthDate, new Date()) < MIN_WORKER_AGE_YEARS) {
-      throw new HttpError(400, 'É preciso ter 18 anos ou mais pra se cadastrar como trabalhador.');
+      throw new HttpError(400, 'É preciso ter 16 anos ou mais pra se cadastrar como trabalhador.');
     }
+  }
+
+  // Idade "de verdade" pra decidir se precisa de responsável: usa a
+  // data enviada agora, ou a já salva se essa chamada não reenviou
+  // birthDate (edição que não mexe nisso).
+  const effectiveBirthDate = birthDate || existingProfile?.birthDate;
+  const isMinor = effectiveBirthDate != null && calculateAge(effectiveBirthDate, new Date()) < ADULT_AGE_YEARS;
+
+  const guardianFullName = input.guardianFullName?.trim();
+  const guardianCpf = input.guardianCpf?.trim();
+  const guardianPhone = input.guardianPhone?.trim();
+  if (isMinor && !existingProfile) {
+    if (!guardianFullName || guardianFullName.length < 2) {
+      throw new HttpError(400, 'Nome do responsável é obrigatório.');
+    }
+    if (!guardianCpf) {
+      throw new HttpError(400, 'CPF do responsável é obrigatório.');
+    }
+    if (!guardianPhone) {
+      throw new HttpError(400, 'Telefone do responsável é obrigatório.');
+    }
+    if (!input.guardianAuthorized) {
+      throw new HttpError(400, 'É preciso confirmar que o responsável autoriza o cadastro.');
+    }
+  }
+  if (guardianCpf && !isValidCpf(guardianCpf)) {
+    throw new HttpError(400, 'CPF do responsável inválido — envie só os 11 números.');
+  }
+  if (guardianPhone && !PHONE_REGEX.test(guardianPhone)) {
+    throw new HttpError(400, 'Telefone do responsável inválido — envie só os números, com DDD.');
   }
 
   const rawCnhCategory = input.cnhCategory?.trim();
@@ -191,12 +226,20 @@ export async function upsertWorkerProfile(
         phone: phone || null,
         birthDate: birthDate || null,
         cnhCategory,
+        guardianFullName: isMinor ? guardianFullName || null : null,
+        guardianCpf: isMinor ? guardianCpf || null : null,
+        guardianPhone: isMinor ? guardianPhone || null : null,
+        guardianAuthorizedAt: isMinor && input.guardianAuthorized ? new Date() : null,
       })
       .onConflictDoUpdate({
         target: workerProfiles.userId,
         // bio/cpf/homeAddressFull/phone/birthDate/cnhCategory só entram
         // no UPDATE quando enviados de verdade — editar só o nome ou as
-        // categorias não pode apagar valor já salvo.
+        // categorias não pode apagar valor já salvo. Responsável segue a
+        // mesma regra, e só grava/mantém quando ainda é menor — se já
+        // fez 18, os dados antigos do responsável não são mais exigidos
+        // (mas também não somem sozinhos por uma edição que nem toca
+        // neles, graças ao `!== undefined`).
         set: {
           fullName,
           updatedAt: new Date(),
@@ -207,6 +250,14 @@ export async function upsertWorkerProfile(
           ...(input.phone !== undefined ? { phone: phone || null } : {}),
           ...(input.birthDate !== undefined ? { birthDate: birthDate || null } : {}),
           ...(input.cnhCategory !== undefined ? { cnhCategory } : {}),
+          ...(input.guardianFullName !== undefined
+            ? { guardianFullName: isMinor ? guardianFullName || null : null }
+            : {}),
+          ...(input.guardianCpf !== undefined ? { guardianCpf: isMinor ? guardianCpf || null : null } : {}),
+          ...(input.guardianPhone !== undefined ? { guardianPhone: isMinor ? guardianPhone || null : null } : {}),
+          ...(input.guardianAuthorized !== undefined
+            ? { guardianAuthorizedAt: isMinor && input.guardianAuthorized ? new Date() : null }
+            : {}),
         },
       })
       .returning();
@@ -245,6 +296,10 @@ export async function upsertWorkerProfile(
     phone: profile?.phone ?? null,
     birthDate: profile?.birthDate ?? null,
     cnhCategory: profile?.cnhCategory ?? null,
+    guardianFullName: profile?.guardianFullName ?? null,
+    guardianCpf: profile?.guardianCpf ?? null,
+    guardianPhone: profile?.guardianPhone ?? null,
+    guardianAuthorizedAt: profile?.guardianAuthorizedAt ?? null,
     experienceByCategory,
   };
 }

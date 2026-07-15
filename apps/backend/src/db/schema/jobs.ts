@@ -15,6 +15,11 @@ import { companies } from './companies';
 import { skillCategories } from './skill-categories';
 
 export const jobStatusEnum = pgEnum('job_status', ['open', 'filled', 'cancelled']);
+// 'none' = não oferece; 'on_site' = fornece no local, sem custo extra
+// pro trabalhador (ex.: refeição servida, van da empresa); 'paid' =
+// paga um valor em dinheiro (vale-refeição/transporte), guardado em
+// `mealAmount`/`transportAmount`.
+export const benefitProvisionEnum = pgEnum('benefit_provision', ['none', 'on_site', 'paid']);
 
 /**
  * Sem `onDelete: cascade` em company_id/category_id de propósito —
@@ -42,10 +47,17 @@ export const jobs = pgTable('jobs', {
   // (mostrada como aviso, mas não impede candidatura).
   cnhCategory: cnhCategoryEnum('cnh_category'),
   cnhRequired: boolean('cnh_required').notNull().default(false),
-  // Benefícios oferecidos — só um "sim/não" pra empresa sinalizar, sem
-  // detalhe (ver comentário nos campos de perguntas padronizadas acima).
-  offersMeal: boolean('offers_meal').notNull().default(false),
-  offersTransport: boolean('offers_transport').notNull().default(false),
+  // Benefícios oferecidos — 'paid' exige o valor em *Amount (ver
+  // validateJobInput); 'on_site'/'none' deixam *Amount nulo.
+  mealProvision: benefitProvisionEnum('meal_provision').notNull().default('none'),
+  mealAmount: numeric('meal_amount', { precision: 10, scale: 2 }),
+  transportProvision: benefitProvisionEnum('transport_provision').notNull().default('none'),
+  transportAmount: numeric('transport_amount', { precision: 10, scale: 2 }),
+  // Default false de propósito — vaga só fica visível/candidatável pra
+  // menor de idade (16-17, ver worker_profiles) quando a empresa marca
+  // explicitamente que aceita, não o contrário (ver list-nearby-jobs.ts
+  // e create-application.ts).
+  minorsAllowed: boolean('minors_allowed').notNull().default(false),
   addressLabel: varchar('address_label', { length: 255 }).notNull(),
   locationLat: doublePrecision('location_lat').notNull(),
   locationLng: doublePrecision('location_lng').notNull(),

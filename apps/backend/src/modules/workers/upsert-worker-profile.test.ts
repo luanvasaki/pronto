@@ -184,12 +184,12 @@ describe('upsertWorkerProfile', () => {
     ).rejects.toThrow('Data de nascimento inválida');
   });
 
-  it('rejeita trabalhador menor de 18 anos', async () => {
+  it('rejeita trabalhador menor de 16 anos', async () => {
     const user = await createTestUser();
     const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
-    const seventeenYearsAgo = new Date();
-    seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
-    const birthDate = toDateString(seventeenYearsAgo);
+    const fifteenYearsAgo = new Date();
+    fifteenYearsAgo.setFullYear(fifteenYearsAgo.getFullYear() - 15);
+    const birthDate = toDateString(fifteenYearsAgo);
 
     await expect(
       upsertWorkerProfile(user.id, {
@@ -200,7 +200,160 @@ describe('upsertWorkerProfile', () => {
         phone: TEST_WORKER_PHONE,
         birthDate,
       }),
-    ).rejects.toThrow('18 anos ou mais');
+    ).rejects.toThrow('16 anos ou mais');
+  });
+
+  describe('trabalhador entre 16 e 17 anos (exige dados do responsável)', () => {
+    function seventeenYearsAgoBirthDate(): string {
+      const seventeenYearsAgo = new Date();
+      seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+      return toDateString(seventeenYearsAgo);
+    }
+
+    it('rejeita sem nome do responsável', async () => {
+      const user = await createTestUser();
+      const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+      await expect(
+        upsertWorkerProfile(user.id, {
+          fullName: 'Ana Souza',
+          categoryIds: [category.id],
+          cpf: TEST_CPF,
+          homeAddressFull: TEST_ADDRESS,
+          phone: TEST_WORKER_PHONE,
+          birthDate: seventeenYearsAgoBirthDate(),
+          guardianCpf: TEST_CPF,
+          guardianPhone: TEST_WORKER_PHONE,
+          guardianAuthorized: true,
+        }),
+      ).rejects.toThrow('Nome do responsável é obrigatório');
+    });
+
+    it('rejeita sem CPF do responsável', async () => {
+      const user = await createTestUser();
+      const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+      await expect(
+        upsertWorkerProfile(user.id, {
+          fullName: 'Ana Souza',
+          categoryIds: [category.id],
+          cpf: TEST_CPF,
+          homeAddressFull: TEST_ADDRESS,
+          phone: TEST_WORKER_PHONE,
+          birthDate: seventeenYearsAgoBirthDate(),
+          guardianFullName: 'Marcos Souza',
+          guardianPhone: TEST_WORKER_PHONE,
+          guardianAuthorized: true,
+        }),
+      ).rejects.toThrow('CPF do responsável é obrigatório');
+    });
+
+    it('rejeita sem telefone do responsável', async () => {
+      const user = await createTestUser();
+      const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+      await expect(
+        upsertWorkerProfile(user.id, {
+          fullName: 'Ana Souza',
+          categoryIds: [category.id],
+          cpf: TEST_CPF,
+          homeAddressFull: TEST_ADDRESS,
+          phone: TEST_WORKER_PHONE,
+          birthDate: seventeenYearsAgoBirthDate(),
+          guardianFullName: 'Marcos Souza',
+          guardianCpf: OTHER_CPF,
+          guardianAuthorized: true,
+        }),
+      ).rejects.toThrow('Telefone do responsável é obrigatório');
+    });
+
+    it('rejeita sem a autorização explícita do responsável', async () => {
+      const user = await createTestUser();
+      const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+      await expect(
+        upsertWorkerProfile(user.id, {
+          fullName: 'Ana Souza',
+          categoryIds: [category.id],
+          cpf: TEST_CPF,
+          homeAddressFull: TEST_ADDRESS,
+          phone: TEST_WORKER_PHONE,
+          birthDate: seventeenYearsAgoBirthDate(),
+          guardianFullName: 'Marcos Souza',
+          guardianCpf: OTHER_CPF,
+          guardianPhone: TEST_WORKER_PHONE,
+          guardianAuthorized: false,
+        }),
+      ).rejects.toThrow('autoriza o cadastro');
+    });
+
+    it('rejeita CPF do responsável com dígito verificador inválido', async () => {
+      const user = await createTestUser();
+      const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+      await expect(
+        upsertWorkerProfile(user.id, {
+          fullName: 'Ana Souza',
+          categoryIds: [category.id],
+          cpf: TEST_CPF,
+          homeAddressFull: TEST_ADDRESS,
+          phone: TEST_WORKER_PHONE,
+          birthDate: seventeenYearsAgoBirthDate(),
+          guardianFullName: 'Marcos Souza',
+          guardianCpf: '11111111111',
+          guardianPhone: TEST_WORKER_PHONE,
+          guardianAuthorized: true,
+        }),
+      ).rejects.toThrow('CPF do responsável inválido');
+    });
+
+    it('salva os dados do responsável e cria o perfil normalmente', async () => {
+      const user = await createTestUser();
+      const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+      const birthDate = seventeenYearsAgoBirthDate();
+
+      const result = await upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
+        birthDate,
+        guardianFullName: 'Marcos Souza',
+        guardianCpf: OTHER_CPF,
+        guardianPhone: '11988887777',
+        guardianAuthorized: true,
+      });
+
+      expect(result.birthDate).toBe(birthDate);
+      expect(result.guardianFullName).toBe('Marcos Souza');
+      expect(result.guardianCpf).toBe(OTHER_CPF);
+      expect(result.guardianPhone).toBe('11988887777');
+      expect(result.guardianAuthorizedAt).not.toBeNull();
+    });
+  });
+
+  it('não guarda dados do responsável quando o trabalhador é maior de idade (mesmo se enviados)', async () => {
+    const user = await createTestUser();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+    const result = await upsertWorkerProfile(user.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
+      guardianFullName: 'Não devia salvar',
+      guardianCpf: OTHER_CPF,
+      guardianPhone: TEST_WORKER_PHONE,
+      guardianAuthorized: true,
+    });
+
+    expect(result.guardianFullName).toBeNull();
+    expect(result.guardianCpf).toBeNull();
+    expect(result.guardianPhone).toBeNull();
+    expect(result.guardianAuthorizedAt).toBeNull();
   });
 
   it('aceita trabalhador que completa 18 anos exatamente hoje', async () => {

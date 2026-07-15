@@ -1,11 +1,14 @@
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies, jobs, workerProfiles, workerSkills } from '../../db/schema';
+import { calculateAge } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
 import { areApplicationsClosed } from './applications-close';
 import { satisfiesCnhRequirement } from './cnh';
 import { haversineDistanceKm } from './haversine';
 import { JobResponse, toJobResponse } from './job-response';
+
+const ADULT_AGE_YEARS = 18;
 
 export interface NearbyJobResponse extends JobResponse {
   distanceKm: number;
@@ -35,6 +38,12 @@ export interface NearbyJobResponse extends JobResponse {
  * Some da lista assim que o prazo de candidatura passa (ver
  * applications-close.ts) — como esse prazo nunca é depois de
  * startsAt, isso também cobre o caso de a vaga já ter começado.
+ *
+ * Trabalhador menor de idade (16-17) só vê vaga com `minorsAllowed`
+ * marcado — diferente de skill/CNH/experiência (que são só aviso), essa
+ * é uma exclusão de verdade da lista, não um badge: não faz sentido
+ * mostrar uma vaga que ele nunca vai poder aceitar (ver
+ * create-application.ts pro bloqueio equivalente na candidatura).
  */
 export async function listNearbyJobs(workerId: string): Promise<NearbyJobResponse[]> {
   const profile = await db.query.workerProfiles.findFirst({
@@ -46,6 +55,8 @@ export async function listNearbyJobs(workerId: string): Promise<NearbyJobRespons
   if (profile.homeLat === null || profile.homeLng === null) {
     throw new HttpError(400, 'Defina sua localização antes de ver vagas.');
   }
+
+  const isMinor = Boolean(profile.birthDate) && calculateAge(profile.birthDate!, new Date()) < ADULT_AGE_YEARS;
 
   const skills = await db.query.workerSkills.findMany({ where: eq(workerSkills.workerId, workerId) });
   const categoryIds = new Set(skills.map((skill) => skill.categoryId));
@@ -64,6 +75,7 @@ export async function listNearbyJobs(workerId: string): Promise<NearbyJobRespons
   return openJobs
     .filter((job) => job.positionsFilled < job.positionsTotal)
     .filter((job) => !areApplicationsClosed(job))
+    .filter((job) => !isMinor || job.minorsAllowed)
     .map((job) => ({
       job,
       distanceKm: haversineDistanceKm(homeLat, homeLng, job.locationLat, job.locationLng),

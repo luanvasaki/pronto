@@ -164,30 +164,40 @@ describe('createJob', () => {
     expect(result.toolsRequired).toBeNull();
   });
 
-  it('offersMeal e offersTransport são false por padrão quando não informados', async () => {
+  it('mealProvision/transportProvision são "none" por padrão, e minorsAllowed false, quando não informados', async () => {
     const owner = await createTestCompanyOwner();
     await createTestCompany(owner.id);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
     const result = await createJob(owner.id, baseInput(category.id), true);
 
-    expect(result.offersMeal).toBe(false);
-    expect(result.offersTransport).toBe(false);
+    expect(result.mealProvision).toBe('none');
+    expect(result.transportProvision).toBe('none');
+    expect(result.minorsAllowed).toBe(false);
   });
 
-  it('salva offersMeal e offersTransport quando a empresa marca os benefícios', async () => {
+  it('salva mealProvision/transportProvision e os valores quando a empresa oferece com pagamento', async () => {
     const owner = await createTestCompanyOwner();
     await createTestCompany(owner.id);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
     const result = await createJob(
       owner.id,
-      { ...baseInput(category.id), offersMeal: true, offersTransport: true },
+      {
+        ...baseInput(category.id),
+        mealProvision: 'paid',
+        mealAmount: '20.00',
+        transportProvision: 'on_site',
+        minorsAllowed: true,
+      },
       true,
     );
 
-    expect(result.offersMeal).toBe(true);
-    expect(result.offersTransport).toBe(true);
+    expect(result.mealProvision).toBe('paid');
+    expect(result.mealAmount).toBe('20.00');
+    expect(result.transportProvision).toBe('on_site');
+    expect(result.transportAmount).toBeNull();
+    expect(result.minorsAllowed).toBe(true);
   });
 
   it('rejeita quando requiresExperience não é informado', async () => {

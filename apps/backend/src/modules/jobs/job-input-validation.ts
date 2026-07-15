@@ -1,6 +1,12 @@
 import { HttpError } from '../../shared/errors/http-error';
 import { CnhCategory, isCnhCategory } from './cnh';
 
+export type BenefitProvision = 'none' | 'on_site' | 'paid';
+
+function isBenefitProvision(value: string): value is BenefitProvision {
+  return value === 'none' || value === 'on_site' || value === 'paid';
+}
+
 export interface JobInput {
   categoryId: string | undefined;
   description: string | undefined;
@@ -11,9 +17,14 @@ export interface JobInput {
   cnhCategory: string | undefined;
   /** Só importa quando `cnhCategory` está preenchido — default false (preferência, não bloqueia). */
   cnhRequired: boolean | undefined;
-  /** Ausente = não oferece (default false, mesmo padrão de requiresExperience). */
-  offersMeal: boolean | undefined;
-  offersTransport: boolean | undefined;
+  /** Undefined = 'none' (não oferece), mesmo padrão de requiresExperience. */
+  mealProvision: string | undefined;
+  /** Só importa (e é exigido) quando `mealProvision === 'paid'`. */
+  mealAmount: string | undefined;
+  transportProvision: string | undefined;
+  transportAmount: string | undefined;
+  /** Ausente = não oferece (default false). */
+  minorsAllowed: boolean | undefined;
   addressLabel: string | undefined;
   locationLat: number | undefined;
   locationLng: number | undefined;
@@ -33,8 +44,11 @@ export interface ValidatedJobFields {
   toolsRequired: string | null;
   cnhCategory: CnhCategory | null;
   cnhRequired: boolean;
-  offersMeal: boolean;
-  offersTransport: boolean;
+  mealProvision: BenefitProvision;
+  mealAmount: string | null;
+  transportProvision: BenefitProvision;
+  transportAmount: string | null;
+  minorsAllowed: boolean;
   addressLabel: string;
   locationLat: number;
   locationLng: number;
@@ -46,6 +60,32 @@ export interface ValidatedJobFields {
 }
 
 const PAY_AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
+
+/**
+ * Valida um benefício com o padrão "sem oferta / no local / valor em
+ * dinheiro" (alimentação e transporte usam a mesma regra) — mesmo
+ * espírito do par cnhCategory/cnhRequired: um campo opcional que, numa
+ * das opções, exige um segundo campo.
+ */
+function validateBenefitProvision(
+  rawProvision: string | undefined,
+  rawAmount: string | undefined,
+  label: string,
+): { provision: BenefitProvision; amount: string | null } {
+  const provision = rawProvision ?? 'none';
+  if (!isBenefitProvision(provision)) {
+    throw new HttpError(400, `Opção de ${label} inválida.`);
+  }
+
+  if (provision !== 'paid') {
+    return { provision, amount: null };
+  }
+
+  if (!rawAmount || !PAY_AMOUNT_REGEX.test(rawAmount) || Number(rawAmount) <= 0) {
+    throw new HttpError(400, `Informe o valor de ${label}.`);
+  }
+  return { provision, amount: rawAmount };
+}
 
 /**
  * Regras compartilhadas por createJob e updateJob — mesma vaga, mesmas
@@ -85,6 +125,9 @@ export function validateJobInput(input: JobInput): ValidatedJobFields {
     throw new HttpError(400, 'Escolha a categoria de CNH exigida.');
   }
   const cnhCategory: CnhCategory | null = rawCnhCategory && isCnhCategory(rawCnhCategory) ? rawCnhCategory : null;
+
+  const meal = validateBenefitProvision(input.mealProvision, input.mealAmount, 'alimentação');
+  const transport = validateBenefitProvision(input.transportProvision, input.transportAmount, 'transporte');
 
   const addressLabel = input.addressLabel?.trim();
   if (!addressLabel || addressLabel.length < 2) {
@@ -147,8 +190,11 @@ export function validateJobInput(input: JobInput): ValidatedJobFields {
     toolsRequired: toolsRequired || null,
     cnhCategory,
     cnhRequired: Boolean(cnhCategory) && Boolean(input.cnhRequired),
-    offersMeal: Boolean(input.offersMeal),
-    offersTransport: Boolean(input.offersTransport),
+    mealProvision: meal.provision,
+    mealAmount: meal.amount,
+    transportProvision: transport.provision,
+    transportAmount: transport.amount,
+    minorsAllowed: Boolean(input.minorsAllowed),
     addressLabel,
     locationLat: input.locationLat,
     locationLng: input.locationLng,

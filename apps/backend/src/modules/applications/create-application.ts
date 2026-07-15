@@ -1,12 +1,15 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, companies, jobs, workerProfiles } from '../../db/schema';
+import { calculateAge } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
 import { isUniqueViolation } from '../../shared/is-unique-violation';
 import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
 import { areApplicationsClosed } from '../jobs/applications-close';
 import { satisfiesCnhRequirement } from '../jobs/cnh';
 import { ApplicationResponse, toApplicationResponse } from './application-response';
+
+const ADULT_AGE_YEARS = 18;
 
 export async function createApplication(
   workerId: string,
@@ -50,6 +53,10 @@ export async function createApplication(
   }
   if (job.cnhRequired && job.cnhCategory && !satisfiesCnhRequirement(profile.cnhCategory, job.cnhCategory)) {
     throw new HttpError(400, `Essa vaga exige CNH categoria ${job.cnhCategory}.`);
+  }
+  const isMinor = Boolean(profile.birthDate) && calculateAge(profile.birthDate!, new Date()) < ADULT_AGE_YEARS;
+  if (isMinor && !job.minorsAllowed) {
+    throw new HttpError(400, 'Essa vaga não está disponível pra menores de idade.');
   }
 
   const existing = await db.query.applications.findFirst({

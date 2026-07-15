@@ -1,9 +1,12 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, companies, jobs, workerProfiles, workerSkills } from '../../db/schema';
+import { calculateAge } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
 import { satisfiesCnhRequirement } from './cnh';
 import { JobResponse, toJobResponse } from './job-response';
+
+const ADULT_AGE_YEARS = 18;
 
 export interface JobDetailResponse extends JobResponse {
   companyName: string;
@@ -13,6 +16,13 @@ export interface JobDetailResponse extends JobResponse {
   matchesSkills: boolean;
   experienceMismatch: boolean;
   cnhMismatch: boolean;
+  /** Trabalhador é menor de idade e a vaga não aceita menor — bloqueia
+   * a candidatura (ver create-application.ts), igual cnhMismatch com
+   * cnhRequired. Não some da tela (diferente da listagem, que já filtra
+   * isso antes — ver list-nearby-jobs.ts) porque chegar aqui só
+   * acontece por link direto/histórico, e o trabalhador ainda pode
+   * querer ver os detalhes mesmo sem poder aceitar. */
+  minorMismatch: boolean;
   /** Já se candidatou (qualquer status) — evita mostrar o botão de candidatar de novo. */
   hasApplied: boolean;
 }
@@ -53,6 +63,8 @@ export async function getJobDetailForWorker(workerId: string, jobId: string): Pr
     where: and(eq(workerSkills.workerId, workerId), eq(workerSkills.categoryId, job.categoryId)),
   });
 
+  const isMinor = Boolean(profile.birthDate) && calculateAge(profile.birthDate!, new Date()) < ADULT_AGE_YEARS;
+
   return {
     ...toJobResponse(job),
     companyName: company.tradeName,
@@ -61,6 +73,7 @@ export async function getJobDetailForWorker(workerId: string, jobId: string): Pr
     matchesSkills: Boolean(skill),
     experienceMismatch: job.requiresExperience && !(skill?.hasExperience ?? false),
     cnhMismatch: Boolean(job.cnhCategory) && !satisfiesCnhRequirement(profile.cnhCategory, job.cnhCategory!),
+    minorMismatch: isMinor && !job.minorsAllowed,
     hasApplied: Boolean(application),
   };
 }

@@ -1,6 +1,9 @@
 import { desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies, companyDocuments, documents, skillCategories, workerProfiles } from '../../db/schema';
+import { calculateAge } from '../../shared/age';
+
+const ADULT_AGE_YEARS = 18;
 
 export interface PendingDocument {
   id: string;
@@ -8,6 +11,13 @@ export interface PendingDocument {
   workerFullName: string;
   type: string;
   createdAt: Date;
+  // Preenchidos só quando o trabalhador é menor (16-17) — dá pro admin
+  // conferir quem está autorizando junto do documento do responsável
+  // (type: 'guardian_identity'), sem precisar abrir outra tela.
+  isMinor: boolean;
+  guardianFullName: string | null;
+  guardianCpf: string | null;
+  guardianPhone: string | null;
 }
 
 export interface PendingCompany {
@@ -88,6 +98,7 @@ export async function listPendingVerifications(): Promise<PendingVerifications> 
     documents: pendingDocuments.flatMap((document) => {
       const worker = workersById.get(document.workerId);
       if (!worker) return [];
+      const isMinor = Boolean(worker.birthDate) && calculateAge(worker.birthDate!, new Date()) < ADULT_AGE_YEARS;
       return [
         {
           id: document.id,
@@ -95,6 +106,10 @@ export async function listPendingVerifications(): Promise<PendingVerifications> 
           workerFullName: worker.fullName,
           type: document.type,
           createdAt: document.createdAt,
+          isMinor,
+          guardianFullName: isMinor ? worker.guardianFullName : null,
+          guardianCpf: isMinor ? worker.guardianCpf : null,
+          guardianPhone: isMinor ? worker.guardianPhone : null,
         },
       ];
     }),

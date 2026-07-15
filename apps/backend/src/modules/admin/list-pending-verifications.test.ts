@@ -66,7 +66,36 @@ describe('listPendingVerifications', () => {
     expect(result.documents).toHaveLength(1);
     expect(result.documents[0].id).toBe(pendingDocument.id);
     expect(result.documents[0].workerFullName).toBe('Ana Souza');
+    expect(result.documents[0].isMinor).toBe(false);
+    expect(result.documents[0].guardianFullName).toBeNull();
     expect(result.companies.some((company) => company.cnpj === TEST_CNPJ)).toBe(true);
+  });
+
+  it('inclui isMinor e os dados do responsável quando o trabalhador é menor de idade', async () => {
+    const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
+    const seventeenYearsAgo = new Date();
+    seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+    const birthDate = seventeenYearsAgo.toISOString().slice(0, 10);
+    await db.insert(workerProfiles).values({
+      userId: worker.id,
+      fullName: 'Ana Souza',
+      birthDate,
+      guardianFullName: 'Marcos Souza',
+      guardianCpf: '11122283148',
+      guardianPhone: '11988887777',
+    });
+    const [pendingDocument] = await db
+      .insert(documents)
+      .values({ workerId: worker.id, fileUrl: 'documents/x/responsavel.jpg', type: 'guardian_identity' })
+      .returning();
+
+    const result = await listPendingVerifications();
+
+    const found = result.documents.find((document) => document.id === pendingDocument.id);
+    expect(found?.isMinor).toBe(true);
+    expect(found?.guardianFullName).toBe('Marcos Souza');
+    expect(found?.guardianCpf).toBe('11122283148');
+    expect(found?.guardianPhone).toBe('11988887777');
   });
 
   it('inclui personType, cpf e o id do documento mais recente de empresa pessoa física', async () => {

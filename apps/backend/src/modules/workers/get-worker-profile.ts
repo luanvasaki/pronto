@@ -2,7 +2,10 @@ import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, documents, jobs, shifts, workerProfiles, workerSkills } from '../../db/schema';
 import { updateWorkerRatingAggregate } from '../ratings/update-rating-aggregates';
+import { calculateAge } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
+
+const ADULT_AGE_YEARS = 18;
 
 export interface WorkerProfileDetails {
   fullName: string;
@@ -22,10 +25,19 @@ export interface WorkerProfileDetails {
   // aqui (visão do próprio dono) e no admin (list-workers.ts).
   phone: string | null;
   cnhCategory: string | null;
+  // Calculado no servidor a partir de birthDate — o front usa isso pra
+  // decidir se mostra o passo de documento do responsável no cadastro
+  // (ver cadastro/documento), sem duplicar a lógica de idade lá.
+  isMinor: boolean;
+  guardianFullName: string | null;
+  guardianCpf: string | null;
+  guardianPhone: string | null;
+  guardianAuthorizedAt: Date | null;
   kycStatus: string;
   hasDocument: boolean;
   hasSelfie: boolean;
   hasCnhDocument: boolean;
+  hasGuardianDocument: boolean;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
   totalShiftsCompleted: number;
@@ -53,6 +65,8 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
   const hasDocument = workerDocuments.some((document) => document.type === 'identity');
   const hasSelfie = workerDocuments.some((document) => document.type === 'selfie');
   const hasCnhDocument = workerDocuments.some((document) => document.type === 'cnh');
+  const hasGuardianDocument = workerDocuments.some((document) => document.type === 'guardian_identity');
+  const isMinor = Boolean(profile.birthDate) && calculateAge(profile.birthDate!, new Date()) < ADULT_AGE_YEARS;
 
   // "Horas de voo": calculadas ao vivo a partir dos turnos concluídos —
   // as colunas `totalShiftsCompleted`/`totalNoShows` de `worker_profiles`
@@ -114,10 +128,16 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
     homeAddressFull: profile.homeAddressFull,
     phone: profile.phone,
     cnhCategory: profile.cnhCategory,
+    isMinor,
+    guardianFullName: profile.guardianFullName,
+    guardianCpf: profile.guardianCpf,
+    guardianPhone: profile.guardianPhone,
+    guardianAuthorizedAt: profile.guardianAuthorizedAt,
     kycStatus: profile.kycStatus,
     hasDocument,
     hasSelfie,
     hasCnhDocument,
+    hasGuardianDocument,
     avgRating: profile.avgRating,
     avgCategoryScores: profile.avgCategoryScores ?? null,
     totalShiftsCompleted,

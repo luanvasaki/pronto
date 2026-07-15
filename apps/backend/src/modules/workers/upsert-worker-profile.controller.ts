@@ -23,6 +23,10 @@ export async function upsertWorkerProfileHandler(
       phone,
       birthDate,
       cnhCategory,
+      guardianFullName,
+      guardianCpf,
+      guardianPhone,
+      guardianAuthorized,
       experienceByCategory,
     } = req.body as {
       fullName?: string;
@@ -34,6 +38,10 @@ export async function upsertWorkerProfileHandler(
       phone?: string;
       birthDate?: string;
       cnhCategory?: string;
+      guardianFullName?: string;
+      guardianCpf?: string;
+      guardianPhone?: string;
+      guardianAuthorized?: boolean;
       experienceByCategory?: Record<string, boolean>;
     };
     const result = await upsertWorkerProfile(userId, {
@@ -46,6 +54,10 @@ export async function upsertWorkerProfileHandler(
       phone,
       birthDate,
       cnhCategory,
+      guardianFullName,
+      guardianCpf,
+      guardianPhone,
+      guardianAuthorized,
       experienceByCategory,
     });
     res.status(200).json(result);

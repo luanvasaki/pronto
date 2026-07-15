@@ -22,8 +22,11 @@ export async function updateJobHandler(req: Request, res: Response, next: NextFu
       toolsRequired,
       cnhCategory,
       cnhRequired,
-      offersMeal,
-      offersTransport,
+      mealProvision,
+      mealAmount,
+      transportProvision,
+      transportAmount,
+      minorsAllowed,
       addressLabel,
       locationLat,
       locationLng,
@@ -40,8 +43,11 @@ export async function updateJobHandler(req: Request, res: Response, next: NextFu
       toolsRequired?: string;
       cnhCategory?: string;
       cnhRequired?: boolean;
-      offersMeal?: boolean;
-      offersTransport?: boolean;
+      mealProvision?: string;
+      mealAmount?: string;
+      transportProvision?: string;
+      transportAmount?: string;
+      minorsAllowed?: boolean;
       addressLabel?: string;
       locationLat?: number;
       locationLng?: number;
@@ -60,8 +66,11 @@ export async function updateJobHandler(req: Request, res: Response, next: NextFu
       toolsRequired,
       cnhCategory,
       cnhRequired,
-      offersMeal,
-      offersTransport,
+      mealProvision,
+      mealAmount,
+      transportProvision,
+      transportAmount,
+      minorsAllowed,
       addressLabel,
       locationLat,
       locationLng,

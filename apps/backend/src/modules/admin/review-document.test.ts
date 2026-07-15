@@ -122,4 +122,56 @@ describe('reviewDocument', () => {
     const profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
     expect(profile?.kycStatus).toBe('approved');
   });
+
+  describe('trabalhador menor de idade — exige também o documento do responsável', () => {
+    async function setupMinorWithPendingDocument() {
+      const seventeenYearsAgo = new Date();
+      seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+      const birthDate = seventeenYearsAgo.toISOString().slice(0, 10);
+
+      const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
+      await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza', birthDate });
+      const [admin] = await db.insert(users).values({ phone: ADMIN_PHONE, isAdmin: true }).returning();
+      const [document] = await db
+        .insert(documents)
+        .values({ workerId: worker.id, fileUrl: 'documents/x/y.jpg' })
+        .returning();
+      return { worker, admin, document };
+    }
+
+    it('não aprova o kycStatus com identidade+selfie aprovadas se faltar o documento do responsável', async () => {
+      const { admin, document: identityDocument, worker } = await setupMinorWithPendingDocument();
+      const [selfieDocument] = await db
+        .insert(documents)
+        .values({ workerId: worker.id, fileUrl: 'documents/x/selfie.jpg', type: 'selfie' })
+        .returning();
+
+      await reviewDocument(admin.id, identityDocument.id, 'approved');
+      await reviewDocument(admin.id, selfieDocument.id, 'approved');
+
+      const profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
+      expect(profile?.kycStatus).toBe('pending');
+    });
+
+    it('aprova o kycStatus só depois que identidade+selfie+documento do responsável estão todos aprovados', async () => {
+      const { admin, document: identityDocument, worker } = await setupMinorWithPendingDocument();
+      const [selfieDocument] = await db
+        .insert(documents)
+        .values({ workerId: worker.id, fileUrl: 'documents/x/selfie.jpg', type: 'selfie' })
+        .returning();
+      const [guardianDocument] = await db
+        .insert(documents)
+        .values({ workerId: worker.id, fileUrl: 'documents/x/responsavel.jpg', type: 'guardian_identity' })
+        .returning();
+
+      await reviewDocument(admin.id, identityDocument.id, 'approved');
+      await reviewDocument(admin.id, selfieDocument.id, 'approved');
+      let profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
+      expect(profile?.kycStatus).toBe('pending');
+
+      await reviewDocument(admin.id, guardianDocument.id, 'approved');
+      profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
+      expect(profile?.kycStatus).toBe('approved');
+    });
+  });
 });

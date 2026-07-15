@@ -32,7 +32,10 @@ export async function uploadDocument(
   // da selfie: só aceita PDF (a CNH Digital do app oficial do governo),
   // nunca foto — é o jeito de comprovar que a categoria informada no
   // cadastro é real, não só uma foto de algo que pode ser qualquer coisa.
-  const documentType = type === 'selfie' ? 'selfie' : type === 'cnh' ? 'cnh' : 'identity';
+  // guardian_identity segue o mesmo formato do identity normal (foto ou
+  // PDF) — é o documento oficial do responsável, não do trabalhador.
+  const documentType =
+    type === 'selfie' ? 'selfie' : type === 'cnh' ? 'cnh' : type === 'guardian_identity' ? 'guardian_identity' : 'identity';
 
   const profile = await db.query.workerProfiles.findFirst({
     where: eq(workerProfiles.userId, userId),

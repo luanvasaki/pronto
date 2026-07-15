@@ -14,10 +14,20 @@ const TEST_CATEGORY_NAME = 'Categoria de teste — create-application';
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const TOMORROW_PLUS_5H = new Date(TOMORROW.getTime() + 5 * 60 * 60 * 1000);
 
-async function createWorker(cnhCategory?: 'A' | 'B' | 'AB' | 'C' | 'D' | 'E', kycStatus: 'pending' | 'approved' | 'rejected' = 'approved') {
+async function createWorker(
+  cnhCategory?: 'A' | 'B' | 'AB' | 'C' | 'D' | 'E',
+  kycStatus: 'pending' | 'approved' | 'rejected' = 'approved',
+  birthDate?: string,
+) {
   const [user] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
-  await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Ana Souza', cnhCategory, kycStatus });
+  await db.insert(workerProfiles).values({ userId: user.id, fullName: 'Ana Souza', cnhCategory, kycStatus, birthDate });
   return user;
+}
+
+function seventeenYearsAgoBirthDate(): string {
+  const seventeenYearsAgo = new Date();
+  seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+  return seventeenYearsAgo.toISOString().slice(0, 10);
 }
 
 async function createJob(
@@ -29,6 +39,7 @@ async function createJob(
     applicationsCloseAt: Date;
     cnhCategory: 'A' | 'B' | 'AB' | 'C' | 'D' | 'E';
     cnhRequired: boolean;
+    minorsAllowed: boolean;
   }> = {},
 ) {
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
@@ -214,6 +225,33 @@ describe('createApplication', () => {
   it('CNH categoria AB satisfaz exigência de A ou B', async () => {
     const worker = await createWorker('AB');
     const job = await createJob({ cnhCategory: 'A', cnhRequired: true });
+
+    const result = await createApplication(worker.id, job.id, true);
+
+    expect(result.status).toBe('pending');
+  });
+
+  it('rejeita candidatura de menor de idade quando a vaga não aceita menor', async () => {
+    const worker = await createWorker(undefined, 'approved', seventeenYearsAgoBirthDate());
+    const job = await createJob({});
+
+    await expect(createApplication(worker.id, job.id, true)).rejects.toThrow(
+      'não está disponível pra menores de idade',
+    );
+  });
+
+  it('aceita candidatura de menor de idade quando a vaga aceita menor', async () => {
+    const worker = await createWorker(undefined, 'approved', seventeenYearsAgoBirthDate());
+    const job = await createJob({ minorsAllowed: true });
+
+    const result = await createApplication(worker.id, job.id, true);
+
+    expect(result.status).toBe('pending');
+  });
+
+  it('aceita candidatura de trabalhador maior de idade mesmo sem minorsAllowed', async () => {
+    const worker = await createWorker(undefined, 'approved', '2000-01-01');
+    const job = await createJob({});
 
     const result = await createApplication(worker.id, job.id, true);
 

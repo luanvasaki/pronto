@@ -200,6 +200,60 @@ describe('getWorkerProfile', () => {
     expect(afterUpload.hasSelfie).toBe(false);
   });
 
+  it('isMinor vem false e sem dados de responsável pra trabalhador maior de idade', async () => {
+    const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await upsertWorkerProfile(user.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
+    });
+
+    const result = await getWorkerProfile(user.id);
+
+    expect(result.isMinor).toBe(false);
+    expect(result.guardianFullName).toBeNull();
+    expect(result.hasGuardianDocument).toBe(false);
+  });
+
+  it('isMinor vem true com dados do responsável e hasGuardianDocument pra trabalhador de 16-17 anos', async () => {
+    const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    const seventeenYearsAgo = new Date();
+    seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+    const birthDate = seventeenYearsAgo.toISOString().slice(0, 10);
+    await upsertWorkerProfile(user.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
+      birthDate,
+      guardianFullName: 'Marcos Souza',
+      guardianCpf: '11122283148',
+      guardianPhone: '11988887777',
+      guardianAuthorized: true,
+    });
+
+    const beforeUpload = await getWorkerProfile(user.id);
+    expect(beforeUpload.isMinor).toBe(true);
+    expect(beforeUpload.guardianFullName).toBe('Marcos Souza');
+    expect(beforeUpload.guardianAuthorizedAt).not.toBeNull();
+    expect(beforeUpload.hasGuardianDocument).toBe(false);
+
+    await db.insert(documents).values({
+      workerId: user.id,
+      fileUrl: 'documents/fake-guardian.jpg',
+      type: 'guardian_identity',
+    });
+
+    const afterUpload = await getWorkerProfile(user.id);
+    expect(afterUpload.hasGuardianDocument).toBe(true);
+  });
+
   it('calcula turnos completados e horas trabalhadas ao vivo, a partir dos turnos de verdade', async () => {
     const [worker] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();

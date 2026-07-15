@@ -14,8 +14,11 @@ function baseInput(overrides: Partial<JobInput> = {}): JobInput {
     toolsRequired: undefined,
     cnhCategory: undefined,
     cnhRequired: undefined,
-    offersMeal: undefined,
-    offersTransport: undefined,
+    mealProvision: undefined,
+    mealAmount: undefined,
+    transportProvision: undefined,
+    transportAmount: undefined,
+    minorsAllowed: undefined,
     addressLabel: 'Vila Madalena, São Paulo',
     locationLat: -23.55,
     locationLng: -46.63,
@@ -182,6 +185,75 @@ describe('validateJobInput', () => {
       const result = validateJobInput(baseInput({ cnhCategory: 'B', cnhRequired: true }));
       expect(result.cnhCategory).toBe('B');
       expect(result.cnhRequired).toBe(true);
+    });
+  });
+
+  describe('alimentação/transporte (mealProvision/transportProvision)', () => {
+    it('default é "none" quando não informado', () => {
+      const result = validateJobInput(baseInput());
+      expect(result.mealProvision).toBe('none');
+      expect(result.mealAmount).toBeNull();
+      expect(result.transportProvision).toBe('none');
+      expect(result.transportAmount).toBeNull();
+    });
+
+    it('aceita "on_site" sem exigir valor', () => {
+      const result = validateJobInput(baseInput({ mealProvision: 'on_site', transportProvision: 'on_site' }));
+      expect(result.mealProvision).toBe('on_site');
+      expect(result.mealAmount).toBeNull();
+      expect(result.transportProvision).toBe('on_site');
+      expect(result.transportAmount).toBeNull();
+    });
+
+    it('rejeita opção inválida', () => {
+      expect(() => validateJobInput(baseInput({ mealProvision: 'invalido' }))).toThrow('Opção de alimentação inválida');
+      expect(() => validateJobInput(baseInput({ transportProvision: 'invalido' }))).toThrow(
+        'Opção de transporte inválida',
+      );
+    });
+
+    it('"paid" exige o valor', () => {
+      expect(() => validateJobInput(baseInput({ mealProvision: 'paid' }))).toThrow('Informe o valor de alimentação');
+      expect(() => validateJobInput(baseInput({ transportProvision: 'paid' }))).toThrow(
+        'Informe o valor de transporte',
+      );
+    });
+
+    it('"paid" rejeita valor zero, negativo ou mal formatado', () => {
+      expect(() => validateJobInput(baseInput({ mealProvision: 'paid', mealAmount: '0' }))).toThrow(
+        'Informe o valor de alimentação',
+      );
+      expect(() => validateJobInput(baseInput({ mealProvision: 'paid', mealAmount: '-10.00' }))).toThrow(
+        'Informe o valor de alimentação',
+      );
+      expect(() => validateJobInput(baseInput({ mealProvision: 'paid', mealAmount: '10,50' }))).toThrow(
+        'Informe o valor de alimentação',
+      );
+    });
+
+    it('"paid" aceita e guarda o valor', () => {
+      const result = validateJobInput(
+        baseInput({ mealProvision: 'paid', mealAmount: '25.00', transportProvision: 'paid', transportAmount: '15.50' }),
+      );
+      expect(result.mealProvision).toBe('paid');
+      expect(result.mealAmount).toBe('25.00');
+      expect(result.transportProvision).toBe('paid');
+      expect(result.transportAmount).toBe('15.50');
+    });
+
+    it('ignora o valor enviado quando a opção não é "paid"', () => {
+      const result = validateJobInput(baseInput({ mealProvision: 'on_site', mealAmount: '25.00' }));
+      expect(result.mealAmount).toBeNull();
+    });
+  });
+
+  describe('minorsAllowed', () => {
+    it('default é false quando não informado', () => {
+      expect(validateJobInput(baseInput()).minorsAllowed).toBe(false);
+    });
+
+    it('aceita true explícito', () => {
+      expect(validateJobInput(baseInput({ minorsAllowed: true })).minorsAllowed).toBe(true);
     });
   });
 

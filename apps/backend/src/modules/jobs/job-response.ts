@@ -11,8 +11,11 @@ export interface JobResponse {
   toolsRequired: string | null;
   cnhCategory: string | null;
   cnhRequired: boolean;
-  offersMeal: boolean;
-  offersTransport: boolean;
+  mealProvision: string;
+  mealAmount: string | null;
+  transportProvision: string;
+  transportAmount: string | null;
+  minorsAllowed: boolean;
   addressLabel: string;
   locationLat: number;
   locationLng: number;
@@ -35,8 +38,11 @@ export function toJobResponse(job: JobRow): JobResponse {
     toolsRequired: job.toolsRequired,
     cnhCategory: job.cnhCategory,
     cnhRequired: job.cnhRequired,
-    offersMeal: job.offersMeal,
-    offersTransport: job.offersTransport,
+    mealProvision: job.mealProvision,
+    mealAmount: job.mealAmount,
+    transportProvision: job.transportProvision,
+    transportAmount: job.transportAmount,
+    minorsAllowed: job.minorsAllowed,
     addressLabel: job.addressLabel,
     locationLat: job.locationLat,
     locationLng: job.locationLng,
