@@ -487,13 +487,24 @@ describe('VagaCandidatosPage', () => {
   it('mostra os benefícios oferecidos pela vaga', async () => {
     listJobApplicationsMock.mockResolvedValue({ applications: [] });
     listMyJobsMock.mockResolvedValue({
-      jobs: [{ id: 'job-1', positionsTotal: 4, positionsFilled: 0, offersMeal: true, offersTransport: true }],
+      jobs: [
+        {
+          id: 'job-1',
+          positionsTotal: 4,
+          positionsFilled: 0,
+          mealProvision: 'on_site',
+          transportProvision: 'paid',
+          transportAmount: '15.00',
+          minorsAllowed: true,
+        },
+      ],
     });
 
     render(<VagaCandidatosPage />);
 
-    expect(await screen.findByText('Oferece alimentação')).toBeInTheDocument();
-    expect(screen.getByText('Oferece transporte')).toBeInTheDocument();
+    expect(await screen.findByText('Alimentação no local')).toBeInTheDocument();
+    expect(screen.getByText('Transporte: R$ 15,00')).toBeInTheDocument();
+    expect(screen.getByText('Disponível pra menores de idade')).toBeInTheDocument();
   });
 
   it('não mostra o formulário quando o turno já foi avaliado', async () => {

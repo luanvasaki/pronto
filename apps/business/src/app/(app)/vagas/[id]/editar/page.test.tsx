@@ -153,6 +153,50 @@ describe('EditarVagaPage', () => {
     expect(screen.getByLabelText(/fechar candidaturas em/i)).toHaveValue(toLocalDateTimeInput(applicationsCloseAt));
   });
 
+  it('pré-preenche mealProvision/transportProvision/minorsAllowed com os dados atuais da vaga', async () => {
+    listMyJobsMock.mockResolvedValue({
+      jobs: [
+        {
+          ...JOB,
+          mealProvision: 'paid',
+          mealAmount: '20.00',
+          transportProvision: 'on_site',
+          transportAmount: null,
+          minorsAllowed: true,
+        },
+      ],
+    });
+
+    render(<EditarVagaPage />);
+    await screen.findByDisplayValue('Vaga de garçom pra evento');
+
+    expect(screen.getByLabelText(/vaga disponível pra menores de idade/i)).toBeChecked();
+    expect(screen.getByLabelText(/valor da alimentação/i)).toHaveValue('20.00');
+    expect(screen.getAllByRole('button', { name: 'No local' })[1]).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('salva as mudanças de benefícios e de minorsAllowed', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    updateJobMock.mockResolvedValue(JOB);
+    const user = userEvent.setup();
+
+    render(<EditarVagaPage />);
+    await screen.findByDisplayValue('130.00');
+
+    const mealButtons = screen.getAllByRole('button', { name: 'Por um valor' });
+    await user.click(mealButtons[0]);
+    await user.type(screen.getByLabelText(/valor da alimentação/i), '20,00');
+    await user.click(screen.getByLabelText(/vaga disponível pra menores de idade/i));
+    await user.click(screen.getByRole('button', { name: /salvar alterações/i }));
+
+    await waitFor(() => expect(updateJobMock).toHaveBeenCalled());
+    expect(updateJobMock.mock.calls[0][1]).toMatchObject({
+      mealProvision: 'paid',
+      mealAmount: '20.00',
+      minorsAllowed: true,
+    });
+  });
+
   it('envia o novo prazo de candidatura quando alterado', async () => {
     listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
     updateJobMock.mockResolvedValue(JOB);

@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiError, createSkillCategory, listSkillCategories, SkillCategory } from '@shift/shared';
+import { ApiError, BenefitProvision, createSkillCategory, listSkillCategories, SkillCategory } from '@shift/shared';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useEffect, useRef, useState } from 'react';
 import { AddressFields, buildAddressLabel } from '../../../../components/ui/address-fields';
@@ -59,8 +59,11 @@ function NovaVagaForm() {
   const [toolsRequired, setToolsRequired] = useState('');
   const [cnhCategory, setCnhCategory] = useState('');
   const [cnhRequired, setCnhRequired] = useState(false);
-  const [offersMeal, setOffersMeal] = useState(false);
-  const [offersTransport, setOffersTransport] = useState(false);
+  const [minorsAllowed, setMinorsAllowed] = useState(false);
+  const [mealProvision, setMealProvision] = useState<BenefitProvision>('none');
+  const [mealAmount, setMealAmount] = useState('');
+  const [transportProvision, setTransportProvision] = useState<BenefitProvision>('none');
+  const [transportAmount, setTransportAmount] = useState('');
   const [description, setDescription] = useState('');
   const [cep, setCep] = useState('');
   const [street, setStreet] = useState('');
@@ -128,8 +131,11 @@ function NovaVagaForm() {
     setToolsRequired(template.toolsRequired ?? '');
     setCnhCategory(template.cnhCategory ?? '');
     setCnhRequired(template.cnhRequired);
-    setOffersMeal(template.offersMeal);
-    setOffersTransport(template.offersTransport);
+    setMinorsAllowed(template.minorsAllowed);
+    setMealProvision(template.mealProvision);
+    setMealAmount(template.mealAmount ?? '');
+    setTransportProvision(template.transportProvision);
+    setTransportAmount(template.transportAmount ?? '');
     setDescription(template.description);
     // O endereço salvo é um texto livre (formato antigo) — não dá pra
     // separar em CEP/número/complemento de volta, então só joga tudo
@@ -176,6 +182,10 @@ function NovaVagaForm() {
     lng,
     positionsTotal,
     payAmount,
+    mealProvision,
+    mealAmount,
+    transportProvision,
+    transportAmount,
     startsAt,
     endsAt,
     applicationsCloseAt,
@@ -203,8 +213,11 @@ function NovaVagaForm() {
           toolsRequired: toolsRequired.trim() || undefined,
           cnhCategory: cnhCategory || undefined,
           cnhRequired,
-          offersMeal,
-          offersTransport,
+          minorsAllowed,
+          mealProvision,
+          mealAmount: mealProvision === 'paid' ? mealAmount.replace(',', '.') : undefined,
+          transportProvision,
+          transportAmount: transportProvision === 'paid' ? transportAmount.replace(',', '.') : undefined,
           addressLabel,
           locationLat: lat,
           locationLng: lng,
@@ -315,13 +328,19 @@ function NovaVagaForm() {
           onCnhCategoryChange={setCnhCategory}
           cnhRequired={cnhRequired}
           onCnhRequiredChange={setCnhRequired}
+          minorsAllowed={minorsAllowed}
+          onMinorsAllowedChange={setMinorsAllowed}
         />
 
         <JobBenefitsFields
-          offersMeal={offersMeal}
-          onOffersMealChange={setOffersMeal}
-          offersTransport={offersTransport}
-          onOffersTransportChange={setOffersTransport}
+          mealProvision={mealProvision}
+          onMealProvisionChange={setMealProvision}
+          mealAmount={mealAmount}
+          onMealAmountChange={setMealAmount}
+          transportProvision={transportProvision}
+          onTransportProvisionChange={setTransportProvision}
+          transportAmount={transportAmount}
+          onTransportAmountChange={setTransportAmount}
         />
 
         <div>

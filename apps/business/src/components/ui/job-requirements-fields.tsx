@@ -12,6 +12,8 @@ export interface JobRequirementsFieldsProps {
   onCnhCategoryChange: (value: string) => void;
   cnhRequired: boolean;
   onCnhRequiredChange: (value: boolean) => void;
+  minorsAllowed: boolean;
+  onMinorsAllowedChange: (value: boolean) => void;
 }
 
 /** Bloco "O que essa vaga exige?" — idêntico entre nova vaga e editar vaga. */
@@ -26,6 +28,8 @@ export function JobRequirementsFields({
   onCnhCategoryChange,
   cnhRequired,
   onCnhRequiredChange,
+  minorsAllowed,
+  onMinorsAllowedChange,
 }: JobRequirementsFieldsProps) {
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-4">
@@ -137,6 +141,23 @@ export function JobRequirementsFields({
           </div>
         )}
       </div>
+
+      <label htmlFor="minorsAllowed" className="flex items-start gap-2.5 text-sm text-text">
+        <input
+          id="minorsAllowed"
+          type="checkbox"
+          checked={minorsAllowed}
+          onChange={(event) => onMinorsAllowedChange(event.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+        />
+        <span>
+          <span className="font-medium">Vaga disponível pra menores de idade (16 e 17 anos)</span>
+          <span className="mt-0.5 block text-xs text-text-secondary">
+            Por padrão, só trabalhadores maiores de 18 anos veem essa vaga. Marque essa opção se ela também
+            pode ser feita por adolescentes com autorização do responsável.
+          </span>
+        </span>
+      </label>
     </div>
   );
 }

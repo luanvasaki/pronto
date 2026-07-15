@@ -34,6 +34,10 @@ const JOB = {
   positionsTotal: 4,
   positionsFilled: 1,
   payAmount: '130.00',
+  mealProvision: 'none',
+  mealAmount: null,
+  transportProvision: 'none',
+  transportAmount: null,
   startsAt: '2026-08-06T18:00:00.000Z',
   endsAt: '2026-08-06T23:00:00.000Z',
   status: 'open',
@@ -116,11 +120,13 @@ describe('EscalasPage', () => {
   });
 
   it('mostra os benefícios oferecidos na lista de escalas', async () => {
-    listMyJobsMock.mockResolvedValue({ jobs: [{ ...JOB, offersMeal: true, offersTransport: true }] });
+    listMyJobsMock.mockResolvedValue({
+      jobs: [{ ...JOB, mealProvision: 'on_site', transportProvision: 'paid', transportAmount: '15.00' }],
+    });
 
     render(<EscalasPage />);
 
-    expect(await screen.findByText('Alimentação · Transporte')).toBeInTheDocument();
+    expect(await screen.findByText('Alimentação no local · Transporte: R$ 15,00')).toBeInTheDocument();
   });
 
   it('pede confirmação antes de cancelar, e não chama a API sem confirmar', async () => {

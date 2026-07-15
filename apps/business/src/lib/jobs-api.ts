@@ -1,4 +1,4 @@
-import { apiFetch } from '@shift/shared';
+import { apiFetch, BenefitProvision } from '@shift/shared';
 
 export interface Job {
   id: string;
@@ -9,8 +9,11 @@ export interface Job {
   toolsRequired: string | null;
   cnhCategory: string | null;
   cnhRequired: boolean;
-  offersMeal: boolean;
-  offersTransport: boolean;
+  mealProvision: BenefitProvision;
+  mealAmount: string | null;
+  transportProvision: BenefitProvision;
+  transportAmount: string | null;
+  minorsAllowed: boolean;
   addressLabel: string;
   locationLat: number;
   locationLng: number;
@@ -35,8 +38,11 @@ export interface CreateJobInput {
   toolsRequired?: string;
   cnhCategory?: string;
   cnhRequired?: boolean;
-  offersMeal?: boolean;
-  offersTransport?: boolean;
+  mealProvision?: BenefitProvision;
+  mealAmount?: string;
+  transportProvision?: BenefitProvision;
+  transportAmount?: string;
+  minorsAllowed?: boolean;
   addressLabel: string;
   locationLat: number;
   locationLng: number;

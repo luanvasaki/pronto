@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiError, listSkillCategories, SkillCategory } from '@shift/shared';
+import { ApiError, BenefitProvision, listSkillCategories, SkillCategory } from '@shift/shared';
 import { useParams, useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
 import { Button } from '../../../../../components/ui/button';
@@ -40,8 +40,11 @@ export default function EditarVagaPage() {
   const [toolsRequired, setToolsRequired] = useState('');
   const [cnhCategory, setCnhCategory] = useState('');
   const [cnhRequired, setCnhRequired] = useState(false);
-  const [offersMeal, setOffersMeal] = useState(false);
-  const [offersTransport, setOffersTransport] = useState(false);
+  const [minorsAllowed, setMinorsAllowed] = useState(false);
+  const [mealProvision, setMealProvision] = useState<BenefitProvision>('none');
+  const [mealAmount, setMealAmount] = useState('');
+  const [transportProvision, setTransportProvision] = useState<BenefitProvision>('none');
+  const [transportAmount, setTransportAmount] = useState('');
   const [description, setDescription] = useState('');
   const [addressLabel, setAddressLabel] = useState('');
   const [lat, setLat] = useState<number | null>(null);
@@ -95,8 +98,11 @@ export default function EditarVagaPage() {
         setToolsRequired(job.toolsRequired ?? '');
         setCnhCategory(job.cnhCategory ?? '');
         setCnhRequired(job.cnhRequired);
-        setOffersMeal(job.offersMeal);
-        setOffersTransport(job.offersTransport);
+        setMinorsAllowed(job.minorsAllowed);
+        setMealProvision(job.mealProvision);
+        setMealAmount(job.mealAmount ?? '');
+        setTransportProvision(job.transportProvision);
+        setTransportAmount(job.transportAmount ?? '');
         setDescription(job.description);
         setAddressLabel(job.addressLabel);
         setLat(job.locationLat);
@@ -120,6 +126,10 @@ export default function EditarVagaPage() {
     lng,
     positionsTotal,
     payAmount,
+    mealProvision,
+    mealAmount,
+    transportProvision,
+    transportAmount,
     startsAt,
     endsAt,
     applicationsCloseAt,
@@ -141,8 +151,11 @@ export default function EditarVagaPage() {
         toolsRequired: toolsRequired.trim() || undefined,
         cnhCategory: cnhCategory || undefined,
         cnhRequired,
-        offersMeal,
-        offersTransport,
+        minorsAllowed,
+        mealProvision,
+        mealAmount: mealProvision === 'paid' ? mealAmount.replace(',', '.') : undefined,
+        transportProvision,
+        transportAmount: transportProvision === 'paid' ? transportAmount.replace(',', '.') : undefined,
         addressLabel,
         locationLat: lat,
         locationLng: lng,
@@ -210,13 +223,19 @@ export default function EditarVagaPage() {
           onCnhCategoryChange={setCnhCategory}
           cnhRequired={cnhRequired}
           onCnhRequiredChange={setCnhRequired}
+          minorsAllowed={minorsAllowed}
+          onMinorsAllowedChange={setMinorsAllowed}
         />
 
         <JobBenefitsFields
-          offersMeal={offersMeal}
-          onOffersMealChange={setOffersMeal}
-          offersTransport={offersTransport}
-          onOffersTransportChange={setOffersTransport}
+          mealProvision={mealProvision}
+          onMealProvisionChange={setMealProvision}
+          mealAmount={mealAmount}
+          onMealAmountChange={setMealAmount}
+          transportProvision={transportProvision}
+          onTransportProvisionChange={setTransportProvision}
+          transportAmount={transportAmount}
+          onTransportAmountChange={setTransportAmount}
         />
 
         <div>

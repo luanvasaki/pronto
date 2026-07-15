@@ -471,6 +471,112 @@ describe('NovaVagaPage', () => {
     expect(screen.getByRole('button', { name: /^publicar$/i })).toBeDisabled();
   });
 
+  it('mealProvision/transportProvision são "none" e minorsAllowed false por padrão', async () => {
+    createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Garçom');
+
+    await fillValidForm(user);
+    await user.click(screen.getByRole('button', { name: /^publicar$/i }));
+
+    await waitFor(() =>
+      expect(createJobMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mealProvision: 'none',
+          mealAmount: undefined,
+          transportProvision: 'none',
+          transportAmount: undefined,
+          minorsAllowed: false,
+        }),
+        true,
+      ),
+    );
+  });
+
+  it('envia o valor da alimentação/transporte quando "Por um valor" é escolhido, e minorsAllowed quando marcado', async () => {
+    createJobMock.mockResolvedValue({ id: 'job-1', status: 'open' });
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Garçom');
+
+    await fillValidForm(user);
+    const mealButtons = screen.getAllByRole('button', { name: 'Por um valor' });
+    await user.click(mealButtons[0]);
+    await user.type(screen.getByLabelText(/valor da alimentação/i), '20,00');
+    const transportButtons = screen.getAllByRole('button', { name: 'Por um valor' });
+    await user.click(transportButtons[1]);
+    await user.type(screen.getByLabelText(/valor do transporte/i), '15,50');
+    await user.click(screen.getByLabelText(/vaga disponível pra menores de idade/i));
+    await user.click(screen.getByRole('button', { name: /^publicar$/i }));
+
+    await waitFor(() =>
+      expect(createJobMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mealProvision: 'paid',
+          mealAmount: '20.00',
+          transportProvision: 'paid',
+          transportAmount: '15.50',
+          minorsAllowed: true,
+        }),
+        true,
+      ),
+    );
+  });
+
+  it('mantém o botão desabilitado quando escolhe "Por um valor" mas não informa o valor', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Garçom');
+
+    await fillValidForm(user);
+    const mealButtons = screen.getAllByRole('button', { name: 'Por um valor' });
+    await user.click(mealButtons[0]);
+
+    expect(screen.getByText(/falta preencher:/i)).toHaveTextContent(/valor da alimentação/i);
+    expect(screen.getByRole('button', { name: /^publicar$/i })).toBeDisabled();
+  });
+
+  it('pré-preenche mealProvision/transportProvision/minorsAllowed ao escolher uma vaga anterior como base', async () => {
+    listMyJobsMock.mockResolvedValue({
+      jobs: [
+        {
+          id: 'job-old',
+          categoryId: 'cat-1',
+          description: 'Vaga anterior com descrição detalhada o suficiente.',
+          requiresExperience: true,
+          dressCode: null,
+          toolsRequired: null,
+          cnhCategory: null,
+          cnhRequired: false,
+          mealProvision: 'paid',
+          mealAmount: '20.00',
+          transportProvision: 'on_site',
+          transportAmount: null,
+          minorsAllowed: true,
+          addressLabel: 'Itaim Bibi, São Paulo',
+          locationLat: -23.58,
+          locationLng: -46.68,
+          positionsTotal: 3,
+          positionsFilled: 0,
+          payAmount: '150.00',
+          startsAt: STARTS_AT,
+          endsAt: ENDS_AT,
+          applicationsCloseAt: null,
+          status: 'open',
+        },
+      ],
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Garçom');
+
+    await user.selectOptions(screen.getByLabelText(/usar vaga anterior como base/i), 'job-old');
+
+    expect(screen.getByLabelText(/vaga disponível pra menores de idade/i)).toBeChecked();
+    expect(screen.getByLabelText(/valor da alimentação/i)).toHaveValue('20.00');
+  });
+
   it('mostra erro quando a localização falha', async () => {
     Object.defineProperty(window.navigator, 'geolocation', {
       value: { getCurrentPosition: vi.fn((_success, failure) => failure()) },

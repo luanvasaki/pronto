@@ -15,6 +15,10 @@ function baseInput() {
     lng: -46.63,
     positionsTotal: '2',
     payAmount: '130.00',
+    mealProvision: 'none' as const,
+    mealAmount: '',
+    transportProvision: 'none' as const,
+    transportAmount: '',
     startsAt: TOMORROW,
     endsAt: TOMORROW_PLUS_5H,
     applicationsCloseAt: '',
@@ -94,5 +98,54 @@ describe('useJobFormValidation', () => {
   it('rejeita mais de 2 casas decimais', () => {
     const { result } = renderHook(() => useJobFormValidation({ ...baseInput(), payAmount: '130.999' }));
     expect(result.current.missingFields).toContain('valor por pessoa');
+  });
+
+  describe('alimentação/transporte (mealProvision/transportProvision)', () => {
+    it('não exige valor quando não oferece ou oferece no local', () => {
+      const { result } = renderHook(() => useJobFormValidation(baseInput()));
+      expect(result.current.missingFields).not.toContain('valor da alimentação');
+      expect(result.current.missingFields).not.toContain('valor do transporte');
+
+      const onSite = renderHook(() =>
+        useJobFormValidation({ ...baseInput(), mealProvision: 'on_site', transportProvision: 'on_site' }),
+      );
+      expect(onSite.result.current.missingFields).not.toContain('valor da alimentação');
+      expect(onSite.result.current.missingFields).not.toContain('valor do transporte');
+    });
+
+    it('exige valor da alimentação quando mealProvision é "paid" sem valor', () => {
+      const { result } = renderHook(() =>
+        useJobFormValidation({ ...baseInput(), mealProvision: 'paid', mealAmount: '' }),
+      );
+      expect(result.current.missingFields).toContain('valor da alimentação');
+    });
+
+    it('exige valor do transporte quando transportProvision é "paid" sem valor', () => {
+      const { result } = renderHook(() =>
+        useJobFormValidation({ ...baseInput(), transportProvision: 'paid', transportAmount: '' }),
+      );
+      expect(result.current.missingFields).toContain('valor do transporte');
+    });
+
+    it('aceita valores válidos (com vírgula) quando "paid"', () => {
+      const { result } = renderHook(() =>
+        useJobFormValidation({
+          ...baseInput(),
+          mealProvision: 'paid',
+          mealAmount: '20,00',
+          transportProvision: 'paid',
+          transportAmount: '15,50',
+        }),
+      );
+      expect(result.current.missingFields).not.toContain('valor da alimentação');
+      expect(result.current.missingFields).not.toContain('valor do transporte');
+    });
+
+    it('rejeita valor zero ou negativo quando "paid"', () => {
+      const { result } = renderHook(() =>
+        useJobFormValidation({ ...baseInput(), mealProvision: 'paid', mealAmount: '0' }),
+      );
+      expect(result.current.missingFields).toContain('valor da alimentação');
+    });
   });
 });

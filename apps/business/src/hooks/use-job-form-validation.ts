@@ -1,3 +1,5 @@
+import { BenefitProvision } from '@shift/shared';
+
 const PAY_AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
 
 export interface JobFormValidationInput {
@@ -12,6 +14,10 @@ export interface JobFormValidationInput {
   lng: number | null;
   positionsTotal: string;
   payAmount: string;
+  mealProvision: BenefitProvision;
+  mealAmount: string;
+  transportProvision: BenefitProvision;
+  transportAmount: string;
   startsAt: string;
   endsAt: string;
   applicationsCloseAt: string;
@@ -33,7 +39,7 @@ export interface JobFormValidationResult {
  * "editar vaga" (a diferença nos dois é só o que existe ANTES de
  * chegar aqui: criação de categoria nova e aceite de termos só fazem
  * sentido em "nova"). Extraído pra um lugar só depois de perceber, ao
- * adicionar offersMeal/offersTransport, que era fácil esquecer de
+ * adicionar os campos de alimentação/transporte, que era fácil esquecer de
  * mudar as duas telas juntas.
  *
  * Cada condição vira um item em `missingFields`, na mesma ordem — se o
@@ -68,6 +74,18 @@ export function useJobFormValidation(input: JobFormValidationInput): JobFormVali
   if (!Number.isInteger(positionsTotalNumber) || positionsTotalNumber < 1) missingFields.push('número de vagas');
   if (!PAY_AMOUNT_REGEX.test(normalizedPayAmount) || payAmountNumber <= 0) {
     missingFields.push('valor por pessoa');
+  }
+  if (input.mealProvision === 'paid') {
+    const normalizedMealAmount = input.mealAmount.replace(',', '.');
+    if (!PAY_AMOUNT_REGEX.test(normalizedMealAmount) || Number(normalizedMealAmount) <= 0) {
+      missingFields.push('valor da alimentação');
+    }
+  }
+  if (input.transportProvision === 'paid') {
+    const normalizedTransportAmount = input.transportAmount.replace(',', '.');
+    if (!PAY_AMOUNT_REGEX.test(normalizedTransportAmount) || Number(normalizedTransportAmount) <= 0) {
+      missingFields.push('valor do transporte');
+    }
   }
   if (input.startsAt === '') missingFields.push('início');
   if (input.endsAt === '') missingFields.push('término');

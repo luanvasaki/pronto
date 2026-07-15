@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiError, listSkillCategories } from '@shift/shared';
+import { ApiError, formatBenefitLabel, listSkillCategories } from '@shift/shared';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
@@ -163,9 +163,13 @@ export default function EscalasPage() {
                   <p className="mt-0.5 text-[13.5px] text-text-secondary">
                     {formatTimeRange(job.startsAt, job.endsAt)} · R$ {job.payAmount} por pessoa
                   </p>
-                  {(job.offersMeal || job.offersTransport) && (
+                  {(formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação') ||
+                    formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte')) && (
                     <p className="mt-1 text-[12px] text-text-secondary">
-                      {[job.offersMeal && 'Alimentação', job.offersTransport && 'Transporte']
+                      {[
+                        formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação'),
+                        formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte'),
+                      ]
                         .filter(Boolean)
                         .join(' · ')}
                     </p>

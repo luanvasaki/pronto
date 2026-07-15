@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiError, rateShift, WORKER_RATING_CATEGORIES } from '@shift/shared';
+import { ApiError, formatBenefitLabel, rateShift, WORKER_RATING_CATEGORIES } from '@shift/shared';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { RatingForm, RatingSummary } from '../../../../components/rating-form';
@@ -351,14 +351,19 @@ export default function VagaCandidatosPage() {
             <span className="h-[7px] w-[7px] rounded-full bg-success" />
             {positionsFilled} de {job.positionsTotal} vagas preenchidas
           </span>
-          {job.offersMeal && (
+          {formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação') && (
             <span className="rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold text-text">
-              Oferece alimentação
+              {formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação')}
             </span>
           )}
-          {job.offersTransport && (
+          {formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte') && (
             <span className="rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold text-text">
-              Oferece transporte
+              {formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte')}
+            </span>
+          )}
+          {job.minorsAllowed && (
+            <span className="rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold text-text">
+              Disponível pra menores de idade
             </span>
           )}
         </div>

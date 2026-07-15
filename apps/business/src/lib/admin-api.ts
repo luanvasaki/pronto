@@ -8,6 +8,10 @@ export interface PendingDocument {
   workerFullName: string;
   type: string;
   createdAt: string;
+  isMinor: boolean;
+  guardianFullName: string | null;
+  guardianCpf: string | null;
+  guardianPhone: string | null;
 }
 
 export interface PendingCompany {

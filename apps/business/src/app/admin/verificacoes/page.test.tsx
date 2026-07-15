@@ -128,6 +128,42 @@ describe('AdminVerificacoesPage', () => {
     expect(screen.getByText('Selfie')).toBeInTheDocument();
   });
 
+  it('mostra os dados do responsável quando o trabalhador é menor de idade', async () => {
+    listPendingVerificationsMock.mockResolvedValue({
+      documents: [
+        {
+          ...PENDING_DOCUMENT,
+          type: 'guardian_identity',
+          isMinor: true,
+          guardianFullName: 'José Lima',
+          guardianCpf: '11122283148',
+          guardianPhone: '11988887777',
+        },
+      ],
+      companies: [],
+      skillCategories: [],
+    });
+
+    render(<AdminVerificacoesPage />);
+
+    expect(await screen.findByText('Documento do responsável')).toBeInTheDocument();
+    expect(screen.getByText('Trabalhador menor de idade (16-17 anos)')).toBeInTheDocument();
+    expect(screen.getByText('Responsável: José Lima · CPF 111.222.831-48 · (11) 98888-7777')).toBeInTheDocument();
+  });
+
+  it('não mostra o aviso de responsável quando o trabalhador não é menor de idade', async () => {
+    listPendingVerificationsMock.mockResolvedValue({
+      documents: [{ ...PENDING_DOCUMENT, isMinor: false, guardianFullName: null, guardianCpf: null, guardianPhone: null }],
+      companies: [],
+      skillCategories: [],
+    });
+
+    render(<AdminVerificacoesPage />);
+
+    await screen.findByText('Rafael Lima');
+    expect(screen.queryByText(/menor de idade/i)).not.toBeInTheDocument();
+  });
+
   it('pede confirmação antes de aprovar um documento, e só chama a API no segundo clique', async () => {
     listPendingVerificationsMock.mockResolvedValue({ documents: [PENDING_DOCUMENT], companies: [], skillCategories: [] });
     reviewDocumentMock.mockResolvedValue({ id: 'doc-1', status: 'approved' });
