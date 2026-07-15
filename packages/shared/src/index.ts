@@ -19,6 +19,7 @@ export { lookupCep } from './cep-api';
 export type { CepLookupResult } from './cep-api';
 export { extractDigits } from './digits';
 export { formatCep, formatCnpj, formatCpf, formatPhone } from './masks';
+export { getFirstName } from './names';
 export { isValidPassword } from './password';
 export {
   COMPANY_RATING_CATEGORIES,

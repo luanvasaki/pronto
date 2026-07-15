@@ -1,5 +1,6 @@
 'use client';
 
+import { getFirstName } from '@shift/shared';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { Avatar } from './avatar';
@@ -106,7 +107,7 @@ export function Topbar({ calledCount, calledNotifications = [], workerName, phot
           <Link href="/perfil" aria-label="Ir para o perfil" className="flex items-center gap-1.5 sm:gap-2.5">
             <Avatar name={workerName} photoUrl={photoUrl} size="sm" />
             <p className="max-w-[92px] truncate text-[13.5px] font-semibold text-text sm:max-w-[160px]">
-              {greeting()}, {workerName}
+              {greeting()}, {getFirstName(workerName)}
             </p>
           </Link>
         )}

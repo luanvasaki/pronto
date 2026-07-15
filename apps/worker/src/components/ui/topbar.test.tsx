@@ -9,17 +9,17 @@ const NOTIFICATIONS = [
 ];
 
 describe('Topbar', () => {
-  it('mostra a saudação com o nome do trabalhador', () => {
+  it('mostra a saudação com o primeiro nome do trabalhador', () => {
     render(<Topbar calledCount={0} workerName="Ana Souza" />);
 
-    expect(screen.getByText(/, Ana Souza/)).toBeInTheDocument();
+    expect(screen.getByText(/, Ana$/)).toBeInTheDocument();
   });
 
   it('mostra o sino à esquerda e a foto/saudação no canto direito', () => {
     render(<Topbar calledCount={0} workerName="Ana Souza" />);
 
     const bell = screen.getByLabelText('Notificações');
-    const greeting = screen.getByText(/, Ana Souza/);
+    const greeting = screen.getByText(/, Ana$/);
     expect(bell.compareDocumentPosition(greeting) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
