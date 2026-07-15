@@ -14,7 +14,7 @@ describe('formatBenefitLabel', () => {
     expect(formatBenefitLabel('paid', '20.00', 'Alimentação')).toBe('Alimentação: R$\xa020,00');
   });
 
-  it('cai pra "no local" se o benefício é pago mas não veio valor (dado inconsistente)', () => {
-    expect(formatBenefitLabel('paid', null, 'Transporte')).toBe('Transporte no local');
+  it('não mostra nada (não "no local") se o benefício é pago mas não veio valor — dado inconsistente, não devia acontecer', () => {
+    expect(formatBenefitLabel('paid', null, 'Transporte')).toBeNull();
   });
 });
