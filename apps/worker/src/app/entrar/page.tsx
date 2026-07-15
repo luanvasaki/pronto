@@ -9,9 +9,11 @@ import { GoogleLoginButton } from '../../components/ui/google-login-button';
 import { Input } from '../../components/ui/input';
 import { Logo } from '../../components/ui/logo';
 import { TermsCheckbox } from '../../components/ui/terms-checkbox';
+import { useRedirectIfAuthenticated } from '../../hooks/use-redirect-if-authenticated';
 
 export default function EntrarPage() {
   const router = useRouter();
+  const { isChecking } = useRedirectIfAuthenticated('/inicio');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -61,6 +63,14 @@ export default function EntrarPage() {
 
   function handleGoogleError(): void {
     setGoogleError('Não foi possível entrar com o Google.');
+  }
+
+  if (isChecking) {
+    return (
+      <main className="flex flex-1 items-center justify-center px-4">
+        <p className="text-sm text-text-secondary">Confirmando sua sessão...</p>
+      </main>
+    );
   }
 
   return (

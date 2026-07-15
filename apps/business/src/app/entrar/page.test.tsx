@@ -5,8 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import EntrarPage from './page';
 
 const pushMock = vi.fn();
+const replaceMock = vi.fn();
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: pushMock }),
+  useRouter: () => ({ push: pushMock, replace: replaceMock }),
 }));
 
 vi.mock('../../components/ui/google-login-button', () => ({
@@ -19,20 +20,29 @@ vi.mock('../../components/ui/google-login-button', () => ({
 
 const loginMock = vi.fn();
 const googleLoginMock = vi.fn();
+const getCurrentUserMock = vi.fn();
+const refreshSessionMock = vi.fn();
 vi.mock('@shift/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shift/shared')>();
   return {
     ...actual,
     login: (...args: unknown[]) => loginMock(...args),
     googleLogin: (...args: unknown[]) => googleLoginMock(...args),
+    getCurrentUser: (...args: unknown[]) => getCurrentUserMock(...args),
+    refreshSession: (...args: unknown[]) => refreshSessionMock(...args),
   };
 });
 
 describe('EntrarPage', () => {
   beforeEach(() => {
     pushMock.mockClear();
+    replaceMock.mockClear();
     loginMock.mockReset();
     googleLoginMock.mockReset();
+    // Sem sessão por padrão — mostra o formulário. Teste específico de
+    // sessão já ativa (app instalado reaberto) sobrescreve isso.
+    getCurrentUserMock.mockReset().mockRejectedValue(new Error('401'));
+    refreshSessionMock.mockReset().mockRejectedValue(new Error('sem refresh token'));
   });
 
   it('manda o aceite dos termos pro login com Google quando o checkbox está marcado', async () => {
@@ -40,7 +50,7 @@ describe('EntrarPage', () => {
     const user = userEvent.setup();
     render(<EntrarPage />);
 
-    await user.click(screen.getByRole('checkbox'));
+    await user.click(await screen.findByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: /simular sucesso do google/i }));
 
     await waitFor(() => expect(googleLoginMock).toHaveBeenCalledWith('fake-id-token', true));
@@ -51,22 +61,22 @@ describe('EntrarPage', () => {
     const user = userEvent.setup();
     render(<EntrarPage />);
 
-    await user.click(screen.getByRole('button', { name: /simular sucesso do google/i }));
+    await user.click(await screen.findByRole('button', { name: /simular sucesso do google/i }));
 
     await waitFor(() => expect(googleLoginMock).toHaveBeenCalledWith('fake-id-token', false));
   });
 
-  it('começa com o botão desabilitado', () => {
+  it('começa com o botão desabilitado', async () => {
     render(<EntrarPage />);
 
-    expect(screen.getByRole('button', { name: /entrar/i })).toBeDisabled();
+    expect(await screen.findByRole('button', { name: /entrar/i })).toBeDisabled();
   });
 
   it('habilita o botão quando email e senha estão preenchidos', async () => {
     const user = userEvent.setup();
     render(<EntrarPage />);
 
-    await user.type(screen.getByLabelText(/e-mail/i), 'pessoa@example.com');
+    await user.type(await screen.findByLabelText(/e-mail/i), 'pessoa@example.com');
     await user.type(screen.getByLabelText(/senha/i), 'minha-senha');
 
     expect(screen.getByRole('button', { name: /entrar/i })).toBeEnabled();
@@ -77,7 +87,7 @@ describe('EntrarPage', () => {
     const user = userEvent.setup();
     render(<EntrarPage />);
 
-    await user.type(screen.getByLabelText(/e-mail/i), 'pessoa@example.com');
+    await user.type(await screen.findByLabelText(/e-mail/i), 'pessoa@example.com');
     await user.type(screen.getByLabelText(/senha/i), 'minha-senha');
     await user.click(screen.getByRole('button', { name: /entrar/i }));
 
@@ -90,7 +100,7 @@ describe('EntrarPage', () => {
     const user = userEvent.setup();
     render(<EntrarPage />);
 
-    await user.type(screen.getByLabelText(/e-mail/i), 'pessoa@example.com');
+    await user.type(await screen.findByLabelText(/e-mail/i), 'pessoa@example.com');
     await user.type(screen.getByLabelText(/senha/i), 'senha-errada');
     await user.click(screen.getByRole('button', { name: /entrar/i }));
 
@@ -103,10 +113,20 @@ describe('EntrarPage', () => {
     const user = userEvent.setup();
     render(<EntrarPage />);
 
-    await user.type(screen.getByLabelText(/e-mail/i), 'pessoa@example.com');
+    await user.type(await screen.findByLabelText(/e-mail/i), 'pessoa@example.com');
     await user.type(screen.getByLabelText(/senha/i), 'minha-senha');
     await user.click(screen.getByRole('button', { name: /entrar/i }));
 
     expect(await screen.findByText('Não foi possível entrar.')).toBeInTheDocument();
+  });
+
+  it('pula o formulário e navega pro painel quando o app reabre com sessão já válida', async () => {
+    getCurrentUserMock.mockResolvedValue({ user: { id: '1' } });
+
+    render(<EntrarPage />);
+
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/painel'));
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText(/e-mail/i)).not.toBeInTheDocument();
   });
 });

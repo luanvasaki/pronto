@@ -6,7 +6,9 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Pronto para empresas',
     short_name: 'Pronto Empresas',
     description: 'Publique vagas e gerencie candidatos em minutos.',
-    start_url: '/',
+    // App instalado pula a landing de marketing e abre direto no login
+    // (que redireciona pro /painel sozinho se a sessão ainda for válida).
+    start_url: '/entrar',
     display: 'standalone',
     background_color: '#F7F4EE',
     theme_color: '#F5531E',

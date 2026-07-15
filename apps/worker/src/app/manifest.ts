@@ -6,7 +6,9 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Pronto — vagas de trabalho avulso',
     short_name: 'Pronto',
     description: 'Encontre vagas de trabalho avulso perto de você.',
-    start_url: '/',
+    // App instalado pula a landing de marketing e abre direto no login
+    // (que redireciona pra /inicio sozinho se a sessão ainda for válida).
+    start_url: '/entrar',
     display: 'standalone',
     background_color: '#F7F4EE',
     theme_color: '#F5531E',

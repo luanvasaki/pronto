@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { InstallAppBanner } from '../components/ui/install-app-banner';
 import { Logo } from '../components/ui/logo';
 
 const COMPARISON_TODAY = [
@@ -67,6 +68,8 @@ export default function Home() {
           Entrar
         </Link>
       </nav>
+
+      <InstallAppBanner />
 
       <section className="flex flex-col items-center gap-6 px-5 py-14 text-center">
         <div>
