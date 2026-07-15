@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiError, getCurrentUser } from '@shift/shared';
+import { ApiError } from '@shift/shared';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sidebar } from '../../components/ui/sidebar';
@@ -56,9 +56,9 @@ function pageHeader(pathname: string): { title: string; subtitle?: string } {
 
 /**
  * `useRequireAuth()` e `getCompanyProfile()` rodavam duplicados em
- * cada página (painel, perfil, vagas/*, admin) — centralizados aqui
- * uma vez só. Sidebar/Topbar vivem no shell; cada página só cuida do
- * próprio conteúdo.
+ * cada página (painel, perfil, vagas/*) — centralizados aqui uma vez
+ * só. Sidebar/Topbar vivem no shell; cada página só cuida do próprio
+ * conteúdo.
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isChecking } = useRequireAuth();
@@ -74,15 +74,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [checkedInNotifications, setCheckedInNotifications] = useState<CheckedInNotification[]>([]);
   const [pendingRatingsCount, setPendingRatingsCount] = useState(0);
   const [pendingRatingsNotifications, setPendingRatingsNotifications] = useState<PendingRatingNotification[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    if (isChecking) return;
-
-    getCurrentUser()
-      .then(({ user }) => setIsAdmin(user.isAdmin))
-      .catch(() => undefined);
-  }, [isChecking]);
 
   useEffect(() => {
     if (isChecking) return;
@@ -159,7 +150,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           logoUrl={profile?.logoUrl ?? null}
           isOpen={isMobileNavOpen}
           onClose={() => setIsMobileNavOpen(false)}
-          isAdmin={isAdmin}
         />
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar

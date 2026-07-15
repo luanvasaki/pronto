@@ -37,10 +37,13 @@ function BenefitToggle({
   amountId,
   amountLabel,
 }: BenefitToggleProps) {
+  const legendId = `${amountId}-legend`;
   return (
     <div>
-      <span className="mb-1.5 block text-sm font-medium text-text-secondary">{legend}</span>
-      <div className="flex gap-2">
+      <span id={legendId} className="mb-1.5 block text-sm font-medium text-text-secondary">
+        {legend}
+      </span>
+      <div role="group" aria-labelledby={legendId} className="flex gap-2">
         {PROVISION_OPTIONS.map((option) => (
           <button
             key={option.value}

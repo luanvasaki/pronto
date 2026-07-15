@@ -36,10 +36,10 @@ export function JobRequirementsFields({
       <p className="font-heading text-sm font-bold text-text">O que essa vaga exige?</p>
 
       <div>
-        <span className="mb-1.5 block text-sm font-medium text-text-secondary">
+        <span id="requiresExperience-legend" className="mb-1.5 block text-sm font-medium text-text-secondary">
           Precisa de experiência anterior?
         </span>
-        <div className="flex gap-2">
+        <div role="group" aria-labelledby="requiresExperience-legend" className="flex gap-2">
           <button
             type="button"
             aria-pressed={requiresExperience === true}
@@ -104,10 +104,10 @@ export function JobRequirementsFields({
         </select>
         {cnhCategory && (
           <div className="mt-2.5">
-            <span className="mb-1.5 block text-sm font-medium text-text-secondary">
+            <span id="cnhRequired-legend" className="mb-1.5 block text-sm font-medium text-text-secondary">
               Isso é obrigatório pra se candidatar ou só uma preferência?
             </span>
-            <div className="flex gap-2">
+            <div role="group" aria-labelledby="cnhRequired-legend" className="flex gap-2">
               <button
                 type="button"
                 aria-pressed={cnhRequired}

@@ -69,30 +69,11 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-const ADMIN_NAV_ITEM: NavItem = {
-  href: '/admin',
-  label: 'Administrador',
-  available: true,
-  icon: (
-    <>
-      <circle cx="12" cy="8" r="3.2" stroke="currentColor" strokeWidth="2" />
-      <path
-        d="M4.5 20c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path d="M17.5 5.5l1 1 2-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </>
-  ),
-};
-
 export interface SidebarProps {
   companyName: string;
   logoUrl: string | null;
   isOpen: boolean;
   onClose: () => void;
-  isAdmin?: boolean;
 }
 
 /**
@@ -106,13 +87,12 @@ export interface SidebarProps {
  * (ver app/(app)/escala/page.tsx — rota continua singular, só o label
  * mudou).
  *
- * "Administrador" só aparece pra quem tem `isAdmin` na conta — leva pro
- * painel em /admin, que tem layout e checagem próprios (ver
- * app/admin/layout.tsx), então esse link é só um atalho de navegação.
+ * Não tem mais atalho pra "Administrador" aqui — o painel admin virou
+ * um app dedicado (apps/admin), separado de propósito pra isolar dados
+ * sensíveis (CPF, documentos de KYC) numa superfície própria.
  */
-export function Sidebar({ companyName, logoUrl, isOpen, onClose, isAdmin = false }: SidebarProps) {
+export function Sidebar({ companyName, logoUrl, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const navItems = isAdmin ? [...NAV_ITEMS, ADMIN_NAV_ITEM] : NAV_ITEMS;
 
   useEffect(() => {
     onClose();
@@ -137,8 +117,8 @@ export function Sidebar({ companyName, logoUrl, isOpen, onClose, isAdmin = false
         </div>
 
         <nav className="flex flex-col gap-1">
-          {navItems.map((item) => {
-            const active = item.href === '/admin' ? pathname.startsWith('/admin') : pathname === item.href;
+          {NAV_ITEMS.map((item) => {
+            const active = pathname === item.href;
 
             if (!item.available) {
               return (
