@@ -26,15 +26,12 @@ describe('checkIn', () => {
     apiFetchMock.mockReset();
   });
 
-  it('chama POST /shifts/:id/check-in com lat e lng', async () => {
+  it('chama POST /shifts/:id/check-in sem geolocalização', async () => {
     apiFetchMock.mockResolvedValue({ id: 'shift-1', status: 'checked_in' });
 
-    await checkIn('shift-1', -23.55, -46.63);
+    await checkIn('shift-1');
 
-    expect(apiFetchMock).toHaveBeenCalledWith('/shifts/shift-1/check-in', {
-      method: 'POST',
-      body: JSON.stringify({ lat: -23.55, lng: -46.63 }),
-    });
+    expect(apiFetchMock).toHaveBeenCalledWith('/shifts/shift-1/check-in', { method: 'POST' });
   });
 });
 
@@ -43,15 +40,12 @@ describe('checkOut', () => {
     apiFetchMock.mockReset();
   });
 
-  it('chama POST /shifts/:id/check-out com lat e lng', async () => {
-    apiFetchMock.mockResolvedValue({ id: 'shift-1', status: 'completed' });
+  it('chama POST /shifts/:id/check-out sem geolocalização', async () => {
+    apiFetchMock.mockResolvedValue({ id: 'shift-1', status: 'checked_out' });
 
-    await checkOut('shift-1', -23.55, -46.63);
+    await checkOut('shift-1');
 
-    expect(apiFetchMock).toHaveBeenCalledWith('/shifts/shift-1/check-out', {
-      method: 'POST',
-      body: JSON.stringify({ lat: -23.55, lng: -46.63 }),
-    });
+    expect(apiFetchMock).toHaveBeenCalledWith('/shifts/shift-1/check-out', { method: 'POST' });
   });
 });
 

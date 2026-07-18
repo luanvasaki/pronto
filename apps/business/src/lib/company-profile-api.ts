@@ -68,6 +68,14 @@ export interface CheckedInNotification {
   checkInAt: string;
 }
 
+export interface CheckedOutNotification {
+  shiftId: string;
+  jobId: string;
+  workerName: string;
+  categoryName: string;
+  checkOutAt: string;
+}
+
 export interface PendingRatingNotification {
   shiftId: string;
   jobId: string;
@@ -81,6 +89,8 @@ export interface CompanyNotifications {
   pendingApplications: PendingApplicationNotification[];
   checkedInCount: number;
   checkedInNotifications: CheckedInNotification[];
+  checkedOutCount: number;
+  checkedOutNotifications: CheckedOutNotification[];
   pendingRatingsCount: number;
   pendingRatingsNotifications: PendingRatingNotification[];
 }
@@ -113,10 +123,6 @@ export interface CompanyDashboard {
 
 export function getCompanyDashboard(): Promise<CompanyDashboard> {
   return apiFetch('/company-profile/dashboard');
-}
-
-export function markShiftCheckInSeen(shiftId: string): Promise<{ id: string; status: string }> {
-  return apiFetch(`/shifts/${shiftId}/check-in/seen`, { method: 'PATCH' });
 }
 
 export interface CompanyProfileResponse {

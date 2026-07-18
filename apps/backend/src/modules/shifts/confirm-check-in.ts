@@ -5,8 +5,13 @@ import { assertOwnsCompany } from '../../shared/assert-owns-company';
 import { HttpError } from '../../shared/errors/http-error';
 import { ShiftResponse, toShiftResponse } from './shift-response';
 
-/** A empresa confirma que viu o aviso de check-in (some do sino) — mesmo padrão de markApplicationSeen. */
-export async function markShiftCheckInSeen(ownerUserId: string, shiftId: string): Promise<ShiftResponse> {
+/**
+ * A empresa confirma que o trabalhador chegou — some do sino e vira uma
+ * confirmação de verdade (não só "visto"). Não trava o check-out: por
+ * isso aceita tanto 'checked_in' quanto 'checked_out' (o trabalhador pode
+ * já ter saído antes da empresa confirmar a chegada).
+ */
+export async function confirmCheckIn(ownerUserId: string, shiftId: string): Promise<ShiftResponse> {
   const shift = await db.query.shifts.findFirst({ where: eq(shifts.id, shiftId) });
   if (!shift) {
     throw new HttpError(404, 'Turno não encontrado.');
@@ -19,17 +24,21 @@ export async function markShiftCheckInSeen(ownerUserId: string, shiftId: string)
 
   await assertOwnsCompany(ownerUserId, job.companyId, 'Você não tem acesso a esse turno.');
 
-  if (shift.companySeenCheckInAt) {
+  if (shift.status !== 'checked_in' && shift.status !== 'checked_out') {
+    throw new HttpError(400, 'Esse turno ainda não teve check-in.');
+  }
+
+  if (shift.checkInConfirmedAt) {
     return toShiftResponse(shift);
   }
 
   const [updated] = await db
     .update(shifts)
-    .set({ companySeenCheckInAt: new Date() })
+    .set({ checkInConfirmedAt: new Date(), updatedAt: new Date() })
     .where(eq(shifts.id, shiftId))
     .returning();
   if (!updated) {
-    throw new HttpError(500, 'Não foi possível atualizar o turno.');
+    throw new HttpError(500, 'Não foi possível confirmar o check-in.');
   }
 
   return toShiftResponse(updated);

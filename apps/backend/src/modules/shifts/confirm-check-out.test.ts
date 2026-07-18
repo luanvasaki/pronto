@@ -2,29 +2,29 @@ import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { db } from '../../db/client';
-import { applications, companies, jobs, payments, ratings, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
+import { applications, companies, jobs, payments, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
-import { checkIn } from '../shifts/check-in';
-import { checkOut } from '../shifts/check-out';
-import { confirmCheckOut } from '../shifts/confirm-check-out';
 import { PaymentGateway } from '../payments/payment-gateway';
-import { skipCompanyRating } from './skip-company-rating';
+import { checkIn } from './check-in';
+import { checkOut } from './check-out';
+import { confirmCheckOut } from './confirm-check-out';
 
-const SUCCESS_GATEWAY: PaymentGateway = {
-  charge: async () => ({ pspChargeId: 'psp_skip-company-rating' }),
-  release: async () => {},
-};
-
-const WORKER_PHONE = '+5511966660060';
-const OUTSIDER_PHONE = '+5511966660061';
-const OWNER_PHONE = '+5511966660062';
-const TEST_CNPJ = '11112223340693';
-const TEST_CATEGORY_NAME = 'Categoria de teste — skip-company-rating';
+// Fixtures únicas entre arquivos de teste (ver README).
+const WORKER_PHONE = '+5511966660073';
+const OUTSIDER_PHONE = '+5511966660074';
+const OWNER_PHONE = '+5511966660075';
+const TEST_CNPJ = '11112223340711';
+const TEST_CATEGORY_NAME = 'Categoria de teste — confirm-check-out';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const TOMORROW_PLUS_5H = new Date(TOMORROW.getTime() + 5 * 60 * 60 * 1000);
 
-async function setupCompletedShift() {
+const SUCCESS_GATEWAY: PaymentGateway = {
+  charge: async () => ({ pspChargeId: 'psp_confirm-check-out' }),
+  release: async () => {},
+};
+
+async function setupScheduledShift() {
   const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
   await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
@@ -43,7 +43,7 @@ async function setupCompletedShift() {
       locationLat: -23.55,
       locationLng: -46.63,
       positionsTotal: 2,
-      payAmount: '100.00',
+      payAmount: '175.00',
       startsAt: TOMORROW,
       endsAt: TOMORROW_PLUS_5H,
     })
@@ -57,7 +57,7 @@ async function setupCompletedShift() {
   return { worker, owner, shift };
 }
 
-describe('skipCompanyRating', () => {
+describe('confirmCheckOut', () => {
   afterEach(async () => {
     const owner = await db.query.users.findFirst({ where: eq(users.phone, OWNER_PHONE) });
     if (owner) {
@@ -67,7 +67,6 @@ describe('skipCompanyRating', () => {
         for (const job of companyJobs) {
           const jobShifts = await db.query.shifts.findMany({ where: eq(shifts.jobId, job.id) });
           for (const shift of jobShifts) {
-            await db.delete(ratings).where(eq(ratings.shiftId, shift.id));
             await db.delete(payments).where(eq(payments.shiftId, shift.id));
           }
           await db.delete(shifts).where(eq(shifts.jobId, job.id));
@@ -83,35 +82,69 @@ describe('skipCompanyRating', () => {
   });
 
   it('rejeita turno inexistente', async () => {
-    const { owner } = await setupCompletedShift();
-    await expect(skipCompanyRating(owner.id, '00000000-0000-0000-0000-000000000000')).rejects.toThrow(
-      'Turno não encontrado',
-    );
+    const { owner } = await setupScheduledShift();
+
+    await expect(
+      confirmCheckOut(SUCCESS_GATEWAY, owner.id, '00000000-0000-0000-0000-000000000000'),
+    ).rejects.toThrow('Turno não encontrado');
   });
 
   it('rejeita quem não é dono da empresa', async () => {
-    const { shift } = await setupCompletedShift();
+    const { worker, shift } = await setupScheduledShift();
+    await checkIn(worker.id, shift.id);
+    await checkOut(worker.id, shift.id);
     const [outsider] = await db.insert(users).values({ phone: OUTSIDER_PHONE }).returning();
 
-    await expect(skipCompanyRating(outsider.id, shift.id)).rejects.toThrow('Você não tem acesso');
+    await expect(confirmCheckOut(SUCCESS_GATEWAY, outsider.id, shift.id)).rejects.toThrow('Você não tem acesso');
   });
 
-  it('rejeita turno que ainda não foi concluído (sem check-in/check-out)', async () => {
-    const { owner, shift } = await setupCompletedShift();
+  it('rejeita turno que ainda não fez check-out', async () => {
+    const { worker, owner, shift } = await setupScheduledShift();
+    await checkIn(worker.id, shift.id);
 
-    await expect(skipCompanyRating(owner.id, shift.id)).rejects.toThrow('turnos concluídos');
+    await expect(confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id)).rejects.toThrow(
+      'não está esperando confirmação de check-out',
+    );
   });
 
-  it('marca companyRatingSkippedAt quando o turno está concluído', async () => {
-    const { worker, owner, shift } = await setupCompletedShift();
+  it('confirma o check-out, muda o status pra "completed" e cria a cobrança', async () => {
+    const { worker, owner, shift } = await setupScheduledShift();
+    await checkIn(worker.id, shift.id);
+    await checkOut(worker.id, shift.id);
+
+    const result = await confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id);
+
+    expect(result.status).toBe('completed');
+    expect(result.checkOutConfirmedAt).not.toBeNull();
+
+    const payment = await db.query.payments.findFirst({ where: eq(payments.shiftId, shift.id) });
+    expect(payment).toBeDefined();
+    expect(payment?.status).toBe('charged');
+    expect(payment?.amount).toBe('175.00');
+  });
+
+  it('rejeita segunda confirmação do mesmo turno', async () => {
+    const { worker, owner, shift } = await setupScheduledShift();
     await checkIn(worker.id, shift.id);
     await checkOut(worker.id, shift.id);
     await confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id);
 
-    const before = new Date();
-    const result = await skipCompanyRating(owner.id, shift.id);
+    await expect(confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id)).rejects.toThrow(
+      'não está esperando confirmação de check-out',
+    );
+  });
 
-    expect(result.shiftId).toBe(shift.id);
-    expect(result.companyRatingSkippedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+  it('só uma confirmação vence quando duas chamadas chegam juntas', async () => {
+    const { worker, owner, shift } = await setupScheduledShift();
+    await checkIn(worker.id, shift.id);
+    await checkOut(worker.id, shift.id);
+
+    const results = await Promise.allSettled([
+      confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id),
+      confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    expect(fulfilled).toHaveLength(1);
   });
 });

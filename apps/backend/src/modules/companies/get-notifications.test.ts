@@ -1,14 +1,21 @@
 import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
-import { applications, companies, jobs, ratings, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
+import { applications, companies, jobs, payments, ratings, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { createRating } from '../ratings/create-rating';
 import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
-import { markShiftCheckInSeen } from '../shifts/mark-shift-check-in-seen';
+import { confirmCheckIn } from '../shifts/confirm-check-in';
+import { confirmCheckOut } from '../shifts/confirm-check-out';
+import { PaymentGateway } from '../payments/payment-gateway';
 import { getCompanyNotifications } from './get-notifications';
+
+const SUCCESS_GATEWAY: PaymentGateway = {
+  charge: async () => ({ pspChargeId: 'psp_get-notifications' }),
+  release: async () => {},
+};
 
 // Fixtures únicas entre arquivos de teste (ver README).
 const WORKER_PHONE = '+5511966660083';
@@ -62,6 +69,7 @@ describe('getCompanyNotifications', () => {
           const jobShifts = await db.query.shifts.findMany({ where: eq(shifts.jobId, job.id) });
           for (const shift of jobShifts) {
             await db.delete(ratings).where(eq(ratings.shiftId, shift.id));
+            await db.delete(payments).where(eq(payments.shiftId, shift.id));
           }
           await db.delete(shifts).where(eq(shifts.jobId, job.id));
           await db.delete(applications).where(eq(applications.jobId, job.id));
@@ -122,26 +130,64 @@ describe('getCompanyNotifications', () => {
     expect(result.pendingApplications[0].workerName).toBe('Beatriz Lima');
   });
 
-  it('avisa quando um trabalhador faz check-in, e some depois de marcado como visto', async () => {
+  it('avisa quando um trabalhador faz check-in, e some depois que a empresa confirma', async () => {
     const { owner, job } = await setup();
     const worker = await createWorker(WORKER_PHONE, 'Ana Souza');
     const application = await createApplication(worker.id, job.id, true);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
-    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    await checkIn(worker.id, shift.id);
 
-    const beforeSeen = await getCompanyNotifications(owner.id);
-    expect(beforeSeen.checkedInCount).toBe(1);
-    expect(beforeSeen.checkedInNotifications).toHaveLength(1);
-    expect(beforeSeen.checkedInNotifications[0].workerName).toBe('Ana Souza');
-    expect(beforeSeen.checkedInNotifications[0].categoryName).toBe(TEST_CATEGORY_NAME);
+    const beforeConfirm = await getCompanyNotifications(owner.id);
+    expect(beforeConfirm.checkedInCount).toBe(1);
+    expect(beforeConfirm.checkedInNotifications).toHaveLength(1);
+    expect(beforeConfirm.checkedInNotifications[0].workerName).toBe('Ana Souza');
+    expect(beforeConfirm.checkedInNotifications[0].categoryName).toBe(TEST_CATEGORY_NAME);
 
-    await markShiftCheckInSeen(owner.id, shift.id);
+    await confirmCheckIn(owner.id, shift.id);
 
-    const afterSeen = await getCompanyNotifications(owner.id);
-    expect(afterSeen.checkedInCount).toBe(0);
-    expect(afterSeen.checkedInNotifications).toEqual([]);
+    const afterConfirm = await getCompanyNotifications(owner.id);
+    expect(afterConfirm.checkedInCount).toBe(0);
+    expect(afterConfirm.checkedInNotifications).toEqual([]);
+  });
+
+  it('avisa quando um trabalhador faz check-out, e some depois que a empresa confirma', async () => {
+    const { owner, job } = await setup();
+    const worker = await createWorker(WORKER_PHONE, 'Ana Souza');
+    const application = await createApplication(worker.id, job.id, true);
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+    const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
+    if (!shift) throw new Error('Turno não foi criado no setup do teste.');
+    await checkIn(worker.id, shift.id);
+    await checkOut(worker.id, shift.id);
+
+    const beforeConfirm = await getCompanyNotifications(owner.id);
+    expect(beforeConfirm.checkedOutCount).toBe(1);
+    expect(beforeConfirm.checkedOutNotifications).toHaveLength(1);
+    expect(beforeConfirm.checkedOutNotifications[0].workerName).toBe('Ana Souza');
+    expect(beforeConfirm.checkedOutNotifications[0].categoryName).toBe(TEST_CATEGORY_NAME);
+
+    await confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id);
+
+    const afterConfirm = await getCompanyNotifications(owner.id);
+    expect(afterConfirm.checkedOutCount).toBe(0);
+    expect(afterConfirm.checkedOutNotifications).toEqual([]);
+  });
+
+  it('continua avisando o check-in não confirmado mesmo depois do check-out', async () => {
+    const { owner, job } = await setup();
+    const worker = await createWorker(WORKER_PHONE, 'Ana Souza');
+    const application = await createApplication(worker.id, job.id, true);
+    await updateApplicationStatus(owner.id, application.id, 'approved');
+    const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
+    if (!shift) throw new Error('Turno não foi criado no setup do teste.');
+    await checkIn(worker.id, shift.id);
+    await checkOut(worker.id, shift.id);
+
+    const result = await getCompanyNotifications(owner.id);
+    expect(result.checkedInCount).toBe(1);
+    expect(result.checkedOutCount).toBe(1);
   });
 
   it('avisa de escala concluída aguardando avaliação da empresa, e some depois que ela avalia', async () => {
@@ -151,8 +197,9 @@ describe('getCompanyNotifications', () => {
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
-    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
-    await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    await checkIn(worker.id, shift.id);
+    await checkOut(worker.id, shift.id);
+    await confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id);
 
     const beforeRating = await getCompanyNotifications(owner.id);
     expect(beforeRating.pendingRatingsCount).toBe(1);

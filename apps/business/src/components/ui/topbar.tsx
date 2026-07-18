@@ -19,6 +19,14 @@ export interface CheckedInNotification {
   checkInAt: string;
 }
 
+export interface CheckedOutNotification {
+  shiftId: string;
+  jobId: string;
+  workerName: string;
+  categoryName: string;
+  checkOutAt: string;
+}
+
 export interface PendingRatingNotification {
   shiftId: string;
   jobId: string;
@@ -37,12 +45,13 @@ export interface TopbarProps {
   pendingApplications?: PendingApplicationNotification[];
   checkedInCount?: number;
   checkedInNotifications?: CheckedInNotification[];
+  checkedOutCount?: number;
+  checkedOutNotifications?: CheckedOutNotification[];
   pendingRatingsCount?: number;
   pendingRatingsNotifications?: PendingRatingNotification[];
-  onOpenNotifications?: () => void;
 }
 
-function formatCheckInTime(iso: string): string {
+function formatCheckTime(iso: string): string {
   return new Intl.DateTimeFormat('pt-BR', { timeStyle: 'short' }).format(new Date(iso));
 }
 
@@ -59,6 +68,11 @@ function greeting(): string {
  * campo "lido" separado, porque sair do "pending" já tira do contador
  * (e da lista) sozinho. Clicar abre um dropdown com quem se
  * candidatou; cada item leva pra tela de candidatos da vaga.
+ *
+ * Check-ins/check-outs pendentes de confirmação usam o mesmo sino, mas
+ * só puramente pra navegação — a confirmação de verdade acontece nos
+ * botões "Confirmar chegada"/"Confirmar saída" na página da vaga
+ * (ver vagas/[id]/page.tsx), nunca só por abrir esse dropdown.
  *
  * "Publicar escala" navega pra /vagas/nova; virar modal fica pra uma
  * próxima etapa.
@@ -80,13 +94,14 @@ export function Topbar({
   pendingApplications = [],
   checkedInCount = 0,
   checkedInNotifications = [],
+  checkedOutCount = 0,
+  checkedOutNotifications = [],
   pendingRatingsCount = 0,
   pendingRatingsNotifications = [],
-  onOpenNotifications,
 }: TopbarProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
-  const totalCount = pendingApplicationsCount + checkedInCount + pendingRatingsCount;
+  const totalCount = pendingApplicationsCount + checkedInCount + checkedOutCount + pendingRatingsCount;
 
   useEffect(() => {
     if (!isNotificationsOpen) return;
@@ -131,13 +146,7 @@ export function Topbar({
         <div ref={notificationsRef} className="relative">
           <button
             type="button"
-            onClick={() => {
-              const nextOpen = !isNotificationsOpen;
-              setIsNotificationsOpen(nextOpen);
-              if (nextOpen && checkedInCount > 0) {
-                onOpenNotifications?.();
-              }
-            }}
+            onClick={() => setIsNotificationsOpen((current) => !current)}
             aria-label={totalCount > 0 ? `${totalCount} notificação(ões) pendente(s)` : 'Notificações'}
             className={`relative flex h-10 w-10 items-center justify-center rounded-[11px] border transition ${
               totalCount > 0 ? 'border-danger bg-danger/10 text-danger' : 'border-border text-text'
@@ -171,7 +180,23 @@ export function Topbar({
                         className="block p-3.5 text-sm text-text transition hover:bg-background"
                       >
                         <span className="font-semibold">{notification.workerName}</span> fez check-in às{' '}
-                        {formatCheckInTime(notification.checkInAt)}.
+                        {formatCheckTime(notification.checkInAt)}.
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {checkedOutNotifications.length > 0 && (
+                <ul>
+                  {checkedOutNotifications.map((notification) => (
+                    <li key={notification.shiftId} className="border-b border-border bg-warning/5 last:border-b-0">
+                      <Link
+                        href={`/vagas/${notification.jobId}`}
+                        onClick={() => setIsNotificationsOpen(false)}
+                        className="block p-3.5 text-sm text-text transition hover:bg-background"
+                      >
+                        <span className="font-semibold">{notification.workerName}</span> fez check-out às{' '}
+                        {formatCheckTime(notification.checkOutAt)}.
                       </Link>
                     </li>
                   ))}
@@ -195,6 +220,7 @@ export function Topbar({
               )}
               {pendingApplications.length === 0 &&
               checkedInNotifications.length === 0 &&
+              checkedOutNotifications.length === 0 &&
               pendingRatingsNotifications.length === 0 ? (
                 <p className="p-4 text-sm text-text-secondary">Nenhuma notificação por aqui.</p>
               ) : (

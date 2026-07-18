@@ -105,22 +105,29 @@ describe('POST /shifts/:id/check-out (fiação real com cobrança)', () => {
     await db.delete(skillCategories).where(eq(skillCategories.name, TEST_CATEGORY_NAME));
   });
 
-  it('check-out via HTTP real dispara a cobrança de verdade (controller → chargeForShift), com o valor certo da vaga', async () => {
+  it('check-out via HTTP real não faz cobrança até a empresa confirmar', async () => {
     const app = createApp();
-    const { workerAgent, shiftId } = await setupApprovedApplication(app);
+    const { ownerAgent, workerAgent, shiftId } = await setupApprovedApplication(app);
 
-    const checkInResponse = await workerAgent.post(`/shifts/${shiftId}/check-in`).send({ lat: JOB_LAT, lng: JOB_LNG });
+    const checkInResponse = await workerAgent.post(`/shifts/${shiftId}/check-in`);
     expect(checkInResponse.status).toBe(200);
+    expect(checkInResponse.body.status).toBe('checked_in');
 
-    const checkOutResponse = await workerAgent
-      .post(`/shifts/${shiftId}/check-out`)
-      .send({ lat: JOB_LAT, lng: JOB_LNG });
+    const checkOutResponse = await workerAgent.post(`/shifts/${shiftId}/check-out`);
     expect(checkOutResponse.status).toBe(200);
-    expect(checkOutResponse.body.status).toBe('completed');
+    expect(checkOutResponse.body.status).toBe('checked_out');
 
-    // A prova real: o controller de check-out (sem nenhum teste antes
-    // disso) chamou chargeForShift de verdade através da rota HTTP —
-    // existe um pagamento no banco, com o mesmo valor da vaga.
+    const noPaymentYet = await db.query.payments.findFirst({ where: eq(payments.shiftId, shiftId) });
+    expect(noPaymentYet).toBeUndefined();
+
+    // A prova real: o controller de confirmação de check-out (sem
+    // nenhum teste antes disso) chamou chargeForShift de verdade
+    // através da rota HTTP — existe um pagamento no banco, com o mesmo
+    // valor da vaga, só depois que a empresa confirma.
+    const confirmResponse = await ownerAgent.post(`/shifts/${shiftId}/check-out/confirm`);
+    expect(confirmResponse.status).toBe(200);
+    expect(confirmResponse.body.status).toBe('completed');
+
     const payment = await db.query.payments.findFirst({ where: eq(payments.shiftId, shiftId) });
     expect(payment).toBeDefined();
     expect(payment?.amount).toBe('150.00');
@@ -154,8 +161,9 @@ describe('POST /shifts/:id/payment/release e /payment/confirm (fiação real)', 
 
   async function setupChargedShift(app: ReturnType<typeof createApp>) {
     const { ownerAgent, workerAgent, shiftId } = await setupApprovedApplication(app);
-    await workerAgent.post(`/shifts/${shiftId}/check-in`).send({ lat: JOB_LAT, lng: JOB_LNG });
-    await workerAgent.post(`/shifts/${shiftId}/check-out`).send({ lat: JOB_LAT, lng: JOB_LNG });
+    await workerAgent.post(`/shifts/${shiftId}/check-in`);
+    await workerAgent.post(`/shifts/${shiftId}/check-out`);
+    await ownerAgent.post(`/shifts/${shiftId}/check-out/confirm`);
     return { ownerAgent, workerAgent, shiftId };
   }
 

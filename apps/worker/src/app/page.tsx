@@ -47,7 +47,7 @@ const FAQ = [
   },
   {
     question: 'Como confirmo que estou em uma escala?',
-    answer: 'Você faz check-in ao chegar e check-out ao final, direto pelo celular, com sua localização.',
+    answer: 'Você faz check-in ao chegar e check-out ao final, direto pelo celular — a empresa confirma os dois.',
   },
   {
     question: 'Como eu recebo?',

@@ -1,14 +1,21 @@
 import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
-import { applications, companies, jobs, ratings, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
+import { applications, companies, jobs, payments, ratings, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
+import { confirmCheckOut } from '../shifts/confirm-check-out';
+import { PaymentGateway } from '../payments/payment-gateway';
 import { createRating } from './create-rating';
 import { listCompanyRatings } from './list-company-ratings';
 import { COMPANY_RATING_CATEGORIES, WORKER_RATING_CATEGORIES } from './rating-categories';
+
+const SUCCESS_GATEWAY: PaymentGateway = {
+  charge: async () => ({ pspChargeId: 'psp_list-company-ratings' }),
+  release: async () => {},
+};
 
 const WORKER_PHONE = '+5511966661092';
 const OWNER_PHONE = '+5511966661093';
@@ -50,8 +57,9 @@ async function setupCompletedShift() {
   await updateApplicationStatus(owner.id, application.id, 'approved');
   const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
   if (!shift) throw new Error('Turno não foi criado no setup do teste.');
-  await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
-  await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+  await checkIn(worker.id, shift.id);
+  await checkOut(worker.id, shift.id);
+  await confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id);
   return { worker, owner, company, shift };
 }
 
@@ -66,6 +74,7 @@ describe('listCompanyRatings', () => {
           const jobShifts = await db.query.shifts.findMany({ where: eq(shifts.jobId, job.id) });
           for (const shift of jobShifts) {
             await db.delete(ratings).where(eq(ratings.shiftId, shift.id));
+            await db.delete(payments).where(eq(payments.shiftId, shift.id));
           }
           await db.delete(shifts).where(eq(shifts.jobId, job.id));
           await db.delete(applications).where(eq(applications.jobId, job.id));

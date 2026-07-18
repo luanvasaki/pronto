@@ -30,7 +30,9 @@ export interface JobApplicationResponse {
     id: string;
     status: string;
     checkInAt: Date | null;
+    checkInConfirmedAt: Date | null;
     checkOutAt: Date | null;
+    checkOutConfirmedAt: Date | null;
     payment: PaymentResponse | null;
     ratings: ShiftRatings;
     /** Empresa optou por não avaliar — ver skip-company-rating.ts. Null = ainda não decidiu. */
@@ -136,7 +138,9 @@ export async function listJobApplications(
               id: shift.id,
               status: shift.status,
               checkInAt: shift.checkInAt,
+              checkInConfirmedAt: shift.checkInConfirmedAt,
               checkOutAt: shift.checkOutAt,
+              checkOutConfirmedAt: shift.checkOutConfirmedAt,
               payment: paymentsByShiftId.get(shift.id) ?? null,
               ratings: applyRatingVisibility(
                 ratingsByShiftId.get(shift.id) ?? { worker: null, company: null },

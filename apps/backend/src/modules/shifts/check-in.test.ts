@@ -75,73 +75,40 @@ describe('checkIn', () => {
     await db.delete(skillCategories).where(eq(skillCategories.name, TEST_CATEGORY_NAME));
   });
 
-  it('rejeita latitude inválida', async () => {
-    const { worker, shift } = await setupScheduledShift();
-
-    await expect(checkIn(worker.id, shift.id, { lat: 200, lng: 0 })).rejects.toThrow('Latitude inválida');
-  });
-
   it('rejeita turno inexistente', async () => {
     const { worker } = await setupScheduledShift();
 
-    await expect(
-      checkIn(worker.id, '00000000-0000-0000-0000-000000000000', { lat: -23.55, lng: -46.63 }),
-    ).rejects.toThrow('Turno não encontrado');
+    await expect(checkIn(worker.id, '00000000-0000-0000-0000-000000000000')).rejects.toThrow('Turno não encontrado');
   });
 
   it('rejeita quem não é o worker do turno', async () => {
     const { shift } = await setupScheduledShift();
     const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
 
-    await expect(checkIn(otherWorker.id, shift.id, { lat: -23.55, lng: -46.63 })).rejects.toThrow(
-      'não tem acesso',
-    );
+    await expect(checkIn(otherWorker.id, shift.id)).rejects.toThrow('não tem acesso');
   });
 
-  it('faz check-in e muda o status pra "checked_in"', async () => {
+  it('faz check-in sem exigir geolocalização e muda o status pra "checked_in"', async () => {
     const { worker, shift } = await setupScheduledShift();
 
-    const result = await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    const result = await checkIn(worker.id, shift.id);
 
     expect(result.status).toBe('checked_in');
-    expect(result.checkInLat).toBe(-23.55);
     expect(result.checkInAt).not.toBeNull();
-  });
-
-  it('aceita check-in dentro do raio de tolerância do local da vaga', async () => {
-    const { worker, shift } = await setupScheduledShift();
-
-    // ~11m de distância do local da vaga — bem dentro dos 150m de tolerância.
-    const result = await checkIn(worker.id, shift.id, { lat: -23.5501, lng: -46.6301 });
-
-    expect(result.status).toBe('checked_in');
-  });
-
-  it('rejeita check-in longe do local da vaga', async () => {
-    const { worker, shift } = await setupScheduledShift();
-
-    // ~1.5km de distância do local da vaga (0.0001 vs 0.01 de diferença).
-    await expect(checkIn(worker.id, shift.id, { lat: -23.56, lng: -46.64 })).rejects.toThrow(
-      'Você precisa estar no local do turno',
-    );
-
-    const unchanged = await db.query.shifts.findFirst({ where: eq(shifts.id, shift.id) });
-    expect(unchanged?.status).toBe('scheduled');
+    expect(result.checkInConfirmedAt).toBeNull();
   });
 
   it('rejeita segundo check-in do mesmo turno', async () => {
     const { worker, shift } = await setupScheduledShift();
-    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    await checkIn(worker.id, shift.id);
 
-    await expect(checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 })).rejects.toThrow(
-      'não está esperando check-in',
-    );
+    await expect(checkIn(worker.id, shift.id)).rejects.toThrow('não está esperando check-in');
   });
 
   it('notifica o dono da empresa por push quando o check-in é feito', async () => {
     const { worker, job, shift } = await setupScheduledShift();
 
-    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    await checkIn(worker.id, shift.id);
 
     const company = await db.query.companies.findFirst({ where: eq(companies.id, job.companyId) });
     expect(sendPushToUserMock).toHaveBeenCalledTimes(1);
@@ -156,7 +123,7 @@ describe('checkIn', () => {
     sendPushToUserMock.mockRejectedValue(new Error('push service fora do ar'));
     const { worker, shift } = await setupScheduledShift();
 
-    const result = await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    const result = await checkIn(worker.id, shift.id);
 
     expect(result.status).toBe('checked_in');
   });
@@ -164,10 +131,7 @@ describe('checkIn', () => {
   it('só um check-in vence quando duas chamadas chegam juntas', async () => {
     const { worker, shift } = await setupScheduledShift();
 
-    const results = await Promise.allSettled([
-      checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 }),
-      checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 }),
-    ]);
+    const results = await Promise.allSettled([checkIn(worker.id, shift.id), checkIn(worker.id, shift.id)]);
 
     const fulfilled = results.filter((result) => result.status === 'fulfilled');
     expect(fulfilled).toHaveLength(1);

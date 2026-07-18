@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { RatingForm, RatingSummary } from '../../../components/rating-form';
 import { Button } from '../../../components/ui/button';
 import { MapLink } from '../../../components/ui/map-link';
-import { getCurrentPosition } from '../../../lib/geolocation';
 import { checkIn, checkOut, confirmPayment, listMyShifts, Shift } from '../../../lib/shifts-api';
 
 const CATEGORY_LABEL_FALLBACK = 'Categoria';
@@ -13,6 +12,7 @@ const CATEGORY_LABEL_FALLBACK = 'Categoria';
 const SHIFT_STATUS_LABEL: Record<string, string> = {
   scheduled: 'Agendado',
   checked_in: 'Em andamento',
+  checked_out: 'Aguardando confirmação',
   completed: 'Concluído',
   no_show: 'Não compareceu',
   cancelled: 'Cancelado',
@@ -21,6 +21,7 @@ const SHIFT_STATUS_LABEL: Record<string, string> = {
 const SHIFT_STATUS_CLASS: Record<string, string> = {
   scheduled: 'bg-warning/10 text-warning',
   checked_in: 'bg-primary/10 text-primary',
+  checked_out: 'bg-warning/10 text-warning',
   completed: 'bg-success/10 text-success',
   no_show: 'bg-danger/10 text-danger',
   cancelled: 'bg-border text-text-secondary',
@@ -45,6 +46,7 @@ const PAYMENT_STATUS_LABEL: Record<string, string> = {
 const CALENDAR_DOT_CLASS: Record<string, string> = {
   scheduled: 'bg-warning',
   checked_in: 'bg-primary',
+  checked_out: 'bg-warning',
   completed: 'bg-success',
   no_show: 'bg-danger',
   cancelled: 'bg-border',
@@ -208,8 +210,7 @@ export default function AgendaPage() {
     setActingShiftId(shiftId);
 
     try {
-      const position = await getCurrentPosition('Precisamos da sua localização para confirmar o check-in.');
-      const updated = await checkIn(shiftId, position.coords.latitude, position.coords.longitude);
+      const updated = await checkIn(shiftId);
       setShifts((current) => current.map((shift) => (shift.id === shiftId ? { ...shift, ...updated } : shift)));
     } catch (err) {
       setActionError({
@@ -226,14 +227,8 @@ export default function AgendaPage() {
     setActingShiftId(shiftId);
 
     try {
-      const position = await getCurrentPosition('Precisamos da sua localização para confirmar o check-out.');
-      await checkOut(shiftId, position.coords.latitude, position.coords.longitude);
-      // A resposta do check-out não traz `payment` (a cobrança é criada
-      // logo depois, como efeito colateral) — busca a lista de novo em
-      // vez de mesclar a resposta parcial, senão o status de pagamento
-      // só aparece depois de um reload manual da página.
-      const refreshed = await listMyShifts();
-      setShifts(refreshed.shifts);
+      const updated = await checkOut(shiftId);
+      setShifts((current) => current.map((shift) => (shift.id === shiftId ? { ...shift, ...updated } : shift)));
     } catch (err) {
       setActionError({
         shiftId,
@@ -313,7 +308,9 @@ export default function AgendaPage() {
     );
   }
 
-  const scheduledCount = shifts.filter((shift) => shift.status === 'scheduled' || shift.status === 'checked_in').length;
+  const scheduledCount = shifts.filter((shift) =>
+    ['scheduled', 'checked_in', 'checked_out'].includes(shift.status),
+  ).length;
   const completedCount = shifts.filter((shift) => shift.status === 'completed').length;
 
   const shiftsByDateKey = new Map<string, Shift[]>();
@@ -503,8 +500,15 @@ export default function AgendaPage() {
 
       <ul className="flex flex-col gap-3">
         {shifts.map((shift) => {
-          const step = shift.status === 'completed' ? 2 : shift.status === 'checked_in' ? 1 : 0;
-          const showTimeline = ['scheduled', 'checked_in', 'completed'].includes(shift.status);
+          const step =
+            shift.status === 'completed'
+              ? 3
+              : shift.status === 'checked_out'
+                ? 2
+                : shift.status === 'checked_in'
+                  ? 1
+                  : 0;
+          const showTimeline = ['scheduled', 'checked_in', 'checked_out', 'completed'].includes(shift.status);
           const reminder = shift.status === 'scheduled' ? getUpcomingReminder(shift.job.startsAt) : null;
 
           return (
@@ -597,13 +601,17 @@ export default function AgendaPage() {
                     label="Em andamento"
                     done={step >= 2}
                     active={step === 1}
-                    time={step === 1 ? 'Escala em andamento' : step === 2 ? 'Concluído' : '—'}
+                    time={step === 1 ? 'Escala em andamento' : step >= 2 ? 'Concluído' : '—'}
                   />
                   <TimelineRow
                     label="Check-out"
                     done={step >= 2}
                     last
-                    time={shift.checkOutAt ? formatTime(shift.checkOutAt) : 'Ao fim da escala'}
+                    time={
+                      shift.checkOutAt
+                        ? `${formatTime(shift.checkOutAt)}${step === 2 ? ' · aguardando confirmação' : ''}`
+                        : 'Ao fim da escala'
+                    }
                   />
                 </div>
               )}
@@ -632,6 +640,12 @@ export default function AgendaPage() {
                 >
                   Fazer check-out
                 </Button>
+              )}
+
+              {shift.status === 'checked_out' && (
+                <p className="mt-3.5 rounded-lg bg-warning/10 px-3 py-2 text-center text-sm font-semibold text-warning">
+                  Check-out feito — aguardando confirmação da empresa
+                </p>
               )}
 
               {shift.status === 'completed' && shift.ratings.worker && (

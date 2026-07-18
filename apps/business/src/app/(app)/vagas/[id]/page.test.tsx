@@ -23,11 +23,15 @@ const listJobApplicationsMock = vi.fn();
 const updateApplicationStatusMock = vi.fn();
 const releasePaymentMock = vi.fn();
 const removeApprovedWorkerMock = vi.fn();
+const confirmCheckInMock = vi.fn();
+const confirmCheckOutMock = vi.fn();
 vi.mock('../../../../lib/applications-api', () => ({
   listJobApplications: (...args: unknown[]) => listJobApplicationsMock(...args),
   updateApplicationStatus: (...args: unknown[]) => updateApplicationStatusMock(...args),
   releasePayment: (...args: unknown[]) => releasePaymentMock(...args),
   removeApprovedWorker: (...args: unknown[]) => removeApprovedWorkerMock(...args),
+  confirmCheckIn: (...args: unknown[]) => confirmCheckInMock(...args),
+  confirmCheckOut: (...args: unknown[]) => confirmCheckOutMock(...args),
 }));
 
 const listMyJobsMock = vi.fn();
@@ -92,7 +96,33 @@ function makeCompletedApplication(
       id: 'shift-1',
       status: 'completed',
       checkInAt: '2026-07-01T18:00:00.000Z',
+      checkInConfirmedAt: '2026-07-01T18:05:00.000Z',
       checkOutAt: '2026-07-01T23:00:00.000Z',
+      checkOutConfirmedAt: '2026-07-01T23:05:00.000Z',
+      payment: null,
+      ratings: { worker: null, company: null },
+      ...overrides,
+    },
+  };
+}
+
+function makeInProgressApplication(
+  overrides: Partial<{
+    status: string;
+    checkInConfirmedAt: string | null;
+    checkOutConfirmedAt: string | null;
+  }> = {},
+) {
+  return {
+    ...PENDING_APPLICATION,
+    status: 'approved',
+    shift: {
+      id: 'shift-1',
+      status: 'checked_in',
+      checkInAt: '2026-07-01T18:00:00.000Z',
+      checkInConfirmedAt: null,
+      checkOutAt: null,
+      checkOutConfirmedAt: null,
       payment: null,
       ratings: { worker: null, company: null },
       ...overrides,
@@ -107,6 +137,8 @@ describe('VagaCandidatosPage', () => {
     rateShiftMock.mockReset();
     releasePaymentMock.mockReset();
     removeApprovedWorkerMock.mockReset();
+    confirmCheckInMock.mockReset();
+    confirmCheckOutMock.mockReset();
     listMyJobsMock.mockReset();
     listMyJobsMock.mockResolvedValue({ jobs: [] });
     listJobAnnouncementsMock.mockReset().mockResolvedValue({ announcements: [] });
@@ -310,6 +342,69 @@ describe('VagaCandidatosPage', () => {
     await user.click(screen.getByRole('button', { name: /sim, remover/i }));
 
     expect(await screen.findByText('Não foi possível remover esse candidato.')).toBeInTheDocument();
+  });
+
+  it('mostra o botão de confirmar chegada quando o trabalhador fez check-in e ainda não foi confirmado', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [makeInProgressApplication()] });
+
+    render(<VagaCandidatosPage />);
+
+    expect(await screen.findByRole('button', { name: /confirmar chegada/i })).toBeInTheDocument();
+  });
+
+  it('confirma a chegada e o botão some', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [makeInProgressApplication()] });
+    confirmCheckInMock.mockResolvedValue({
+      id: 'shift-1',
+      status: 'checked_in',
+      checkInConfirmedAt: '2026-07-01T18:05:00.000Z',
+      checkOutConfirmedAt: null,
+    });
+    const user = userEvent.setup();
+
+    render(<VagaCandidatosPage />);
+    await user.click(await screen.findByRole('button', { name: /confirmar chegada/i }));
+
+    expect(confirmCheckInMock).toHaveBeenCalledWith('shift-1');
+    await waitFor(() => expect(screen.queryByRole('button', { name: /confirmar chegada/i })).not.toBeInTheDocument());
+  });
+
+  it('não mostra o botão de confirmar chegada depois que já foi confirmada', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [makeInProgressApplication({ checkInConfirmedAt: '2026-07-01T18:05:00.000Z' })],
+    });
+
+    render(<VagaCandidatosPage />);
+    await screen.findByText('Ana Souza');
+
+    expect(screen.queryByRole('button', { name: /confirmar chegada/i })).not.toBeInTheDocument();
+  });
+
+  it('mostra o botão de confirmar saída quando o trabalhador fez check-out, com confirmação em duas etapas', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [
+        makeInProgressApplication({
+          status: 'checked_out',
+          checkInConfirmedAt: '2026-07-01T18:05:00.000Z',
+        }),
+      ],
+    });
+    confirmCheckOutMock.mockResolvedValue({
+      id: 'shift-1',
+      status: 'completed',
+      checkInConfirmedAt: '2026-07-01T18:05:00.000Z',
+      checkOutConfirmedAt: '2026-07-01T23:05:00.000Z',
+    });
+    const user = userEvent.setup();
+
+    render(<VagaCandidatosPage />);
+    await user.click(await screen.findByRole('button', { name: /^confirmar saída$/i }));
+    expect(confirmCheckOutMock).not.toHaveBeenCalled();
+
+    await user.click(await screen.findByRole('button', { name: /sim, confirmar saída/i }));
+
+    expect(confirmCheckOutMock).toHaveBeenCalledWith('shift-1');
+    await waitFor(() => expect(screen.queryByRole('button', { name: /confirmar saída/i })).not.toBeInTheDocument());
   });
 
   it('mostra o botão de marcar como pago quando o turno está concluído', async () => {

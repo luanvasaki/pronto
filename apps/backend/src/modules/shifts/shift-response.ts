@@ -12,9 +12,11 @@ export interface ShiftResponse {
   checkInAt: Date | null;
   checkInLat: number | null;
   checkInLng: number | null;
+  checkInConfirmedAt: Date | null;
   checkOutAt: Date | null;
   checkOutLat: number | null;
   checkOutLng: number | null;
+  checkOutConfirmedAt: Date | null;
 }
 
 export function toShiftResponse(shift: ShiftRow): ShiftResponse {
@@ -28,8 +30,10 @@ export function toShiftResponse(shift: ShiftRow): ShiftResponse {
     checkInAt: shift.checkInAt,
     checkInLat: shift.checkInLat,
     checkInLng: shift.checkInLng,
+    checkInConfirmedAt: shift.checkInConfirmedAt,
     checkOutAt: shift.checkOutAt,
     checkOutLat: shift.checkOutLat,
     checkOutLng: shift.checkOutLng,
+    checkOutConfirmedAt: shift.checkOutConfirmedAt,
   };
 }

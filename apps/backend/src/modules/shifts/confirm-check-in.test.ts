@@ -2,29 +2,23 @@ import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { db } from '../../db/client';
-import { applications, companies, jobs, payments, ratings, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
+import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
-import { checkIn } from '../shifts/check-in';
-import { checkOut } from '../shifts/check-out';
-import { confirmCheckOut } from '../shifts/confirm-check-out';
-import { PaymentGateway } from '../payments/payment-gateway';
-import { skipCompanyRating } from './skip-company-rating';
+import { checkIn } from './check-in';
+import { checkOut } from './check-out';
+import { confirmCheckIn } from './confirm-check-in';
 
-const SUCCESS_GATEWAY: PaymentGateway = {
-  charge: async () => ({ pspChargeId: 'psp_skip-company-rating' }),
-  release: async () => {},
-};
-
-const WORKER_PHONE = '+5511966660060';
-const OUTSIDER_PHONE = '+5511966660061';
-const OWNER_PHONE = '+5511966660062';
-const TEST_CNPJ = '11112223340693';
-const TEST_CATEGORY_NAME = 'Categoria de teste — skip-company-rating';
+// Fixtures únicas entre arquivos de teste (ver README).
+const WORKER_PHONE = '+5511966660070';
+const OUTSIDER_PHONE = '+5511966660071';
+const OWNER_PHONE = '+5511966660072';
+const TEST_CNPJ = '11112223340710';
+const TEST_CATEGORY_NAME = 'Categoria de teste — confirm-check-in';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const TOMORROW_PLUS_5H = new Date(TOMORROW.getTime() + 5 * 60 * 60 * 1000);
 
-async function setupCompletedShift() {
+async function setupScheduledShift() {
   const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
   await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
   const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
@@ -57,7 +51,7 @@ async function setupCompletedShift() {
   return { worker, owner, shift };
 }
 
-describe('skipCompanyRating', () => {
+describe('confirmCheckIn', () => {
   afterEach(async () => {
     const owner = await db.query.users.findFirst({ where: eq(users.phone, OWNER_PHONE) });
     if (owner) {
@@ -65,11 +59,6 @@ describe('skipCompanyRating', () => {
       if (company) {
         const companyJobs = await db.query.jobs.findMany({ where: eq(jobs.companyId, company.id) });
         for (const job of companyJobs) {
-          const jobShifts = await db.query.shifts.findMany({ where: eq(shifts.jobId, job.id) });
-          for (const shift of jobShifts) {
-            await db.delete(ratings).where(eq(ratings.shiftId, shift.id));
-            await db.delete(payments).where(eq(payments.shiftId, shift.id));
-          }
           await db.delete(shifts).where(eq(shifts.jobId, job.id));
           await db.delete(applications).where(eq(applications.jobId, job.id));
         }
@@ -83,35 +72,57 @@ describe('skipCompanyRating', () => {
   });
 
   it('rejeita turno inexistente', async () => {
-    const { owner } = await setupCompletedShift();
-    await expect(skipCompanyRating(owner.id, '00000000-0000-0000-0000-000000000000')).rejects.toThrow(
+    const { owner } = await setupScheduledShift();
+
+    await expect(confirmCheckIn(owner.id, '00000000-0000-0000-0000-000000000000')).rejects.toThrow(
       'Turno não encontrado',
     );
   });
 
   it('rejeita quem não é dono da empresa', async () => {
-    const { shift } = await setupCompletedShift();
+    const { worker, shift } = await setupScheduledShift();
+    await checkIn(worker.id, shift.id);
     const [outsider] = await db.insert(users).values({ phone: OUTSIDER_PHONE }).returning();
 
-    await expect(skipCompanyRating(outsider.id, shift.id)).rejects.toThrow('Você não tem acesso');
+    await expect(confirmCheckIn(outsider.id, shift.id)).rejects.toThrow('Você não tem acesso');
   });
 
-  it('rejeita turno que ainda não foi concluído (sem check-in/check-out)', async () => {
-    const { owner, shift } = await setupCompletedShift();
+  it('rejeita turno que ainda não teve check-in', async () => {
+    const { owner, shift } = await setupScheduledShift();
 
-    await expect(skipCompanyRating(owner.id, shift.id)).rejects.toThrow('turnos concluídos');
+    await expect(confirmCheckIn(owner.id, shift.id)).rejects.toThrow('ainda não teve check-in');
   });
 
-  it('marca companyRatingSkippedAt quando o turno está concluído', async () => {
-    const { worker, owner, shift } = await setupCompletedShift();
+  it('confirma o check-in sem mudar o status do turno', async () => {
+    const { worker, owner, shift } = await setupScheduledShift();
     await checkIn(worker.id, shift.id);
-    await checkOut(worker.id, shift.id);
-    await confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id);
 
     const before = new Date();
-    const result = await skipCompanyRating(owner.id, shift.id);
+    const result = await confirmCheckIn(owner.id, shift.id);
 
-    expect(result.shiftId).toBe(shift.id);
-    expect(result.companyRatingSkippedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(result.status).toBe('checked_in');
+    expect(result.checkInConfirmedAt).not.toBeNull();
+    expect(result.checkInConfirmedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
+  });
+
+  it('confirma o check-in mesmo depois do trabalhador já ter feito check-out', async () => {
+    const { worker, owner, shift } = await setupScheduledShift();
+    await checkIn(worker.id, shift.id);
+    await checkOut(worker.id, shift.id);
+
+    const result = await confirmCheckIn(owner.id, shift.id);
+
+    expect(result.status).toBe('checked_out');
+    expect(result.checkInConfirmedAt).not.toBeNull();
+  });
+
+  it('é idempotente — confirmar duas vezes não muda o carimbo original', async () => {
+    const { worker, owner, shift } = await setupScheduledShift();
+    await checkIn(worker.id, shift.id);
+
+    const first = await confirmCheckIn(owner.id, shift.id);
+    const second = await confirmCheckIn(owner.id, shift.id);
+
+    expect(second.checkInConfirmedAt?.getTime()).toBe(first.checkInConfirmedAt?.getTime());
   });
 });

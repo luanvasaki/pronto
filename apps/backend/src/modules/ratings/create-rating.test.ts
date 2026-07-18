@@ -6,6 +6,7 @@ import {
   applications,
   companies,
   jobs,
+  payments,
   ratings,
   shifts,
   skillCategories,
@@ -15,8 +16,15 @@ import {
 import { createApplication } from '../applications/create-application';
 import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
+import { confirmCheckOut } from '../shifts/confirm-check-out';
+import { PaymentGateway } from '../payments/payment-gateway';
 import { createRating } from './create-rating';
 import { COMPANY_RATING_CATEGORIES, WORKER_RATING_CATEGORIES } from './rating-categories';
+
+const SUCCESS_GATEWAY: PaymentGateway = {
+  charge: async () => ({ pspChargeId: 'psp_create-rating' }),
+  release: async () => {},
+};
 
 // Fixtures únicas entre arquivos de teste (ver README).
 const WORKER_PHONE = '+5511966660027';
@@ -68,8 +76,9 @@ async function setupCompletedShift() {
   if (!shift) {
     throw new Error('Turno não foi criado no setup do teste.');
   }
-  await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
-  await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+  await checkIn(worker.id, shift.id);
+  await checkOut(worker.id, shift.id);
+  await confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id);
   return { worker, owner, company, job, shift };
 }
 
@@ -84,6 +93,7 @@ describe('createRating', () => {
           const jobShifts = await db.query.shifts.findMany({ where: eq(shifts.jobId, job.id) });
           for (const shift of jobShifts) {
             await db.delete(ratings).where(eq(ratings.shiftId, shift.id));
+            await db.delete(payments).where(eq(payments.shiftId, shift.id));
           }
           await db.delete(shifts).where(eq(shifts.jobId, job.id));
           await db.delete(applications).where(eq(applications.jobId, job.id));
@@ -232,8 +242,9 @@ describe('createRating', () => {
     await updateApplicationStatus(owner.id, secondApplication.id, 'approved');
     const secondShift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, secondApplication.id) });
     if (!secondShift) throw new Error('Segundo turno não foi criado no setup do teste.');
-    await checkIn(secondWorker.id, secondShift.id, { lat: -23.55, lng: -46.63 });
-    await checkOut(secondWorker.id, secondShift.id, { lat: -23.55, lng: -46.63 });
+    await checkIn(secondWorker.id, secondShift.id);
+    await checkOut(secondWorker.id, secondShift.id);
+    await confirmCheckOut(SUCCESS_GATEWAY, owner.id, secondShift.id);
 
     await createRating(secondWorker.id, secondShift.id, { categoryScores: companyCategoryScores(2), comment: undefined });
     await createRating(owner.id, secondShift.id, { categoryScores: workerCategoryScores(3), comment: undefined });

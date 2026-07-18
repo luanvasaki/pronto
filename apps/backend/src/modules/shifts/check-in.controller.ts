@@ -14,8 +14,7 @@ export async function checkInHandler(req: Request, res: Response, next: NextFunc
       throw new HttpError(404, 'Turno não encontrado.');
     }
 
-    const { lat, lng } = req.body as { lat?: number; lng?: number };
-    const result = await checkIn(userId, shiftId, { lat, lng });
+    const result = await checkIn(userId, shiftId);
     res.status(200).json(result);
   } catch (error) {
     next(error);

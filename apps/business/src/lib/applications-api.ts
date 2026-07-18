@@ -32,7 +32,9 @@ export interface JobApplication {
     id: string;
     status: string;
     checkInAt: string | null;
+    checkInConfirmedAt: string | null;
     checkOutAt: string | null;
+    checkOutConfirmedAt: string | null;
     payment: Payment | null;
     ratings: ShiftRatings;
     companyRatingSkippedAt: string | null;
@@ -69,6 +71,21 @@ export function releasePayment(shiftId: string): Promise<Payment> {
   return apiFetch(`/shifts/${shiftId}/payment/release`, {
     method: 'POST',
   });
+}
+
+export interface ShiftConfirmationResponse {
+  id: string;
+  status: string;
+  checkInConfirmedAt: string | null;
+  checkOutConfirmedAt: string | null;
+}
+
+export function confirmCheckIn(shiftId: string): Promise<ShiftConfirmationResponse> {
+  return apiFetch(`/shifts/${shiftId}/check-in/confirm`, { method: 'POST' });
+}
+
+export function confirmCheckOut(shiftId: string): Promise<ShiftConfirmationResponse> {
+  return apiFetch(`/shifts/${shiftId}/check-out/confirm`, { method: 'POST' });
 }
 
 export interface SkipRatingResult {

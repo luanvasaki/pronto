@@ -12,6 +12,10 @@ const CHECKED_IN_NOTIFICATIONS = [
   { shiftId: 'shift-1', jobId: 'job-1', workerName: 'Carlos Souza', categoryName: 'Garçom', checkInAt: '2026-07-10T18:57:00.000Z' },
 ];
 
+const CHECKED_OUT_NOTIFICATIONS = [
+  { shiftId: 'shift-3', jobId: 'job-1', workerName: 'Elaine Prado', categoryName: 'Garçom', checkOutAt: '2026-07-10T23:00:00.000Z' },
+];
+
 const PENDING_RATINGS_NOTIFICATIONS = [
   { shiftId: 'shift-2', jobId: 'job-2', workerName: 'Diego Alves', categoryName: 'Cozinha', checkOutAt: '2026-07-10T22:00:00.000Z' },
 ];
@@ -65,8 +69,7 @@ describe('Topbar', () => {
     expect(screen.getByText(/Beatriz Lima/)).toBeInTheDocument();
   });
 
-  it('mostra check-ins não vistos junto das candidaturas, e chama onOpenNotifications ao abrir', async () => {
-    const onOpenNotifications = vi.fn();
+  it('mostra check-ins não confirmados junto das candidaturas', async () => {
     const user = userEvent.setup();
     render(
       <Topbar
@@ -75,7 +78,6 @@ describe('Topbar', () => {
         pendingApplicationsCount={0}
         checkedInCount={1}
         checkedInNotifications={CHECKED_IN_NOTIFICATIONS}
-        onOpenNotifications={onOpenNotifications}
       />,
     );
 
@@ -83,7 +85,26 @@ describe('Topbar', () => {
 
     expect(screen.getByText(/Carlos Souza/)).toBeInTheDocument();
     expect(screen.getByText(/fez check-in às/)).toBeInTheDocument();
-    expect(onOpenNotifications).toHaveBeenCalled();
+  });
+
+  it('mostra check-outs não confirmados e soma no contador', async () => {
+    const user = userEvent.setup();
+    render(
+      <Topbar
+        title="Painel"
+        onMenuClick={vi.fn()}
+        pendingApplicationsCount={0}
+        checkedOutCount={1}
+        checkedOutNotifications={CHECKED_OUT_NOTIFICATIONS}
+      />,
+    );
+
+    expect(screen.getByLabelText('1 notificação(ões) pendente(s)')).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('1 notificação(ões) pendente(s)'));
+
+    expect(screen.getByText(/Elaine Prado/)).toBeInTheDocument();
+    expect(screen.getByText(/fez check-out às/)).toBeInTheDocument();
   });
 
   it('soma avaliações pendentes no contador, e mostra o aviso ao clicar no sino', async () => {
@@ -105,24 +126,6 @@ describe('Topbar', () => {
     expect(screen.getByText(/Diego Alves/)).toBeInTheDocument();
     expect(screen.getByText(/Avalie/)).toBeInTheDocument();
     expect(screen.getByText(/pela escala de/)).toBeInTheDocument();
-  });
-
-  it('não chama onOpenNotifications quando não há check-in não visto', async () => {
-    const onOpenNotifications = vi.fn();
-    const user = userEvent.setup();
-    render(
-      <Topbar
-        title="Painel"
-        onMenuClick={vi.fn()}
-        pendingApplicationsCount={1}
-        pendingApplications={[NOTIFICATIONS[0]]}
-        onOpenNotifications={onOpenNotifications}
-      />,
-    );
-
-    await user.click(screen.getByLabelText('1 notificação(ões) pendente(s)'));
-
-    expect(onOpenNotifications).not.toHaveBeenCalled();
   });
 
   it('mostra mensagem de vazio quando não há nenhuma notificação', async () => {

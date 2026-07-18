@@ -330,6 +330,13 @@
       "when": 1784076063572,
       "tag": "0046_aspiring_maginty",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1784381530738,
+      "tag": "0047_special_whirlwind",
+      "breakpoints": true
     }
   ]
 }

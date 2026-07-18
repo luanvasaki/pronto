@@ -6,6 +6,7 @@ import {
   companies,
   documents,
   jobs,
+  payments,
   shifts,
   skillCategories,
   users,
@@ -14,10 +15,17 @@ import {
 import { createApplication } from '../applications/create-application';
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { withdrawApplication } from '../applications/withdraw-application';
+import { PaymentGateway } from '../payments/payment-gateway';
 import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
+import { confirmCheckOut } from '../shifts/confirm-check-out';
 import { getWorkerProfile } from './get-worker-profile';
 import { upsertWorkerProfile } from './upsert-worker-profile';
+
+const SUCCESS_GATEWAY: PaymentGateway = {
+  charge: async () => ({ pspChargeId: 'psp_get-worker-profile' }),
+  release: async () => {},
+};
 
 async function createJobForCompany(companyId: string, categoryId: string) {
   const [job] = await db
@@ -54,8 +62,9 @@ async function completeShift(workerId: string, ownerId: string, jobId: string) {
   await updateApplicationStatus(ownerId, application.id, 'approved');
   const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
   if (!shift) throw new Error('Turno não foi criado no setup do teste.');
-  await checkIn(workerId, shift.id, { lat: -23.55, lng: -46.63 });
-  await checkOut(workerId, shift.id, { lat: -23.55, lng: -46.63 });
+  await checkIn(workerId, shift.id);
+  await checkOut(workerId, shift.id);
+  await confirmCheckOut(SUCCESS_GATEWAY, ownerId, shift.id);
   return shift;
 }
 
@@ -85,6 +94,10 @@ describe('getWorkerProfile', () => {
         if (company) {
           const companyJobs = await db.query.jobs.findMany({ where: eq(jobs.companyId, company.id) });
           for (const job of companyJobs) {
+            const jobShifts = await db.query.shifts.findMany({ where: eq(shifts.jobId, job.id) });
+            for (const shift of jobShifts) {
+              await db.delete(payments).where(eq(payments.shiftId, shift.id));
+            }
             await db.delete(shifts).where(eq(shifts.jobId, job.id));
             await db.delete(applications).where(eq(applications.jobId, job.id));
           }
@@ -295,8 +308,9 @@ describe('getWorkerProfile', () => {
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
 
-    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
-    await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    await checkIn(worker.id, shift.id);
+    await checkOut(worker.id, shift.id);
+    await confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id);
     // Sobrescreve os horários reais (quase instantâneos no teste) por um
     // intervalo de 3h exatas, só pra ter um número redondo pra conferir.
     const checkInTime = new Date();
@@ -366,7 +380,7 @@ describe('getWorkerProfile', () => {
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
-    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    await checkIn(worker.id, shift.id);
 
     const result = await getWorkerProfile(worker.id);
 

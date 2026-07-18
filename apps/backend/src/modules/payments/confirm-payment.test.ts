@@ -56,8 +56,8 @@ async function setupReleasedShift() {
   if (!shift) {
     throw new Error('Turno não foi criado no setup do teste.');
   }
-  await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
-  const completed = await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+  await checkIn(worker.id, shift.id);
+  const completed = await checkOut(worker.id, shift.id);
   await chargeForShift(SUCCESS_GATEWAY, completed.id, completed.payAmountSnapshot);
   await releasePayment(SUCCESS_GATEWAY, owner.id, completed.id);
   return { worker, shift: completed };
@@ -122,8 +122,8 @@ describe('confirmPayment', () => {
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
-    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
-    const completed = await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    await checkIn(worker.id, shift.id);
+    const completed = await checkOut(worker.id, shift.id);
     await chargeForShift(SUCCESS_GATEWAY, completed.id, completed.payAmountSnapshot);
 
     await expect(confirmPayment(worker.id, completed.id, true)).rejects.toThrow(

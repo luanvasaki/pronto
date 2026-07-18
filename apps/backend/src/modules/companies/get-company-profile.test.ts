@@ -1,13 +1,20 @@
 import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
-import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
+import { applications, companies, jobs, payments, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
+import { confirmCheckOut } from '../shifts/confirm-check-out';
+import { PaymentGateway } from '../payments/payment-gateway';
 import { upsertCompanyProfile } from './upsert-company-profile';
 import { getCompanyProfile } from './get-company-profile';
+
+const SUCCESS_GATEWAY: PaymentGateway = {
+  charge: async () => ({ pspChargeId: 'psp_get-company-profile' }),
+  release: async () => {},
+};
 
 // Fixtures únicas entre arquivos de teste (ver README).
 const TEST_PHONE = '+5511966661095';
@@ -43,8 +50,9 @@ async function completeShift(workerId: string, ownerId: string, jobId: string) {
   await updateApplicationStatus(ownerId, application.id, 'approved');
   const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
   if (!shift) throw new Error('Turno não foi criado no setup do teste.');
-  await checkIn(workerId, shift.id, { lat: -23.55, lng: -46.63 });
-  await checkOut(workerId, shift.id, { lat: -23.55, lng: -46.63 });
+  await checkIn(workerId, shift.id);
+  await checkOut(workerId, shift.id);
+  await confirmCheckOut(SUCCESS_GATEWAY, ownerId, shift.id);
   return shift;
 }
 
@@ -56,6 +64,10 @@ describe('getCompanyProfile', () => {
       if (company) {
         const companyJobs = await db.query.jobs.findMany({ where: eq(jobs.companyId, company.id) });
         for (const job of companyJobs) {
+          const jobShifts = await db.query.shifts.findMany({ where: eq(shifts.jobId, job.id) });
+          for (const shift of jobShifts) {
+            await db.delete(payments).where(eq(payments.shiftId, shift.id));
+          }
           await db.delete(shifts).where(eq(shifts.jobId, job.id));
           await db.delete(applications).where(eq(applications.jobId, job.id));
         }

@@ -1,12 +1,19 @@
 import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
-import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
+import { applications, companies, jobs, payments, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
 import { updateApplicationStatus } from '../applications/update-application-status';
+import { PaymentGateway } from '../payments/payment-gateway';
 import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
+import { confirmCheckOut } from '../shifts/confirm-check-out';
 import { listAdminCompanies } from './list-companies';
+
+const SUCCESS_GATEWAY: PaymentGateway = {
+  charge: async () => ({ pspChargeId: 'psp_list-companies' }),
+  release: async () => {},
+};
 
 const WORKER_PHONE = '+5511966661060';
 const OWNER_PHONE = '+5511966661061';
@@ -25,6 +32,10 @@ describe('listAdminCompanies', () => {
       if (company) {
         const companyJobs = await db.query.jobs.findMany({ where: eq(jobs.companyId, company.id) });
         for (const job of companyJobs) {
+          const jobShifts = await db.query.shifts.findMany({ where: eq(shifts.jobId, job.id) });
+          for (const shift of jobShifts) {
+            await db.delete(payments).where(eq(payments.shiftId, shift.id));
+          }
           await db.delete(shifts).where(eq(shifts.jobId, job.id));
           await db.delete(applications).where(eq(applications.jobId, job.id));
         }
@@ -72,8 +83,9 @@ describe('listAdminCompanies', () => {
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
-    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
-    await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    await checkIn(worker.id, shift.id);
+    await checkOut(worker.id, shift.id);
+    await confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id);
 
     const result = await listAdminCompanies();
 

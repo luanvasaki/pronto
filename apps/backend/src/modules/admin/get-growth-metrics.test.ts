@@ -4,9 +4,16 @@ import { db } from '../../db/client';
 import { applications, companies, jobs, payments, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
 import { updateApplicationStatus } from '../applications/update-application-status';
+import { PaymentGateway } from '../payments/payment-gateway';
 import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
+import { confirmCheckOut } from '../shifts/confirm-check-out';
 import { getAdminGrowthMetrics } from './get-growth-metrics';
+
+const SUCCESS_GATEWAY: PaymentGateway = {
+  charge: async () => ({ pspChargeId: 'psp_get-growth-metrics' }),
+  release: async () => {},
+};
 
 // Fixtures únicas entre arquivos de teste (ver README).
 const WORKER_PHONE = '+5511966662200';
@@ -96,8 +103,9 @@ describe('getAdminGrowthMetrics', () => {
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
-    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
-    await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    await checkIn(worker.id, shift.id);
+    await checkOut(worker.id, shift.id);
+    await confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id);
 
     const after = await getAdminGrowthMetrics();
 

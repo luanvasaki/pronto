@@ -55,10 +55,10 @@ async function setupChargedShift() {
   if (!shift) {
     throw new Error('Turno não foi criado no setup do teste.');
   }
-  await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
-  const completed = await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
-  await chargeForShift(SUCCESS_GATEWAY, completed.id, completed.payAmountSnapshot);
-  return { owner, shift: completed };
+  await checkIn(worker.id, shift.id);
+  const checkedOut = await checkOut(worker.id, shift.id);
+  await chargeForShift(SUCCESS_GATEWAY, checkedOut.id, checkedOut.payAmountSnapshot);
+  return { owner, shift: checkedOut };
 }
 
 describe('releasePayment', () => {

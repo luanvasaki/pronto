@@ -96,7 +96,7 @@ describe('AppLayout', () => {
     expect(await screen.findByText('Conteúdo protegido')).toBeInTheDocument();
     expect(replaceMock).not.toHaveBeenCalledWith('/cadastro');
     expect(replaceMock).not.toHaveBeenCalledWith('/cadastro/documento');
-    expect(screen.getByText(/, Ana Souza/)).toBeInTheDocument();
+    expect(screen.getByText(/, Ana$/)).toBeInTheDocument();
   });
 
   it('redireciona pro cadastro quando o perfil ainda não existe (404)', async () => {

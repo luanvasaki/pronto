@@ -8,10 +8,10 @@ import { Topbar } from '../../components/ui/topbar';
 import { useRequireAuth } from '../../hooks/use-require-auth';
 import {
   CheckedInNotification,
+  CheckedOutNotification,
   CompanyProfileDetails,
   getCompanyNotifications,
   getCompanyProfile,
-  markShiftCheckInSeen,
   PendingApplicationNotification,
   PendingRatingNotification,
 } from '../../lib/company-profile-api';
@@ -72,6 +72,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [pendingApplications, setPendingApplications] = useState<PendingApplicationNotification[]>([]);
   const [checkedInCount, setCheckedInCount] = useState(0);
   const [checkedInNotifications, setCheckedInNotifications] = useState<CheckedInNotification[]>([]);
+  const [checkedOutCount, setCheckedOutCount] = useState(0);
+  const [checkedOutNotifications, setCheckedOutNotifications] = useState<CheckedOutNotification[]>([]);
   const [pendingRatingsCount, setPendingRatingsCount] = useState(0);
   const [pendingRatingsNotifications, setPendingRatingsNotifications] = useState<PendingRatingNotification[]>([]);
 
@@ -106,6 +108,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           setPendingApplications(result.pendingApplications);
           setCheckedInCount(result.checkedInCount);
           setCheckedInNotifications(result.checkedInNotifications);
+          setCheckedOutCount(result.checkedOutCount);
+          setCheckedOutNotifications(result.checkedOutNotifications);
           setPendingRatingsCount(result.pendingRatingsCount);
           setPendingRatingsNotifications(result.pendingRatingsNotifications);
         })
@@ -133,15 +137,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const tradeName = profile?.tradeName ?? 'sua empresa';
   const { title, subtitle } = pageHeader(pathname);
 
-  // Marca como vista em segundo plano — o sino/lista continuam mostrando
-  // o que já estava ali até o próximo poll (60s) confirmar que sumiu, pra
-  // não sumir a lista debaixo do usuário logo depois de abrir o dropdown.
-  function handleOpenNotifications(): void {
-    checkedInNotifications.forEach((notification) => {
-      markShiftCheckInSeen(notification.shiftId).catch(() => undefined);
-    });
-  }
-
   return (
     <CompanyProfileProvider initialProfile={profile}>
       <div className="flex h-screen overflow-hidden">
@@ -162,9 +157,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             pendingApplications={pendingApplications}
             checkedInCount={checkedInCount}
             checkedInNotifications={checkedInNotifications}
+            checkedOutCount={checkedOutCount}
+            checkedOutNotifications={checkedOutNotifications}
             pendingRatingsCount={pendingRatingsCount}
             pendingRatingsNotifications={pendingRatingsNotifications}
-            onOpenNotifications={handleOpenNotifications}
           />
           <div className="flex-1 overflow-y-auto p-4 lg:p-7">{children}</div>
         </div>

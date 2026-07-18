@@ -8,6 +8,8 @@ import { Avatar } from '../../../../components/ui/avatar';
 import { Button } from '../../../../components/ui/button';
 import { createAnnouncement, JobAnnouncement, listJobAnnouncements } from '../../../../lib/announcements-api';
 import {
+  confirmCheckIn,
+  confirmCheckOut,
   JobApplication,
   listJobApplications,
   releasePayment,
@@ -50,6 +52,7 @@ function statusClass(application: JobApplication): string {
 const SHIFT_STATUS_LABEL: Record<string, string> = {
   scheduled: 'Aguardando check-in',
   checked_in: 'Em andamento',
+  checked_out: 'Aguardando confirmação de saída',
   completed: 'Concluído',
   no_show: 'Não compareceu',
   cancelled: 'Cancelado',
@@ -97,6 +100,15 @@ export default function VagaCandidatosPage() {
 
   const [releasingShiftId, setReleasingShiftId] = useState<string | null>(null);
   const [releaseError, setReleaseError] = useState<{ shiftId: string; message: string } | null>(null);
+
+  const [confirmingCheckInShiftId, setConfirmingCheckInShiftId] = useState<string | null>(null);
+  const [checkInConfirmError, setCheckInConfirmError] = useState<{ shiftId: string; message: string } | null>(null);
+
+  const [confirmingCheckOutDialogShiftId, setConfirmingCheckOutDialogShiftId] = useState<string | null>(null);
+  const [confirmingCheckOutShiftId, setConfirmingCheckOutShiftId] = useState<string | null>(null);
+  const [checkOutConfirmError, setCheckOutConfirmError] = useState<{ shiftId: string; message: string } | null>(
+    null,
+  );
 
   const [skippingRatingShiftId, setSkippingRatingShiftId] = useState<string | null>(null);
   const [skipRatingError, setSkipRatingError] = useState<{ shiftId: string; message: string } | null>(null);
@@ -334,6 +346,60 @@ export default function VagaCandidatosPage() {
     }
   }
 
+  async function handleConfirmCheckIn(applicationId: string, shiftId: string): Promise<void> {
+    setCheckInConfirmError(null);
+    setConfirmingCheckInShiftId(shiftId);
+
+    try {
+      const result = await confirmCheckIn(shiftId);
+      setApplications((current) =>
+        current.map((application) =>
+          application.id === applicationId && application.shift
+            ? { ...application, shift: { ...application.shift, checkInConfirmedAt: result.checkInConfirmedAt } }
+            : application,
+        ),
+      );
+    } catch (err) {
+      setCheckInConfirmError({
+        shiftId,
+        message: err instanceof ApiError ? err.message : 'Não foi possível confirmar a chegada.',
+      });
+    } finally {
+      setConfirmingCheckInShiftId(null);
+    }
+  }
+
+  async function handleConfirmCheckOut(applicationId: string, shiftId: string): Promise<void> {
+    setConfirmingCheckOutDialogShiftId(null);
+    setCheckOutConfirmError(null);
+    setConfirmingCheckOutShiftId(shiftId);
+
+    try {
+      const result = await confirmCheckOut(shiftId);
+      setApplications((current) =>
+        current.map((application) =>
+          application.id === applicationId && application.shift
+            ? {
+                ...application,
+                shift: {
+                  ...application.shift,
+                  status: result.status,
+                  checkOutConfirmedAt: result.checkOutConfirmedAt,
+                },
+              }
+            : application,
+        ),
+      );
+    } catch (err) {
+      setCheckOutConfirmError({
+        shiftId,
+        message: err instanceof ApiError ? err.message : 'Não foi possível confirmar a saída.',
+      });
+    } finally {
+      setConfirmingCheckOutShiftId(null);
+    }
+  }
+
   if (isLoading) {
     return (
       <main className="flex flex-1 items-center justify-center px-4">
@@ -443,6 +509,63 @@ export default function VagaCandidatosPage() {
               >
                 {PAYMENT_STATUS_LABEL[application.shift.payment.status] ?? application.shift.payment.status}
               </p>
+            )}
+
+            {application.shift &&
+              (application.shift.status === 'checked_in' || application.shift.status === 'checked_out') &&
+              !application.shift.checkInConfirmedAt && (
+                <div className="mt-2.5">
+                  {checkInConfirmError?.shiftId === application.shift.id && (
+                    <p className="mb-2 text-sm text-danger">{checkInConfirmError.message}</p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    isLoading={confirmingCheckInShiftId === application.shift.id}
+                    onClick={() => handleConfirmCheckIn(application.id, application.shift!.id)}
+                  >
+                    Confirmar chegada
+                  </Button>
+                </div>
+              )}
+
+            {application.shift?.status === 'checked_out' && !application.shift.checkOutConfirmedAt && (
+              <div className="mt-2.5">
+                {checkOutConfirmError?.shiftId === application.shift.id && (
+                  <p className="mb-2 text-sm text-danger">{checkOutConfirmError.message}</p>
+                )}
+                {confirmingCheckOutDialogShiftId === application.shift.id ? (
+                  <div className="flex flex-col gap-2 rounded-2xl border border-dashed border-primary/40 p-3">
+                    <p className="text-sm text-text">
+                      Confirma que {application.worker.fullName} realmente cumpriu a escala até o fim? Isso libera a
+                      cobrança do turno.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        isLoading={confirmingCheckOutShiftId === application.shift.id}
+                        onClick={() => handleConfirmCheckOut(application.id, application.shift!.id)}
+                      >
+                        Sim, confirmar saída
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingCheckOutDialogShiftId(null)}
+                        className="text-sm text-text-secondary underline underline-offset-2"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={() => setConfirmingCheckOutDialogShiftId(application.shift!.id)}
+                  >
+                    Confirmar saída
+                  </Button>
+                )}
+              </div>
             )}
 
             {actionError?.id === application.id && (

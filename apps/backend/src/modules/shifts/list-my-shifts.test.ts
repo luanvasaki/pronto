@@ -2,13 +2,20 @@ import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { db } from '../../db/client';
-import { applications, companies, jobs, ratings, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
+import { applications, companies, jobs, payments, ratings, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
 import { createRating } from '../ratings/create-rating';
 import { COMPANY_RATING_CATEGORIES, WORKER_RATING_CATEGORIES } from '../ratings/rating-categories';
 import { checkIn } from './check-in';
 import { checkOut } from './check-out';
+import { confirmCheckOut } from './confirm-check-out';
+import { PaymentGateway } from '../payments/payment-gateway';
 import { listMyShifts } from './list-my-shifts';
+
+const SUCCESS_GATEWAY: PaymentGateway = {
+  charge: async () => ({ pspChargeId: 'psp_list-my-shifts' }),
+  release: async () => {},
+};
 
 // Fixtures únicas entre arquivos de teste (ver README).
 const WORKER_PHONE = '+5511966662210';
@@ -30,6 +37,7 @@ describe('listMyShifts', () => {
           const jobShifts = await db.query.shifts.findMany({ where: eq(shifts.jobId, job.id) });
           for (const shift of jobShifts) {
             await db.delete(ratings).where(eq(ratings.shiftId, shift.id));
+            await db.delete(payments).where(eq(payments.shiftId, shift.id));
           }
           await db.delete(shifts).where(eq(shifts.jobId, job.id));
           await db.delete(applications).where(eq(applications.jobId, job.id));
@@ -114,8 +122,9 @@ describe('listMyShifts', () => {
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
-    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
-    await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    await checkIn(worker.id, shift.id);
+    await checkOut(worker.id, shift.id);
+    await confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id);
 
     const scores = Object.fromEntries(WORKER_RATING_CATEGORIES.map((category) => [category.id, 5]));
     await createRating(owner.id, shift.id, { categoryScores: scores, comment: 'Ótimo profissional.' });

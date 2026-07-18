@@ -24,9 +24,11 @@ export interface Shift {
   checkInAt: string | null;
   checkInLat: number | null;
   checkInLng: number | null;
+  checkInConfirmedAt: string | null;
   checkOutAt: string | null;
   checkOutLat: number | null;
   checkOutLng: number | null;
+  checkOutConfirmedAt: string | null;
   job: Job;
   companyName: string;
   payment: Payment | null;
@@ -37,18 +39,12 @@ export function listMyShifts(): Promise<{ shifts: Shift[] }> {
   return apiFetch('/shifts/mine');
 }
 
-export function checkIn(shiftId: string, lat: number, lng: number): Promise<Shift> {
-  return apiFetch(`/shifts/${shiftId}/check-in`, {
-    method: 'POST',
-    body: JSON.stringify({ lat, lng }),
-  });
+export function checkIn(shiftId: string): Promise<Shift> {
+  return apiFetch(`/shifts/${shiftId}/check-in`, { method: 'POST' });
 }
 
-export function checkOut(shiftId: string, lat: number, lng: number): Promise<Shift> {
-  return apiFetch(`/shifts/${shiftId}/check-out`, {
-    method: 'POST',
-    body: JSON.stringify({ lat, lng }),
-  });
+export function checkOut(shiftId: string): Promise<Shift> {
+  return apiFetch(`/shifts/${shiftId}/check-out`, { method: 'POST' });
 }
 
 export function confirmPayment(shiftId: string, received: boolean): Promise<Payment> {

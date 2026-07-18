@@ -1,11 +1,16 @@
 import { eq } from 'drizzle-orm';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { db } from '../../db/client';
 import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
 import { checkIn } from './check-in';
 import { checkOut } from './check-out';
+
+const sendPushToUserMock = vi.fn();
+vi.mock('../push/send-push-notification', () => ({
+  sendPushToUser: (...args: unknown[]) => sendPushToUserMock(...args),
+}));
 
 // Fixtures únicas entre arquivos de teste (ver README).
 const WORKER_PHONE = '+5511966660024';
@@ -47,12 +52,13 @@ async function setupCheckedInShift() {
   if (!shift) {
     throw new Error('Turno não foi criado no setup do teste.');
   }
-  await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+  await checkIn(worker.id, shift.id);
   return { worker, job, shift };
 }
 
 describe('checkOut', () => {
   afterEach(async () => {
+    sendPushToUserMock.mockReset();
     const owner = await db.query.users.findFirst({ where: eq(users.phone, OWNER_PHONE) });
     if (owner) {
       const [company] = await db.query.companies.findMany({ where: eq(companies.ownerUserId, owner.id) });
@@ -99,58 +105,53 @@ describe('checkOut', () => {
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
 
-    await expect(checkOut(worker.id, shift!.id, { lat: -23.55, lng: -46.63 })).rejects.toThrow(
-      'não está esperando check-out',
-    );
+    await expect(checkOut(worker.id, shift!.id)).rejects.toThrow('não está esperando check-out');
   });
 
   it('rejeita quem não é o worker do turno', async () => {
     const { shift } = await setupCheckedInShift();
     const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
 
-    await expect(checkOut(otherWorker.id, shift.id, { lat: -23.55, lng: -46.63 })).rejects.toThrow(
-      'não tem acesso',
-    );
+    await expect(checkOut(otherWorker.id, shift.id)).rejects.toThrow('não tem acesso');
   });
 
-  it('faz check-out e muda o status pra "completed"', async () => {
+  it('faz check-out sem exigir geolocalização e muda o status pra "checked_out" (não "completed")', async () => {
     const { worker, shift } = await setupCheckedInShift();
 
-    const result = await checkOut(worker.id, shift.id, { lat: -23.5501, lng: -46.6301 });
+    const result = await checkOut(worker.id, shift.id);
 
-    expect(result.status).toBe('completed');
-    expect(result.checkOutLat).toBe(-23.5501);
+    expect(result.status).toBe('checked_out');
     expect(result.checkOutAt).toBeInstanceOf(Date);
     expect(result.checkOutAt!.getTime()).toBeGreaterThan(Date.now() - 5000);
+    expect(result.checkOutConfirmedAt).toBeNull();
   });
 
-  it('rejeita check-out longe do local da vaga', async () => {
-    const { worker, shift } = await setupCheckedInShift();
+  it('notifica o dono da empresa por push quando o check-out é feito', async () => {
+    const { worker, job, shift } = await setupCheckedInShift();
+    sendPushToUserMock.mockReset();
 
-    await expect(checkOut(worker.id, shift.id, { lat: -23.56, lng: -46.64 })).rejects.toThrow(
-      'Você precisa estar no local do turno',
-    );
+    await checkOut(worker.id, shift.id);
 
-    const unchanged = await db.query.shifts.findFirst({ where: eq(shifts.id, shift.id) });
-    expect(unchanged?.status).toBe('checked_in');
+    const company = await db.query.companies.findFirst({ where: eq(companies.id, job.companyId) });
+    expect(sendPushToUserMock).toHaveBeenCalledTimes(1);
+    expect(sendPushToUserMock).toHaveBeenCalledWith(company?.ownerUserId, {
+      title: 'Ana Souza fez check-out',
+      body: TEST_CATEGORY_NAME,
+      url: '/escala',
+    });
   });
 
   it('rejeita segundo check-out do mesmo turno', async () => {
     const { worker, shift } = await setupCheckedInShift();
-    await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
+    await checkOut(worker.id, shift.id);
 
-    await expect(checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 })).rejects.toThrow(
-      'não está esperando check-out',
-    );
+    await expect(checkOut(worker.id, shift.id)).rejects.toThrow('não está esperando check-out');
   });
 
   it('rejeita check-out duplicado mesmo em corrida (duas chamadas simultâneas)', async () => {
     const { worker, shift } = await setupCheckedInShift();
 
-    const results = await Promise.allSettled([
-      checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 }),
-      checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 }),
-    ]);
+    const results = await Promise.allSettled([checkOut(worker.id, shift.id), checkOut(worker.id, shift.id)]);
 
     const fulfilled = results.filter((result) => result.status === 'fulfilled');
     const rejected = results.filter((result) => result.status === 'rejected');

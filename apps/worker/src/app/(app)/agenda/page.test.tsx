@@ -336,15 +336,9 @@ describe('AgendaPage', () => {
     expect(screen.queryByText('Avaliar a empresa')).not.toBeInTheDocument();
   });
 
-  it('faz check-in usando a localização do navegador', async () => {
+  it('faz check-in sem pedir localização', async () => {
     listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'scheduled' })] });
     checkInMock.mockResolvedValue(makeShift({ status: 'checked_in' }));
-    Object.defineProperty(window.navigator, 'geolocation', {
-      value: {
-        getCurrentPosition: vi.fn((success) => success({ coords: { latitude: -23.55, longitude: -46.63 } })),
-      },
-      configurable: true,
-    });
     const user = userEvent.setup();
 
     render(<AgendaPage />);
@@ -352,97 +346,45 @@ describe('AgendaPage', () => {
     await user.click(screen.getByRole('button', { name: /fazer check-in/i }));
 
     await waitFor(() => expect(screen.getAllByText('Em andamento').length).toBeGreaterThan(0));
-    expect(checkInMock).toHaveBeenCalledWith('shift-1', -23.55, -46.63);
+    expect(checkInMock).toHaveBeenCalledWith('shift-1');
   });
 
-  it('mostra mensagem quando o navegador nega a localização no check-in', async () => {
+  it('mostra a mensagem da API quando o check-in é rejeitado', async () => {
     listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'scheduled' })] });
-    Object.defineProperty(window.navigator, 'geolocation', {
-      value: { getCurrentPosition: vi.fn((_success, failure) => failure()) },
-      configurable: true,
-    });
+    checkInMock.mockRejectedValue(new ApiError(400, 'Esse turno não está esperando check-in.'));
     const user = userEvent.setup();
 
     render(<AgendaPage />);
     await screen.findByText('Agendado');
     await user.click(screen.getByRole('button', { name: /fazer check-in/i }));
 
-    expect(
-      await screen.findByText('Precisamos da sua localização para confirmar o check-in.'),
-    ).toBeInTheDocument();
-    expect(checkInMock).not.toHaveBeenCalled();
-  });
-
-  it('mostra a mensagem da API quando o check-in é rejeitado por estar longe do local (geofence)', async () => {
-    listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'scheduled' })] });
-    checkInMock.mockRejectedValue(new ApiError(400, 'Você precisa estar no local do turno pra fazer check-in.'));
-    Object.defineProperty(window.navigator, 'geolocation', {
-      value: {
-        getCurrentPosition: vi.fn((success) => success({ coords: { latitude: -23.55, longitude: -46.63 } })),
-      },
-      configurable: true,
-    });
-    const user = userEvent.setup();
-
-    render(<AgendaPage />);
-    await screen.findByText('Agendado');
-    await user.click(screen.getByRole('button', { name: /fazer check-in/i }));
-
-    expect(
-      await screen.findByText('Você precisa estar no local do turno pra fazer check-in.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Esse turno não está esperando check-in.')).toBeInTheDocument();
     // Rejeição da API não muda o status pra "checked_in" na tela.
     expect(screen.getByText('Agendado')).toBeInTheDocument();
   });
 
-  it('mostra a mensagem da API quando o check-out é rejeitado por estar longe do local (geofence)', async () => {
+  it('mostra a mensagem da API quando o check-out é rejeitado', async () => {
     listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'checked_in' })] });
-    checkOutMock.mockRejectedValue(new ApiError(400, 'Você precisa estar no local do turno pra fazer check-out.'));
-    Object.defineProperty(window.navigator, 'geolocation', {
-      value: {
-        getCurrentPosition: vi.fn((success) => success({ coords: { latitude: -23.55, longitude: -46.63 } })),
-      },
-      configurable: true,
-    });
+    checkOutMock.mockRejectedValue(new ApiError(400, 'Esse turno não está esperando check-out.'));
     const user = userEvent.setup();
 
     render(<AgendaPage />);
     await user.click(await screen.findByRole('button', { name: /fazer check-out/i }));
 
-    expect(
-      await screen.findByText('Você precisa estar no local do turno pra fazer check-out.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Esse turno não está esperando check-out.')).toBeInTheDocument();
   });
 
-  it('busca os turnos de novo depois do check-out, pra mostrar o status do pagamento', async () => {
-    // A resposta do check-out não traz `payment` (é criado logo depois) —
-    // por isso a tela precisa buscar a lista de novo em vez de confiar só
-    // na resposta do check-out.
-    listMyShiftsMock
-      .mockResolvedValueOnce({ shifts: [makeShift({ status: 'checked_in' })] })
-      .mockResolvedValueOnce({
-        shifts: [
-          makeShift({
-            status: 'completed',
-            payment: { id: 'p1', shiftId: 'shift-1', amount: '130.00', status: 'charged', chargedAt: null, releasedAt: null },
-          }),
-        ],
-      });
-    checkOutMock.mockResolvedValue(makeShift({ status: 'completed' }));
-    Object.defineProperty(window.navigator, 'geolocation', {
-      value: {
-        getCurrentPosition: vi.fn((success) => success({ coords: { latitude: -23.55, longitude: -46.63 } })),
-      },
-      configurable: true,
-    });
+  it('faz check-out sem pedir localização e mostra que está aguardando confirmação da empresa', async () => {
+    listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'checked_in' })] });
+    checkOutMock.mockResolvedValue(makeShift({ status: 'checked_out' }));
     const user = userEvent.setup();
 
     render(<AgendaPage />);
     await screen.findByRole('button', { name: /fazer check-out/i });
     await user.click(screen.getByRole('button', { name: /fazer check-out/i }));
 
-    expect(await screen.findByText(/acerte o pagamento direto com a empresa/i)).toBeInTheDocument();
-    expect(listMyShiftsMock).toHaveBeenCalledTimes(2);
+    expect(checkOutMock).toHaveBeenCalledWith('shift-1');
+    expect(await screen.findByText(/aguardando confirmação da empresa/i)).toBeInTheDocument();
   });
 
   it('mostra os botões de confirmar/contestar quando a empresa marca como pago', async () => {

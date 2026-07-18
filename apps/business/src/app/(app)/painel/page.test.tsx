@@ -47,6 +47,8 @@ const DASHBOARD: CompanyDashboard = {
     pendingApplications: [],
     checkedInCount: 0,
     checkedInNotifications: [],
+    checkedOutCount: 0,
+    checkedOutNotifications: [],
     pendingRatingsCount: 0,
     pendingRatingsNotifications: [],
   },

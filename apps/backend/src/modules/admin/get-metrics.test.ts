@@ -5,9 +5,9 @@ import { applications, companies, jobs, payments, shifts, skillCategories, users
 import { createApplication } from '../applications/create-application';
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { PaymentGateway } from '../payments/payment-gateway';
-import { chargeForShift } from '../payments/charge-for-shift';
 import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
+import { confirmCheckOut } from '../shifts/confirm-check-out';
 import { getAdminMetrics } from './get-metrics';
 
 // Fixtures únicas entre arquivos de teste (ver README).
@@ -85,9 +85,9 @@ describe('getAdminMetrics', () => {
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
-    await checkIn(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
-    const completed = await checkOut(worker.id, shift.id, { lat: -23.55, lng: -46.63 });
-    await chargeForShift(SUCCESS_GATEWAY, completed.id, completed.payAmountSnapshot);
+    await checkIn(worker.id, shift.id);
+    await checkOut(worker.id, shift.id);
+    await confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id);
 
     const after = await getAdminMetrics();
 

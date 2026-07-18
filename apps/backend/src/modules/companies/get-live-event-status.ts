@@ -97,7 +97,7 @@ export async function getLiveEventStatus(ownerUserId: string, dayStart: Date, da
 
       let status: LiveShiftStatus;
       let minutesLate: number | null = null;
-      if (shift.status === 'completed') {
+      if (shift.status === 'completed' || shift.status === 'checked_out') {
         status = 'concluido';
       } else if (shift.status === 'checked_in') {
         status = 'chegou';

@@ -14,6 +14,7 @@ import { workerProfiles } from './worker-profiles';
 export const shiftStatusEnum = pgEnum('shift_status', [
   'scheduled',
   'checked_in',
+  'checked_out',
   'completed',
   'no_show',
   'cancelled',
@@ -45,13 +46,19 @@ export const shifts = pgTable(
     checkInAt: timestamp('check_in_at', { withTimezone: true }),
     checkInLat: doublePrecision('check_in_lat'),
     checkInLng: doublePrecision('check_in_lng'),
-    // Nulo = empresa ainda não viu que o trabalhador chegou — alimenta o
-    // alerta "Fulano fez check-in" no sino da empresa (mesmo padrão de
-    // applications.workerSeenAt, ver get-notifications.ts).
-    companySeenCheckInAt: timestamp('company_seen_check_in_at', { withTimezone: true }),
+    // Nulo = empresa ainda não confirmou que o trabalhador chegou —
+    // alimenta o alerta "Fulano fez check-in" no sino da empresa (mesmo
+    // padrão de applications.workerSeenAt, ver get-notifications.ts) e
+    // vira um carimbo de confirmação de verdade (ver confirm-check-in.ts).
+    // Não trava o check-out: as duas confirmações são independentes.
+    checkInConfirmedAt: timestamp('check_in_confirmed_at', { withTimezone: true }),
     checkOutAt: timestamp('check_out_at', { withTimezone: true }),
     checkOutLat: doublePrecision('check_out_lat'),
     checkOutLng: doublePrecision('check_out_lng'),
+    // Nulo = empresa ainda não confirmou a saída — enquanto isso o turno
+    // fica em 'checked_out', não 'completed' (ver confirm-check-out.ts).
+    // É a confirmação do check-out que dispara a cobrança do turno.
+    checkOutConfirmedAt: timestamp('check_out_confirmed_at', { withTimezone: true }),
     // Preenchido quando a empresa opta por não avaliar esse turno — some
     // o formulário de avaliação sem exigir uma nota. Não impede avaliar
     // depois (só é lido quando `ratings.company` ainda está vazio).
