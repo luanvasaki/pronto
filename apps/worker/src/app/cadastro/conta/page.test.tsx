@@ -5,8 +5,9 @@ import { ApiError } from '@shift/shared';
 import CadastroContaPage from './page';
 
 const pushMock = vi.fn();
+const backMock = vi.fn();
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: pushMock }),
+  useRouter: () => ({ push: pushMock, back: backMock }),
 }));
 
 const registerMock = vi.fn();
@@ -21,6 +22,7 @@ vi.mock('@shift/shared', async (importOriginal) => {
 describe('CadastroContaPage', () => {
   beforeEach(() => {
     pushMock.mockClear();
+    backMock.mockClear();
     registerMock.mockReset();
   });
 
@@ -28,6 +30,16 @@ describe('CadastroContaPage', () => {
     render(<CadastroContaPage />);
 
     expect(screen.getByRole('button', { name: /criar conta/i })).toBeDisabled();
+  });
+
+  it('mostra "Passo 1 de 3" e volta com o botão de voltar', async () => {
+    const user = userEvent.setup();
+    render(<CadastroContaPage />);
+
+    expect(screen.getByText('Passo 1 de 3')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Voltar' }));
+
+    expect(backMock).toHaveBeenCalled();
   });
 
   it('mantém o botão desabilitado se as senhas não coincidem', async () => {

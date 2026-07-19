@@ -5,8 +5,9 @@ import { ApiError } from '@shift/shared';
 import CadastroPage from './page';
 
 const pushMock = vi.fn();
+const backMock = vi.fn();
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: pushMock }),
+  useRouter: () => ({ push: pushMock, back: backMock }),
 }));
 
 const listSkillCategoriesMock = vi.fn();
@@ -43,6 +44,7 @@ describe('CadastroPage', () => {
 
   beforeEach(() => {
     pushMock.mockClear();
+    backMock.mockClear();
     listSkillCategoriesMock.mockReset().mockResolvedValue({ categories: CATEGORIES });
     getCurrentUserMock.mockReset().mockResolvedValue({ user: NO_GOOGLE_PHOTO_USER });
     upsertWorkerProfileMock.mockReset();
@@ -71,6 +73,16 @@ describe('CadastroPage', () => {
     render(<CadastroPage />);
 
     expect(await screen.findByText('Não foi possível carregar as categorias.')).toBeInTheDocument();
+  });
+
+  it('mostra "Passo 2 de 3" e volta com o botão de voltar', async () => {
+    const user = userEvent.setup();
+    render(<CadastroPage />);
+
+    expect(screen.getByText('Passo 2 de 3')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Voltar' }));
+
+    expect(backMock).toHaveBeenCalled();
   });
 
   it('começa com o botão desabilitado e só habilita com nome + cpf + telefone + endereço + categoria (foto é opcional)', async () => {

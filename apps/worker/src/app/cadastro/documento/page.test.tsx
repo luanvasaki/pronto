@@ -5,8 +5,9 @@ import { ApiError } from '@shift/shared';
 import DocumentoPage from './page';
 
 const pushMock = vi.fn();
+const backMock = vi.fn();
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: pushMock }),
+  useRouter: () => ({ push: pushMock, back: backMock }),
 }));
 
 const uploadWorkerDocumentMock = vi.fn();
@@ -38,6 +39,7 @@ async function uploadBoth(user: ReturnType<typeof userEvent.setup>) {
 describe('DocumentoPage', () => {
   beforeEach(() => {
     pushMock.mockClear();
+    backMock.mockClear();
     uploadWorkerDocumentMock.mockReset();
     uploadWorkerSelfieMock.mockReset();
     uploadWorkerCnhDocumentMock.mockReset();
@@ -56,6 +58,16 @@ describe('DocumentoPage', () => {
     render(<DocumentoPage />);
 
     expect(screen.getByRole('button', { name: /enviar/i })).toBeDisabled();
+  });
+
+  it('mostra "Passo 3 de 3" e volta com o botão de voltar', async () => {
+    const user = userEvent.setup();
+    render(<DocumentoPage />);
+
+    expect(screen.getByText('Passo 3 de 3')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Voltar' }));
+
+    expect(backMock).toHaveBeenCalled();
   });
 
   it('mostra erro e um botão de tentar de novo quando falha ao carregar o status do cadastro, em vez de assumir que nada é exigido', async () => {
