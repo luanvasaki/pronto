@@ -50,6 +50,29 @@ function statusClass(application: JobApplication): string {
   return STATUS_CLASS[application.status] ?? STATUS_CLASS.pending;
 }
 
+type CandidateTab = 'pending' | 'approved' | 'other';
+
+/**
+ * A lista misturava pendente/aprovado/recusado numa coluna vertical só
+ * — a tela mais complexa do app (turno, pagamento, avaliação por
+ * candidato aprovado) e a menos organizada. Segmentado por aba: o que
+ * precisa de decisão agora (pendente), quem já foi contratado
+ * (aprovado, com o ciclo de vida do turno) e o histórico descartado
+ * (recusado/retirado) — mesmo agrupamento por urgência que já funciona
+ * bem na Central de Ações do painel.
+ */
+const CANDIDATE_TABS: { key: CandidateTab; label: string }[] = [
+  { key: 'pending', label: 'Pendentes' },
+  { key: 'approved', label: 'Aprovados' },
+  { key: 'other', label: 'Recusados' },
+];
+
+function candidateTab(application: JobApplication): CandidateTab {
+  if (application.status === 'pending') return 'pending';
+  if (application.status === 'approved') return 'approved';
+  return 'other';
+}
+
 const SHIFT_STATUS_LABEL: Record<string, string> = {
   scheduled: 'Aguardando check-in',
   checked_in: 'Em andamento',
@@ -93,6 +116,10 @@ export default function VagaCandidatosPage() {
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<{ id: string; message: string } | null>(null);
+  // `null` = ainda não escolhida à mão — nesse caso o render abaixo
+  // resolve pra primeira aba com candidato, sem precisar de um effect
+  // só pra sincronizar esse estado depois que `applications` carrega.
+  const [activeTab, setActiveTab] = useState<CandidateTab | null>(null);
   const [confirmingApproveId, setConfirmingApproveId] = useState<string | null>(null);
 
   const [ratingDrafts, setRatingDrafts] = useState<Record<string, RatingDraft>>({});
@@ -210,6 +237,14 @@ export default function VagaCandidatosPage() {
   }
 
   const positionsFilled = applications.filter((application) => application.status === 'approved').length;
+
+  const applicationsByTab: Record<CandidateTab, JobApplication[]> = { pending: [], approved: [], other: [] };
+  for (const application of applications) {
+    applicationsByTab[candidateTab(application)].push(application);
+  }
+  const resolvedActiveTab =
+    activeTab ?? CANDIDATE_TABS.find((tab) => applicationsByTab[tab.key].length > 0)?.key ?? 'pending';
+  const visibleApplications = applicationsByTab[resolvedActiveTab];
 
   async function handleDecision(applicationId: string, status: 'approved' | 'rejected'): Promise<void> {
     setActionError(null);
@@ -442,8 +477,37 @@ export default function VagaCandidatosPage() {
         <p className="text-sm text-text-secondary">Ninguém se candidatou a essa vaga ainda.</p>
       )}
 
+      {applications.length > 0 && (
+        <div role="tablist" className="flex gap-2 overflow-x-auto pb-1">
+          {CANDIDATE_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={resolvedActiveTab === tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold whitespace-nowrap transition ${
+                resolvedActiveTab === tab.key
+                  ? 'bg-primary text-white'
+                  : 'bg-background text-text-secondary hover:text-text'
+              }`}
+            >
+              {tab.label} ({applicationsByTab[tab.key].length})
+            </button>
+          ))}
+        </div>
+      )}
+
+      {applications.length > 0 && visibleApplications.length === 0 && (
+        <p className="text-sm text-text-secondary">
+          {resolvedActiveTab === 'pending' && 'Nenhum candidato pendente.'}
+          {resolvedActiveTab === 'approved' && 'Nenhum candidato aprovado ainda.'}
+          {resolvedActiveTab === 'other' && 'Nenhum candidato recusado ou retirado.'}
+        </p>
+      )}
+
       <ul className="flex flex-col gap-3">
-        {applications.map((application) => (
+        {visibleApplications.map((application) => (
           <li
             key={application.id}
             className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"

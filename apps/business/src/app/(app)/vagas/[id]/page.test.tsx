@@ -643,4 +643,74 @@ describe('VagaCandidatosPage', () => {
 
     expect(await screen.findByText('Nenhuma pergunta ainda.')).toBeInTheDocument();
   });
+
+  const APPROVED_CANDIDATE = {
+    ...PENDING_APPLICATION,
+    id: 'app-2',
+    status: 'approved',
+    worker: { ...PENDING_APPLICATION.worker, id: 'worker-2', fullName: 'Bruno Lima' },
+    shift: { id: 'shift-1', status: 'scheduled', checkInAt: null, checkOutAt: null, payment: null, ratings: { worker: null, company: null } },
+  };
+
+  const REJECTED_CANDIDATE = {
+    ...PENDING_APPLICATION,
+    id: 'app-3',
+    status: 'rejected',
+    worker: { ...PENDING_APPLICATION.worker, id: 'worker-3', fullName: 'Carla Dias' },
+  };
+
+  it('não mostra abas quando não há nenhum candidato', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [] });
+
+    render(<VagaCandidatosPage />);
+
+    await screen.findByText('Ninguém se candidatou a essa vaga ainda.');
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+  });
+
+  it('segmenta candidatos por aba, com contagem, e começa na aba Pendentes quando há pendente', async () => {
+    listJobApplicationsMock.mockResolvedValue({
+      applications: [PENDING_APPLICATION, APPROVED_CANDIDATE, REJECTED_CANDIDATE],
+    });
+    const user = userEvent.setup();
+
+    render(<VagaCandidatosPage />);
+    await screen.findByText('Ana Souza');
+
+    expect(screen.getByRole('tab', { name: 'Pendentes (1)' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByText('Bruno Lima')).not.toBeInTheDocument();
+    expect(screen.queryByText('Carla Dias')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Aprovados (1)' }));
+
+    expect(screen.getByText('Bruno Lima')).toBeInTheDocument();
+    expect(screen.queryByText('Ana Souza')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Recusados (1)' }));
+
+    expect(screen.getByText('Carla Dias')).toBeInTheDocument();
+    expect(screen.queryByText('Bruno Lima')).not.toBeInTheDocument();
+  });
+
+  it('começa na aba Aprovados quando não há nenhum pendente', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [APPROVED_CANDIDATE, REJECTED_CANDIDATE] });
+
+    render(<VagaCandidatosPage />);
+    await screen.findByText('Bruno Lima');
+
+    expect(screen.getByRole('tab', { name: 'Aprovados (1)' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByText('Carla Dias')).not.toBeInTheDocument();
+  });
+
+  it('mostra mensagem específica quando a aba selecionada não tem candidato', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [PENDING_APPLICATION] });
+    const user = userEvent.setup();
+
+    render(<VagaCandidatosPage />);
+    await screen.findByText('Ana Souza');
+
+    await user.click(screen.getByRole('tab', { name: 'Aprovados (0)' }));
+
+    expect(await screen.findByText('Nenhum candidato aprovado ainda.')).toBeInTheDocument();
+  });
 });
