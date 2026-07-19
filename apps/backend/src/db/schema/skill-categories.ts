@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { pgEnum, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { companies } from './companies';
 import { users } from './users';
@@ -34,6 +35,10 @@ export const skillCategories = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
-    nameUnique: uniqueIndex('skill_categories_name_unique').on(table.name),
+    // Sobre lower(name), não table.name — a checagem de duplicata em
+    // createSkillCategory já ignora maiúscula/acento, mas sem isso o
+    // índice (case-sensitive) não fecha a corrida entre duas criações
+    // concorrentes com nomes diferindo só na caixa.
+    nameUnique: uniqueIndex('skill_categories_name_unique').on(sql`lower(${table.name})`),
   }),
 );

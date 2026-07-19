@@ -89,6 +89,24 @@ describe('createSkillCategory', () => {
     expect(rows).toHaveLength(1);
   });
 
+  it('mesmo em corrida com nomes diferindo só na caixa, as duas resolvem pra uma só categoria', async () => {
+    const owner = await createTestCompanyOwner();
+
+    const [first, second] = await Promise.all([
+      createSkillCategory(owner.id, TEST_CATEGORY_NAME),
+      createSkillCategory(owner.id, TEST_CATEGORY_NAME.toUpperCase()),
+    ]);
+
+    expect(first.id).toBe(second.id);
+    const rows = await db.query.skillCategories.findMany({
+      where: eq(skillCategories.name, TEST_CATEGORY_NAME),
+    });
+    const rowsUpper = await db.query.skillCategories.findMany({
+      where: eq(skillCategories.name, TEST_CATEGORY_NAME.toUpperCase()),
+    });
+    expect(rows.length + rowsUpper.length).toBe(1);
+  });
+
   it('cria a categoria como "pending" com o trabalhador criador', async () => {
     const worker = await createTestWorker();
 
