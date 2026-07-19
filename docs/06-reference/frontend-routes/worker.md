@@ -1,0 +1,24 @@
+# Rotas do app worker — referência
+
+> Jornada completa em [`02-product/user-journey.md`](../../02-product/user-journey.md). Padrões de arquitetura em [`03-architecture/frontend-architecture.md`](../../03-architecture/frontend-architecture.md).
+
+| Rota | Função | Principais dados/endpoints |
+|---|---|---|
+| `/` | Landing, marketing + FAQ | — |
+| `/entrar` | Login (e-mail/senha ou Google) | `login`, `googleLogin` |
+| `/cadastro/conta` | Criar conta | `register` |
+| `/cadastro` | Perfil (dados pessoais, categorias, menor de idade) | `upsertWorkerProfile`, `uploadWorkerPhoto` |
+| `/cadastro/documento` | KYC (documento, selfie, CNH, responsável) | `uploadWorkerDocument`/`Selfie`/`CnhDocument`/`GuardianDocument` |
+| `/esqueci-senha`, `/redefinir-senha` | Recuperação de senha | `forgotPassword`, `resetPassword` |
+| `(app)/inicio` | Busca de vagas por proximidade, candidatura | `listNearbyJobs`, `applyToJob`, `updateWorkerLocation`, `updateSearchRadius` |
+| `(app)/vaga/[id]` | Detalhe da vaga, perguntas, avisos | `getJobDetail`, `listJobQuestions`/`askQuestion`, `listJobAnnouncements` |
+| `(app)/candidaturas` | Minhas candidaturas | `listMyApplications`, `withdrawApplication` |
+| `(app)/agenda` | Calendário de turnos, check-in/out, pagamento, avaliação | `listMyShifts`, `checkIn`, `checkOut`, `confirmPayment`, `rateShift` |
+| `(app)/ganhos` | Resumo financeiro (agregado local) | `listMyShifts` |
+| `(app)/perfil` | Editar perfil, avaliações recebidas | `listWorkerRatings`, `upsertWorkerProfile` |
+
+`(app)/layout.tsx` centraliza: gate de sessão (`useRequireAuth`), busca do perfil uma vez (`WorkerProfileProvider`), redirecionamento pra completar KYC se faltar documento/selfie/documento de responsável (cobre login por e-mail e por Google), e polling de notificações (candidaturas + turnos) a cada 60s.
+
+## PWA
+
+`manifest.ts` (start_url `/entrar`, display standalone), service worker registrado mas **sem estratégia de cache** (só existe pra passar no critério de instalabilidade). Banner de instalação nativo no Android/Chrome, passo a passo manual no iOS.
