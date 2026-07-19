@@ -9,8 +9,8 @@ import { Input } from '../../../../components/ui/input';
 import { JobBenefitsFields } from '../../../../components/ui/job-benefits-fields';
 import { JobRequirementsFields } from '../../../../components/ui/job-requirements-fields';
 import { JobTermsCheckbox } from '../../../../components/ui/job-terms-checkbox';
+import { useAddressGeocoding } from '../../../../hooks/use-address-geocoding';
 import { useJobFormValidation } from '../../../../hooks/use-job-form-validation';
-import { getCurrentPosition } from '../../../../lib/geolocation';
 import { createJob, Job, listMyJobs } from '../../../../lib/jobs-api';
 import { useCompanyProfile } from '../../company-profile-context';
 
@@ -73,10 +73,18 @@ function NovaVagaForm() {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const addressLabel = buildAddressLabel({ street, number, complement, neighborhood, city, state });
-  const [lat, setLat] = useState<number | null>(null);
-  const [lng, setLng] = useState<number | null>(null);
-  const [isLocating, setIsLocating] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const {
+    lat,
+    lng,
+    locationSource,
+    isGeocoding,
+    isLocating,
+    locationError,
+    geocodeAddress,
+    markAddressDirty,
+    useCurrentLocation,
+    setInitialLocation,
+  } = useAddressGeocoding();
   const [positionsTotal, setPositionsTotal] = useState('1');
   const [payAmount, setPayAmount] = useState('');
   // Vindo da Escala (clicou num dia do calendário) — pré-preenche a
@@ -147,27 +155,20 @@ function NovaVagaForm() {
     setNeighborhood('');
     setCity('');
     setState('');
-    setLat(template.locationLat);
-    setLng(template.locationLng);
+    setInitialLocation(template.locationLat, template.locationLng);
     setPositionsTotal(String(template.positionsTotal));
     setPayAmount(template.payAmount);
     // Data/hora e prazo de candidatura ficam de fora de propósito —
     // são sempre novos pra cada escala, não fazem sentido copiados.
   }
 
-  async function handleUseCurrentLocation(): Promise<void> {
-    setLocationError(null);
-    setIsLocating(true);
-    try {
-      const position = await getCurrentPosition();
-      setLat(position.coords.latitude);
-      setLng(position.coords.longitude);
-    } catch (err) {
-      setLocationError(err instanceof Error ? err.message : 'Não foi possível obter sua localização.');
-    } finally {
-      setIsLocating(false);
-    }
-  }
+  // CEP resolvido já dá rua/bairro/cidade/UF — o suficiente pra uma
+  // primeira tentativa de geocodificação, mesmo antes do número.
+  useEffect(() => {
+    if (!neighborhood && !city && !state) return;
+    void geocodeAddress(buildAddressLabel({ street, number, complement, neighborhood, city, state }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [neighborhood, city, state]);
 
   const isNewCategory = categoryId === NEW_CATEGORY_OPTION;
 
@@ -239,14 +240,14 @@ function NovaVagaForm() {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-8">
       <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-5">
-        <p className="text-[15px] text-text-secondary">
+        <p className="text-[16px] text-text-secondary">
           Preencha os detalhes da escala que você precisa cobrir.
         </p>
 
         {profile && profile.verificationStatus !== 'approved' && (
-          <div className="rounded-[18px] border border-warning/30 bg-warning/10 p-4">
-            <p className="font-heading text-[15px] font-bold text-warning">Verificação pendente</p>
-            <p className="mt-1 text-[13.5px] text-warning">
+          <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
+            <p className="font-heading text-[16px] font-bold text-warning">Verificação pendente</p>
+            <p className="mt-1 text-[14px] text-warning">
               Sua empresa ainda não foi verificada — não é possível publicar vagas até um admin aprovar o
               cadastro. Você pode preencher o formulário, mas a publicação vai ser recusada até lá.
             </p>
@@ -362,11 +363,20 @@ function NovaVagaForm() {
           <p className="mb-1.5 text-sm font-medium text-text-secondary">Endereço</p>
           <AddressFields
             cep={cep}
-            onChangeCep={setCep}
+            onChangeCep={(value) => {
+              markAddressDirty();
+              setCep(value);
+            }}
             street={street}
-            onChangeStreet={setStreet}
+            onChangeStreet={(value) => {
+              markAddressDirty();
+              setStreet(value);
+            }}
             number={number}
-            onChangeNumber={setNumber}
+            onChangeNumber={(value) => {
+              markAddressDirty();
+              setNumber(value);
+            }}
             complement={complement}
             onChangeComplement={setComplement}
             neighborhood={neighborhood}
@@ -377,6 +387,7 @@ function NovaVagaForm() {
               setCity(result.city);
               setState(result.state);
             }}
+            onNumberBlur={() => void geocodeAddress(addressLabel)}
           />
           <p className="mt-1.5 text-xs text-text-secondary">
             Digite o CEP pra preencher a rua automaticamente — é o endereço que o trabalhador vai usar pra chegar até você.
@@ -384,9 +395,13 @@ function NovaVagaForm() {
         </div>
 
         <div>
-          <Button type="button" variant="outlined" onClick={handleUseCurrentLocation} isLoading={isLocating}>
+          <Button type="button" variant="outlined" onClick={useCurrentLocation} isLoading={isLocating}>
             {lat !== null && lng !== null ? 'Localização definida ✓' : 'Usar minha localização atual'}
           </Button>
+          {isGeocoding && <p className="mt-1.5 text-xs text-text-secondary">Localizando esse endereço...</p>}
+          {!isGeocoding && lat !== null && lng !== null && locationSource === 'auto' && (
+            <p className="mt-1.5 text-xs text-text-secondary">Localização identificada automaticamente pelo endereço.</p>
+          )}
           {locationError && <p className="mt-1.5 text-sm text-danger">{locationError}</p>}
         </div>
 

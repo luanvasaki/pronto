@@ -29,9 +29,11 @@ vi.mock('@shift/shared', async (importOriginal) => {
 
 const createJobMock = vi.fn();
 const listMyJobsMock = vi.fn();
+const geocodeJobAddressMock = vi.fn();
 vi.mock('../../../../lib/jobs-api', () => ({
   createJob: (...args: unknown[]) => createJobMock(...args),
   listMyJobs: (...args: unknown[]) => listMyJobsMock(...args),
+  geocodeJobAddress: (...args: unknown[]) => geocodeJobAddressMock(...args),
 }));
 
 function toDateTimeLocal(date: Date): string {
@@ -98,6 +100,7 @@ describe('NovaVagaPage', () => {
     listMyJobsMock.mockReset().mockResolvedValue({ jobs: [] });
     createSkillCategoryMock.mockReset();
     lookupCepMock.mockReset();
+    geocodeJobAddressMock.mockReset().mockResolvedValue({ lat: null, lng: null });
     Object.defineProperty(window.navigator, 'geolocation', {
       value: {
         getCurrentPosition: vi.fn((success) => success({ coords: { latitude: -23.55, longitude: -46.63 } })),

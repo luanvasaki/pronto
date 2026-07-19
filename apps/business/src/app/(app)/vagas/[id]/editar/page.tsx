@@ -3,12 +3,14 @@
 import { ApiError, BenefitProvision, listSkillCategories, SkillCategory } from '@shift/shared';
 import { useParams, useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
+import { AddressFields, buildAddressLabel } from '../../../../../components/ui/address-fields';
 import { Button } from '../../../../../components/ui/button';
 import { Input } from '../../../../../components/ui/input';
 import { JobBenefitsFields } from '../../../../../components/ui/job-benefits-fields';
 import { JobRequirementsFields } from '../../../../../components/ui/job-requirements-fields';
+import { Skeleton } from '../../../../../components/ui/skeleton';
+import { useAddressGeocoding } from '../../../../../hooks/use-address-geocoding';
 import { useJobFormValidation } from '../../../../../hooks/use-job-form-validation';
-import { getCurrentPosition } from '../../../../../lib/geolocation';
 import { listMyJobs, updateJob } from '../../../../../lib/jobs-api';
 
 /**
@@ -46,9 +48,26 @@ export default function EditarVagaPage() {
   const [transportProvision, setTransportProvision] = useState<BenefitProvision>('none');
   const [transportAmount, setTransportAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [addressLabel, setAddressLabel] = useState('');
-  const [lat, setLat] = useState<number | null>(null);
-  const [lng, setLng] = useState<number | null>(null);
+  const [cep, setCep] = useState('');
+  const [street, setStreet] = useState('');
+  const [number, setNumber] = useState('');
+  const [complement, setComplement] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const addressLabel = buildAddressLabel({ street, number, complement, neighborhood, city, state });
+  const {
+    lat,
+    lng,
+    locationSource,
+    isGeocoding,
+    isLocating,
+    locationError,
+    geocodeAddress,
+    markAddressDirty,
+    useCurrentLocation,
+    setInitialLocation,
+  } = useAddressGeocoding();
   const [positionsTotal, setPositionsTotal] = useState('1');
   const [payAmount, setPayAmount] = useState('');
   const [startsAt, setStartsAt] = useState('');
@@ -58,24 +77,14 @@ export default function EditarVagaPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLocating, setIsLocating] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
-  const [locationJustUpdated, setLocationJustUpdated] = useState(false);
 
-  async function handleUseCurrentLocation(): Promise<void> {
-    setLocationError(null);
-    setIsLocating(true);
-    try {
-      const position = await getCurrentPosition();
-      setLat(position.coords.latitude);
-      setLng(position.coords.longitude);
-      setLocationJustUpdated(true);
-    } catch (err) {
-      setLocationError(err instanceof Error ? err.message : 'Não foi possível obter sua localização.');
-    } finally {
-      setIsLocating(false);
-    }
-  }
+  // CEP resolvido já dá rua/bairro/cidade/UF — o suficiente pra uma
+  // primeira tentativa de geocodificação, mesmo antes do número.
+  useEffect(() => {
+    if (!neighborhood && !city && !state) return;
+    void geocodeAddress(buildAddressLabel({ street, number, complement, neighborhood, city, state }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [neighborhood, city, state]);
 
   useEffect(() => {
     Promise.all([listMyJobs(), listSkillCategories()])
@@ -104,9 +113,13 @@ export default function EditarVagaPage() {
         setTransportProvision(job.transportProvision);
         setTransportAmount(job.transportAmount ?? '');
         setDescription(job.description);
-        setAddressLabel(job.addressLabel);
-        setLat(job.locationLat);
-        setLng(job.locationLng);
+        // O endereço salvo é um texto livre (formato antigo) — não dá pra
+        // separar em CEP/número/complemento de volta, então só joga tudo
+        // em "Rua" como ponto de partida; o dono refaz pelo CEP se quiser
+        // uma geocodificação mais precisa (mesmo trato de handleUseTemplate
+        // em nova/page.tsx).
+        setStreet(job.addressLabel);
+        setInitialLocation(job.locationLat, job.locationLng);
         setPositionsTotal(String(job.positionsTotal));
         setPayAmount(job.payAmount);
         setStartsAt(toDateTimeLocal(job.startsAt));
@@ -115,6 +128,7 @@ export default function EditarVagaPage() {
       })
       .catch(() => setLoadError('Não foi possível carregar a vaga.'))
       .finally(() => setIsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId]);
 
   const { positionsTotalNumber, showEstimate, estimateTotal, missingFields, isValid } = useJobFormValidation({
@@ -174,8 +188,14 @@ export default function EditarVagaPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando a vaga...</p>
+      <main className="flex flex-1 items-center justify-center px-4 py-8">
+        <div className="flex w-full max-w-sm flex-col gap-5" aria-hidden="true">
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
       </main>
     );
   }
@@ -191,7 +211,7 @@ export default function EditarVagaPage() {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-8">
       <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-5">
-        <p className="text-[15px] text-text-secondary">Corrija os detalhes da escala.</p>
+        <p className="text-[16px] text-text-secondary">Corrija os detalhes da escala.</p>
 
         <div>
           <label htmlFor="categoryId" className="mb-1.5 block text-sm font-medium text-text-secondary">
@@ -253,23 +273,48 @@ export default function EditarVagaPage() {
         </div>
 
         <div>
-          <Input
-            id="addressLabel"
-            label="Endereço completo"
-            type="text"
-            placeholder="Rua Augusta, 1200 - Consolação, São Paulo"
-            value={addressLabel}
-            onChange={(event) => setAddressLabel(event.target.value)}
+          <p className="mb-1.5 text-sm font-medium text-text-secondary">Endereço</p>
+          <AddressFields
+            cep={cep}
+            onChangeCep={(value) => {
+              markAddressDirty();
+              setCep(value);
+            }}
+            street={street}
+            onChangeStreet={(value) => {
+              markAddressDirty();
+              setStreet(value);
+            }}
+            number={number}
+            onChangeNumber={(value) => {
+              markAddressDirty();
+              setNumber(value);
+            }}
+            complement={complement}
+            onChangeComplement={setComplement}
+            neighborhood={neighborhood}
+            city={city}
+            state={state}
+            onResolvedCep={(result) => {
+              setNeighborhood(result.neighborhood);
+              setCity(result.city);
+              setState(result.state);
+            }}
+            onNumberBlur={() => void geocodeAddress(addressLabel)}
           />
           <p className="mt-1.5 text-xs text-text-secondary">
-            Inclua rua, número e bairro — é o endereço que o trabalhador vai usar pra chegar até você.
+            Digite o CEP pra preencher a rua automaticamente — é o endereço que o trabalhador vai usar pra chegar até você.
           </p>
         </div>
 
         <div>
-          <Button type="button" variant="outlined" onClick={handleUseCurrentLocation} isLoading={isLocating}>
-            {locationJustUpdated ? 'Localização atualizada ✓' : 'Usar minha localização atual'}
+          <Button type="button" variant="outlined" onClick={useCurrentLocation} isLoading={isLocating}>
+            {lat !== null && lng !== null ? 'Localização definida ✓' : 'Usar minha localização atual'}
           </Button>
+          {isGeocoding && <p className="mt-1.5 text-xs text-text-secondary">Localizando esse endereço...</p>}
+          {!isGeocoding && lat !== null && lng !== null && locationSource === 'auto' && (
+            <p className="mt-1.5 text-xs text-text-secondary">Localização identificada automaticamente pelo endereço.</p>
+          )}
           {locationError && <p className="mt-1.5 text-sm text-danger">{locationError}</p>}
         </div>
 

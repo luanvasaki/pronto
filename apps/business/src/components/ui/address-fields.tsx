@@ -16,6 +16,8 @@ export interface AddressFieldsProps {
   city: string;
   state: string;
   onResolvedCep: (result: { neighborhood: string; city: string; state: string }) => void;
+  /** Melhor momento pra tentar geocodificar o endereço automaticamente — número é o último dado que falta pra precisão máxima. */
+  onNumberBlur?: () => void;
 }
 
 /**
@@ -38,6 +40,7 @@ export function AddressFields({
   city,
   state,
   onResolvedCep,
+  onNumberBlur,
 }: AddressFieldsProps) {
   const [isLookingUpCep, setIsLookingUpCep] = useState(false);
   const [cepError, setCepError] = useState<string | null>(null);
@@ -100,6 +103,7 @@ export function AddressFields({
           placeholder="1200"
           value={number}
           onChange={(event) => onChangeNumber(event.target.value)}
+          onBlur={onNumberBlur}
         />
         <Input
           id="complement"

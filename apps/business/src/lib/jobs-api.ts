@@ -76,6 +76,18 @@ export function cancelJob(jobId: string): Promise<Job> {
   });
 }
 
+export interface GeocodeJobAddressResult {
+  lat: number | null;
+  lng: number | null;
+}
+
+export function geocodeJobAddress(addressLabel: string): Promise<GeocodeJobAddressResult> {
+  return apiFetch('/jobs/geocode-address', {
+    method: 'POST',
+    body: JSON.stringify({ addressLabel }),
+  });
+}
+
 export interface DuplicateWeekInput {
   /** Início (00:00) da semana de origem, no fuso local — mesmo dia usado como âncora da grade. */
   sourceWeekStart: string;

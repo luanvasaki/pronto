@@ -21,9 +21,11 @@ vi.mock('@shift/shared', async (importOriginal) => {
 
 const listMyJobsMock = vi.fn();
 const updateJobMock = vi.fn();
+const geocodeJobAddressMock = vi.fn();
 vi.mock('../../../../../lib/jobs-api', () => ({
   listMyJobs: (...args: unknown[]) => listMyJobsMock(...args),
   updateJob: (...args: unknown[]) => updateJobMock(...args),
+  geocodeJobAddress: (...args: unknown[]) => geocodeJobAddressMock(...args),
 }));
 
 // Mesma conversão que o componente deveria fazer pro <input
@@ -60,6 +62,7 @@ describe('EditarVagaPage', () => {
     listMyJobsMock.mockReset();
     updateJobMock.mockReset();
     pushMock.mockReset();
+    geocodeJobAddressMock.mockReset().mockResolvedValue({ lat: null, lng: null });
   });
 
   it('pré-preenche o formulário com os dados atuais da vaga', async () => {

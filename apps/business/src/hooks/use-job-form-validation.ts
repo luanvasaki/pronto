@@ -69,7 +69,7 @@ export function useJobFormValidation(input: JobFormValidationInput): JobFormVali
   if (input.description.trim().length < 10) missingFields.push('descrição (mínimo 10 caracteres)');
   if (input.addressLabel.trim().length < 2) missingFields.push('endereço');
   if (input.lat === null || input.lng === null) {
-    missingFields.push('localização (clique em "Usar minha localização atual")');
+    missingFields.push('localização (endereço não localizado automaticamente — clique em "Usar minha localização atual")');
   }
   if (!Number.isInteger(positionsTotalNumber) || positionsTotalNumber < 1) missingFields.push('número de vagas');
   if (!PAY_AMOUNT_REGEX.test(normalizedPayAmount) || payAmountNumber <= 0) {

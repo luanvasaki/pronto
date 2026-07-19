@@ -38,7 +38,9 @@ describe('useJobFormValidation', () => {
     );
     expect(result.current.missingFields).toContain('categoria');
     expect(result.current.missingFields).toContain('descrição (mínimo 10 caracteres)');
-    expect(result.current.missingFields).toContain('localização (clique em "Usar minha localização atual")');
+    expect(result.current.missingFields).toContain(
+      'localização (endereço não localizado automaticamente — clique em "Usar minha localização atual")',
+    );
   });
 
   it('exige nome da categoria nova só quando isNewCategory é true', () => {
