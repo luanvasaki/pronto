@@ -16,7 +16,7 @@ packages/
 
 Nenhum dos frontends é um app nativo (React Native/Expo) — todos são PWAs para evitar custo e fila de revisão de loja de app nesta fase.
 
-`apps/admin` reaproveita as telas de `/admin` que já existiam dentro de `apps/business` (ainda lá, sem mudança) — é só um ponto de entrada dedicado, com o próprio login, pra quem só usa o painel admin não precisar passar pelo app de empresa. `CORS_ORIGINS` no backend precisa incluir `http://localhost:3400` (já em `.env.example`, mas confira seu `.env` local).
+`apps/admin` foi extraído das telas de `/admin` que existiam antes dentro de `apps/business` — hoje é um site próprio, com login dedicado (só `isAdmin: true` passa), separado de propósito pra isolar dados sensíveis (CPF, documentos de KYC) numa superfície própria. `CORS_ORIGINS` no backend precisa incluir `http://localhost:3400` (já em `.env.example`, mas confira seu `.env` local).
 
 ## Banco de dados local
 
@@ -42,4 +42,4 @@ Isso cria a role `shift` e o banco `shift_dev`. A string de conexão já está e
 
 ## Status
 
-Em desenvolvimento inicial seguindo o roadmap de 90 dias (fase 1: fundação e modelagem).
+Em desenvolvimento ativo. Direção estratégica, decisões em aberto e lacunas conhecidas ficam em [`docs/01-business/roadmap.md`](docs/01-business/roadmap.md); backlog técnico granular em [`docs/05-operations/known-issues.md`](docs/05-operations/known-issues.md).

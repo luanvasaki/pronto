@@ -16,10 +16,10 @@
 Conta de login. `email` nullable (por conveniência de fixture de teste, não por regra de produto — na aplicação é obrigatório), `passwordHash` nullable (null = conta só-Google), `googleId`, `phone`/`phoneVerifiedAt` (reservados pra uma verificação por celular que nunca foi implementada), `status` (active/suspended/banned), `isAdmin` (só setado por update direto no banco). Únicos: `phone`, `email`, `googleId`.
 
 ### `worker_profiles`
-Extensão 1:1 de `users` (`userId` é PK e FK, cascade). Dados pessoais, `birthDate` (decide bloqueio de menor de 16 e exigência de responsável pra 16-17), campos de responsável, `homeLat/Lng` + `homeAddressLabel` (público) vs. `homeAddressFull` (privado, nunca exposto pra empresa), `searchRadiusKm` (default 10), `kycStatus`, `avgRating`/`avgCategoryScores`. **`totalShiftsCompleted`/`totalNoShows` são colunas mortas** — nunca incrementadas em produção, tudo recalculado ao vivo. Único: `cpf`.
+Extensão 1:1 de `users` (`userId` é PK e FK, cascade). Dados pessoais, `birthDate` (decide bloqueio de menor de 16 e exigência de responsável pra 16-17), campos de responsável, `homeLat/Lng` + `homeAddressLabel` (público) vs. `homeAddressFull` (privado, nunca exposto pra empresa), `searchRadiusKm` (default 10), `kycStatus`, `avgRating`/`avgCategoryScores`. "Horas de voo" (turnos concluídos, horas trabalhadas, etc.) são sempre recalculadas ao vivo a partir de `shifts` — não existe coluna acumulada pra isso. Único: `cpf`.
 
 ### `companies`
-`ownerUserId` único (modelo mono-dono deliberado — um usuário só por empresa hoje). `personType` (jurídica/física) decide se `cnpj` ou `cpf` está preenchido. `businessSegment` (bar/restaurante/buffet/hotel/eventos/casa_noturna/outro). `verificationStatus`. **`totalJobsPosted` é coluna morta**, recalculada ao vivo onde precisa. `isDemo` marca dados de demonstração removíveis em lote pelo admin.
+`ownerUserId` único (modelo mono-dono deliberado — um usuário só por empresa hoje). `personType` (jurídica/física) decide se `cnpj` ou `cpf` está preenchido. `businessSegment` (bar/restaurante/buffet/hotel/eventos/casa_noturna/outro). `verificationStatus`. Vagas publicadas são sempre contadas ao vivo (`count(*)` em `jobs`) — não existe coluna acumulada pra isso. `isDemo` marca dados de demonstração removíveis em lote pelo admin.
 
 ### `company_documents`
 Documento de identidade de empresa pessoa física. Sem cascade próprio — a decisão de verificação é sobre a empresa inteira.
@@ -43,7 +43,7 @@ Pergunta pública + resposta. `answer`/`answeredAt` nulos = ainda não respondid
 Candidatura. `status` (pending/approved/rejected/withdrawn). `removedAt`/`workerSeenRemovalAt` distinguem "aprovação desfeita" de rejeição comum, mesmo status (`rejected`) usado pros dois casos — ver nota em [`02-product/glossary.md`](../02-product/glossary.md). Único: par (`jobId`, `workerId`) — não candidata duas vezes à mesma vaga.
 
 ### `shifts`
-Nasce de uma candidatura aprovada — não existe tabela de convite separada. `jobId`/`workerId` são denormalizados de `applicationId` só pra leitura rápida, não são segunda fonte de verdade. `status` (scheduled/checked_in/checked_out/completed/no_show/cancelled — `checked_out` foi inserido no meio do enum numa migration recente). `payAmountSnapshot` congela o valor no momento da aprovação. `checkInAt`/`checkOutAt` (ação do trabalhador) separados de `checkInConfirmedAt`/`checkOutConfirmedAt` (confirmação da empresa, independentes entre si). **`checkInLat/Lng`/`checkOutLat/Lng` continuam na tabela mas nunca mais são escritas** desde a remoção de geolocalização do check-in/check-out. Único: `applicationId`.
+Nasce de uma candidatura aprovada — não existe tabela de convite separada. `jobId`/`workerId` são denormalizados de `applicationId` só pra leitura rápida, não são segunda fonte de verdade. `status` (scheduled/checked_in/checked_out/completed/no_show/cancelled — `checked_out` foi inserido no meio do enum numa migration recente). `payAmountSnapshot` congela o valor no momento da aprovação. `checkInAt`/`checkOutAt` (ação do trabalhador) separados de `checkInConfirmedAt`/`checkOutConfirmedAt` (confirmação da empresa, independentes entre si) — sem coordenadas de geolocalização (removidas do check-in/check-out, colunas dropadas na migration `0049`). `companyRatingSkippedAt`/`workerRatingSkippedAt` (ver módulo `ratings`). Único: `applicationId`.
 
 ### `ratings`
 Quem foi avaliado é sempre "a outra ponta do mesmo turno" — não é uma coluna própria. `raterRole` (worker/company). `score` (1-5, com CHECK constraint no banco). `categoryScores` (jsonb). Sem `updatedAt` — é registro permanente, não editável. Único: par (`shiftId`, `raterRole`).
@@ -72,11 +72,8 @@ N:N entre trabalhador e categoria. Cascade em `workerId`, sem cascade em `catego
 
 ## Colunas mortas conhecidas
 
-Confirmadas por grep (zero escritas em código de produção) e, em vários casos, por comentário explícito no próprio schema reconhecendo isso:
+`worker_profiles.totalShiftsCompleted`/`totalNoShows`, `companies.totalJobsPosted` e `shifts.checkInLat/checkInLng/checkOutLat/checkOutLng` — confirmadas via grep como nunca escritas em produção — foram removidas de verdade (migration `0049`), não só documentadas como mortas.
 
-- `worker_profiles.totalShiftsCompleted`, `worker_profiles.totalNoShows`
-- `companies.totalJobsPosted`
-- `shifts.checkInLat`, `shifts.checkInLng`, `shifts.checkOutLat`, `shifts.checkOutLng`
-- Enum values nunca escritos: `shift_status.no_show`, `payment_status.refunded`
+Ainda existem, por decisão consciente (não são "sujeira", são estado modelado pra um caso que ainda não acontece):
 
-Detalhe de por que cada uma existe e o que fazer a respeito, em [`05-operations/known-issues.md`](../05-operations/known-issues.md).
+- Enum values nunca escritos: `shift_status.no_show`, `payment_status.refunded` — ver [`05-operations/known-issues.md`](../05-operations/known-issues.md).

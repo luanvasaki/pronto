@@ -16,16 +16,9 @@ Estes itens foram confirmados na auditoria de código como **implementados parci
 
 - **Faltas (`no_show`) nunca são registradas de verdade.** O status existe no sistema, mas nada o escreve — não há job/cron marcando falta automaticamente. Isso significa que toda métrica de "confiabilidade"/"comparecimento" do trabalhador hoje nunca desconta falta real. Decisão pendente: vale a pena implementar detecção real de falta (ex: turno que passou do horário de início sem check-in), ou isso é aceitável dado que o produto já mostra atraso em tempo real na tela "Ao vivo"?
 - **Disputa de pagamento (`disputed`) não tem fluxo de resolução.** Quando o trabalhador contesta "não recebi", não existe próximo passo modelado no sistema. Torna-se mais urgente resolver isso quando o pagamento passar a ser real (ver `monetization.md`) — hoje, sem dinheiro real em jogo, é uma lacuna tolerável; deixa de ser quando há dinheiro de verdade.
-- **Ignorar avaliação (`skip rating`) só existe pro lado da empresa.** O trabalhador não tem a mesma opção — se ele não quiser avaliar, o registro fica pendente pra sempre. Decisão pendente: isso é assimetria proposital (empresa avalia menos vezes por decisão de produto) ou lacuna a preencher?
-- **Não existe upload de documento de verificação para empresa pessoa jurídica (CNPJ)** — só pessoa física (CPF) tem esse fluxo no app. Não ficou claro na auditoria em que a verificação de CNPJ se baseia hoje.
 
 ## Perguntas em aberto que vieram da auditoria técnica
 
 - Existe um plano pra reintroduzir `no_show` como status real, ou ele deveria simplesmente sair do enum já que o produto resolve isso ao vivo (tela "Ao vivo") em vez de persistir?
-- Colunas do banco que nunca são escritas em produção (`totalShiftsCompleted`, `totalNoShows`, `totalJobsPosted`, coordenadas de check-in/check-out) deveriam ser removidas, ou ficam por enquanto?
 - Por que o repositório/pacote interno se chama `shift` enquanto o produto é "Pronto" em todo lugar — houve rebranding no meio do caminho que vale registrar?
 
-## Faxina técnica (baixa prioridade, não estratégica)
-
-- `apps/business/src/components/ui/growth-chart.tsx` (+ teste) — componente órfão, sobrou de quando o painel administrativo vivia dentro do app da empresa antes de virar `apps/admin`. Seguro remover, mas vale confirmar antes (não há nenhum plano futuro de dashboard de crescimento dentro do app da empresa que dependa dele).
-- `README.md` da raiz do repositório está desatualizado em dois pontos: ainda descreve o painel admin como estando dentro do app business (já foi extraído), e ainda fala em "roadmap de 90 dias, fase 1" (o produto já passou muito disso).

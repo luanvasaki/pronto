@@ -5,7 +5,7 @@
 | Rota | Quem chama | Função |
 |---|---|---|
 | `POST /shifts/:id/rating` | Trabalhador ou empresa | Avaliar a outra parte do turno |
-| `PATCH /shifts/:id/skip-rating` | Só empresa | Pular avaliação |
+| `PATCH /shifts/:id/skip-rating` | Trabalhador ou empresa | Pular avaliação (marca `workerRatingSkippedAt` ou `companyRatingSkippedAt`, conforme quem chama) |
 
 ## Categorias
 
@@ -20,4 +20,4 @@ Trabalhador avalia empresa: `COMPANY_RATING_CATEGORIES` (pontualidade de pagamen
 - Só avalia turno `completed`.
 - Um rating por (turno, papel de quem avalia) — segunda tentativa é bloqueada por índice único, com corrida tratada.
 - `raterRole` é sempre derivado da identidade de quem chama, nunca enviado pelo cliente.
-- **Skip só existe pro lado da empresa** (`companyRatingSkippedAt` em `shifts`) — não bloqueia avaliar depois, só esconde o formulário enquanto não decidido. Não há equivalente pro trabalhador (ver [`05-operations/known-issues.md`](../../05-operations/known-issues.md)).
+- **Skip** (`skip-rating.ts`) — mesma derivação de papel do `raterRole`: se quem chama é o trabalhador do turno, marca `workerRatingSkippedAt`; senão precisa ser o dono da empresa da vaga, e marca `companyRatingSkippedAt`. Não bloqueia avaliar depois, só esconde o formulário enquanto não decidido.

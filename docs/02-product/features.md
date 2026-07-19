@@ -22,7 +22,7 @@
 ## App da empresa
 
 - Cadastro por e-mail/senha ou Google.
-- Cadastro de perfil de empresa: pessoa jurídica (CNPJ) ou física (CPF, com upload de documento).
+- Cadastro de perfil de empresa: pessoa jurídica (CNPJ) ou física (CPF) — os dois exigem upload de documento de verificação (cartão CNPJ/contrato social, ou RG/CNH).
 - Painel com métricas do momento: cobertura das próximas 48h, vagas com posição em aberto, central de ações.
 - Calendário de vagas: visão mensal, semanal e "Ao vivo".
 - Publicar vaga: todos os campos de exigência/benefício, com opção de usar uma vaga anterior como modelo.

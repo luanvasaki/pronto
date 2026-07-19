@@ -14,7 +14,7 @@
 | `GET /company-profile/worker-history` | Histórico agregado de trabalhadores |
 | `GET /company-profile/live-event` | Operação ao vivo do dia |
 | `POST /company-profile/logo` | Upload de logo |
-| `POST /company-profile/document` | Upload de documento (só pessoa física) |
+| `POST /company-profile/document` | Upload de documento de verificação (pessoa física: RG/CNH; pessoa jurídica: cartão CNPJ/contrato social) |
 
 ## Sino de notificações (`get-notifications.ts`)
 
