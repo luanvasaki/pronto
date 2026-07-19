@@ -41,7 +41,7 @@ describe('AdminLayout', () => {
   });
 
   it('mostra acesso restrito pra quem não é admin, sem exigir perfil de empresa', async () => {
-    getCurrentUserMock.mockResolvedValue({ user: { id: '1', isAdmin: false } });
+    getCurrentUserMock.mockResolvedValue({ user: { id: '1', isAdmin: false, email: 'admin@pronto.work' } });
 
     render(
       <AdminLayout>
@@ -54,7 +54,7 @@ describe('AdminLayout', () => {
   });
 
   it('renderiza a nav e o conteúdo pro admin', async () => {
-    getCurrentUserMock.mockResolvedValue({ user: { id: '1', isAdmin: true } });
+    getCurrentUserMock.mockResolvedValue({ user: { id: '1', isAdmin: true, email: 'admin@pronto.work' } });
 
     render(
       <AdminLayout>
@@ -68,7 +68,9 @@ describe('AdminLayout', () => {
   });
 
   it('não mostra contador no sino nem no menu quando não há nada pendente', async () => {
-    getCurrentUserMock.mockResolvedValue({ user: { id: '1', isAdmin: true } });
+    getCurrentUserMock.mockResolvedValue({ user: { id: '1', isAdmin: true, email: 'admin@pronto.work' } });
+    const { default: userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
 
     render(
       <AdminLayout>
@@ -77,23 +79,35 @@ describe('AdminLayout', () => {
     );
 
     await screen.findByText('conteúdo');
-    expect(screen.getByRole('link', { name: 'Verificações pendentes' })).toHaveAttribute(
-      'href',
-      '/admin/verificacoes',
-    );
+    const bell = screen.getByRole('button', { name: 'Verificações pendentes' });
+    await user.click(bell);
+
+    expect(await screen.findByText('Nenhuma verificação pendente.')).toBeInTheDocument();
   });
 
-  it('mostra a soma de trabalhadores, empresas e categorias pendentes no sino e no menu', async () => {
-    getCurrentUserMock.mockResolvedValue({ user: { id: '1', isAdmin: true } });
+  it('mostra a soma de trabalhadores, empresas e categorias pendentes no sino, no menu e no dropdown', async () => {
+    getCurrentUserMock.mockResolvedValue({ user: { id: '1', isAdmin: true, email: 'admin@pronto.work' } });
     listPendingVerificationsMock.mockResolvedValue({
       documents: [
         { id: 'doc-1', workerId: 'worker-1', workerFullName: 'Ana', type: 'identity', createdAt: new Date() },
         { id: 'doc-2', workerId: 'worker-1', workerFullName: 'Ana', type: 'selfie', createdAt: new Date() },
         { id: 'doc-3', workerId: 'worker-2', workerFullName: 'Beto', type: 'identity', createdAt: new Date() },
       ],
-      companies: [{ id: 'company-1', legalName: 'X', tradeName: 'X', personType: 'juridica', cnpj: '1', cpf: null, documentId: null }],
+      companies: [
+        {
+          id: 'company-1',
+          legalName: 'Bar do Zé Ltda',
+          tradeName: 'Bar do Zé',
+          personType: 'juridica',
+          cnpj: '1',
+          cpf: null,
+          documentId: null,
+        },
+      ],
       skillCategories: [{ id: 'cat-1', name: 'Barista', createdByName: null }],
     });
+    const { default: userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
 
     render(
       <AdminLayout>
@@ -102,16 +116,26 @@ describe('AdminLayout', () => {
     );
 
     // 2 trabalhadores (identidade+selfie da Ana contam como 1) + 1 empresa + 1 categoria = 4.
-    expect(await screen.findByLabelText('4 verificação(ões) pendente(s)')).toHaveAttribute(
-      'href',
-      '/admin/verificacoes',
-    );
+    const bell = await screen.findByLabelText('4 verificação(ões) pendente(s)');
     // Aparece duas vezes: badge no sino e badge no item "Verificações" do menu.
     expect(screen.getAllByText('4')).toHaveLength(2);
+
+    await user.click(bell);
+
+    expect(screen.getByText('Ana', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText('Beto', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText('Bar do Zé', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText('Barista', { exact: false })).toBeInTheDocument();
+    // 2 trabalhadores (Ana + Beto) + 1 empresa + 1 categoria = 4 itens no dropdown.
+    const dropdownLinks = screen.getAllByRole('link', { name: /aguardando/i });
+    expect(dropdownLinks).toHaveLength(4);
+    for (const link of dropdownLinks) {
+      expect(link).toHaveAttribute('href', '/admin/verificacoes');
+    }
   });
 
   it('desloga e manda pro login', async () => {
-    getCurrentUserMock.mockResolvedValue({ user: { id: '1', isAdmin: true } });
+    getCurrentUserMock.mockResolvedValue({ user: { id: '1', isAdmin: true, email: 'admin@pronto.work' } });
     const { default: userEvent } = await import('@testing-library/user-event');
     const user = userEvent.setup();
 
