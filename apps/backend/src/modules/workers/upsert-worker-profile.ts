@@ -2,7 +2,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { skillCategories, users, workerProfiles, workerSkills } from '../../db/schema';
 import { CnhCategory, isCnhCategory } from '../jobs/cnh';
-import { calculateAge } from '../../shared/age';
+import { calculateAge, isMinor as checkIsMinor } from '../../shared/age';
 import { isValidCpf } from '../../shared/cpf-cnpj';
 import { HttpError } from '../../shared/errors/http-error';
 
@@ -13,8 +13,6 @@ const BIRTH_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 // só com dado + documento + autorização explícita do responsável (ver
 // GUARDIAN_MIN_AGE_YEARS abaixo e reunião jurídica).
 const MIN_WORKER_AGE_YEARS = 16;
-// A partir daqui não precisa mais de responsável.
-const ADULT_AGE_YEARS = 18;
 
 export interface UpsertWorkerProfileInput {
   fullName: string | undefined;
@@ -168,7 +166,7 @@ export async function upsertWorkerProfile(
   // data enviada agora, ou a já salva se essa chamada não reenviou
   // birthDate (edição que não mexe nisso).
   const effectiveBirthDate = birthDate || existingProfile?.birthDate;
-  const isMinor = effectiveBirthDate != null && calculateAge(effectiveBirthDate, new Date()) < ADULT_AGE_YEARS;
+  const isMinor = checkIsMinor(effectiveBirthDate);
 
   const guardianFullName = input.guardianFullName?.trim();
   const guardianCpf = input.guardianCpf?.trim();
@@ -211,7 +209,7 @@ export async function upsertWorkerProfile(
   // menor (ou o contrário) continuaria "approved" sem nunca ter passado
   // pela exigência de guardian_identity (ver review-document.ts).
   const previousBirthDate = existingProfile?.birthDate;
-  const previousIsMinor = previousBirthDate != null && calculateAge(previousBirthDate, new Date()) < ADULT_AGE_YEARS;
+  const previousIsMinor = checkIsMinor(previousBirthDate);
   const requiresKycReReview =
     existingProfile != null &&
     existingProfile.kycStatus === 'approved' &&

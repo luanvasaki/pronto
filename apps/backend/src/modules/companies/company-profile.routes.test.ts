@@ -66,6 +66,5 @@ describe('GET /company-profile/me', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.tradeName).toBe('Bar do Zé');
-    expect(response.body.totalJobsPosted).toBe(0);
   });
 });

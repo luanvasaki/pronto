@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 import { HttpError } from '../../shared/errors/http-error';
-import { skipCompanyRating } from './skip-company-rating';
+import { skipRating } from './skip-rating';
 
-export async function skipCompanyRatingHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function skipRatingHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.auth?.userId;
     if (!userId) {
@@ -14,7 +14,7 @@ export async function skipCompanyRatingHandler(req: Request, res: Response, next
       throw new HttpError(404, 'Turno não encontrado.');
     }
 
-    const result = await skipCompanyRating(userId, shiftId);
+    const result = await skipRating(userId, shiftId);
     res.json(result);
   } catch (error) {
     next(error);

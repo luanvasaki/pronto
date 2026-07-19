@@ -1,6 +1,5 @@
 import {
   boolean,
-  integer,
   jsonb,
   numeric,
   pgEnum,
@@ -73,7 +72,6 @@ export const companies = pgTable(
     // avaliações recebidas de trabalhadores — mesmo padrão de
     // worker_profiles.avgCategoryScores, ver update-rating-aggregates.ts.
     avgCategoryScores: jsonb('avg_category_scores').$type<Record<string, string>>(),
-    totalJobsPosted: integer('total_jobs_posted').notNull().default(0),
     // Empresa criada só pra popular o app com vagas de exemplo em
     // demonstração — nunca aparece diferente pro trabalhador (mesmos
     // campos, mesmo fluxo), só existe pra dar pra remover tudo de

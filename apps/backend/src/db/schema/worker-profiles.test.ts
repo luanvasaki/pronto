@@ -26,8 +26,6 @@ describe('tabela worker_profiles', () => {
 
     expect(profile.searchRadiusKm).toBe(10);
     expect(profile.kycStatus).toBe('pending');
-    expect(profile.totalShiftsCompleted).toBe(0);
-    expect(profile.totalNoShows).toBe(0);
   });
 
   it('não permite perfil sem um usuário existente', async () => {

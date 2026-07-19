@@ -18,7 +18,6 @@ export interface CompanyProfileDetails {
   verificationStatus: string;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
-  totalJobsPosted: number;
   jobsPosted: number;
   shiftsCompleted: number;
   rehireRate: number | null;
@@ -41,9 +40,8 @@ export async function getCompanyProfile(ownerUserId: string): Promise<CompanyPro
   await updateCompanyRatingAggregate(existing.id);
   const company = (await db.query.companies.findFirst({ where: eq(companies.id, existing.id) })) ?? existing;
 
-  // `company.totalJobsPosted` nunca é incrementada em código nenhum (só em
-  // teste) — mesmo problema já resolvido pro admin em list-companies.ts.
-  // `jobsPosted` conta ao vivo e é o que a tela deveria mostrar.
+  // `jobsPosted` conta ao vivo — mesmo padrão já usado pro admin em
+  // list-companies.ts.
   const [{ jobsPosted = 0 } = { jobsPosted: 0 }] = await db
     .select({ jobsPosted: sql<number>`count(*)` })
     .from(jobs)
@@ -115,7 +113,6 @@ export async function getCompanyProfile(ownerUserId: string): Promise<CompanyPro
     verificationStatus: company.verificationStatus,
     avgRating: company.avgRating,
     avgCategoryScores: company.avgCategoryScores ?? null,
-    totalJobsPosted: company.totalJobsPosted,
     jobsPosted: Number(jobsPosted),
     shiftsCompleted,
     rehireRate: workersHired > 0 ? Math.round((workersRehired / workersHired) * 100) : null,

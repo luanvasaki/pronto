@@ -113,7 +113,7 @@ describe('tabela shifts', () => {
     ).rejects.toThrow();
   });
 
-  it('registra check-in com geolocalização e muda o status', async () => {
+  it('registra check-in e muda o status', async () => {
     const { job, application } = await createApprovedApplication();
     const [shift] = await db
       .insert(shifts)
@@ -127,11 +127,11 @@ describe('tabela shifts', () => {
 
     const [updated] = await db
       .update(shifts)
-      .set({ status: 'checked_in', checkInAt: new Date(), checkInLat: -23.566, checkInLng: -46.687 })
+      .set({ status: 'checked_in', checkInAt: new Date() })
       .where(eq(shifts.id, shift.id))
       .returning();
 
     expect(updated.status).toBe('checked_in');
-    expect(updated.checkInLat).toBeCloseTo(-23.566);
+    expect(updated.checkInAt).not.toBeNull();
   });
 });

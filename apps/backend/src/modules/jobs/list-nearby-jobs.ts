@@ -1,14 +1,12 @@
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies, jobs, workerProfiles, workerSkills } from '../../db/schema';
-import { calculateAge } from '../../shared/age';
+import { isMinor as checkIsMinor } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
 import { areApplicationsClosed } from './applications-close';
 import { satisfiesCnhRequirement } from './cnh';
 import { haversineDistanceKm } from './haversine';
 import { JobResponse, toJobResponse } from './job-response';
-
-const ADULT_AGE_YEARS = 18;
 
 export interface NearbyJobResponse extends JobResponse {
   distanceKm: number;
@@ -56,7 +54,7 @@ export async function listNearbyJobs(workerId: string): Promise<NearbyJobRespons
     throw new HttpError(400, 'Defina sua localização antes de ver vagas.');
   }
 
-  const isMinor = Boolean(profile.birthDate) && calculateAge(profile.birthDate!, new Date()) < ADULT_AGE_YEARS;
+  const isMinor = checkIsMinor(profile.birthDate);
 
   const skills = await db.query.workerSkills.findMany({ where: eq(workerSkills.workerId, workerId) });
   const categoryIds = new Set(skills.map((skill) => skill.categoryId));

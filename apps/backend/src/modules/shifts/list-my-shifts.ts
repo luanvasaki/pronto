@@ -12,6 +12,8 @@ export interface MyShiftResponse extends ShiftResponse {
   companyName: string;
   payment: PaymentResponse | null;
   ratings: ShiftRatings;
+  /** Trabalhador optou por não avaliar — ver skip-rating.ts. Null = ainda não decidiu. */
+  workerRatingSkippedAt: Date | null;
 }
 
 /** Junta em memória (sem relations() configurado no Drizzle) — mesmo padrão de list-my-applications. */
@@ -56,6 +58,7 @@ export async function listMyShifts(workerId: string): Promise<MyShiftResponse[]>
           row.checkOutAt,
           'worker',
         ),
+        workerRatingSkippedAt: row.workerRatingSkippedAt,
       },
     ];
   });

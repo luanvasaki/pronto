@@ -337,6 +337,20 @@
       "when": 1784381530738,
       "tag": "0047_special_whirlwind",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1784477011627,
+      "tag": "0048_glorious_micromax",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1784479787672,
+      "tag": "0049_flaky_lord_hawal",
+      "breakpoints": true
     }
   ]
 }

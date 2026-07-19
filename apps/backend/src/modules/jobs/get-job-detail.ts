@@ -1,12 +1,10 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, companies, jobs, workerProfiles, workerSkills } from '../../db/schema';
-import { calculateAge } from '../../shared/age';
+import { isMinor as checkIsMinor } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
 import { satisfiesCnhRequirement } from './cnh';
 import { JobResponse, toJobResponse } from './job-response';
-
-const ADULT_AGE_YEARS = 18;
 
 export interface JobDetailResponse extends JobResponse {
   companyName: string;
@@ -63,7 +61,7 @@ export async function getJobDetailForWorker(workerId: string, jobId: string): Pr
     where: and(eq(workerSkills.workerId, workerId), eq(workerSkills.categoryId, job.categoryId)),
   });
 
-  const isMinor = Boolean(profile.birthDate) && calculateAge(profile.birthDate!, new Date()) < ADULT_AGE_YEARS;
+  const isMinor = checkIsMinor(profile.birthDate);
 
   return {
     ...toJobResponse(job),

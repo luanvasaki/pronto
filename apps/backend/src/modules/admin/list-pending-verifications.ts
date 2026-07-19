@@ -1,9 +1,7 @@
 import { desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies, companyDocuments, documents, skillCategories, workerProfiles } from '../../db/schema';
-import { calculateAge } from '../../shared/age';
-
-const ADULT_AGE_YEARS = 18;
+import { isMinor as checkIsMinor } from '../../shared/age';
 
 export interface PendingDocument {
   id: string;
@@ -98,7 +96,7 @@ export async function listPendingVerifications(): Promise<PendingVerifications> 
     documents: pendingDocuments.flatMap((document) => {
       const worker = workersById.get(document.workerId);
       if (!worker) return [];
-      const isMinor = Boolean(worker.birthDate) && calculateAge(worker.birthDate!, new Date()) < ADULT_AGE_YEARS;
+      const isMinor = checkIsMinor(worker.birthDate);
       return [
         {
           id: document.id,

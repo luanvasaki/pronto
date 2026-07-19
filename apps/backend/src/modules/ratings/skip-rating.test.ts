@@ -8,10 +8,10 @@ import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
 import { confirmCheckOut } from '../shifts/confirm-check-out';
 import { PaymentGateway } from '../payments/payment-gateway';
-import { skipCompanyRating } from './skip-company-rating';
+import { skipRating } from './skip-rating';
 
 const SUCCESS_GATEWAY: PaymentGateway = {
-  charge: async () => ({ pspChargeId: 'psp_skip-company-rating' }),
+  charge: async () => ({ pspChargeId: 'psp_skip-rating' }),
   release: async () => {},
 };
 
@@ -19,7 +19,7 @@ const WORKER_PHONE = '+5511966660060';
 const OUTSIDER_PHONE = '+5511966660061';
 const OWNER_PHONE = '+5511966660062';
 const TEST_CNPJ = '11112223340693';
-const TEST_CATEGORY_NAME = 'Categoria de teste — skip-company-rating';
+const TEST_CATEGORY_NAME = 'Categoria de teste — skip-rating';
 
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
 const TOMORROW_PLUS_5H = new Date(TOMORROW.getTime() + 5 * 60 * 60 * 1000);
@@ -57,7 +57,7 @@ async function setupCompletedShift() {
   return { worker, owner, shift };
 }
 
-describe('skipCompanyRating', () => {
+describe('skipRating', () => {
   afterEach(async () => {
     const owner = await db.query.users.findFirst({ where: eq(users.phone, OWNER_PHONE) });
     if (owner) {
@@ -84,34 +84,55 @@ describe('skipCompanyRating', () => {
 
   it('rejeita turno inexistente', async () => {
     const { owner } = await setupCompletedShift();
-    await expect(skipCompanyRating(owner.id, '00000000-0000-0000-0000-000000000000')).rejects.toThrow(
+    await expect(skipRating(owner.id, '00000000-0000-0000-0000-000000000000')).rejects.toThrow(
       'Turno não encontrado',
     );
   });
 
-  it('rejeita quem não é dono da empresa', async () => {
+  it('rejeita quem não é nem o trabalhador nem o dono da empresa', async () => {
     const { shift } = await setupCompletedShift();
     const [outsider] = await db.insert(users).values({ phone: OUTSIDER_PHONE }).returning();
 
-    await expect(skipCompanyRating(outsider.id, shift.id)).rejects.toThrow('Você não tem acesso');
+    await expect(skipRating(outsider.id, shift.id)).rejects.toThrow('Você não tem acesso');
   });
 
   it('rejeita turno que ainda não foi concluído (sem check-in/check-out)', async () => {
     const { owner, shift } = await setupCompletedShift();
 
-    await expect(skipCompanyRating(owner.id, shift.id)).rejects.toThrow('turnos concluídos');
+    await expect(skipRating(owner.id, shift.id)).rejects.toThrow('turnos concluídos');
   });
 
-  it('marca companyRatingSkippedAt quando o turno está concluído', async () => {
+  it('marca companyRatingSkippedAt quando quem chama é o dono da empresa', async () => {
     const { worker, owner, shift } = await setupCompletedShift();
     await checkIn(worker.id, shift.id);
     await checkOut(worker.id, shift.id);
     await confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id);
 
     const before = new Date();
-    const result = await skipCompanyRating(owner.id, shift.id);
+    const result = await skipRating(owner.id, shift.id);
 
     expect(result.shiftId).toBe(shift.id);
-    expect(result.companyRatingSkippedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(result.skippedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+
+    const updated = await db.query.shifts.findFirst({ where: eq(shifts.id, shift.id) });
+    expect(updated?.companyRatingSkippedAt).not.toBeNull();
+    expect(updated?.workerRatingSkippedAt).toBeNull();
+  });
+
+  it('marca workerRatingSkippedAt quando quem chama é o trabalhador do turno', async () => {
+    const { worker, owner, shift } = await setupCompletedShift();
+    await checkIn(worker.id, shift.id);
+    await checkOut(worker.id, shift.id);
+    await confirmCheckOut(SUCCESS_GATEWAY, owner.id, shift.id);
+
+    const before = new Date();
+    const result = await skipRating(worker.id, shift.id);
+
+    expect(result.shiftId).toBe(shift.id);
+    expect(result.skippedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+
+    const updated = await db.query.shifts.findFirst({ where: eq(shifts.id, shift.id) });
+    expect(updated?.workerRatingSkippedAt).not.toBeNull();
+    expect(updated?.companyRatingSkippedAt).toBeNull();
   });
 });

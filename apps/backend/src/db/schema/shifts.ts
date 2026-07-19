@@ -1,12 +1,4 @@
-import {
-  doublePrecision,
-  numeric,
-  pgEnum,
-  pgTable,
-  timestamp,
-  uniqueIndex,
-  uuid,
-} from 'drizzle-orm/pg-core';
+import { numeric, pgEnum, pgTable, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { applications } from './applications';
 import { jobs } from './jobs';
 import { workerProfiles } from './worker-profiles';
@@ -44,8 +36,6 @@ export const shifts = pgTable(
     // convenção (nenhum endpoint expõe edição) — ver nota na tarefa.
     payAmountSnapshot: numeric('pay_amount_snapshot', { precision: 10, scale: 2 }).notNull(),
     checkInAt: timestamp('check_in_at', { withTimezone: true }),
-    checkInLat: doublePrecision('check_in_lat'),
-    checkInLng: doublePrecision('check_in_lng'),
     // Nulo = empresa ainda não confirmou que o trabalhador chegou —
     // alimenta o alerta "Fulano fez check-in" no sino da empresa (mesmo
     // padrão de applications.workerSeenAt, ver get-notifications.ts) e
@@ -53,8 +43,6 @@ export const shifts = pgTable(
     // Não trava o check-out: as duas confirmações são independentes.
     checkInConfirmedAt: timestamp('check_in_confirmed_at', { withTimezone: true }),
     checkOutAt: timestamp('check_out_at', { withTimezone: true }),
-    checkOutLat: doublePrecision('check_out_lat'),
-    checkOutLng: doublePrecision('check_out_lng'),
     // Nulo = empresa ainda não confirmou a saída — enquanto isso o turno
     // fica em 'checked_out', não 'completed' (ver confirm-check-out.ts).
     // É a confirmação do check-out que dispara a cobrança do turno.
@@ -63,6 +51,10 @@ export const shifts = pgTable(
     // o formulário de avaliação sem exigir uma nota. Não impede avaliar
     // depois (só é lido quando `ratings.company` ainda está vazio).
     companyRatingSkippedAt: timestamp('company_rating_skipped_at', { withTimezone: true }),
+    // Mesmo campo do lado do trabalhador — antes só a empresa podia
+    // ignorar a avaliação, deixando o trabalhador sem saída quando não
+    // queria avaliar (ver skip-rating.ts).
+    workerRatingSkippedAt: timestamp('worker_rating_skipped_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

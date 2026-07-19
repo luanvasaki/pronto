@@ -2,10 +2,8 @@ import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, documents, jobs, shifts, workerProfiles, workerSkills } from '../../db/schema';
 import { updateWorkerRatingAggregate } from '../ratings/update-rating-aggregates';
-import { calculateAge } from '../../shared/age';
+import { isMinor as checkIsMinor } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
-
-const ADULT_AGE_YEARS = 18;
 
 export interface WorkerProfileDetails {
   fullName: string;
@@ -66,15 +64,15 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
   const hasSelfie = workerDocuments.some((document) => document.type === 'selfie');
   const hasCnhDocument = workerDocuments.some((document) => document.type === 'cnh');
   const hasGuardianDocument = workerDocuments.some((document) => document.type === 'guardian_identity');
-  const isMinor = Boolean(profile.birthDate) && calculateAge(profile.birthDate!, new Date()) < ADULT_AGE_YEARS;
+  const isMinor = checkIsMinor(profile.birthDate);
 
-  // "Horas de voo": calculadas ao vivo a partir dos turnos concluídos —
-  // as colunas `totalShiftsCompleted`/`totalNoShows` de `worker_profiles`
-  // nunca são atualizadas por nenhum código, então não são confiáveis.
-  // `checkedIn`/`noShow` entram aqui só pra calcular comparecimento
-  // (turnos `cancelled` ficam de fora de propósito — cancelamento é
-  // sempre iniciativa da empresa, ver cancel-job.ts/remove-approved-worker.ts,
-  // não é falha do trabalhador).
+  // "Horas de voo": sempre calculadas ao vivo a partir dos turnos —
+  // `worker_profiles` nunca guarda essa contagem (colunas mortas
+  // equivalentes já foram removidas do schema). `checkedIn`/`noShow`
+  // entram aqui só pra calcular comparecimento (turnos `cancelled`
+  // ficam de fora de propósito — cancelamento é sempre iniciativa da
+  // empresa, ver cancel-job.ts/remove-approved-worker.ts, não é falha
+  // do trabalhador).
   const [stats] = await db
     .select({
       totalShiftsCompleted: sql<string>`count(*) filter (where ${shifts.status} = 'completed')`,

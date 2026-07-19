@@ -94,7 +94,6 @@ describe('getCompanyProfile', () => {
 
     expect(result.tradeName).toBe('Bar do Zé');
     expect(result.verificationStatus).toBe('pending');
-    expect(result.totalJobsPosted).toBe(0);
     expect(result.avgRating).toBeNull();
     expect(result.jobsPosted).toBe(0);
     expect(result.shiftsCompleted).toBe(0);
@@ -108,15 +107,14 @@ describe('getCompanyProfile', () => {
   it('reflete avgRating quando já existe', async () => {
     const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
     await upsertCompanyProfile(user.id, { legalName: 'Bar do Zé Ltda', tradeName: 'Bar do Zé', cnpj: TEST_CNPJ });
-    await db.update(companies).set({ avgRating: '4.2', totalJobsPosted: 2 }).where(eq(companies.ownerUserId, user.id));
+    await db.update(companies).set({ avgRating: '4.2' }).where(eq(companies.ownerUserId, user.id));
 
     const result = await getCompanyProfile(user.id);
 
     expect(result.avgRating).toBe('4.2');
-    expect(result.totalJobsPosted).toBe(2);
   });
 
-  it('jobsPosted conta vagas ao vivo — não confia na coluna totalJobsPosted (morta, nunca incrementada)', async () => {
+  it('jobsPosted conta vagas publicadas ao vivo', async () => {
     const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
     const company = await upsertCompanyProfile(user.id, {
       legalName: 'Bar do Zé Ltda',
@@ -130,7 +128,6 @@ describe('getCompanyProfile', () => {
     const result = await getCompanyProfile(user.id);
 
     expect(result.jobsPosted).toBe(2);
-    expect(result.totalJobsPosted).toBe(0);
   });
 
   it('shiftsCompleted conta turnos concluídos de todas as vagas da empresa', async () => {

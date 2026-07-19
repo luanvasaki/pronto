@@ -1,10 +1,8 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { documents, workerProfiles } from '../../db/schema';
-import { calculateAge } from '../../shared/age';
+import { isMinor as checkIsMinor } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
-
-const ADULT_AGE_YEARS = 18;
 
 type ReviewStatus = 'approved' | 'rejected';
 
@@ -71,8 +69,7 @@ export async function reviewDocument(
     const workerProfile = await tx.query.workerProfiles.findFirst({
       where: eq(workerProfiles.userId, document.workerId),
     });
-    const isMinor =
-      Boolean(workerProfile?.birthDate) && calculateAge(workerProfile!.birthDate!, new Date()) < ADULT_AGE_YEARS;
+    const isMinor = checkIsMinor(workerProfile?.birthDate);
 
     const workerDocuments = await tx.query.documents.findMany({
       where: eq(documents.workerId, document.workerId),

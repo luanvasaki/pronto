@@ -20,11 +20,10 @@ export interface AdminCompany {
 }
 
 /**
- * `companies.totalJobsPosted` nunca é incrementada em código nenhum (só em
- * teste) — mesmo problema já resolvido em get-metrics.ts contando `jobs`
- * ao vivo. Aqui contamos por empresa via LEFT JOIN até `shifts` (turno
- * concluído = contratação de verdade, não só vaga publicada) pra já sair
- * ordenado por quem mais contrata.
+ * Conta `jobs`/`shifts` ao vivo (mesmo padrão de get-metrics.ts) — nunca
+ * uma coluna acumulada em `companies`. Aqui contamos por empresa via
+ * LEFT JOIN até `shifts` (turno concluído = contratação de verdade, não
+ * só vaga publicada) pra já sair ordenado por quem mais contrata.
  */
 export async function listAdminCompanies(): Promise<AdminCompany[]> {
   const rows = await db

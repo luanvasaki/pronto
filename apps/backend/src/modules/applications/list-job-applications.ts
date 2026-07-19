@@ -35,7 +35,7 @@ export interface JobApplicationResponse {
     checkOutConfirmedAt: Date | null;
     payment: PaymentResponse | null;
     ratings: ShiftRatings;
-    /** Empresa optou por não avaliar — ver skip-company-rating.ts. Null = ainda não decidiu. */
+    /** Empresa optou por não avaliar — ver skip-rating.ts. Null = ainda não decidiu. */
     companyRatingSkippedAt: Date | null;
   } | null;
 }

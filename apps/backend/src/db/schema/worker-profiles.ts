@@ -81,13 +81,6 @@ export const workerProfiles = pgTable(
     // recebidas de empresas — recalculada do zero junto com avgRating,
     // ver update-rating-aggregates.ts. Mesmo formato (string numérica).
     avgCategoryScores: jsonb('avg_category_scores').$type<Record<string, string>>(),
-    // "Mortos" — nunca incrementados por nenhum código (nem check-out,
-    // nem marcação de falta). `getWorkerProfile` calcula os números de
-    // verdade ao vivo a partir de `shifts`, não confia nessas colunas.
-    // Mantidas só pra não quebrar migração; considerar remover quando
-    // não houver mais nenhuma leitura delas.
-    totalShiftsCompleted: integer('total_shifts_completed').notNull().default(0),
-    totalNoShows: integer('total_no_shows').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

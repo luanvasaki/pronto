@@ -30,7 +30,6 @@ describe('tabela companies', () => {
       .returning();
 
     expect(company.verificationStatus).toBe('pending');
-    expect(company.totalJobsPosted).toBe(0);
   });
 
   it('não permite duas empresas com o mesmo dono', async () => {

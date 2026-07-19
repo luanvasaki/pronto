@@ -2,11 +2,9 @@ import { and, eq, lt } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, jobs, shifts, workerProfiles } from '../../db/schema';
 import { assertOwnsCompany } from '../../shared/assert-owns-company';
-import { calculateAge } from '../../shared/age';
+import { isMinor as checkIsMinor } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
 import { ApplicationResponse, toApplicationResponse } from './application-response';
-
-const ADULT_AGE_YEARS = 18;
 
 type ApprovalStatus = 'approved' | 'rejected';
 
@@ -74,8 +72,7 @@ export async function updateApplicationStatus(
     const workerProfile = await db.query.workerProfiles.findFirst({
       where: eq(workerProfiles.userId, application.workerId),
     });
-    const isMinor =
-      Boolean(workerProfile?.birthDate) && calculateAge(workerProfile!.birthDate!, new Date()) < ADULT_AGE_YEARS;
+    const isMinor = checkIsMinor(workerProfile?.birthDate);
     if (isMinor && !job.minorsAllowed) {
       throw new HttpError(400, 'Essa vaga não está disponível pra menores de idade.');
     }

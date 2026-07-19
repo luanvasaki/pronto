@@ -2,12 +2,10 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, jobs, skillCategories, workerProfiles } from '../../db/schema';
 import { assertOwnsCompany } from '../../shared/assert-owns-company';
-import { calculateAge } from '../../shared/age';
+import { isMinor as checkIsMinor } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
 import { JobInput, validateJobInput } from './job-input-validation';
 import { JobResponse, toJobResponse } from './job-response';
-
-const ADULT_AGE_YEARS = 18;
 
 export type UpdateJobInput = JobInput;
 
@@ -61,9 +59,7 @@ export async function updateJob(
           approvedApplications.map((application) => application.workerId),
         ),
       });
-      const hasApprovedMinor = approvedWorkers.some(
-        (worker) => Boolean(worker.birthDate) && calculateAge(worker.birthDate!, new Date()) < ADULT_AGE_YEARS,
-      );
+      const hasApprovedMinor = approvedWorkers.some((worker) => checkIsMinor(worker.birthDate));
       if (hasApprovedMinor) {
         throw new HttpError(
           400,
