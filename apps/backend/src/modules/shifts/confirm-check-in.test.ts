@@ -125,4 +125,13 @@ describe('confirmCheckIn', () => {
 
     expect(second.checkInConfirmedAt?.getTime()).toBe(first.checkInConfirmedAt?.getTime());
   });
+
+  it('mesmo em corrida (duas confirmações simultâneas), o carimbo fica igual nas duas', async () => {
+    const { worker, owner, shift } = await setupScheduledShift();
+    await checkIn(worker.id, shift.id);
+
+    const [first, second] = await Promise.all([confirmCheckIn(owner.id, shift.id), confirmCheckIn(owner.id, shift.id)]);
+
+    expect(first.checkInConfirmedAt?.getTime()).toBe(second.checkInConfirmedAt?.getTime());
+  });
 });
