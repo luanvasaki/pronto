@@ -45,12 +45,13 @@ const TABS = [
 /**
  * Pílula flutuante (estilo Instagram) em vez da barra antiga presa e
  * full-width — mesmos 4 destinos e ícones de sempre, só o contêiner
- * muda. `bg-secondary`/`text-background` é o mesmo par "superfície
- * invertida" já usado no Sidebar/AdminNav — pílula sempre contrasta
- * com o fundo da página nos dois temas, sem precisar de uma cor fixa
- * (que ficaria errada no escuro). `fixed` tira a barra do fluxo, por
- * isso o layout (`(app)/layout.tsx`) reserva um respiro embaixo do
- * conteúdo pra ela nunca cobrir o final da tela.
+ * muda. `bg-background/70` + blur em vez de uma cor sólida invertida:
+ * a pílula fica da cor do próprio fundo da página, meio transparente,
+ * "se misturando" com o conteúdo atrás (igual o Instagram no escuro),
+ * com uma borda bem sutil só pra dar contorno quando o conteúdo atrás
+ * é liso. `fixed` tira a barra do fluxo, por isso o layout
+ * (`(app)/layout.tsx`) reserva um respiro embaixo do conteúdo pra ela
+ * nunca cobrir o final da tela.
  */
 export function TabBar() {
   const pathname = usePathname();
@@ -60,7 +61,7 @@ export function TabBar() {
       aria-label="Navegação principal"
       className="fixed inset-x-0 bottom-7 z-20 flex justify-center px-4"
     >
-      <div className="flex items-center gap-1 rounded-full bg-secondary p-2 shadow-[0_12px_32px_rgba(0,0,0,0.35)]">
+      <div className="flex items-center gap-1 rounded-full border border-border/40 bg-background/70 p-2 shadow-[0_12px_32px_rgba(0,0,0,0.35)] backdrop-blur-xl">
         {TABS.map((tab) => {
           const active = pathname === tab.href;
           return (
@@ -69,8 +70,8 @@ export function TabBar() {
               href={tab.href}
               aria-current={active ? 'page' : undefined}
               aria-label={tab.label}
-              className={`flex h-12 w-12 items-center justify-center rounded-full transition ${
-                active ? 'bg-background/15 text-background' : 'text-background/55 hover:text-background/80'
+              className={`flex h-12 w-12 items-center justify-center rounded-full text-text transition ${
+                active ? 'bg-text/10' : 'hover:bg-text/5'
               }`}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
