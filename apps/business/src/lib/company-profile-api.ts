@@ -125,6 +125,21 @@ export function getCompanyDashboard(): Promise<CompanyDashboard> {
   return apiFetch('/company-profile/dashboard');
 }
 
+export interface GrowthWeek {
+  weekStart: string;
+  count: number;
+}
+
+export interface CompanyGrowthMetrics {
+  jobsPosted: GrowthWeek[];
+  workersHired: GrowthWeek[];
+  shiftsCompleted: GrowthWeek[];
+}
+
+export function getCompanyGrowthMetrics(): Promise<CompanyGrowthMetrics> {
+  return apiFetch('/company-profile/growth-metrics');
+}
+
 export interface CompanyProfileResponse {
   id: string;
   legalName: string;

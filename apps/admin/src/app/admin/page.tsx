@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { GrowthChart } from '../../components/ui/growth-chart';
 import { CardListSkeleton, Skeleton } from '../../components/ui/skeleton';
+import { StatCard } from '../../components/ui/stat-card';
 import {
   AdminGrowthMetrics,
   AdminMetrics,
@@ -94,44 +95,31 @@ export default function AdminOverviewPage() {
         <section>
           <h2 className="font-heading text-lg font-bold text-text">Visão geral</h2>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-border bg-surface p-4 text-center">
-              <p className="font-heading text-xl font-bold text-text">
-                {CURRENCY_FORMATTER.format(Number(metrics.payments.totalProcessed))}
-              </p>
-              <p className="mt-1 text-xs text-text-secondary">Processado (cobrado + liberado)</p>
-            </div>
-            <div className="rounded-2xl border border-border bg-surface p-4 text-center">
-              <p className="font-heading text-xl font-bold text-text">{metrics.payments.countByStatus.pending}</p>
-              <p className="mt-1 text-xs text-text-secondary">Pagamentos pendentes</p>
-            </div>
-            <div className="rounded-2xl border border-border bg-surface p-4 text-center">
-              <p className="font-heading text-xl font-bold text-text">{metrics.payments.countByStatus.failed}</p>
-              <p className="mt-1 text-xs text-text-secondary">Pagamentos falhos</p>
-            </div>
-            <div className="rounded-2xl border border-border bg-surface p-4 text-center">
-              <p className="font-heading text-xl font-bold text-text">{metrics.workers.total}</p>
-              <p className="mt-1 text-xs text-text-secondary">Trabalhadores cadastrados</p>
-            </div>
-            <div className="rounded-2xl border border-border bg-surface p-4 text-center">
-              <p className="font-heading text-xl font-bold text-text">{metrics.workers.verified}</p>
-              <p className="mt-1 text-xs text-text-secondary">Trabalhadores verificados</p>
-            </div>
-            <div className="rounded-2xl border border-border bg-surface p-4 text-center">
-              <p className="font-heading text-xl font-bold text-text">{metrics.workers.active}</p>
-              <p className="mt-1 text-xs text-text-secondary">Trabalharam em ao menos 1 escala</p>
-            </div>
-            <div className="rounded-2xl border border-border bg-surface p-4 text-center">
-              <p className="font-heading text-xl font-bold text-text">{metrics.companies.total}</p>
-              <p className="mt-1 text-xs text-text-secondary">Empresas cadastradas</p>
-            </div>
-            <div className="rounded-2xl border border-border bg-surface p-4 text-center">
-              <p className="font-heading text-xl font-bold text-text">{metrics.companies.jobsPosted}</p>
-              <p className="mt-1 text-xs text-text-secondary">Vagas publicadas</p>
-            </div>
-            <div className="rounded-2xl border border-border bg-surface p-4 text-center">
-              <p className="font-heading text-xl font-bold text-text">{metrics.shifts.completed}</p>
-              <p className="mt-1 text-xs text-text-secondary">Escalas concluídas (negócios fechados)</p>
-            </div>
+            <StatCard
+              size="compact"
+              value={CURRENCY_FORMATTER.format(Number(metrics.payments.totalProcessed))}
+              label="Processado (cobrado + liberado)"
+            />
+            <StatCard
+              size="compact"
+              value={String(metrics.payments.countByStatus.pending)}
+              label="Pagamentos pendentes"
+            />
+            <StatCard size="compact" value={String(metrics.payments.countByStatus.failed)} label="Pagamentos falhos" />
+            <StatCard size="compact" value={String(metrics.workers.total)} label="Trabalhadores cadastrados" />
+            <StatCard size="compact" value={String(metrics.workers.verified)} label="Trabalhadores verificados" />
+            <StatCard
+              size="compact"
+              value={String(metrics.workers.active)}
+              label="Trabalharam em ao menos 1 escala"
+            />
+            <StatCard size="compact" value={String(metrics.companies.total)} label="Empresas cadastradas" />
+            <StatCard size="compact" value={String(metrics.companies.jobsPosted)} label="Vagas publicadas" />
+            <StatCard
+              size="compact"
+              value={String(metrics.shifts.completed)}
+              label="Escalas concluídas (negócios fechados)"
+            />
           </div>
         </section>
       )}

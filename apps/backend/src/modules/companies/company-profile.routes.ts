@@ -4,6 +4,7 @@ import { createWriteRateLimiter } from '../../shared/middlewares/rate-limit';
 import { listCompanyRatingsHandler } from '../ratings/list-company-ratings.controller';
 import { getCompanyNotificationsHandler } from './get-notifications.controller';
 import { getCompanyDashboardHandler } from './get-dashboard.controller';
+import { getCompanyGrowthMetricsHandler } from './get-company-growth-metrics.controller';
 import { getLiveEventStatusHandler } from './get-live-event.controller';
 import { getCompanyProfileHandler } from './get-company-profile.controller';
 import { getCompanyWorkerHistoryHandler } from './get-worker-history.controller';
@@ -22,6 +23,7 @@ companyProfileRoutes.get('/company-profile/me', requireAuth, getCompanyProfileHa
 companyProfileRoutes.get('/company-profile/ratings', requireAuth, listCompanyRatingsHandler);
 companyProfileRoutes.get('/company-profile/notifications', requireAuth, getCompanyNotificationsHandler);
 companyProfileRoutes.get('/company-profile/dashboard', requireAuth, getCompanyDashboardHandler);
+companyProfileRoutes.get('/company-profile/growth-metrics', requireAuth, getCompanyGrowthMetricsHandler);
 companyProfileRoutes.get('/company-profile/worker-history', requireAuth, getCompanyWorkerHistoryHandler);
 companyProfileRoutes.get('/company-profile/live-event', requireAuth, getLiveEventStatusHandler);
 companyProfileRoutes.put('/company-profile', requireAuth, writeRateLimiter, upsertCompanyProfileHandler);

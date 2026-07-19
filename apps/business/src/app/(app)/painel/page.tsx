@@ -4,10 +4,16 @@ import { listSkillCategories } from '@shift/shared';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
+import { GrowthChart } from '../../../components/ui/growth-chart';
 import { CardListSkeleton, Skeleton } from '../../../components/ui/skeleton';
 import { StatCard } from '../../../components/ui/stat-card';
 import { JobApplication } from '../../../lib/applications-api';
-import { CompanyDashboard, getCompanyDashboard } from '../../../lib/company-profile-api';
+import {
+  CompanyDashboard,
+  CompanyGrowthMetrics,
+  getCompanyDashboard,
+  getCompanyGrowthMetrics,
+} from '../../../lib/company-profile-api';
 import { startOfWeek } from '../../../lib/date-utils';
 import { fetchApplicationsByJobId } from '../../../lib/job-applications-summary';
 import { Job, listMyJobs } from '../../../lib/jobs-api';
@@ -109,6 +115,8 @@ export default function PainelPage() {
   const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
   const [applicationsByJobId, setApplicationsByJobId] = useState<Record<string, JobApplication[]>>({});
   const [dashboard, setDashboard] = useState<CompanyDashboard | null>(null);
+  const [growth, setGrowth] = useState<CompanyGrowthMetrics | null>(null);
+  const [growthError, setGrowthError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -133,6 +141,12 @@ export default function PainelPage() {
         setDashboard(await getCompanyDashboard());
       } catch {
         // dashboard fica null; StatCard e ActionGroup já tratam esse caso.
+      }
+
+      try {
+        setGrowth(await getCompanyGrowthMetrics());
+      } catch {
+        setGrowthError('Não foi possível carregar os gráficos de crescimento.');
       }
     }
 
@@ -321,6 +335,29 @@ export default function PainelPage() {
             hint={profile?.topHiredWorkerName ? `${profile.topHiredWorkerCount}x esse mês` : undefined}
           />
         </div>
+      </div>
+
+      <div>
+        <h2 className="font-heading text-[19px] font-bold text-text">Crescimento</h2>
+        <p className="mt-1 text-[14px] text-text-secondary">Últimas 8 semanas, mais recente à direita.</p>
+
+        {growthError && <p className="mt-2 text-sm text-danger">{growthError}</p>}
+
+        {growth && (
+          <div className="mt-3.5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <GrowthChart title="Vagas publicadas" subtitle="Novas vagas por semana" data={growth.jobsPosted} />
+            <GrowthChart
+              title="Trabalhadores contratados"
+              subtitle="Aprovações por semana"
+              data={growth.workersHired}
+            />
+            <GrowthChart
+              title="Escalas concluídas"
+              subtitle="Turnos finalizados por semana"
+              data={growth.shiftsCompleted}
+            />
+          </div>
+        )}
       </div>
 
       {confirmedRows.length > 0 && (

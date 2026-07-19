@@ -29,11 +29,13 @@ vi.mock('../../../lib/applications-api', () => ({
 }));
 
 const getCompanyDashboardMock = vi.fn();
+const getCompanyGrowthMetricsMock = vi.fn();
 vi.mock('../../../lib/company-profile-api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/company-profile-api')>();
   return {
     ...actual,
     getCompanyDashboard: (...args: unknown[]) => getCompanyDashboardMock(...args),
+    getCompanyGrowthMetrics: (...args: unknown[]) => getCompanyGrowthMetricsMock(...args),
   };
 });
 
@@ -112,6 +114,11 @@ describe('PainelPage', () => {
     listMyJobsMock.mockReset();
     listJobApplicationsMock.mockReset().mockResolvedValue({ applications: [] });
     getCompanyDashboardMock.mockReset().mockResolvedValue(DASHBOARD);
+    getCompanyGrowthMetricsMock.mockReset().mockResolvedValue({
+      jobsPosted: [],
+      workersHired: [],
+      shiftsCompleted: [],
+    });
   });
 
   afterEach(() => {
@@ -249,6 +256,34 @@ describe('PainelPage', () => {
     renderPainel();
 
     expect(await screen.findByText('Não foi possível carregar suas escalas.')).toBeInTheDocument();
+  });
+
+  it('mostra os gráficos de crescimento quando a API responde bem', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [] });
+    getCompanyGrowthMetricsMock.mockResolvedValue({
+      jobsPosted: [{ weekStart: '2026-07-06', count: 2 }],
+      workersHired: [{ weekStart: '2026-07-06', count: 1 }],
+      shiftsCompleted: [{ weekStart: '2026-07-06', count: 3 }],
+    });
+
+    renderPainel();
+
+    expect(await screen.findByText('Vagas publicadas')).toBeInTheDocument();
+    expect(screen.getByText('Trabalhadores contratados')).toBeInTheDocument();
+    expect(screen.getByText('Escalas concluídas')).toBeInTheDocument();
+  });
+
+  it('não falha a página inteira quando só o crescimento falha — vagas continuam aparecendo', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [JOB] });
+    getCompanyGrowthMetricsMock.mockRejectedValue(new Error('falha no crescimento'));
+
+    renderPainel();
+
+    await screen.findByText('Escalas abertas');
+    expect(
+      await screen.findByText('Não foi possível carregar os gráficos de crescimento.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Vagas publicadas')).not.toBeInTheDocument();
   });
 
   it('mostra o trabalhador aprovado em "Escalas confirmadas"', async () => {
