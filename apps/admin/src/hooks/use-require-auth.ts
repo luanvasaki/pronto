@@ -19,10 +19,7 @@ function isSessionInvalid(error: unknown): boolean {
   return error instanceof ApiError && error.status === 401;
 }
 
-/**
- * Extraído de /painel — /vagas/nova precisa da mesma checagem antes de
- * mostrar o formulário de criar vaga.
- */
+/** Mesma checagem usada pelos apps business e worker (apps/business/src/hooks/use-require-auth.ts). */
 export function useRequireAuth(): UseRequireAuthResult {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
