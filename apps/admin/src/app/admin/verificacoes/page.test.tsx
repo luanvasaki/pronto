@@ -357,4 +357,105 @@ describe('AdminVerificacoesPage', () => {
     expect(await screen.findByText('Não foi possível revisar a categoria.')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Manobrista')).toBeInTheDocument();
   });
+
+  it('mostra a dica de atalhos só quando há documentos pendentes', async () => {
+    listPendingVerificationsMock.mockResolvedValue({ documents: [PENDING_DOCUMENT], companies: [], skillCategories: [] });
+
+    render(<AdminVerificacoesPage />);
+
+    expect(await screen.findByText(/troca o documento em destaque/i)).toBeInTheDocument();
+  });
+
+  it('não mostra a dica de atalhos quando não há documentos pendentes', async () => {
+    listPendingVerificationsMock.mockResolvedValue({ documents: [], companies: [], skillCategories: [] });
+
+    render(<AdminVerificacoesPage />);
+
+    await screen.findByText('Nenhum documento pendente.');
+    expect(screen.queryByText(/troca o documento em destaque/i)).not.toBeInTheDocument();
+  });
+
+  it('destaca o primeiro documento automaticamente e troca com as setas', async () => {
+    listPendingVerificationsMock.mockResolvedValue({
+      documents: [PENDING_DOCUMENT, PENDING_SELFIE],
+      companies: [],
+      skillCategories: [],
+    });
+    const user = userEvent.setup();
+
+    render(<AdminVerificacoesPage />);
+    const identityImage = await screen.findByAltText('Documento (RG/CNH) de Rafael Lima');
+    const selfieImage = await screen.findByAltText('Selfie de Rafael Lima');
+
+    expect(identityImage.parentElement?.parentElement).toHaveClass('ring-primary');
+    expect(selfieImage.parentElement?.parentElement).not.toHaveClass('ring-primary');
+
+    await user.keyboard('{ArrowDown}');
+
+    expect(selfieImage.parentElement?.parentElement).toHaveClass('ring-primary');
+    expect(identityImage.parentElement?.parentElement).not.toHaveClass('ring-primary');
+  });
+
+  it('aprova o documento em destaque com "a" duas vezes (confirma antes de executar)', async () => {
+    listPendingVerificationsMock.mockResolvedValue({ documents: [PENDING_DOCUMENT], companies: [], skillCategories: [] });
+    reviewDocumentMock.mockResolvedValue({ id: 'doc-1', status: 'approved' });
+    const user = userEvent.setup();
+
+    render(<AdminVerificacoesPage />);
+    await screen.findByText('Rafael Lima');
+
+    await user.keyboard('a');
+    expect(await screen.findByRole('button', { name: /confirmar aprovação/i })).toBeInTheDocument();
+    expect(reviewDocumentMock).not.toHaveBeenCalled();
+
+    await user.keyboard('a');
+    await waitFor(() => expect(reviewDocumentMock).toHaveBeenCalledWith('doc-1', 'approved'));
+  });
+
+  it('rejeita o documento em destaque com "r" duas vezes', async () => {
+    listPendingVerificationsMock.mockResolvedValue({ documents: [PENDING_DOCUMENT], companies: [], skillCategories: [] });
+    reviewDocumentMock.mockResolvedValue({ id: 'doc-1', status: 'rejected' });
+    const user = userEvent.setup();
+
+    render(<AdminVerificacoesPage />);
+    await screen.findByText('Rafael Lima');
+
+    await user.keyboard('r');
+    expect(await screen.findByRole('button', { name: /confirmar rejeição/i })).toBeInTheDocument();
+
+    await user.keyboard('r');
+    await waitFor(() => expect(reviewDocumentMock).toHaveBeenCalledWith('doc-1', 'rejected'));
+  });
+
+  it('cancela a confirmação pendente do atalho de teclado com Esc', async () => {
+    listPendingVerificationsMock.mockResolvedValue({ documents: [PENDING_DOCUMENT], companies: [], skillCategories: [] });
+    const user = userEvent.setup();
+
+    render(<AdminVerificacoesPage />);
+    await screen.findByText('Rafael Lima');
+
+    await user.keyboard('a');
+    await screen.findByRole('button', { name: /confirmar aprovação/i });
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('button', { name: /confirmar aprovação/i })).not.toBeInTheDocument();
+    expect(reviewDocumentMock).not.toHaveBeenCalled();
+  });
+
+  it('ignora os atalhos de aprovar/rejeitar enquanto o foco está no campo de nome da categoria', async () => {
+    listPendingVerificationsMock.mockResolvedValue({
+      documents: [PENDING_DOCUMENT],
+      companies: [],
+      skillCategories: [PENDING_CATEGORY],
+    });
+    const user = userEvent.setup();
+
+    render(<AdminVerificacoesPage />);
+    await screen.findByText('Rafael Lima');
+
+    await user.click(screen.getByLabelText('Nome da categoria'));
+    await user.keyboard('a');
+
+    expect(screen.queryByRole('button', { name: /confirmar aprovação/i })).not.toBeInTheDocument();
+  });
 });

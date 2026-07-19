@@ -4,6 +4,8 @@ import { formatCpf, formatPhone } from '@shift/shared';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
+import { CardListSkeleton } from '../../../components/ui/skeleton';
+import { ZoomableDocumentImage } from '../../../components/ui/zoomable-document-image';
 import {
   DocumentFile,
   fetchCompanyDocumentFile,
@@ -83,6 +85,7 @@ export default function AdminVerificacoesPage() {
   const [confirmingDocument, setConfirmingDocument] = useState<ConfirmTarget | null>(null);
   const [confirmingCompany, setConfirmingCompany] = useState<ConfirmTarget | null>(null);
   const [confirmingSkillCategory, setConfirmingSkillCategory] = useState<ConfirmTarget | null>(null);
+  const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
 
   useEffect(() => {
     listPendingVerifications()
@@ -119,6 +122,15 @@ export default function AdminVerificacoesPage() {
   }, [companies, companyDocumentFiles]);
 
   const documentsByWorker = groupDocumentsByWorker(documents);
+  const flatDocuments = documentsByWorker.flatMap((group) => group.documents);
+
+  // Derivado no render em vez de sincronizado por effect: assim que o
+  // documento ativo aprovado/rejeitado sai da lista (ou antes de
+  // qualquer navegação), reancora no primeiro documento restante sem
+  // precisar de um setState adicional disparado por effect.
+  const resolvedActiveDocumentId = flatDocuments.some((document) => document.id === activeDocumentId)
+    ? activeDocumentId
+    : (flatDocuments[0]?.id ?? null);
 
   async function handleReviewDocument(documentId: string, status: 'approved' | 'rejected'): Promise<void> {
     if (!isConfirming(confirmingDocument, documentId, status)) {
@@ -139,6 +151,47 @@ export default function AdminVerificacoesPage() {
       setConfirmingDocument(null);
     }
   }
+
+  /**
+   * Aprovar 10 documentos exigia 20 cliques (aprovar + confirmar, por
+   * documento), sempre movendo o mouse até o próximo card. `↑`/`↓`
+   * (ou `k`/`j`) troca qual documento é o "ativo" (contorno laranja);
+   * `a`/`r` disparam exatamente o mesmo fluxo de aprovar/rejeitar +
+   * confirmar de dois passos que o clique já usa — não é uma aprovação
+   * em lote sem revisão, só remove o deslocamento de mouse entre um
+   * documento e o outro. Ignorado enquanto o foco está num campo de
+   * texto (ex: nome da categoria pendente), pra não capturar digitação.
+   */
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent): void {
+      const target = event.target;
+      if (target instanceof HTMLElement && ['INPUT', 'TEXTAREA'].includes(target.tagName)) return;
+      if (flatDocuments.length === 0) return;
+
+      const activeIndex = flatDocuments.findIndex((document) => document.id === resolvedActiveDocumentId);
+
+      if (event.key === 'ArrowDown' || event.key === 'j') {
+        event.preventDefault();
+        const nextIndex = activeIndex < 0 ? 0 : Math.min(activeIndex + 1, flatDocuments.length - 1);
+        setActiveDocumentId(flatDocuments[nextIndex].id);
+      } else if (event.key === 'ArrowUp' || event.key === 'k') {
+        event.preventDefault();
+        const previousIndex = activeIndex < 0 ? 0 : Math.max(activeIndex - 1, 0);
+        setActiveDocumentId(flatDocuments[previousIndex].id);
+      } else if ((event.key === 'a' || event.key === 'A') && activeIndex >= 0) {
+        event.preventDefault();
+        void handleReviewDocument(flatDocuments[activeIndex].id, 'approved');
+      } else if ((event.key === 'r' || event.key === 'R') && activeIndex >= 0) {
+        event.preventDefault();
+        void handleReviewDocument(flatDocuments[activeIndex].id, 'rejected');
+      } else if (event.key === 'Escape') {
+        setConfirmingDocument(null);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  });
 
   async function handleReviewCompany(companyId: string, status: 'approved' | 'rejected'): Promise<void> {
     if (!isConfirming(confirmingCompany, companyId, status)) {
@@ -183,8 +236,8 @@ export default function AdminVerificacoesPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando verificações pendentes...</p>
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8">
+        <CardListSkeleton />
       </main>
     );
   }
@@ -198,6 +251,13 @@ export default function AdminVerificacoesPage() {
         <p className="mt-1 text-sm text-text-secondary">
           Compare a selfie com a foto do documento pra confirmar que é a mesma pessoa antes de aprovar.
         </p>
+        {documents.length > 0 && (
+          <p className="mt-1 text-xs text-text-secondary">
+            Atalhos: <span className="font-semibold">↑/↓</span> troca o documento em destaque ·{' '}
+            <span className="font-semibold">A</span> aprova · <span className="font-semibold">R</span> rejeita ·{' '}
+            <span className="font-semibold">Esc</span> cancela
+          </p>
+        )}
         {documents.length === 0 && (
           <p className="mt-2 text-sm text-text-secondary">Nenhum documento pendente.</p>
         )}
@@ -208,9 +268,9 @@ export default function AdminVerificacoesPage() {
               key={workerId}
               className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
             >
-              <p className="font-heading text-[15.5px] font-bold text-text">{workerFullName}</p>
+              <p className="font-heading text-[16px] font-bold text-text">{workerFullName}</p>
               {isMinor && (
-                <div className="mt-1.5 rounded-lg bg-warning/10 px-2.5 py-2 text-[13px] text-warning">
+                <div className="mt-1.5 rounded-lg bg-warning/10 px-2.5 py-2 text-[14px] text-warning">
                   <p className="font-semibold">Trabalhador menor de idade (16-17 anos)</p>
                   <p className="mt-0.5">
                     Responsável: {guardianFullName ?? '—'}
@@ -221,7 +281,12 @@ export default function AdminVerificacoesPage() {
               )}
               <div className="mt-2.5 flex flex-wrap gap-4">
                 {workerDocuments.map((document) => (
-                  <div key={document.id} className="flex flex-col gap-2">
+                  <div
+                    key={document.id}
+                    className={`flex flex-col gap-2 rounded-xl p-1.5 transition ${
+                      document.id === resolvedActiveDocumentId ? 'ring-2 ring-primary' : ''
+                    }`}
+                  >
                     <span className="text-xs font-semibold text-text-secondary uppercase">
                       {DOCUMENT_TYPE_LABEL[document.type] ?? document.type}
                     </span>
@@ -236,11 +301,10 @@ export default function AdminVerificacoesPage() {
                       </a>
                     ) : (
                       documentFiles[document.id] && (
-                        // eslint-disable-next-line @next/next/no-img-element -- vem de um blob: URL autenticado, next/image não se aplica
-                        <img
+                        <ZoomableDocumentImage
                           src={documentFiles[document.id].url}
                           alt={`${DOCUMENT_TYPE_LABEL[document.type] ?? document.type} de ${workerFullName}`}
-                          className="max-h-64 rounded-xl border border-border object-contain"
+                          className="max-h-64 rounded-xl border border-border"
                         />
                       )
                     )}
@@ -249,7 +313,10 @@ export default function AdminVerificacoesPage() {
                         type="button"
                         variant={isConfirming(confirmingDocument, document.id, 'approved') ? 'danger' : 'success'}
                         isLoading={actingId === document.id}
-                        onClick={() => handleReviewDocument(document.id, 'approved')}
+                        onClick={() => {
+                          setActiveDocumentId(document.id);
+                          void handleReviewDocument(document.id, 'approved');
+                        }}
                       >
                         {isConfirming(confirmingDocument, document.id, 'approved') ? 'Confirmar aprovação' : 'Aprovar'}
                       </Button>
@@ -257,7 +324,10 @@ export default function AdminVerificacoesPage() {
                         type="button"
                         variant={isConfirming(confirmingDocument, document.id, 'rejected') ? 'danger' : 'outlined'}
                         isLoading={actingId === document.id}
-                        onClick={() => handleReviewDocument(document.id, 'rejected')}
+                        onClick={() => {
+                          setActiveDocumentId(document.id);
+                          void handleReviewDocument(document.id, 'rejected');
+                        }}
                       >
                         {isConfirming(confirmingDocument, document.id, 'rejected') ? 'Confirmar rejeição' : 'Rejeitar'}
                       </Button>
@@ -292,7 +362,7 @@ export default function AdminVerificacoesPage() {
               key={company.id}
               className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
             >
-              <p className="font-heading text-[15.5px] font-bold text-text">{company.tradeName}</p>
+              <p className="font-heading text-[16px] font-bold text-text">{company.tradeName}</p>
               <p className="text-sm text-text-secondary">{company.legalName}</p>
               <p className="font-mono text-sm text-text-secondary">
                 {company.personType === 'fisica' ? `CPF ${company.cpf}` : `CNPJ ${company.cnpj}`}
@@ -316,11 +386,10 @@ export default function AdminVerificacoesPage() {
                           Abrir documento (PDF)
                         </a>
                       ) : (
-                        // eslint-disable-next-line @next/next/no-img-element -- vem de um blob: URL autenticado, next/image não se aplica
-                        <img
+                        <ZoomableDocumentImage
                           src={file.url}
                           alt={`Documento de ${company.tradeName}`}
-                          className="mt-1 max-h-64 rounded-xl border border-border object-contain"
+                          className="mt-1 max-h-64 rounded-xl border border-border"
                         />
                       );
                     })()
