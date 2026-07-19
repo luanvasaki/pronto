@@ -87,12 +87,3 @@ export function confirmCheckIn(shiftId: string): Promise<ShiftConfirmationRespon
 export function confirmCheckOut(shiftId: string): Promise<ShiftConfirmationResponse> {
   return apiFetch(`/shifts/${shiftId}/check-out/confirm`, { method: 'POST' });
 }
-
-export interface SkipRatingResult {
-  shiftId: string;
-  companyRatingSkippedAt: string;
-}
-
-export function skipRating(shiftId: string): Promise<SkipRatingResult> {
-  return apiFetch(`/shifts/${shiftId}/skip-rating`, { method: 'PATCH' });
-}

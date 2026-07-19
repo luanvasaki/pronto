@@ -70,7 +70,6 @@ const PROFILE: CompanyProfileDetails = {
   verificationStatus: 'approved',
   avgRating: '4.8',
   avgCategoryScores: null,
-  totalJobsPosted: 3,
   jobsPosted: 3,
   shiftsCompleted: 5,
   rehireRate: 20,

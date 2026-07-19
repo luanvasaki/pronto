@@ -5,7 +5,7 @@ vi.mock('./api', () => ({
   apiFetch: (...args: unknown[]) => apiFetchMock(...args),
 }));
 
-const { rateShift } = await import('./ratings-api');
+const { rateShift, skipRating } = await import('./ratings-api');
 
 describe('rateShift', () => {
   beforeEach(() => {
@@ -22,5 +22,19 @@ describe('rateShift', () => {
       method: 'POST',
       body: JSON.stringify({ categoryScores, comment: 'Muito bom.' }),
     });
+  });
+});
+
+describe('skipRating', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama PATCH /shifts/:id/skip-rating', async () => {
+    apiFetchMock.mockResolvedValue({ shiftId: 'shift-1', skippedAt: '2026-07-18T12:00:00.000Z' });
+
+    await skipRating('shift-1');
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/shifts/shift-1/skip-rating', { method: 'PATCH' });
   });
 });

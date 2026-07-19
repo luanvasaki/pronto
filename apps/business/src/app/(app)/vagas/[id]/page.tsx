@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiError, formatBenefitLabel, rateShift, WORKER_RATING_CATEGORIES } from '@shift/shared';
+import { ApiError, formatBenefitLabel, rateShift, skipRating, WORKER_RATING_CATEGORIES } from '@shift/shared';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { RatingForm, RatingSummary } from '../../../../components/rating-form';
@@ -15,7 +15,6 @@ import {
   listJobApplications,
   releasePayment,
   removeApprovedWorker,
-  skipRating,
   updateApplicationStatus,
 } from '../../../../lib/applications-api';
 import { Job, listMyJobs } from '../../../../lib/jobs-api';
@@ -340,7 +339,7 @@ export default function VagaCandidatosPage() {
       setApplications((current) =>
         current.map((application) =>
           application.id === applicationId && application.shift
-            ? { ...application, shift: { ...application.shift, companyRatingSkippedAt: result.companyRatingSkippedAt } }
+            ? { ...application, shift: { ...application.shift, companyRatingSkippedAt: result.skippedAt } }
             : application,
         ),
       );

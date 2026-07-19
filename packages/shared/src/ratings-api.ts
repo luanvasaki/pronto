@@ -52,3 +52,20 @@ export function rateShift(
     body: JSON.stringify({ categoryScores, comment }),
   });
 }
+
+export interface SkipRatingResult {
+  shiftId: string;
+  skippedAt: string;
+}
+
+/**
+ * Quem avalia é sempre "a outra ponta do turno" (ver rateShift) — o
+ * mesmo vale pra ignorar: o backend decide sozinho, pela identidade de
+ * quem chama, se marca `companyRatingSkippedAt` ou
+ * `workerRatingSkippedAt`. Cada app só chama isso pro seu próprio papel
+ * (business nunca chama como trabalhador, e vice-versa), por isso a
+ * resposta não precisa dizer qual dos dois campos foi marcado.
+ */
+export function skipRating(shiftId: string): Promise<SkipRatingResult> {
+  return apiFetch(`/shifts/${shiftId}/skip-rating`, { method: 'PATCH' });
+}

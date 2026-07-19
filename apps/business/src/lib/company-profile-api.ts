@@ -24,7 +24,6 @@ export interface CompanyProfileDetails {
   verificationStatus: string;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
-  totalJobsPosted: number;
   jobsPosted: number;
   shiftsCompleted: number;
   rehireRate: number | null;

@@ -22,17 +22,15 @@ export interface Shift {
   status: string;
   payAmountSnapshot: string;
   checkInAt: string | null;
-  checkInLat: number | null;
-  checkInLng: number | null;
   checkInConfirmedAt: string | null;
   checkOutAt: string | null;
-  checkOutLat: number | null;
-  checkOutLng: number | null;
   checkOutConfirmedAt: string | null;
   job: Job;
   companyName: string;
   payment: Payment | null;
   ratings: ShiftRatings;
+  /** Trabalhador optou por não avaliar — ver skipRating em @shift/shared. Null = ainda não decidiu. */
+  workerRatingSkippedAt: string | null;
 }
 
 export function listMyShifts(): Promise<{ shifts: Shift[] }> {

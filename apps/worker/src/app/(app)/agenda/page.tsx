@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiError, COMPANY_RATING_CATEGORIES, listSkillCategories, rateShift } from '@shift/shared';
+import { ApiError, COMPANY_RATING_CATEGORIES, listSkillCategories, rateShift, skipRating } from '@shift/shared';
 import { useEffect, useState } from 'react';
 import { RatingForm, RatingSummary } from '../../../components/rating-form';
 import { Button } from '../../../components/ui/button';
@@ -182,6 +182,15 @@ export default function AgendaPage() {
   const [ratingSubmittingId, setRatingSubmittingId] = useState<string | null>(null);
   const [ratingError, setRatingError] = useState<{ shiftId: string; message: string } | null>(null);
 
+  const [skippingRatingShiftId, setSkippingRatingShiftId] = useState<string | null>(null);
+  const [skipRatingError, setSkipRatingError] = useState<{ shiftId: string; message: string } | null>(null);
+  // Depois de ignorada, o trabalhador ainda pode mudar de ideia e avaliar
+  // — esse set só controla se o formulário volta a aparecer nessa sessão,
+  // não desfaz o skip no backend (a avaliação em si sobrescreve o que
+  // importa quando enviada). Mesmo padrão do lado da empresa (ver
+  // vagas/[id]/page.tsx no business).
+  const [showFormAfterSkip, setShowFormAfterSkip] = useState<Set<string>>(new Set());
+
   // Guarda também qual ação foi clicada (não só o turno) — senão os
   // botões "Recebi o pagamento" e "Não recebi" do mesmo turno
   // compartilhavam o mesmo indicador de loading e giravam juntos.
@@ -281,6 +290,29 @@ export default function AgendaPage() {
     } finally {
       setRatingSubmittingId(null);
     }
+  }
+
+  async function handleSkipRating(shiftId: string): Promise<void> {
+    setSkipRatingError(null);
+    setSkippingRatingShiftId(shiftId);
+
+    try {
+      const result = await skipRating(shiftId);
+      setShifts((current) =>
+        current.map((shift) => (shift.id === shiftId ? { ...shift, workerRatingSkippedAt: result.skippedAt } : shift)),
+      );
+    } catch (err) {
+      setSkipRatingError({
+        shiftId,
+        message: err instanceof ApiError ? err.message : 'Não foi possível ignorar a avaliação.',
+      });
+    } finally {
+      setSkippingRatingShiftId(null);
+    }
+  }
+
+  function handleShowFormAfterSkip(shiftId: string): void {
+    setShowFormAfterSkip((current) => new Set(current).add(shiftId));
   }
 
   async function handleConfirmPayment(shiftId: string, received: boolean): Promise<void> {
@@ -662,19 +694,50 @@ export default function AgendaPage() {
                 <RatingSummary rating={shift.ratings.worker} categories={COMPANY_RATING_CATEGORIES} />
               )}
 
-              {shift.status === 'completed' && !shift.ratings.worker && (
-                <RatingForm
-                  title="Avaliar a empresa"
-                  categories={COMPANY_RATING_CATEGORIES}
-                  scores={ratingDrafts[shift.id]?.scores ?? {}}
-                  comment={ratingDrafts[shift.id]?.comment ?? ''}
-                  onChangeScore={(categoryId, score) => setRatingScore(shift.id, categoryId, score)}
-                  onChangeComment={(comment) => setRatingComment(shift.id, comment)}
-                  onSubmit={() => handleRate(shift.id)}
-                  isSubmitting={ratingSubmittingId === shift.id}
-                  error={ratingError?.shiftId === shift.id ? ratingError.message : undefined}
-                />
-              )}
+              {shift.status === 'completed' &&
+                !shift.ratings.worker &&
+                shift.workerRatingSkippedAt &&
+                !showFormAfterSkip.has(shift.id) && (
+                  <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-dashed border-border p-3">
+                    <p className="text-sm text-text-secondary">Você optou por não avaliar essa empresa.</p>
+                    <button
+                      type="button"
+                      onClick={() => handleShowFormAfterSkip(shift.id)}
+                      className="w-fit text-sm font-semibold text-primary underline underline-offset-2"
+                    >
+                      Avaliar mesmo assim
+                    </button>
+                  </div>
+                )}
+
+              {shift.status === 'completed' &&
+                !shift.ratings.worker &&
+                (!shift.workerRatingSkippedAt || showFormAfterSkip.has(shift.id)) && (
+                  <>
+                    <RatingForm
+                      title="Avaliar a empresa"
+                      categories={COMPANY_RATING_CATEGORIES}
+                      scores={ratingDrafts[shift.id]?.scores ?? {}}
+                      comment={ratingDrafts[shift.id]?.comment ?? ''}
+                      onChangeScore={(categoryId, score) => setRatingScore(shift.id, categoryId, score)}
+                      onChangeComment={(comment) => setRatingComment(shift.id, comment)}
+                      onSubmit={() => handleRate(shift.id)}
+                      isSubmitting={ratingSubmittingId === shift.id}
+                      error={ratingError?.shiftId === shift.id ? ratingError.message : undefined}
+                    />
+                    {skipRatingError?.shiftId === shift.id && (
+                      <p className="mt-1.5 text-sm text-danger">{skipRatingError.message}</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleSkipRating(shift.id)}
+                      disabled={skippingRatingShiftId === shift.id}
+                      className="mt-1.5 w-fit text-sm text-text-secondary underline underline-offset-2 disabled:opacity-50"
+                    >
+                      {skippingRatingShiftId === shift.id ? 'Ignorando...' : 'Agora não'}
+                    </button>
+                  </>
+                )}
             </li>
           );
         })}

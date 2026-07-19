@@ -10,12 +10,14 @@ vi.mock('next/navigation', () => ({
 }));
 
 const rateShiftMock = vi.fn();
+const skipRatingMock = vi.fn();
 vi.mock('@shift/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shift/shared')>();
   return {
     ...actual,
     getCurrentUser: vi.fn().mockResolvedValue({ user: { id: '1' } }),
     rateShift: (...args: unknown[]) => rateShiftMock(...args),
+    skipRating: (...args: unknown[]) => skipRatingMock(...args),
   };
 });
 
@@ -135,6 +137,7 @@ describe('VagaCandidatosPage', () => {
     listJobApplicationsMock.mockReset();
     updateApplicationStatusMock.mockReset();
     rateShiftMock.mockReset();
+    skipRatingMock.mockReset();
     releasePaymentMock.mockReset();
     removeApprovedWorkerMock.mockReset();
     confirmCheckInMock.mockReset();
@@ -560,6 +563,25 @@ describe('VagaCandidatosPage', () => {
       ),
     );
     expect(await screen.findByText('Você avaliou: 5 de 5.')).toBeInTheDocument();
+  });
+
+  it('ignora a avaliação ao clicar em "Agora não", e permite avaliar mesmo assim depois', async () => {
+    listJobApplicationsMock.mockResolvedValue({ applications: [makeCompletedApplication()] });
+    skipRatingMock.mockResolvedValue({ shiftId: 'shift-1', skippedAt: '2026-07-03T00:00:00.000Z' });
+    const user = userEvent.setup();
+
+    render(<VagaCandidatosPage />);
+    await screen.findByText('Avaliar o trabalhador');
+
+    await user.click(screen.getByRole('button', { name: 'Agora não' }));
+
+    expect(skipRatingMock).toHaveBeenCalledWith('shift-1');
+    expect(await screen.findByText('Você optou por não avaliar esse profissional.')).toBeInTheDocument();
+    expect(screen.queryByText('Avaliar o trabalhador')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Avaliar mesmo assim' }));
+
+    expect(screen.getByText('Avaliar o trabalhador')).toBeInTheDocument();
   });
 
   it('mostra quantas vagas já foram preenchidas', async () => {

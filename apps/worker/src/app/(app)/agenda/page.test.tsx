@@ -6,12 +6,14 @@ import AgendaPage from './page';
 
 const listSkillCategoriesMock = vi.fn();
 const rateShiftMock = vi.fn();
+const skipRatingMock = vi.fn();
 vi.mock('@shift/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shift/shared')>();
   return {
     ...actual,
     listSkillCategories: (...args: unknown[]) => listSkillCategoriesMock(...args),
     rateShift: (...args: unknown[]) => rateShiftMock(...args),
+    skipRating: (...args: unknown[]) => skipRatingMock(...args),
   };
 });
 
@@ -91,6 +93,7 @@ describe('AgendaPage', () => {
     checkInMock.mockReset();
     checkOutMock.mockReset();
     rateShiftMock.mockReset();
+    skipRatingMock.mockReset();
     confirmPaymentMock.mockReset();
     Object.defineProperty(window.navigator, 'geolocation', { value: undefined, configurable: true });
   });
@@ -307,6 +310,25 @@ describe('AgendaPage', () => {
       ),
     );
     expect(await screen.findByText('Você avaliou: 4 de 5.')).toBeInTheDocument();
+  });
+
+  it('ignora a avaliação ao clicar em "Agora não", e permite avaliar mesmo assim depois', async () => {
+    listMyShiftsMock.mockResolvedValue({ shifts: [makeShift({ status: 'completed' })] });
+    skipRatingMock.mockResolvedValue({ shiftId: 'shift-1', skippedAt: '2026-08-03T00:00:00.000Z' });
+    const user = userEvent.setup();
+
+    render(<AgendaPage />);
+    await screen.findByText('Avaliar a empresa');
+
+    await user.click(screen.getByRole('button', { name: 'Agora não' }));
+
+    expect(skipRatingMock).toHaveBeenCalledWith('shift-1');
+    expect(await screen.findByText('Você optou por não avaliar essa empresa.')).toBeInTheDocument();
+    expect(screen.queryByText('Avaliar a empresa')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Avaliar mesmo assim' }));
+
+    expect(screen.getByText('Avaliar a empresa')).toBeInTheDocument();
   });
 
   it('não mostra o formulário quando o turno já foi avaliado', async () => {

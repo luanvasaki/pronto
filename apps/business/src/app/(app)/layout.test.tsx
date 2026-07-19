@@ -61,7 +61,6 @@ describe('AppLayout', () => {
       businessSegment: null,
       verificationStatus: 'approved',
       avgRating: null,
-      totalJobsPosted: 0,
     });
 
     render(
@@ -86,7 +85,6 @@ describe('AppLayout', () => {
       businessSegment: null,
       verificationStatus: 'approved',
       avgRating: null,
-      totalJobsPosted: 0,
     });
 
     render(
