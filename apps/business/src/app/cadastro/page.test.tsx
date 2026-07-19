@@ -20,6 +20,9 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Razão social'), 'Bar do Zé Ltda');
   await user.type(screen.getByLabelText('Nome fantasia'), 'Bar do Zé');
   await user.type(screen.getByLabelText('CNPJ'), '11222333000181');
+  const file = new File(['doc'], 'cnpj.jpg', { type: 'image/jpeg' });
+  await user.upload(screen.getByLabelText(/toque para escolher uma foto/i), file);
+  return file;
 }
 
 describe('CadastroPage', () => {
@@ -44,7 +47,22 @@ describe('CadastroPage', () => {
     expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
 
     await user.type(screen.getByLabelText('CNPJ'), '11222333000181');
+    expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
+
+    const file = new File(['doc'], 'cnpj.jpg', { type: 'image/jpeg' });
+    await user.upload(screen.getByLabelText(/toque para escolher uma foto/i), file);
     expect(screen.getByRole('button', { name: /continuar/i })).toBeEnabled();
+  });
+
+  it('exige o documento (cartão CNPJ ou contrato social) pra habilitar o botão', async () => {
+    const user = userEvent.setup();
+    render(<CadastroPage />);
+
+    await user.type(screen.getByLabelText('Razão social'), 'Bar do Zé Ltda');
+    await user.type(screen.getByLabelText('Nome fantasia'), 'Bar do Zé');
+    await user.type(screen.getByLabelText('CNPJ'), '11222333000181');
+    expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
+    expect(screen.getByText(/cartão cnpj ou contrato social/i)).toBeInTheDocument();
   });
 
   it('mantém o botão desabilitado quando o CNPJ tem 14 dígitos mas o dígito verificador é inválido', async () => {
@@ -69,10 +87,11 @@ describe('CadastroPage', () => {
 
   it('salva o perfil e navega pro painel quando a API responde bem', async () => {
     upsertCompanyProfileMock.mockResolvedValue({ id: '1', verificationStatus: 'pending' });
+    uploadCompanyDocumentMock.mockResolvedValue({ id: 'doc-1' });
     const user = userEvent.setup();
     render(<CadastroPage />);
 
-    await fillValidForm(user);
+    const file = await fillValidForm(user);
     await user.click(screen.getByRole('button', { name: /continuar/i }));
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/painel'));
@@ -83,7 +102,7 @@ describe('CadastroPage', () => {
       cnpj: '11222333000181',
       cpf: undefined,
     });
-    expect(uploadCompanyDocumentMock).not.toHaveBeenCalled();
+    expect(uploadCompanyDocumentMock).toHaveBeenCalledWith(file);
   });
 
   it('mostra a mensagem da API quando salvar falha', async () => {

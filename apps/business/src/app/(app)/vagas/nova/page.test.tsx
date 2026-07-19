@@ -57,7 +57,6 @@ const PROFILE: CompanyProfileDetails = {
   verificationStatus: 'approved',
   avgRating: null,
   avgCategoryScores: null,
-  totalJobsPosted: 0,
   jobsPosted: 0,
   shiftsCompleted: 0,
   rehireRate: null,
@@ -162,7 +161,18 @@ describe('NovaVagaPage', () => {
 
     await screen.findByText('Garçom');
     expect(screen.getByText('Verificação pendente')).toBeInTheDocument();
-    expect(screen.getByText(/não é possível publicar vagas até um admin aprovar/i)).toBeInTheDocument();
+    expect(screen.getByText(/o botão de publicar só libera depois/i)).toBeInTheDocument();
+  });
+
+  it('desabilita o botão de publicar quando a empresa não está verificada, mesmo com o resto do formulário válido', async () => {
+    const user = userEvent.setup();
+    renderPage({ ...PROFILE, verificationStatus: 'pending' });
+    await screen.findByText('Garçom');
+
+    await fillValidForm(user);
+
+    expect(screen.getByRole('button', { name: /^publicar$/i })).toBeDisabled();
+    expect(createJobMock).not.toHaveBeenCalled();
   });
 
   it('não avisa de verificação pendente quando a empresa já foi aprovada', async () => {

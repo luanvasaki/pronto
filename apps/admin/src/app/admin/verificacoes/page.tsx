@@ -356,7 +356,7 @@ export default function AdminVerificacoesPage() {
         )}
         <ul className="mt-3 flex flex-col gap-3">
           {companies.map((company) => {
-          const cannotApprove = company.personType === 'fisica' && !company.documentId;
+          const cannotApprove = !company.documentId;
           return (
             <li
               key={company.id}
@@ -367,37 +367,35 @@ export default function AdminVerificacoesPage() {
               <p className="font-mono text-sm text-text-secondary">
                 {company.personType === 'fisica' ? `CPF ${company.cpf}` : `CNPJ ${company.cnpj}`}
               </p>
-              {company.personType === 'fisica' && (
-                <div className="mt-2.5">
-                  <span className="text-xs font-semibold text-text-secondary uppercase">
-                    Documento (pessoa física)
-                  </span>
-                  {company.documentId ? (
-                    (() => {
-                      const file = companyDocumentFiles[company.documentId];
-                      if (!file) return null;
-                      return file.contentType === 'application/pdf' ? (
-                        <a
-                          href={file.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-1 block text-sm font-semibold text-primary underline underline-offset-2"
-                        >
-                          Abrir documento (PDF)
-                        </a>
-                      ) : (
-                        <ZoomableDocumentImage
-                          src={file.url}
-                          alt={`Documento de ${company.tradeName}`}
-                          className="mt-1 max-h-64 rounded-xl border border-border"
-                        />
-                      );
-                    })()
-                  ) : (
-                    <p className="mt-1 text-sm text-danger">Nenhum documento enviado.</p>
-                  )}
-                </div>
-              )}
+              <div className="mt-2.5">
+                <span className="text-xs font-semibold text-text-secondary uppercase">
+                  {company.personType === 'fisica' ? 'Documento (pessoa física)' : 'Documento (cartão CNPJ)'}
+                </span>
+                {company.documentId ? (
+                  (() => {
+                    const file = companyDocumentFiles[company.documentId];
+                    if (!file) return null;
+                    return file.contentType === 'application/pdf' ? (
+                      <a
+                        href={file.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 block text-sm font-semibold text-primary underline underline-offset-2"
+                      >
+                        Abrir documento (PDF)
+                      </a>
+                    ) : (
+                      <ZoomableDocumentImage
+                        src={file.url}
+                        alt={`Documento de ${company.tradeName}`}
+                        className="mt-1 max-h-64 rounded-xl border border-border"
+                      />
+                    );
+                  })()
+                ) : (
+                  <p className="mt-1 text-sm text-danger">Nenhum documento enviado.</p>
+                )}
+              </div>
               <div className="mt-3.5 flex flex-wrap items-center gap-2">
                 <Button
                   type="button"

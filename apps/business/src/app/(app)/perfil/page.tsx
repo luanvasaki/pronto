@@ -24,6 +24,7 @@ import {
   changePassword,
   CompanyRatingHistoryEntry,
   listCompanyRatings,
+  uploadCompanyDocument,
   uploadCompanyLogo,
   upsertCompanyProfile,
 } from '../../../lib/company-profile-api';
@@ -51,6 +52,11 @@ export default function PerfilPage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
+
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [documentError, setDocumentError] = useState<string | null>(null);
+  const [documentJustSent, setDocumentJustSent] = useState(false);
 
   const [legalName, setLegalName] = useState(profile?.legalName ?? '');
   const [tradeName, setTradeName] = useState(profile?.tradeName ?? '');
@@ -129,6 +135,33 @@ export default function PerfilPage() {
       setLogoError('Não foi possível enviar o logo.');
     } finally {
       setIsUploadingLogo(false);
+    }
+  }
+
+  /**
+   * Reenviar documento depois de recusado — antes não existia CTA
+   * nenhum na tela, só o rótulo "Verificação recusada" sem próximo
+   * passo. O backend (uploadCompanyDocument) já volta o status pra
+   * "pending" sozinho quando a empresa reenvia depois de "rejected" —
+   * aqui só espelha isso localmente pra não depender de recarregar a
+   * página pra ver o novo status.
+   */
+  async function handleUploadDocument(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = event.target.files?.[0];
+    if (!file || !profile) return;
+
+    setDocumentFile(file);
+    setDocumentError(null);
+    setDocumentJustSent(false);
+    setIsUploadingDocument(true);
+    try {
+      await uploadCompanyDocument(file);
+      setProfile({ ...profile, verificationStatus: 'pending' });
+      setDocumentJustSent(true);
+    } catch (err) {
+      setDocumentError(err instanceof ApiError ? err.message : 'Não foi possível enviar o documento.');
+    } finally {
+      setIsUploadingDocument(false);
     }
   }
 
@@ -213,6 +246,42 @@ export default function PerfilPage() {
           </span>
         </div>
       </div>
+
+      {(profile.verificationStatus === 'rejected' || documentJustSent) && (
+        <div
+          className={`rounded-2xl border p-4 ${
+            documentJustSent ? 'border-success/30 bg-success/10' : 'border-danger/30 bg-danger/10'
+          }`}
+        >
+          {documentJustSent ? (
+            <p className="text-sm font-semibold text-success">
+              Documento enviado — sua verificação volta pra análise do admin.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-danger">
+                Seu documento não foi aprovado — envie um novo pra tentar de novo.
+              </p>
+              <p className="mt-1 text-xs text-text-secondary">
+                {isIndividual
+                  ? 'Uma foto ou PDF do seu RG ou CNH.'
+                  : 'Uma foto ou PDF do cartão CNPJ ou contrato social.'}
+              </p>
+              <label className="mt-2.5 inline-block cursor-pointer text-sm font-semibold text-primary underline underline-offset-2">
+                {isUploadingDocument ? 'Enviando...' : documentFile ? documentFile.name : 'Enviar novo documento'}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,application/pdf"
+                  onChange={handleUploadDocument}
+                  disabled={isUploadingDocument}
+                  className="sr-only"
+                />
+              </label>
+              {documentError && <p className="mt-1.5 text-xs text-danger">{documentError}</p>}
+            </>
+          )}
+        </div>
+      )}
 
       <div>
         <label className="cursor-pointer text-sm font-semibold text-primary underline underline-offset-2">

@@ -252,6 +252,32 @@ describe('AdminVerificacoesPage', () => {
     expect(await screen.findByText('CNPJ 11222333000181')).toBeInTheDocument();
   });
 
+  it('avisa quando a empresa jurídica não enviou o documento (cartão CNPJ), e desabilita aprovar', async () => {
+    listPendingVerificationsMock.mockResolvedValue({ documents: [], companies: [PENDING_COMPANY], skillCategories: [] });
+
+    render(<AdminVerificacoesPage />);
+
+    expect(await screen.findByText('Documento (cartão CNPJ)')).toBeInTheDocument();
+    expect(screen.getByText('Nenhum documento enviado.')).toBeInTheDocument();
+    expect(fetchCompanyDocumentFileMock).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /aprovar/i })).toBeDisabled();
+    expect(screen.getByText('Sem documento enviado — não é possível aprovar.')).toBeInTheDocument();
+  });
+
+  it('mostra o documento (cartão CNPJ) e habilita aprovar quando a empresa jurídica já enviou', async () => {
+    listPendingVerificationsMock.mockResolvedValue({
+      documents: [],
+      companies: [{ ...PENDING_COMPANY, documentId: 'company-doc-2' }],
+      skillCategories: [],
+    });
+
+    render(<AdminVerificacoesPage />);
+
+    expect(await screen.findByAltText('Documento de Bar do Zé')).toHaveAttribute('src', 'blob:mock-company-doc');
+    expect(fetchCompanyDocumentFileMock).toHaveBeenCalledWith('company-doc-2');
+    expect(screen.getByRole('button', { name: /aprovar/i })).toBeEnabled();
+  });
+
   it('mostra CPF e o documento enviado pra empresa pessoa física', async () => {
     listPendingVerificationsMock.mockResolvedValue({
       documents: [],

@@ -32,7 +32,7 @@ export default function CadastroPage() {
     legalName.trim().length >= 2 &&
     tradeName.trim().length >= 2 &&
     (isIndividual ? isValidCpf(cpf) : isValidCnpj(cnpj)) &&
-    (!isIndividual || documentFile !== null);
+    documentFile !== null;
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -58,7 +58,7 @@ export default function CadastroPage() {
         alreadyHadProfile = true;
         setProfileSaved(true);
       }
-      if (isIndividual && documentFile) {
+      if (documentFile) {
         await uploadCompanyDocument(documentFile);
       }
       router.push('/painel');
@@ -161,26 +161,26 @@ export default function CadastroPage() {
           />
         )}
 
-        {isIndividual && (
-          <div>
-            <label
-              htmlFor="document"
-              className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary transition hover:border-primary"
-            >
-              {documentFile ? documentFile.name : 'Toque para escolher uma foto ou PDF'}
-              <input
-                id="document"
-                type="file"
-                accept="image/jpeg,image/png,application/pdf"
-                className="hidden"
-                onChange={(event) => setDocumentFile(event.target.files?.[0] ?? null)}
-              />
-            </label>
-            <p className="mt-1.5 text-xs text-text-secondary">
-              Uma foto ou PDF do seu RG ou CNH — sem CNPJ pra respaldar, é assim que confirmamos quem é você.
-            </p>
-          </div>
-        )}
+        <div>
+          <label
+            htmlFor="document"
+            className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary transition hover:border-primary"
+          >
+            {documentFile ? documentFile.name : 'Toque para escolher uma foto ou PDF'}
+            <input
+              id="document"
+              type="file"
+              accept="image/jpeg,image/png,application/pdf"
+              className="hidden"
+              onChange={(event) => setDocumentFile(event.target.files?.[0] ?? null)}
+            />
+          </label>
+          <p className="mt-1.5 text-xs text-text-secondary">
+            {isIndividual
+              ? 'Uma foto ou PDF do seu RG ou CNH — sem CNPJ pra respaldar, é assim que confirmamos quem é você.'
+              : 'Uma foto ou PDF do cartão CNPJ ou contrato social — é assim que confirmamos que a empresa existe de verdade.'}
+          </p>
+        </div>
 
         {error && <p className="text-sm text-danger">{error}</p>}
 

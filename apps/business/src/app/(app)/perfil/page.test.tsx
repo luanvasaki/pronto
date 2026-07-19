@@ -24,6 +24,7 @@ vi.mock('@shift/shared', async (importOriginal) => {
 });
 
 const uploadCompanyLogoMock = vi.fn();
+const uploadCompanyDocumentMock = vi.fn();
 const upsertCompanyProfileMock = vi.fn();
 const changePasswordMock = vi.fn();
 const listCompanyRatingsMock = vi.fn();
@@ -32,6 +33,7 @@ vi.mock('../../../lib/company-profile-api', async (importOriginal) => {
   return {
     ...actual,
     uploadCompanyLogo: (...args: unknown[]) => uploadCompanyLogoMock(...args),
+    uploadCompanyDocument: (...args: unknown[]) => uploadCompanyDocumentMock(...args),
     upsertCompanyProfile: (...args: unknown[]) => upsertCompanyProfileMock(...args),
     changePassword: (...args: unknown[]) => changePasswordMock(...args),
     listCompanyRatings: (...args: unknown[]) => listCompanyRatingsMock(...args),
@@ -52,7 +54,6 @@ const BASE_PROFILE: CompanyProfileDetails = {
   verificationStatus: 'approved',
   avgRating: '4.2',
   avgCategoryScores: { pontualidade_pagamento: '4.5', clareza_vaga: '4.0' },
-  totalJobsPosted: 5,
   jobsPosted: 5,
   shiftsCompleted: 8,
   rehireRate: 40,
@@ -74,6 +75,7 @@ describe('PerfilPage', () => {
   beforeEach(() => {
     pushMock.mockClear();
     uploadCompanyLogoMock.mockReset();
+    uploadCompanyDocumentMock.mockReset();
     upsertCompanyProfileMock.mockReset();
     changePasswordMock.mockReset();
     logoutMock.mockReset().mockResolvedValue({ message: 'ok' });
@@ -140,7 +142,7 @@ describe('PerfilPage', () => {
   });
 
   it('mostra travessão quando ainda não tem nota', async () => {
-    renderWithProfile({ ...BASE_PROFILE, verificationStatus: 'pending', avgRating: null, totalJobsPosted: 0 });
+    renderWithProfile({ ...BASE_PROFILE, verificationStatus: 'pending', avgRating: null });
 
     expect(screen.getByText('Verificação em análise')).toBeInTheDocument();
     expect(screen.getByText('★ —')).toBeInTheDocument();
@@ -178,6 +180,50 @@ describe('PerfilPage', () => {
     // Sem logoUrl novo devolvido, continua mostrando "Adicionar logo"
     // (não corrompe pra um estado de "tem logo" sem imagem de verdade).
     expect(screen.getByText('Adicionar logo')).toBeInTheDocument();
+  });
+
+  it('não mostra CTA de reenviar documento quando a verificação não foi recusada', () => {
+    renderWithProfile({ ...BASE_PROFILE, verificationStatus: 'approved' });
+
+    expect(screen.queryByText(/envie um novo pra tentar de novo/i)).not.toBeInTheDocument();
+  });
+
+  it('mostra CTA de reenviar documento (cartão CNPJ) quando a verificação foi recusada', () => {
+    renderWithProfile({ ...BASE_PROFILE, verificationStatus: 'rejected' });
+
+    expect(screen.getByText(/envie um novo pra tentar de novo/i)).toBeInTheDocument();
+    expect(screen.getByText(/cartão cnpj ou contrato social/i)).toBeInTheDocument();
+  });
+
+  it('mostra CTA de reenviar documento (RG/CNH) pra empresa pessoa física recusada', () => {
+    renderWithProfile({ ...BASE_PROFILE, personType: 'fisica', cnpj: null, cpf: '11122233344', verificationStatus: 'rejected' });
+
+    expect(screen.getByText(/seu rg ou cnh/i)).toBeInTheDocument();
+  });
+
+  it('reenvia o documento e volta a mostrar "Verificação em análise" sem recarregar', async () => {
+    uploadCompanyDocumentMock.mockResolvedValue({ id: 'doc-1' });
+    const user = userEvent.setup();
+    renderWithProfile({ ...BASE_PROFILE, verificationStatus: 'rejected' });
+
+    const file = new File(['doc'], 'cnpj.jpg', { type: 'image/jpeg' });
+    await user.upload(screen.getByLabelText(/enviar novo documento/i), file);
+
+    expect(uploadCompanyDocumentMock).toHaveBeenCalledWith(file);
+    expect(await screen.findByText(/sua verificação volta pra análise/i)).toBeInTheDocument();
+    expect(screen.getByText('Verificação em análise')).toBeInTheDocument();
+  });
+
+  it('mostra erro quando o reenvio do documento falha', async () => {
+    uploadCompanyDocumentMock.mockRejectedValue(new Error('falha de rede'));
+    const user = userEvent.setup();
+    renderWithProfile({ ...BASE_PROFILE, verificationStatus: 'rejected' });
+
+    const file = new File(['doc'], 'cnpj.jpg', { type: 'image/jpeg' });
+    await user.upload(screen.getByLabelText(/enviar novo documento/i), file);
+
+    expect(await screen.findByText('Não foi possível enviar o documento.')).toBeInTheDocument();
+    expect(screen.getByText('Verificação recusada')).toBeInTheDocument();
   });
 
   it('salva os dados da empresa com os valores editados', async () => {

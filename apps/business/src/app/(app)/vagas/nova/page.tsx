@@ -193,9 +193,16 @@ function NovaVagaForm() {
     termsAccepted,
   });
 
+  // `!profile` (ainda carregando) não bloqueia — só quando o perfil já
+  // chegou e não está aprovado. Antes só um aviso avisava disso; a
+  // pessoa preenchia a vaga inteira pra só descobrir a recusa depois do
+  // submit no backend (ver create-job.ts).
+  const isCompanyVerified = !profile || profile.verificationStatus === 'approved';
+
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
-    if (!isValid || isSubmitting || lat === null || lng === null || requiresExperience === null) return;
+    if (!isValid || !isCompanyVerified || isSubmitting || lat === null || lng === null || requiresExperience === null)
+      return;
 
     setError(null);
     setIsSubmitting(true);
@@ -244,12 +251,12 @@ function NovaVagaForm() {
           Preencha os detalhes da escala que você precisa cobrir.
         </p>
 
-        {profile && profile.verificationStatus !== 'approved' && (
+        {!isCompanyVerified && (
           <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
             <p className="font-heading text-[16px] font-bold text-warning">Verificação pendente</p>
             <p className="mt-1 text-[14px] text-warning">
-              Sua empresa ainda não foi verificada — não é possível publicar vagas até um admin aprovar o
-              cadastro. Você pode preencher o formulário, mas a publicação vai ser recusada até lá.
+              Sua empresa ainda não foi verificada — o botão de publicar só libera depois que um admin aprovar
+              o cadastro. Você pode preencher o formulário, mas não vai conseguir publicar até lá.
             </p>
           </div>
         )}
@@ -477,7 +484,7 @@ function NovaVagaForm() {
 
         {!isValid && <p className="text-xs text-danger">Falta preencher: {missingFields.join(', ')}.</p>}
 
-        <Button type="submit" disabled={!isValid} isLoading={isSubmitting}>
+        <Button type="submit" disabled={!isValid || !isCompanyVerified} isLoading={isSubmitting}>
           Publicar
         </Button>
       </form>
