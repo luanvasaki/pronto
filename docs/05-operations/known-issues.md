@@ -23,7 +23,6 @@
 
 ## Código morto confirmado (grep, sem escritor/consumidor em produção)
 
-- `apps/business/src/components/ui/growth-chart.tsx` (+ teste) — órfão desde a extração do painel admin pro app `apps/admin` (commit `8a90d27`); ninguém importa. Duplicado (não compartilhado) por uma cópia idêntica em `apps/admin/src/components/ui/growth-chart.tsx`, que essa sim é usada.
 - `shifts.checkInLat/checkInLng/checkOutLat/checkOutLng` — `apps/backend/src/modules/shifts/shift-response.ts:13-18,31-36` e `apps/backend/src/db/schema/shifts.ts:47-48,56-57`. Nunca mais escritas desde a remoção de geolocalização do check-in/check-out; continuam expostas na resposta da API sempre `null`.
 - `worker_profiles.totalShiftsCompleted`/`totalNoShows` — `apps/backend/src/db/schema/worker-profiles.ts:87-92` (comentário explícito no schema chamando as colunas de "mortas"). Recalculadas ao vivo em `get-worker-profile.ts:78-115`.
 - `companies.totalJobsPosted` — `apps/backend/src/db/schema/companies.ts:76`; confirmado morto também em `apps/backend/src/modules/admin/list-companies.ts:23-24` e `apps/backend/src/modules/companies/get-company-profile.ts:44-46`.
