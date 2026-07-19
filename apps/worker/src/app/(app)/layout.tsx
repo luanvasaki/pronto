@@ -135,7 +135,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           workerName={profile.fullName}
           photoUrl={profile.photoUrl}
         />
-        <div className="flex flex-1 flex-col">{children}</div>
+        {/* pb reserva espaço pra pílula flutuante (fixed, fora do fluxo) nunca cobrir o fim do conteúdo. */}
+        <div className="flex flex-1 flex-col pb-24">{children}</div>
         <TabBar />
       </div>
     </WorkerProfileProvider>

@@ -42,27 +42,44 @@ const TABS = [
   },
 ];
 
+/**
+ * Pílula flutuante (estilo Instagram) em vez da barra antiga presa e
+ * full-width — mesmos 4 destinos e ícones de sempre, só o contêiner
+ * muda. `bg-secondary`/`text-background` é o mesmo par "superfície
+ * invertida" já usado no Sidebar/AdminNav — pílula sempre contrasta
+ * com o fundo da página nos dois temas, sem precisar de uma cor fixa
+ * (que ficaria errada no escuro). `fixed` tira a barra do fluxo, por
+ * isso o layout (`(app)/layout.tsx`) reserva um respiro embaixo do
+ * conteúdo pra ela nunca cobrir o final da tela.
+ */
 export function TabBar() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky bottom-0 z-10 flex shrink-0 items-stretch border-t border-border bg-background/90 px-2 pt-2.5 pb-7 backdrop-blur-md">
-      {TABS.map((tab) => {
-        const active = pathname === tab.href;
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            aria-current={active ? 'page' : undefined}
-            className={`flex flex-1 flex-col items-center gap-1 ${active ? 'text-primary' : 'text-text-secondary'}`}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              {tab.icon}
-            </svg>
-            <span className="text-[11px] font-semibold">{tab.label}</span>
-          </Link>
-        );
-      })}
+    <nav
+      aria-label="Navegação principal"
+      className="fixed inset-x-0 bottom-7 z-20 flex justify-center px-4"
+    >
+      <div className="flex items-center gap-1 rounded-full bg-secondary p-2 shadow-[0_12px_32px_rgba(0,0,0,0.35)]">
+        {TABS.map((tab) => {
+          const active = pathname === tab.href;
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              aria-current={active ? 'page' : undefined}
+              aria-label={tab.label}
+              className={`flex h-12 w-12 items-center justify-center rounded-full transition ${
+                active ? 'bg-background/15 text-background' : 'text-background/55 hover:text-background/80'
+              }`}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                {tab.icon}
+              </svg>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }
