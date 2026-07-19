@@ -12,7 +12,7 @@
 | `/admin/trabalhadores` | Lista de trabalhadores, busca, reset de senha | `GET /admin/workers` |
 | `/admin/verificacoes` | Documentos de KYC, empresas pendentes, categorias pendentes — com preview de arquivo | `GET /admin/verifications`, `PATCH /admin/documents/:id`, `/admin/companies/:id/verification`, `/admin/skill-categories/:id` |
 
-`AdminLayout` faz poll de `/admin/verifications` a cada 60s pro badge do sino da navegação lateral.
+`AdminLayout` faz poll de `/admin/verifications` a cada 60s pro badge do sino da navegação lateral e do dropdown do Topbar (mesmo padrão de avatar/saudação/sino em dropdown do business e do worker — cada item do dropdown linka pra `/admin/verificacoes`, já que a tela ainda não tem âncora por item individual).
 
 ## Notas
 

@@ -44,6 +44,38 @@ Implementado em `apps/admin/src/app/admin/verificacoes/page.tsx`: o primeiro doc
 
 Verificado: typecheck e lint limpos, suíte de testes do admin completa (85 testes — 78 anteriores + 7 novos cobrindo destaque automático, navegação com setas, aprovar/rejeitar com confirmação em dois passos via teclado, cancelar com Esc, e o guard de campo de texto), build de produção limpo. Sem conferência visual ao vivo — mesma limitação de login já registrada nos itens anteriores.
 
+## ✅ Resolvido: indicador de progresso e botão voltar no cadastro do worker
+
+O cadastro do trabalhador é uma maratona de 3 telas (`/cadastro/conta` → `/cadastro` → `/cadastro/documento`) sem nenhuma pista de quanto falta nem como corrigir algo na etapa anterior — o maior risco de abandono do funil identificado na varredura original.
+
+Novo componente `SignupProgress` (`apps/worker/src/components/ui/signup-progress.tsx`), usado no topo das 3 telas (inclusive no estado de erro de `/cadastro/documento`, que tem um layout próprio): mostra "Passo X de 3" com uma barra segmentada preenchida até a etapa atual, e um botão de voltar circular ao lado. O botão usa `router.back()` (histórico do navegador) em vez de um `href` fixo por etapa — assim "voltar" sempre leva pra tela de onde a pessoa realmente veio (a etapa anterior do cadastro, ou a landing/login, se foi daí que ela entrou), sem precisar decidir de antemão o destino de cada etapa.
+
+Verificado: typecheck e lint limpos, suíte de testes completa do worker (228 testes — 222 anteriores + 6 novos: 3 de `SignupProgress` isolado + 1 por tela confirmando o passo certo e o clique no botão chamando `router.back()`), build de produção limpo. Conferência visual ao vivo (dev server local, já que `/cadastro/conta` é pública e as outras duas não exigem login pra renderizar o formulário) confirmou as 3 telas — progresso, botão voltar e o estado de erro de `/cadastro/documento`.
+
+## ✅ Resolvido: tela de candidatos do business segmentada por aba
+
+`apps/business/src/app/(app)/vagas/[id]/page.tsx` misturava pendente/aprovado/recusado numa lista vertical só — a tela mais complexa do produto (turno, pagamento, avaliação por candidato aprovado) e a menos organizada, sem nenhuma separação visual entre "preciso decidir agora" e "já contratei" e "descartado".
+
+Adicionadas 3 abas — **Pendentes**, **Aprovados**, **Recusados** (agrupa rejeitado + retirado) — cada uma com contagem, mesmo agrupamento por urgência que já funciona bem na Central de Ações do painel. A aba inicial é escolhida automaticamente: pendentes se houver algum, senão aprovados, senão recusados — sem exigir um clique extra pra ver o que importa na maioria das visitas à tela. Cada aba mostra uma mensagem própria quando está vazia (ex: "Nenhum candidato aprovado ainda."), em vez do genérico "ninguém se candidatou" que só cabia pro total zerado.
+
+Verificado: typecheck e lint limpos, suíte de testes completa do business (252 testes — 248 anteriores + 4 novos: sem abas quando não há candidato nenhum, segmentação com contagem e troca de aba, aba inicial cai em Aprovados quando não há pendente, mensagem vazia por aba), build de produção limpo. Sem conferência visual ao vivo — a tela fica atrás de login e exige uma vaga real com candidatos em mais de um status, sem credencial de teste documentada.
+
+## ✅ Resolvido: StatCard reaproveitado no admin, GrowthChart ligado no painel do business
+
+**Metade 1 (StatCard no admin) — reuso puro de front**: a Visão Geral do admin (`apps/admin/src/app/admin/page.tsx`) repetia a mesma div (raio, borda, número grande, label pequeno) 9 vezes na mão, em vez de usar um componente — o `StatCard` já existia pronto no business, só nunca tinha sido portado. Copiado pro admin (`apps/admin/src/components/ui/stat-card.tsx`, mesmo padrão de duplicar UI por app já estabelecido) com um `size="compact"` adicional: as 9 métricas do admin são uma visão geral densa (números menores, centralizados), bem diferente do uso "hero" de poucos KPIs do business — em vez de forçar o visual do business e degradar a densidade que já funcionava bem no admin, o componente ganhou essa variante e virou reuso de verdade, não só troca de nome.
+
+**Metade 2 (GrowthChart no business) — precisou de backend novo**: `GrowthChart` já existia em `apps/business` mas nunca tinha sido usado em lugar nenhum (código morto, idêntico ao do admin). Diferente da primeira metade, não havia endpoint de métricas semanais por empresa — só o do admin, que é da plataforma inteira. Extraído `buildWeekStarts`/`zeroFill`/`GrowthWeek` de `get-growth-metrics.ts` pra um helper compartilhado (`apps/backend/src/shared/growth-weeks.ts`), e criado `getCompanyGrowthMetrics` (`apps/backend/src/modules/companies/get-company-growth-metrics.ts`) seguindo o mesmo padrão de bucket semanal, mas filtrado por `companyId` (mesmo join `shifts`↔`jobs` já usado em `get-company-profile.ts`). Novo endpoint `GET /company-profile/growth-metrics`. O painel do business (`apps/business/src/app/(app)/painel/page.tsx`) ganhou uma seção "Crescimento" com 3 gráficos — vagas publicadas, trabalhadores contratados, escalas concluídas — logo depois do "Resumo do mês", mesmo lugar e leiaute usados no admin.
+
+Verificado: typecheck e lint limpos nos 3 apps, suíte de testes completa (695 backend — 692 anteriores + 3 novos cobrindo o corte por empresa; 254 business — 252 anteriores + 2 novos; 89 admin — 85 anteriores + 4 novos do `StatCard`), build de produção limpo nos 3. Sem conferência visual ao vivo — as duas telas ficam atrás de login.
+
+## ✅ Resolvido: topbar do admin nivelada com o padrão dos outros 2 apps
+
+O topbar do admin (até então só uma div solta dentro de `layout.tsx`, não um componente) divergia dos outros 2 apps de duas formas: sem saudação/avatar de quem estava logado, e o sino de notificação era um `<Link>` puro pro sino em vez de um dropdown navegável.
+
+Extraído `apps/admin/src/components/ui/topbar.tsx`, mesmo padrão do `Topbar` do business/worker: avatar + saudação ("Bom dia/Boa tarde/Boa noite, {nome}") ao lado do sino, sino agora abre um dropdown listando trabalhador/empresa/categoria pendentes (com o mesmo agrupamento que já alimentava o contador), fecha ao clicar fora ou em Esc. Admin não tem nome de exibição próprio no banco (só e-mail) — usa a parte antes do "@" como nome, e a foto do Google (`googlePhotoUrl`) quando existir, mesmo dado que os outros 2 apps já usam. Diferença consciente em relação ao business: cada item do dropdown linka pra `/admin/verificacoes` inteira (a fila toda), não pro item individual — a tela ainda não tem âncora por item específico, então não dava pra fingir um link mais fundo do que existe hoje. O botão "Sair" (única forma de logout do app admin) continua exatamente onde estava, só que agora dentro do componente extraído.
+
+Verificado: typecheck e lint limpos, suíte de testes completa do admin (96 testes — 89 anteriores + 7 novos do `Topbar` isolado, mais os 2 testes de sino do `layout.test.tsx` reescritos pra refletir botão+dropdown em vez de link+href), build de produção limpo. Sem conferência visual ao vivo — mesma limitação de login já registrada nos itens anteriores do admin.
+
 ## Achado mais importante: os tokens de design existem, mas foram seguidos de forma decrescente ao longo do tempo
 
 O `apps/admin` (construído por último, extraído do business) segue os tokens de cor e raio do handoff **com fidelidade quase perfeita** — zero hex solto fora do CSS de tokens. Já `apps/worker` e `apps/business` (construídos primeiro, e evoluídos por mais tempo) acumularam dezenas de valores arbitrários de raio (`rounded-[20px]`, `rounded-[18px]`, `rounded-[14px]`, `rounded-[13px]`, `rounded-[11px]`) e tipografia (`text-[19px]`, `text-[15.5px]`, `text-[13.5px]`, `text-[12.5px]`, `text-[11.5px]`) que nunca correspondem exatamente aos 4 raios e 7 degraus tipográficos documentados. Isso é o oposto do que se esperaria — o app mais novo é o mais disciplinado. Sinal de que a deriva acontece com o tempo/pressa, não por falta de sistema — o sistema existe e funciona, só não está sendo consultado.
@@ -96,7 +128,7 @@ Detalhe completo — arquivos revisados: todas as páginas em `apps/admin/src/ap
 4. ~~Resolver a duplicidade/fragilidade de endereço→geolocalização (CEP não geocodifica automaticamente; editar vaga no business não tem CEP).~~ **Feito** (a parte do cadastro do worker não precisava de correção — ver nota acima).
 5. ~~Lightbox/zoom de documento no admin, pra revisão de KYC de verdade.~~ **Feito.**
 6. ~~Ação em lote / atalho de teclado na tela de Verificações do admin.~~ **Feito** (só o atalho de teclado — ver nota acima sobre por que a ação em lote foi descartada).
-7. Indicador de progresso + botão voltar no cadastro do worker.
-8. Segmentar a tela de candidatos do business por status (aba/seção).
-9. Reaproveitar `StatCard` no admin e usar `GrowthChart` no painel do business — ganho rápido, código já existe.
-10. Elevar a topbar/sino do admin ao mesmo padrão dos outros 2 apps (avatar, saudação, dropdown de notificação).
+7. ~~Indicador de progresso + botão voltar no cadastro do worker.~~ **Feito.**
+8. ~~Segmentar a tela de candidatos do business por status (aba/seção).~~ **Feito.**
+9. ~~Reaproveitar `StatCard` no admin e usar `GrowthChart` no painel do business.~~ **Feito.**
+10. ~~Elevar a topbar/sino do admin ao mesmo padrão dos outros 2 apps (avatar, saudação, dropdown de notificação).~~ **Feito.**

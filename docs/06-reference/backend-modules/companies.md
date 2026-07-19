@@ -10,6 +10,7 @@
 | `GET /company-profile/ratings` | Avaliações recebidas |
 | `GET /company-profile/notifications` | Sino de notificações |
 | `GET /company-profile/dashboard` | Painel (cobertura 48h + ações) |
+| `GET /company-profile/growth-metrics` | Vagas publicadas/trabalhadores contratados/escalas concluídas, últimas 8 semanas |
 | `GET /company-profile/worker-history` | Histórico agregado de trabalhadores |
 | `GET /company-profile/live-event` | Operação ao vivo do dia |
 | `POST /company-profile/logo` | Upload de logo |
@@ -29,6 +30,10 @@ Lista limitada a 20 itens por categoria; contadores refletem o total real.
 ## Dashboard (`get-company-dashboard.ts`)
 
 Métrica-herói: **cobertura das próximas 48h** — soma de posições totais vs. preenchidas de todas as vagas não canceladas nessa janela, `null` (não 0%/100%) quando não há vaga na janela. `openPositionJobs`: até 10 vagas abertas futuras com posição vaga, ordenadas por data.
+
+## Métricas de crescimento (`get-company-growth-metrics.ts`)
+
+Mesmo bucket semanal (segunda a domingo, últimas 8 semanas, zero-fill) do `getAdminGrowthMetrics` — a lógica de janela vive em `apps/backend/src/shared/growth-weeks.ts`, compartilhada pelos dois. Recorte por `jobs.companyId`: vagas publicadas (`jobs.createdAt`), trabalhadores contratados (`shifts.createdAt`, join com `jobs`) e escalas concluídas (`shifts.checkOutAt` com `status = 'completed'`, mesmo join).
 
 ## Perfil / métricas (`get-company-profile.ts`)
 
