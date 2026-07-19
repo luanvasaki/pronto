@@ -89,7 +89,7 @@ export default function EntrarPage() {
         </div>
         <div>
           <h1 className="font-heading text-2xl font-bold text-text">Entre na sua conta</h1>
-          <p className="mt-1 text-[15px] text-text-secondary">Acesso restrito a administradores do Pronto.</p>
+          <p className="mt-1 text-[16px] text-text-secondary">Acesso restrito a administradores do Pronto.</p>
         </div>
 
         <GoogleLoginButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />

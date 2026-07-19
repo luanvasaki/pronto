@@ -43,7 +43,7 @@ export default function CadastroContaPage() {
         <Logo className="mb-2" />
         <div>
           <h1 className="font-heading text-2xl font-bold text-text">Crie sua conta</h1>
-          <p className="mt-1 text-[15px] text-text-secondary">Só o essencial pra começar.</p>
+          <p className="mt-1 text-[16px] text-text-secondary">Só o essencial pra começar.</p>
         </div>
 
         <Input

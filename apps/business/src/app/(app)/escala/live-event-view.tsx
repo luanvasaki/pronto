@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { CardListSkeleton } from '../../../components/ui/skeleton';
 import { getLiveEventStatus, LiveEventJob, LiveShiftStatus } from '../../../lib/live-event-api';
 
 const POLL_INTERVAL_MS = 30_000;
@@ -82,20 +83,20 @@ export function LiveEventView() {
   return (
     <div className="flex flex-1 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-heading text-[17px] font-bold text-text">{dayLabel(selectedDate)}</h2>
+        <h2 className="font-heading text-[16px] font-bold text-text">{dayLabel(selectedDate)}</h2>
         <div className="flex items-center gap-2">
           <button
             type="button"
             aria-label="Dia anterior"
             onClick={() => setSelectedDate((date) => addDays(date, -1))}
-            className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-border text-text transition hover:border-primary hover:text-primary"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-text transition hover:border-primary hover:text-primary"
           >
             ‹
           </button>
           <button
             type="button"
             onClick={() => setSelectedDate(startOfDay(new Date()))}
-            className="rounded-[10px] border border-border px-3 py-1.5 text-[13px] font-semibold text-text transition hover:border-primary hover:text-primary"
+            className="rounded-md border border-border px-3 py-1.5 text-[14px] font-semibold text-text transition hover:border-primary hover:text-primary"
           >
             Hoje
           </button>
@@ -103,7 +104,7 @@ export function LiveEventView() {
             type="button"
             aria-label="Próximo dia"
             onClick={() => setSelectedDate((date) => addDays(date, 1))}
-            className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-border text-text transition hover:border-primary hover:text-primary"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-text transition hover:border-primary hover:text-primary"
           >
             ›
           </button>
@@ -113,15 +114,15 @@ export function LiveEventView() {
       {error && <p className="text-sm text-danger">{error}</p>}
 
       {isLoading ? (
-        <p className="text-sm text-text-secondary">Carregando operação ao vivo...</p>
+        <CardListSkeleton count={2} />
       ) : jobs.length === 0 ? (
-        <div className="rounded-[18px] border border-dashed border-border p-6 text-center">
-          <p className="text-[13.5px] text-text-secondary">Nenhuma escala nesse dia.</p>
+        <div className="rounded-lg border border-dashed border-border p-6 text-center">
+          <p className="text-[14px] text-text-secondary">Nenhuma escala nesse dia.</p>
         </div>
       ) : (
         <>
           {lateCount > 0 && (
-            <p className="rounded-[12px] border border-danger/30 bg-danger/10 px-4 py-2.5 text-[13.5px] font-semibold text-danger">
+            <p className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-[14px] font-semibold text-danger">
               {lateCount === 1 ? '1 pessoa atrasada' : `${lateCount} pessoas atrasadas`} de {totalShifts} escalada(s)
               hoje.
             </p>
@@ -129,17 +130,17 @@ export function LiveEventView() {
 
           <div className="flex flex-col gap-3">
             {jobs.map((job) => (
-              <div key={job.jobId} className="rounded-[14px] border border-border bg-surface p-4">
+              <div key={job.jobId} className="rounded-lg border border-border bg-surface p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <Link href={`/vagas/${job.jobId}`} className="font-heading text-[15px] font-bold text-text hover:text-primary">
+                    <Link href={`/vagas/${job.jobId}`} className="font-heading text-[16px] font-bold text-text hover:text-primary">
                       {job.categoryName}
                     </Link>
-                    <p className="text-[12.5px] text-text-secondary">
+                    <p className="text-[14px] text-text-secondary">
                       {formatTime(job.startsAt)}–{formatTime(job.endsAt)} · {job.addressLabel}
                     </p>
                   </div>
-                  <span className="text-[12.5px] font-semibold text-text-secondary">
+                  <span className="text-[14px] font-semibold text-text-secondary">
                     {job.positionsFilled}/{job.positionsTotal} posições
                   </span>
                 </div>
@@ -148,13 +149,13 @@ export function LiveEventView() {
                   <div className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3">
                     {job.shifts.map((shift) => (
                       <div key={shift.shiftId} className="flex items-center justify-between gap-2">
-                        <span className="text-[13.5px] font-medium text-text">{shift.workerName}</span>
+                        <span className="text-[14px] font-medium text-text">{shift.workerName}</span>
                         <div className="flex items-center gap-2">
                           {shift.status === 'atrasado' && shift.minutesLate !== null && (
-                            <span className="text-[12px] text-danger">{shift.minutesLate} min</span>
+                            <span className="text-[11px] text-danger">{shift.minutesLate} min</span>
                           )}
                           {shift.status === 'chegou' && shift.checkInAt && (
-                            <span className="text-[12px] text-text-secondary">{formatTime(shift.checkInAt)}</span>
+                            <span className="text-[11px] text-text-secondary">{formatTime(shift.checkInAt)}</span>
                           )}
                           <span
                             className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_STYLES[shift.status].className}`}

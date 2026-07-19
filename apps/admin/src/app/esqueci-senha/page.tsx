@@ -36,7 +36,7 @@ export default function EsqueciSenhaPage() {
         {sent ? (
           <div>
             <h1 className="font-heading text-2xl font-bold text-text">Verifique seu e-mail</h1>
-            <p className="mt-1 text-[15px] text-text-secondary">
+            <p className="mt-1 text-[16px] text-text-secondary">
               Se existir uma conta com esse e-mail, enviamos um link de redefinição.
             </p>
           </div>
@@ -44,7 +44,7 @@ export default function EsqueciSenhaPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div>
               <h1 className="font-heading text-2xl font-bold text-text">Esqueceu sua senha?</h1>
-              <p className="mt-1 text-[15px] text-text-secondary">
+              <p className="mt-1 text-[16px] text-text-secondary">
                 Mandamos um link de redefinição pro seu e-mail.
               </p>
             </div>

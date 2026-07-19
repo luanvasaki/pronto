@@ -124,7 +124,7 @@ export function Sidebar({ companyName, logoUrl, isOpen, onClose }: SidebarProps)
               return (
                 <div
                   key={item.href}
-                  className="flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[14.5px] font-semibold text-background/30"
+                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] font-semibold text-background/30"
                   title="Em breve"
                 >
                   <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
@@ -140,7 +140,7 @@ export function Sidebar({ companyName, logoUrl, isOpen, onClose }: SidebarProps)
                 key={item.href}
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
-                className={`flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[14.5px] font-semibold transition ${
+                className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] font-semibold transition ${
                   active ? 'bg-background/10 text-background' : 'text-background/70 hover:bg-background/5'
                 }`}
               >

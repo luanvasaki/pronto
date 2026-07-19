@@ -103,7 +103,7 @@ export function GrowthChart({ title, subtitle, data }: GrowthChartProps) {
       </div>
       <div className="mt-1.5 flex gap-1.5">
         {data.map((point, index) => (
-          <div key={point.weekStart} className="flex-1 text-center text-[10px] text-text-secondary">
+          <div key={point.weekStart} className="flex-1 text-center text-[11px] text-text-secondary">
             {index === 0 || index === lastIndex ? weekLabel(point.weekStart) : ''}
           </div>
         ))}

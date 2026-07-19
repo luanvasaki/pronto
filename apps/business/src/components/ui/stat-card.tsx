@@ -16,10 +16,10 @@ export function StatCard({ label, value, hint, hintClassName = '', variant = 'de
         isDark ? 'bg-secondary text-background' : 'border border-border bg-surface text-text'
       }`}
     >
-      <p className={`text-[13px] ${isDark ? 'text-background/60' : 'text-text-secondary'}`}>{label}</p>
+      <p className={`text-[14px] ${isDark ? 'text-background/60' : 'text-text-secondary'}`}>{label}</p>
       <p className="mt-1 font-heading text-[34px] leading-none font-bold tracking-[-0.02em]">{value}</p>
       {hint && (
-        <p className={`mt-1.5 text-[12.5px] ${isDark ? 'text-background/50' : (hintClassName ?? 'text-text-secondary')}`}>
+        <p className={`mt-1.5 text-[14px] ${isDark ? 'text-background/50' : (hintClassName ?? 'text-text-secondary')}`}>
           {hint}
         </p>
       )}

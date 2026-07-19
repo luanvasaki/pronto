@@ -4,6 +4,7 @@ import { listSkillCategories, SkillCategory } from '@shift/shared';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { JobApplication } from '../../../lib/applications-api';
+import { CardListSkeleton } from '../../../components/ui/skeleton';
 import { startOfWeek } from '../../../lib/date-utils';
 import { fetchApplicationsByJobId } from '../../../lib/job-applications-summary';
 import { duplicateWeek, Job, listMyJobs } from '../../../lib/jobs-api';
@@ -118,8 +119,8 @@ export default function EscalaPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando sua escala...</p>
+      <main className="flex flex-1 flex-col gap-4">
+        <CardListSkeleton />
       </main>
     );
   }
@@ -197,11 +198,11 @@ export default function EscalaPage() {
             {viewMode === 'semana' && weekRangeLabel(currentWeekStart)}
             {viewMode === 'vivo' && 'Ao vivo'}
           </h1>
-          <div className="flex rounded-[10px] border border-border p-0.5">
+          <div className="flex rounded-md border border-border p-0.5">
             <button
               type="button"
               onClick={() => setViewMode('mes')}
-              className={`rounded-[8px] px-3 py-1 text-[12.5px] font-semibold transition ${
+              className={`rounded-sm px-3 py-1 text-[14px] font-semibold transition ${
                 viewMode === 'mes' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text'
               }`}
             >
@@ -210,7 +211,7 @@ export default function EscalaPage() {
             <button
               type="button"
               onClick={() => setViewMode('semana')}
-              className={`rounded-[8px] px-3 py-1 text-[12.5px] font-semibold transition ${
+              className={`rounded-sm px-3 py-1 text-[14px] font-semibold transition ${
                 viewMode === 'semana' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text'
               }`}
             >
@@ -219,7 +220,7 @@ export default function EscalaPage() {
             <button
               type="button"
               onClick={() => setViewMode('vivo')}
-              className={`rounded-[8px] px-3 py-1 text-[12.5px] font-semibold transition ${
+              className={`rounded-sm px-3 py-1 text-[14px] font-semibold transition ${
                 viewMode === 'vivo' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text'
               }`}
             >
@@ -234,7 +235,7 @@ export default function EscalaPage() {
               type="button"
               aria-label="Mês anterior"
               onClick={() => setCurrentMonth((month) => new Date(month.getFullYear(), month.getMonth() - 1, 1))}
-              className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-border text-text transition hover:border-primary hover:text-primary"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-text transition hover:border-primary hover:text-primary"
             >
               ‹
             </button>
@@ -244,7 +245,7 @@ export default function EscalaPage() {
                 const now = new Date();
                 setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
               }}
-              className="rounded-[10px] border border-border px-3 py-1.5 text-[13px] font-semibold text-text transition hover:border-primary hover:text-primary"
+              className="rounded-md border border-border px-3 py-1.5 text-[14px] font-semibold text-text transition hover:border-primary hover:text-primary"
             >
               Hoje
             </button>
@@ -252,7 +253,7 @@ export default function EscalaPage() {
               type="button"
               aria-label="Próximo mês"
               onClick={() => setCurrentMonth((month) => new Date(month.getFullYear(), month.getMonth() + 1, 1))}
-              className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-border text-text transition hover:border-primary hover:text-primary"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-text transition hover:border-primary hover:text-primary"
             >
               ›
             </button>
@@ -269,7 +270,7 @@ export default function EscalaPage() {
                 }
                 setIsDuplicatePanelOpen((open) => !open);
               }}
-              className="rounded-[10px] border border-primary px-3 py-1.5 text-[13px] font-semibold text-primary transition hover:bg-primary/10"
+              className="rounded-md border border-primary px-3 py-1.5 text-[14px] font-semibold text-primary transition hover:bg-primary/10"
             >
               Duplicar semana
             </button>
@@ -277,14 +278,14 @@ export default function EscalaPage() {
               type="button"
               aria-label="Semana anterior"
               onClick={() => setCurrentWeekStart((start) => new Date(start.getFullYear(), start.getMonth(), start.getDate() - 7))}
-              className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-border text-text transition hover:border-primary hover:text-primary"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-text transition hover:border-primary hover:text-primary"
             >
               ‹
             </button>
             <button
               type="button"
               onClick={() => setCurrentWeekStart(startOfWeek(new Date()))}
-              className="rounded-[10px] border border-border px-3 py-1.5 text-[13px] font-semibold text-text transition hover:border-primary hover:text-primary"
+              className="rounded-md border border-border px-3 py-1.5 text-[14px] font-semibold text-text transition hover:border-primary hover:text-primary"
             >
               Hoje
             </button>
@@ -292,7 +293,7 @@ export default function EscalaPage() {
               type="button"
               aria-label="Próxima semana"
               onClick={() => setCurrentWeekStart((start) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7))}
-              className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-border text-text transition hover:border-primary hover:text-primary"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-text transition hover:border-primary hover:text-primary"
             >
               ›
             </button>
@@ -301,7 +302,7 @@ export default function EscalaPage() {
       </div>
 
       {viewMode === 'semana' && duplicateSuccessCount !== null && (
-        <p className="rounded-[12px] border border-success/30 bg-success/10 px-4 py-2.5 text-[13.5px] font-semibold text-success">
+        <p className="rounded-lg border border-success/30 bg-success/10 px-4 py-2.5 text-[14px] font-semibold text-success">
           {duplicateSuccessCount === 1
             ? '1 escala duplicada pra semana seguinte.'
             : `${duplicateSuccessCount} escalas duplicadas pra semana seguinte.`}
@@ -323,20 +324,20 @@ export default function EscalaPage() {
 
           if (weekJobsCount === 0) {
             return (
-              <div className="rounded-[14px] border border-border bg-surface p-4 text-[13.5px] text-text-secondary">
+              <div className="rounded-lg border border-border bg-surface p-4 text-[14px] text-text-secondary">
                 Não há escalas nessa semana pra duplicar.
               </div>
             );
           }
 
           return (
-            <div className="flex flex-col gap-3 rounded-[14px] border border-primary/30 bg-primary/5 p-4">
-              <p className="text-[13.5px] font-semibold text-text">
+            <div className="flex flex-col gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
+              <p className="text-[14px] font-semibold text-text">
                 Duplicar {weekJobsCount} escala(s) de {weekRangeLabel(currentWeekStart)} pra{' '}
                 {weekRangeLabel(targetWeekStart)}, no mesmo dia da semana e horário — sem candidatos, sem vagas
                 preenchidas, tudo do zero.
               </p>
-              <label className="flex items-start gap-2 text-[12.5px] text-text-secondary">
+              <label className="flex items-start gap-2 text-[14px] text-text-secondary">
                 <input
                   type="checkbox"
                   checked={duplicateTermsAccepted}
@@ -345,13 +346,13 @@ export default function EscalaPage() {
                 />
                 Confirmo que essas escalas são intermediação avulsa, sem vínculo empregatício.
               </label>
-              {duplicateError && <p className="text-[12.5px] text-danger">{duplicateError}</p>}
+              {duplicateError && <p className="text-[14px] text-danger">{duplicateError}</p>}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   disabled={!duplicateTermsAccepted || isDuplicating}
                   onClick={() => void handleConfirmDuplicate()}
-                  className="rounded-[10px] bg-primary px-4 py-2 text-[13px] font-semibold text-white transition hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-md bg-primary px-4 py-2 text-[14px] font-semibold text-white transition hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isDuplicating ? 'Duplicando...' : 'Confirmar duplicação'}
                 </button>
@@ -362,7 +363,7 @@ export default function EscalaPage() {
                     setDuplicateError(null);
                     setDuplicateTermsAccepted(false);
                   }}
-                  className="rounded-[10px] px-4 py-2 text-[13px] font-semibold text-text-secondary transition hover:text-text"
+                  className="rounded-md px-4 py-2 text-[14px] font-semibold text-text-secondary transition hover:text-text"
                 >
                   Cancelar
                 </button>
@@ -395,13 +396,13 @@ export default function EscalaPage() {
               return (
                 <div
                   key={dateKey}
-                  className={`flex min-h-[104px] flex-col gap-1.5 rounded-[14px] border p-2 ${
+                  className={`flex min-h-[104px] flex-col gap-1.5 rounded-lg border p-2 ${
                     inCurrentMonth ? 'border-border bg-surface' : 'border-transparent bg-background/40'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span
-                      className={`text-[13px] font-semibold ${
+                      className={`text-[14px] font-semibold ${
                         isToday
                           ? 'flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white'
                           : inCurrentMonth
@@ -442,8 +443,17 @@ export default function EscalaPage() {
                     const shown = workerNames.slice(0, MAX_WORKER_NAMES_PER_DAY);
                     const extra = workerNames.length - shown.length;
                     return (
-                      <p className="mt-auto truncate text-[10.5px] text-text-secondary" title={workerNames.join(', ')}>
-                        👤 {shown.join(', ')}
+                      <p className="mt-auto truncate text-[11px] text-text-secondary" title={workerNames.join(', ')}>
+                        <svg
+                          className="mr-0.5 inline-block h-[1em] w-[1em] align-[-0.15em]"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="2" />
+                          <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                        {shown.join(', ')}
                         {extra > 0 ? ` +${extra}` : ''}
                       </p>
                     );
@@ -472,7 +482,7 @@ export default function EscalaPage() {
             return (
               <div
                 key={dateKey}
-                className="flex min-h-[180px] flex-col gap-2 rounded-[14px] border border-border bg-surface p-3"
+                className="flex min-h-[180px] flex-col gap-2 rounded-lg border border-border bg-surface p-3"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -480,7 +490,7 @@ export default function EscalaPage() {
                       {WEEKDAY_LABEL_WEEK[index]}
                     </span>
                     <span
-                      className={`text-[13px] font-semibold ${
+                      className={`text-[14px] font-semibold ${
                         isToday ? 'flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white' : 'text-text'
                       }`}
                     >
@@ -497,7 +507,7 @@ export default function EscalaPage() {
                 </div>
 
                 <span
-                  className={`w-fit rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${DAY_STATUS_STYLES[status].className}`}
+                  className={`w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold ${DAY_STATUS_STYLES[status].className}`}
                 >
                   {DAY_STATUS_STYLES[status].label}
                 </span>
@@ -507,7 +517,7 @@ export default function EscalaPage() {
                     <Link
                       key={job.id}
                       href={`/vagas/${job.id}`}
-                      className="rounded-md bg-background px-2 py-1.5 text-[11.5px] font-semibold text-text transition hover:bg-primary/10"
+                      className="rounded-md bg-background px-2 py-1.5 text-[11px] font-semibold text-text transition hover:bg-primary/10"
                     >
                       <span className="truncate">{categoryNames[job.categoryId] ?? 'Categoria'}</span>
                       <span className="ml-1 font-normal text-text-secondary">
@@ -522,7 +532,7 @@ export default function EscalaPage() {
                     {chips.map((chip) => (
                       <span
                         key={chip.key}
-                        className="rounded-full bg-background px-2 py-0.5 text-[10.5px] font-medium text-text-secondary"
+                        className="rounded-full bg-background px-2 py-0.5 text-[11px] font-medium text-text-secondary"
                         title={
                           chip.previousShiftsWithCompany > 0
                             ? `${chip.name} já trabalhou ${chip.previousShiftsWithCompany}x com você`

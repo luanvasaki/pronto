@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { RatingForm, RatingSummary } from '../../../../components/rating-form';
 import { Avatar } from '../../../../components/ui/avatar';
 import { Button } from '../../../../components/ui/button';
+import { CardListSkeleton } from '../../../../components/ui/skeleton';
 import { createAnnouncement, JobAnnouncement, listJobAnnouncements } from '../../../../lib/announcements-api';
 import {
   confirmCheckIn,
@@ -402,8 +403,8 @@ export default function VagaCandidatosPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando candidatos...</p>
+      <main className="flex flex-1 flex-col gap-4">
+        <CardListSkeleton />
       </main>
     );
   }
@@ -413,22 +414,22 @@ export default function VagaCandidatosPage() {
 
       {job && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="flex w-fit items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold text-text">
+          <span className="flex w-fit items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[14px] font-semibold text-text">
             <span className="h-[7px] w-[7px] rounded-full bg-success" />
             {positionsFilled} de {job.positionsTotal} vagas preenchidas
           </span>
           {formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação') && (
-            <span className="rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold text-text">
+            <span className="rounded-full bg-background px-3 py-1.5 text-[14px] font-semibold text-text">
               {formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação')}
             </span>
           )}
           {formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte') && (
-            <span className="rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold text-text">
+            <span className="rounded-full bg-background px-3 py-1.5 text-[14px] font-semibold text-text">
               {formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte')}
             </span>
           )}
           {job.minorsAllowed && (
-            <span className="rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold text-text">
+            <span className="rounded-full bg-background px-3 py-1.5 text-[14px] font-semibold text-text">
               Disponível pra menores de idade
             </span>
           )}
@@ -450,9 +451,9 @@ export default function VagaCandidatosPage() {
             <div className="flex items-center gap-3.5">
               <Avatar name={application.worker.fullName} photoUrl={application.worker.photoUrl} size="md" />
               <div className="min-w-0 flex-1">
-                <p className="font-heading text-[15.5px] font-bold text-text">{application.worker.fullName}</p>
+                <p className="font-heading text-[16px] font-bold text-text">{application.worker.fullName}</p>
                 {application.worker.avgRating && (
-                  <p className="text-[12.5px] text-text-secondary">★ {application.worker.avgRating}</p>
+                  <p className="text-[14px] text-text-secondary">★ {application.worker.avgRating}</p>
                 )}
               </div>
               <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(application)}`}>
@@ -468,7 +469,7 @@ export default function VagaCandidatosPage() {
                   return [
                     <span
                       key={category.id}
-                      className="rounded-lg bg-background px-2 py-1 text-[11.5px] font-semibold text-text-secondary"
+                      className="rounded-lg bg-background px-2 py-1 text-[11px] font-semibold text-text-secondary"
                     >
                       ★{score} {category.label}
                     </span>,
@@ -478,19 +479,19 @@ export default function VagaCandidatosPage() {
             )}
 
             {application.worker.previousShiftsWithCompany > 0 && (
-              <p className="mt-2.5 rounded-lg bg-success/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-success">
+              <p className="mt-2.5 rounded-lg bg-success/10 px-2.5 py-1.5 text-[14px] font-semibold text-success">
                 ✓ Já trabalhou {application.worker.previousShiftsWithCompany}x com você
               </p>
             )}
 
             {!application.worker.matchesSkills && (
-              <p className="mt-2.5 rounded-lg bg-danger/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-danger">
+              <p className="mt-2.5 rounded-lg bg-danger/10 px-2.5 py-1.5 text-[14px] font-semibold text-danger">
                 Esse profissional não tem essa especialidade no perfil dele.
               </p>
             )}
 
             {application.experienceMismatch && (
-              <p className="mt-2.5 rounded-lg bg-danger/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-danger">
+              <p className="mt-2.5 rounded-lg bg-danger/10 px-2.5 py-1.5 text-[14px] font-semibold text-danger">
                 Essa vaga exige experiência anterior e esse profissional não declarou ter.
               </p>
             )}
@@ -748,8 +749,8 @@ export default function VagaCandidatosPage() {
       </ul>
 
       <section className="mt-2 flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
-        <p className="font-heading text-[15px] font-bold text-text">Quadro de avisos</p>
-        <p className="text-[13px] text-text-secondary">
+        <p className="font-heading text-[16px] font-bold text-text">Quadro de avisos</p>
+        <p className="text-[14px] text-text-secondary">
           Publique avisos pra quem se candidatou — todo mundo que se inscreveu (mesmo já rejeitado ou aprovado)
           consegue ler, a qualquer momento.
         </p>
@@ -759,7 +760,7 @@ export default function VagaCandidatosPage() {
           placeholder="Ex.: o local de encontro mudou, chegar 15 min antes..."
           value={newAnnouncement}
           onChange={(event) => setNewAnnouncement(event.target.value)}
-          className="w-full rounded-[14px] border border-border bg-background px-3.5 py-3 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+          className="w-full rounded-sm border border-border bg-background px-3.5 py-3 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
         />
         {announcementError && <p className="text-sm text-danger">{announcementError}</p>}
         <Button
@@ -793,8 +794,8 @@ export default function VagaCandidatosPage() {
       </section>
 
       <section className="mt-2 mb-4 flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
-        <p className="font-heading text-[15px] font-bold text-text">Perguntas e respostas</p>
-        <p className="text-[13px] text-text-secondary">
+        <p className="font-heading text-[16px] font-bold text-text">Perguntas e respostas</p>
+        <p className="text-[14px] text-text-secondary">
           Perguntas de quem se candidatou — as respostas ficam visíveis pra todos os inscritos, não só quem
           perguntou.
         </p>
@@ -815,12 +816,12 @@ export default function VagaCandidatosPage() {
         <ul className="flex flex-col gap-3">
           {questions.map((question) => (
             <li key={question.id} className="rounded-xl bg-background p-3">
-              <p className="text-[13px] font-semibold text-text-secondary">{question.worker.fullName}</p>
+              <p className="text-[14px] font-semibold text-text-secondary">{question.worker.fullName}</p>
               <p className="mt-0.5 text-sm text-text">{question.question}</p>
 
               {question.answer ? (
                 <div className="mt-2 rounded-lg bg-surface p-2.5">
-                  <p className="text-[13px] font-semibold text-success">Sua resposta</p>
+                  <p className="text-[14px] font-semibold text-success">Sua resposta</p>
                   <p className="mt-0.5 text-sm text-text">{question.answer}</p>
                 </div>
               ) : (
@@ -832,7 +833,7 @@ export default function VagaCandidatosPage() {
                     onChange={(event) =>
                       setAnswerDrafts((current) => ({ ...current, [question.id]: event.target.value }))
                     }
-                    className="w-full rounded-[14px] border border-border bg-surface px-3.5 py-3 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+                    className="w-full rounded-sm border border-border bg-surface px-3.5 py-3 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
                   />
                   {answerError?.id === question.id && <p className="text-sm text-danger">{answerError.message}</p>}
                   <Button

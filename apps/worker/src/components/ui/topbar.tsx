@@ -61,7 +61,7 @@ export function Topbar({ calledCount, calledNotifications = [], workerName, phot
             type="button"
             onClick={() => setIsNotificationsOpen((current) => !current)}
             aria-label={calledCount > 0 ? `${calledCount} chamada(s) pra trabalhar` : 'Notificações'}
-            className={`relative flex h-10 w-10 items-center justify-center rounded-[11px] border transition ${
+            className={`relative flex h-10 w-10 items-center justify-center rounded-md border transition ${
               calledCount > 0 ? 'border-danger bg-danger/10 text-danger' : 'border-border text-text'
             }`}
           >
@@ -75,7 +75,7 @@ export function Topbar({ calledCount, calledNotifications = [], workerName, phot
               <path d="M10 20a2 2 0 004 0" stroke="currentColor" strokeWidth="2" />
             </svg>
             {calledCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+              <span className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-white">
                 {calledCount > 9 ? '9+' : calledCount}
               </span>
             )}
@@ -106,7 +106,7 @@ export function Topbar({ calledCount, calledNotifications = [], workerName, phot
         {workerName && (
           <Link href="/perfil" aria-label="Ir para o perfil" className="flex items-center gap-1.5 sm:gap-2.5">
             <Avatar name={workerName} photoUrl={photoUrl} size="sm" />
-            <p className="max-w-[92px] truncate text-[13.5px] font-semibold text-text sm:max-w-[160px]">
+            <p className="max-w-[92px] truncate text-[14px] font-semibold text-text sm:max-w-[160px]">
               {greeting()}, {getFirstName(workerName)}
             </p>
           </Link>

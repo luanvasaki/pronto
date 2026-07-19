@@ -123,7 +123,7 @@ export function Topbar({
           type="button"
           onClick={onMenuClick}
           aria-label="Abrir menu"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] border border-border lg:hidden"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border lg:hidden"
         >
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -133,13 +133,13 @@ export function Topbar({
           <p className="truncate font-heading text-xl leading-none font-bold tracking-[-0.01em] text-text">
             {title}
           </p>
-          {subtitle && <p className="mt-0.5 truncate text-[12.5px] text-text-secondary">{subtitle}</p>}
+          {subtitle && <p className="mt-0.5 truncate text-[14px] text-text-secondary">{subtitle}</p>}
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2 sm:gap-3.5">
         <div className="hidden items-center gap-2.5 sm:flex">
           <Avatar name={companyName} photoUrl={logoUrl} size="sm" shape="square" color="bg-secondary" />
-          <p className="max-w-[160px] truncate text-[13.5px] font-semibold text-text">
+          <p className="max-w-[160px] truncate text-[14px] font-semibold text-text">
             {greeting()}, {companyName}
           </p>
         </div>
@@ -148,7 +148,7 @@ export function Topbar({
             type="button"
             onClick={() => setIsNotificationsOpen((current) => !current)}
             aria-label={totalCount > 0 ? `${totalCount} notificação(ões) pendente(s)` : 'Notificações'}
-            className={`relative flex h-10 w-10 items-center justify-center rounded-[11px] border transition ${
+            className={`relative flex h-10 w-10 items-center justify-center rounded-md border transition ${
               totalCount > 0 ? 'border-danger bg-danger/10 text-danger' : 'border-border text-text'
             }`}
           >
@@ -162,7 +162,7 @@ export function Topbar({
               <path d="M10 20a2 2 0 004 0" stroke="currentColor" strokeWidth="2" />
             </svg>
             {totalCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+              <span className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-white">
                 {totalCount > 9 ? '9+' : totalCount}
               </span>
             )}
@@ -244,7 +244,7 @@ export function Topbar({
         </div>
         <Link
           href="/vagas/nova"
-          className="flex items-center gap-2 rounded-xl bg-primary px-3.5 py-3 text-[14.5px] font-bold text-white shadow-[0_8px_20px_rgba(245,83,30,0.28)] transition hover:brightness-90 lg:px-5"
+          className="flex items-center gap-2 rounded-xl bg-primary px-3.5 py-3 text-[14px] font-bold text-white shadow-[0_8px_20px_rgba(245,83,30,0.28)] transition hover:brightness-90 lg:px-5"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />

@@ -80,7 +80,7 @@ export default function CadastroPage() {
         <Logo className="mb-2" />
         <div>
           <h1 className="font-heading text-2xl font-bold text-text">Complete o cadastro</h1>
-          <p className="mt-1 text-[15px] text-text-secondary">
+          <p className="mt-1 text-[16px] text-text-secondary">
             Precisamos desses dados pra verificar sua conta.
           </p>
         </div>

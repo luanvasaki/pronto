@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
+import { CardListSkeleton } from '../../../components/ui/skeleton';
 import { getCompanyWorkerHistory, WorkerHistoryEntry } from '../../../lib/workers-api';
 
 const ATTENDANCE_STYLES = {
@@ -56,8 +57,8 @@ export default function TrabalhadoresPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando seu histórico...</p>
+      <main className="flex flex-1 flex-col gap-5">
+        <CardListSkeleton />
       </main>
     );
   }
@@ -68,15 +69,15 @@ export default function TrabalhadoresPage() {
 
       <div>
         <h1 className="font-heading text-[19px] font-bold text-text">Trabalhadores</h1>
-        <p className="mt-1 text-[13.5px] text-text-secondary">
+        <p className="mt-1 text-[14px] text-text-secondary">
           Todo mundo com quem você já trabalhou, ordenado por quem você pode chamar com mais confiança.
         </p>
       </div>
 
       {workers.length === 0 && !error && (
-        <div className="rounded-[18px] border border-dashed border-border p-6 text-center">
-          <p className="font-heading text-[17px] font-bold text-text">Ainda sem histórico</p>
-          <p className="mt-1.5 text-[13.5px] text-text-secondary">
+        <div className="rounded-lg border border-dashed border-border p-6 text-center">
+          <p className="font-heading text-[16px] font-bold text-text">Ainda sem histórico</p>
+          <p className="mt-1.5 text-[14px] text-text-secondary">
             Assim que um turno for concluído (ou faltado), o trabalhador aparece aqui.
           </p>
         </div>
@@ -87,16 +88,16 @@ export default function TrabalhadoresPage() {
           {workers.map((worker) => (
             <div
               key={worker.workerId}
-              className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-[14px] border border-border bg-surface px-5 py-3.5"
+              className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-surface px-5 py-3.5"
             >
               <div className="flex min-w-[180px] flex-1 items-center gap-3">
                 <Avatar name={worker.fullName} photoUrl={worker.photoUrl} size="sm" />
-                <span className="text-[15px] font-semibold text-text">{worker.fullName}</span>
+                <span className="text-[16px] font-semibold text-text">{worker.fullName}</span>
               </div>
 
               <div className="flex flex-col items-start">
                 <span className="text-[11px] text-text-secondary">Turnos</span>
-                <span className="text-[13.5px] font-semibold text-text">
+                <span className="text-[14px] font-semibold text-text">
                   {worker.shiftsCompleted} concluído(s)
                   {worker.noShowCount > 0 && <span className="text-danger"> · {worker.noShowCount} falta(s)</span>}
                 </span>
@@ -105,7 +106,7 @@ export default function TrabalhadoresPage() {
               <div className="flex flex-col items-start">
                 <span className="text-[11px] text-text-secondary">Comparecimento</span>
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[12.5px] font-semibold ${ATTENDANCE_STYLES[attendanceStyle(worker.attendanceRate)]}`}
+                  className={`rounded-full px-2 py-0.5 text-[14px] font-semibold ${ATTENDANCE_STYLES[attendanceStyle(worker.attendanceRate)]}`}
                 >
                   {worker.attendanceRate === null ? '—' : `${worker.attendanceRate}%`}
                 </span>
@@ -113,14 +114,14 @@ export default function TrabalhadoresPage() {
 
               <div className="flex flex-col items-start">
                 <span className="text-[11px] text-text-secondary">Sua nota</span>
-                <span className="text-[13.5px] font-semibold text-text">
+                <span className="text-[14px] font-semibold text-text">
                   {worker.avgRatingGiven ? `★ ${worker.avgRatingGiven}` : '—'}
                 </span>
               </div>
 
               <div className="flex flex-col items-start">
                 <span className="text-[11px] text-text-secondary">Última vez</span>
-                <span className="text-[13.5px] font-semibold text-text">{formatLastWorked(worker.lastWorkedAt)}</span>
+                <span className="text-[14px] font-semibold text-text">{formatLastWorked(worker.lastWorkedAt)}</span>
               </div>
             </div>
           ))}

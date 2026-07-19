@@ -126,7 +126,7 @@ export default function DocumentoPage() {
         <Logo className="mb-2" />
         <div>
           <h1 className="font-heading text-2xl font-bold text-text">Confirme sua identidade</h1>
-          <p className="mt-1 text-[15px] text-text-secondary">
+          <p className="mt-1 text-[16px] text-text-secondary">
             Precisamos do seu documento e de uma selfie do seu rosto, pra confirmar que é você mesmo.
           </p>
         </div>

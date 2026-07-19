@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../../components/ui/button';
 import { MapLink } from '../../../../components/ui/map-link';
+import { CardListSkeleton } from '../../../../components/ui/skeleton';
 import { JobAnnouncement, listJobAnnouncements } from '../../../../lib/announcements-api';
 import { applyToJob, getJobDetail, JobDetail } from '../../../../lib/jobs-api';
 import { askQuestion, JobQuestion, listJobQuestions } from '../../../../lib/questions-api';
@@ -114,8 +115,8 @@ export default function VagaDetalhePage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando vaga...</p>
+      <main className="flex flex-1 flex-col gap-4 px-5 py-8">
+        <CardListSkeleton count={1} />
       </main>
     );
   }
@@ -134,24 +135,24 @@ export default function VagaDetalhePage() {
         <p className="font-heading text-2xl font-bold text-text">
           {categoryNames[job.categoryId] ?? CATEGORY_LABEL_FALLBACK}
         </p>
-        <p className="mt-1 text-[13.5px] text-text-secondary">
+        <p className="mt-1 text-[14px] text-text-secondary">
           {job.companyName}
           {job.companyAvgRating && ` · ★ ${job.companyAvgRating}`}
         </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[12.5px] font-semibold text-text">
+        <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[14px] font-semibold text-text">
           {formatDateRange(job.startsAt, job.endsAt)}
         </span>
         {job.requiresExperience && (
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-warning/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-warning">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-warning/10 px-2.5 py-1.5 text-[14px] font-semibold text-warning">
             Experiência necessária
           </span>
         )}
         {job.cnhCategory && (
           <span
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] font-semibold ${
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[14px] font-semibold ${
               job.cnhRequired ? 'bg-warning/10 text-warning' : 'bg-background text-text'
             }`}
           >
@@ -159,12 +160,12 @@ export default function VagaDetalhePage() {
           </span>
         )}
         {formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação') && (
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[12.5px] font-semibold text-text">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[14px] font-semibold text-text">
             {formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação')}
           </span>
         )}
         {formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte') && (
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[12.5px] font-semibold text-text">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[14px] font-semibold text-text">
             {formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte')}
           </span>
         )}
@@ -174,23 +175,23 @@ export default function VagaDetalhePage() {
 
       <div className="rounded-2xl border border-border bg-surface p-4">
         <p className="font-heading text-sm font-bold text-text">Descrição</p>
-        <p className="mt-1.5 text-[14.5px] whitespace-pre-wrap text-text">{job.description}</p>
+        <p className="mt-1.5 text-[14px] whitespace-pre-wrap text-text">{job.description}</p>
       </div>
 
-      <MapLink addressLabel={job.addressLabel} lat={job.locationLat} lng={job.locationLng} className="text-[13.5px]" />
+      <MapLink addressLabel={job.addressLabel} lat={job.locationLat} lng={job.locationLng} className="text-[14px]" />
       {job.dressCode && (
-        <p className="text-[13.5px] text-text-secondary">
+        <p className="text-[14px] text-text-secondary">
           <span className="font-semibold text-text">Vestimenta:</span> {job.dressCode}
         </p>
       )}
       {job.toolsRequired && (
-        <p className="text-[13.5px] text-text-secondary">
+        <p className="text-[14px] text-text-secondary">
           <span className="font-semibold text-text">Leve com você:</span> {job.toolsRequired}
         </p>
       )}
 
       {!job.matchesSkills && (
-        <p className="rounded-lg bg-danger/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-danger">
+        <p className="rounded-lg bg-danger/10 px-2.5 py-1.5 text-[14px] font-semibold text-danger">
           Você não tem essa especialidade no seu perfil — pode se candidatar mesmo assim.
         </p>
       )}
@@ -198,7 +199,7 @@ export default function VagaDetalhePage() {
       {!applied && job.status === 'open' && (
         <>
           {job.experienceMismatch && (
-            <label className="flex items-start gap-2 rounded-lg bg-danger/10 px-2.5 py-2 text-[12.5px] font-semibold text-danger">
+            <label className="flex items-start gap-2 rounded-lg bg-danger/10 px-2.5 py-2 text-[14px] font-semibold text-danger">
               <input
                 type="checkbox"
                 checked={experienceConfirmed}
@@ -211,7 +212,7 @@ export default function VagaDetalhePage() {
           )}
 
           {job.cnhMismatch && (
-            <p className="rounded-lg bg-danger/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-danger">
+            <p className="rounded-lg bg-danger/10 px-2.5 py-1.5 text-[14px] font-semibold text-danger">
               {job.cnhRequired
                 ? `Essa vaga exige CNH categoria ${job.cnhCategory} — você não tem essa categoria no perfil, então não pode se candidatar.`
                 : `Essa vaga prefere CNH categoria ${job.cnhCategory} — você pode se candidatar mesmo assim.`}
@@ -219,12 +220,12 @@ export default function VagaDetalhePage() {
           )}
 
           {job.minorMismatch && (
-            <p className="rounded-lg bg-danger/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-danger">
+            <p className="rounded-lg bg-danger/10 px-2.5 py-1.5 text-[14px] font-semibold text-danger">
               Essa vaga não está disponível pra menores de idade.
             </p>
           )}
 
-          <label className="flex items-start gap-2 text-[12.5px] text-text-secondary">
+          <label className="flex items-start gap-2 text-[14px] text-text-secondary">
             <input
               type="checkbox"
               checked={termsConfirmed}
@@ -253,7 +254,7 @@ export default function VagaDetalhePage() {
       )}
 
       {applied && (
-        <p className="rounded-lg bg-success/10 px-2.5 py-1.5 text-[13px] font-semibold text-success">
+        <p className="rounded-lg bg-success/10 px-2.5 py-1.5 text-[14px] font-semibold text-success">
           Candidatura enviada ✓
         </p>
       )}
@@ -261,7 +262,7 @@ export default function VagaDetalhePage() {
       {applied && (
         <>
           <section className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
-            <p className="font-heading text-[15px] font-bold text-text">Avisos da empresa</p>
+            <p className="font-heading text-[16px] font-bold text-text">Avisos da empresa</p>
             {announcementsLoadError ? (
               <p className="text-sm text-danger">
                 Não foi possível carregar os avisos.{' '}
@@ -284,7 +285,7 @@ export default function VagaDetalhePage() {
           </section>
 
           <section className="mb-4 flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
-            <p className="font-heading text-[15px] font-bold text-text">Perguntas e respostas</p>
+            <p className="font-heading text-[16px] font-bold text-text">Perguntas e respostas</p>
             {questionsLoadError && (
               <p className="text-sm text-danger">
                 Não foi possível carregar as perguntas.{' '}
@@ -299,7 +300,7 @@ export default function VagaDetalhePage() {
             <ul className="flex flex-col gap-2">
               {questions.map((question) => (
                 <li key={question.id} className="rounded-lg bg-background p-3">
-                  <p className="text-[12.5px] font-semibold text-text-secondary">{question.worker.fullName}</p>
+                  <p className="text-[14px] font-semibold text-text-secondary">{question.worker.fullName}</p>
                   <p className="mt-0.5 text-sm text-text">{question.question}</p>
                   {question.answer && (
                     <p className="mt-1.5 text-sm text-success">
@@ -316,7 +317,7 @@ export default function VagaDetalhePage() {
                 placeholder="Faça uma pergunta pra empresa..."
                 value={newQuestion}
                 onChange={(event) => setNewQuestion(event.target.value)}
-                className="w-full rounded-[14px] border border-border bg-background px-3.5 py-3 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+                className="w-full rounded-sm border border-border bg-background px-3.5 py-3 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
               />
               {askError && <p className="text-sm text-danger">{askError}</p>}
               <Button type="button" isLoading={isAsking} disabled={!newQuestion.trim()} onClick={handleAskQuestion}>

@@ -111,7 +111,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               type="button"
               onClick={() => setIsNavOpen(true)}
               aria-label="Abrir menu"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] border border-border lg:hidden"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border lg:hidden"
             >
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -129,7 +129,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   ? `${pendingVerificationsCount} verificação(ões) pendente(s)`
                   : 'Verificações pendentes'
               }
-              className={`relative flex h-10 w-10 items-center justify-center rounded-[11px] border transition ${
+              className={`relative flex h-10 w-10 items-center justify-center rounded-md border transition ${
                 pendingVerificationsCount > 0 ? 'border-danger bg-danger/10 text-danger' : 'border-border text-text'
               }`}
             >
@@ -143,7 +143,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <path d="M10 20a2 2 0 004 0" stroke="currentColor" strokeWidth="2" />
               </svg>
               {pendingVerificationsCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+                <span className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-white">
                   {pendingVerificationsCount > 9 ? '9+' : pendingVerificationsCount}
                 </span>
               )}

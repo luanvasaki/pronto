@@ -90,7 +90,7 @@ describe('EscalaPage', () => {
 
     render(<EscalaPage />);
 
-    expect(await screen.findByText('👤 Ana Souza')).toBeInTheDocument();
+    expect(await screen.findByText('Ana Souza')).toBeInTheDocument();
     expect(screen.queryByText(/Beatriz Lima/)).not.toBeInTheDocument();
   });
 
@@ -103,7 +103,7 @@ describe('EscalaPage', () => {
     render(<EscalaPage />);
 
     await screen.findByRole('link', { name: 'Garçom' });
-    expect(screen.queryByText(/👤/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Ana Souza')).not.toBeInTheDocument();
   });
 
   it('mostra o botão de publicar turno em cada dia, com a data certa', async () => {

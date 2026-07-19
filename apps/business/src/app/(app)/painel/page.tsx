@@ -4,6 +4,7 @@ import { listSkillCategories } from '@shift/shared';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
+import { CardListSkeleton, Skeleton } from '../../../components/ui/skeleton';
 import { StatCard } from '../../../components/ui/stat-card';
 import { JobApplication } from '../../../lib/applications-api';
 import { CompanyDashboard, getCompanyDashboard } from '../../../lib/company-profile-api';
@@ -47,18 +48,18 @@ function ActionGroup({ title, items, color }: ActionGroupProps) {
   const overflow = items.length - shown.length;
 
   return (
-    <div className={`rounded-[18px] border ${styles.border} ${styles.bg} p-4`}>
-      <p className={`font-heading text-[15px] font-bold ${styles.text}`}>{title}</p>
+    <div className={`rounded-lg border ${styles.border} ${styles.bg} p-4`}>
+      <p className={`font-heading text-[16px] font-bold ${styles.text}`}>{title}</p>
       <ul className="mt-2.5 flex flex-col gap-1.5">
         {shown.map((item) => (
           <li key={item.key}>
-            <Link href={item.href} className={`text-[13.5px] ${styles.text} underline underline-offset-2`}>
+            <Link href={item.href} className={`text-[14px] ${styles.text} underline underline-offset-2`}>
               {item.label}
             </Link>
           </li>
         ))}
       </ul>
-      {overflow > 0 && <p className={`mt-1.5 text-[12.5px] ${styles.text}`}>+{overflow} item(ns)</p>}
+      {overflow > 0 && <p className={`mt-1.5 text-[14px] ${styles.text}`}>+{overflow} item(ns)</p>}
     </div>
   );
 }
@@ -140,9 +141,17 @@ export default function PainelPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando suas escalas...</p>
-      </main>
+      <div className="flex flex-col gap-8" aria-hidden="true">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {Array.from({ length: 4 }, (_, index) => (
+            <div key={index} className="rounded-2xl border border-border bg-surface p-4">
+              <Skeleton className="mx-auto h-6 w-10" />
+              <Skeleton className="mx-auto mt-2 h-3 w-16" />
+            </div>
+          ))}
+        </div>
+        <CardListSkeleton count={2} />
+      </div>
     );
   }
 
@@ -232,9 +241,9 @@ export default function PainelPage() {
       {error && <p className="text-sm text-danger">{error}</p>}
 
       {jobs.length === 0 && !error && (
-        <div className="rounded-[18px] border border-dashed border-border p-6 text-center">
-          <p className="font-heading text-[17px] font-bold text-text">Você ainda não publicou nenhuma escala</p>
-          <p className="mt-1.5 text-[13.5px] text-text-secondary">
+        <div className="rounded-lg border border-dashed border-border p-6 text-center">
+          <p className="font-heading text-[16px] font-bold text-text">Você ainda não publicou nenhuma escala</p>
+          <p className="mt-1.5 text-[14px] text-text-secondary">
             Publique sua primeira vaga pra começar a receber candidatos.
           </p>
           <Link
@@ -265,7 +274,7 @@ export default function PainelPage() {
               />
             </div>
           ) : (
-            <p className="mt-3.5 text-[13.5px] text-text-secondary">Tudo em dia — nenhuma ação pendente agora.</p>
+            <p className="mt-3.5 text-[14px] text-text-secondary">Tudo em dia — nenhuma ação pendente agora.</p>
           )}
         </div>
       )}
@@ -321,10 +330,10 @@ export default function PainelPage() {
             {confirmedRows.map((row) => (
               <div
                 key={row.key}
-                className="flex items-center gap-4 rounded-[14px] border border-border bg-surface px-5 py-3.5"
+                className="flex items-center gap-4 rounded-lg border border-border bg-surface px-5 py-3.5"
               >
                 <span className="h-[9px] w-[9px] shrink-0 rounded-full bg-success" />
-                <div className="flex-1 text-[15px]">
+                <div className="flex-1 text-[16px]">
                   <span className="font-semibold text-text">{row.categoryName}</span>
                   <span className="text-text-secondary"> · {row.dayTime}</span>
                 </div>

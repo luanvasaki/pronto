@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { GrowthChart } from '../../components/ui/growth-chart';
+import { CardListSkeleton, Skeleton } from '../../components/ui/skeleton';
 import {
   AdminGrowthMetrics,
   AdminMetrics,
@@ -71,8 +72,16 @@ export default function AdminOverviewPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando métricas...</p>
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8" aria-hidden="true">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {Array.from({ length: 4 }, (_, index) => (
+            <div key={index} className="rounded-2xl border border-border bg-surface p-4">
+              <Skeleton className="mx-auto h-6 w-10" />
+              <Skeleton className="mx-auto mt-2 h-3 w-16" />
+            </div>
+          ))}
+        </div>
+        <CardListSkeleton count={2} />
       </main>
     );
   }
@@ -147,7 +156,7 @@ export default function AdminOverviewPage() {
                 <p className="text-sm font-semibold text-text">
                   {payment.companyName} → {payment.workerFullName}
                 </p>
-                <p className="mt-0.5 text-[13px] text-text-secondary">
+                <p className="mt-0.5 text-[14px] text-text-secondary">
                   R$ {payment.amount} · {DATE_FORMATTER.format(new Date(payment.createdAt))}
                 </p>
               </li>

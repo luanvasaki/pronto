@@ -34,12 +34,12 @@ describe('TrabalhadoresPage', () => {
     vi.useRealTimers();
   });
 
-  it('mostra "Carregando" enquanto busca o histórico', () => {
+  it('mostra skeleton de carregamento enquanto busca o histórico', () => {
     getCompanyWorkerHistoryMock.mockReturnValue(new Promise(() => {}));
 
-    render(<TrabalhadoresPage />);
+    const { container } = render(<TrabalhadoresPage />);
 
-    expect(screen.getByText('Carregando seu histórico...')).toBeInTheDocument();
+    expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('mostra estado vazio quando não há histórico', async () => {

@@ -259,12 +259,25 @@ export default function InicioPage() {
           {calledApplications.map((application) => (
             <li
               key={application.id}
-              className="rounded-[18px] border border-success/30 bg-success/10 p-4 text-success"
+              className="rounded-lg border border-success/30 bg-success/10 p-4 text-success"
             >
-              <p className="font-heading text-[15px] font-bold">
-                Você foi chamado(a) pra trabalhar em {application.companyName || 'uma vaga'}! 🎉
+              <p className="font-heading text-[16px] font-bold">
+                Você foi chamado(a) pra trabalhar em {application.companyName || 'uma vaga'}!{' '}
+                <svg
+                  className="inline-block h-[0.9em] w-[0.9em] align-[-0.1em]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </p>
-              <p className="mt-1 text-[13px]">
+              <p className="mt-1 text-[14px]">
                 {categoryNames[application.job.categoryId] ?? CATEGORY_LABEL_FALLBACK} ·{' '}
                 {formatDateRange(application.job.startsAt, application.job.endsAt)}
               </p>
@@ -285,12 +298,12 @@ export default function InicioPage() {
       {removedApplications.length > 0 && (
         <ul className="mb-4 flex flex-col gap-2.5">
           {removedApplications.map((application) => (
-            <li key={application.id} className="rounded-[18px] border border-danger/30 bg-danger/10 p-4 text-danger">
-              <p className="font-heading text-[15px] font-bold">
+            <li key={application.id} className="rounded-lg border border-danger/30 bg-danger/10 p-4 text-danger">
+              <p className="font-heading text-[16px] font-bold">
                 {application.companyName || 'A empresa'} removeu você da escala de{' '}
                 {categoryNames[application.job.categoryId] ?? CATEGORY_LABEL_FALLBACK}.
               </p>
-              <p className="mt-1 text-[13px]">{formatDateRange(application.job.startsAt, application.job.endsAt)}</p>
+              <p className="mt-1 text-[14px]">{formatDateRange(application.job.startsAt, application.job.endsAt)}</p>
               <Button
                 type="button"
                 variant="danger"
@@ -308,32 +321,32 @@ export default function InicioPage() {
       {pendingRatingsCount > 0 && (
         <Link
           href="/agenda"
-          className="mb-4 block rounded-[18px] border border-warning/30 bg-warning/10 p-4 text-warning"
+          className="mb-4 block rounded-lg border border-warning/30 bg-warning/10 p-4 text-warning"
         >
-          <p className="font-heading text-[15px] font-bold">
+          <p className="font-heading text-[16px] font-bold">
             {pendingRatingsCount === 1
               ? '1 escala concluída esperando sua avaliação'
               : `${pendingRatingsCount} escalas concluídas esperando sua avaliação`}
           </p>
-          <p className="mt-1 text-[13px]">Toque para avaliar na Agenda.</p>
+          <p className="mt-1 text-[14px]">Toque para avaliar na Agenda.</p>
         </Link>
       )}
 
       {profile && profile.kycStatus !== 'approved' && (
         <Link
           href="/perfil"
-          className={`mb-4 block rounded-[18px] border p-4 ${
+          className={`mb-4 block rounded-lg border p-4 ${
             profile.kycStatus === 'rejected'
               ? 'border-danger/30 bg-danger/10 text-danger'
               : 'border-warning/30 bg-warning/10 text-warning'
           }`}
         >
-          <p className="font-heading text-[15px] font-bold">
+          <p className="font-heading text-[16px] font-bold">
             {profile.kycStatus === 'rejected'
               ? 'Documento recusado — você ainda não pode se candidatar'
               : 'Documento em análise — você ainda não pode se candidatar'}
           </p>
-          <p className="mt-1 text-[13px]">
+          <p className="mt-1 text-[14px]">
             {profile.kycStatus === 'rejected'
               ? 'Toque pra ver o status no seu perfil.'
               : 'Assim que for aprovado, as vagas ficam liberadas pra você.'}
@@ -342,7 +355,7 @@ export default function InicioPage() {
       )}
 
       {profile?.homeAddressLabel && (
-        <p className="flex items-center gap-1.5 text-[13px] text-text-secondary">
+        <p className="flex items-center gap-1.5 text-[14px] text-text-secondary">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z" stroke="currentColor" strokeWidth="2" />
             <circle cx="12" cy="10" r="2.4" stroke="currentColor" strokeWidth="2" />
@@ -367,8 +380,8 @@ export default function InicioPage() {
       </div>
 
       <div className="mt-3.5 flex items-baseline justify-between">
-        <h2 className="font-heading text-[18px] font-bold text-text">Escalas perto de você</h2>
-        <span className="text-[13px] font-semibold text-primary">{visibleJobs.length} disponíveis</span>
+        <h2 className="font-heading text-[19px] font-bold text-text">Escalas perto de você</h2>
+        <span className="text-[14px] font-semibold text-primary">{visibleJobs.length} disponíveis</span>
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -381,13 +394,13 @@ export default function InicioPage() {
         >
           {profile?.homeAddressLabel ? 'Atualizar localização' : 'Definir localização'}
         </Button>
-        <label className="flex items-center gap-1.5 text-[12.5px] text-text-secondary">
+        <label className="flex items-center gap-1.5 text-[14px] text-text-secondary">
           Raio de busca
           <select
             value={profile?.searchRadiusKm ?? 10}
             onChange={handleRadiusChange}
             disabled={isUpdatingRadius}
-            className="rounded-md border border-border bg-surface px-2 py-1 text-[12.5px] text-text"
+            className="rounded-md border border-border bg-surface px-2 py-1 text-[14px] text-text"
           >
             {SEARCH_RADIUS_OPTIONS_KM.map((km) => (
               <option key={km} value={km}>
@@ -398,7 +411,7 @@ export default function InicioPage() {
         </label>
       </div>
       {locationError && <p className="mt-1.5 text-xs text-danger">{locationError}</p>}
-      <p className="mt-1 text-[11.5px] text-text-secondary">
+      <p className="mt-1 text-[11px] text-text-secondary">
         Se você não atualizar, usamos o endereço já cadastrado.
       </p>
 
@@ -413,7 +426,7 @@ export default function InicioPage() {
           return (
             <li
               key={job.id}
-              className="rounded-[20px] border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
+              className="rounded-lg border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
@@ -429,7 +442,7 @@ export default function InicioPage() {
                     <p className="font-heading text-[19px] leading-[1.05] font-bold text-text">
                       {categoryNames[job.categoryId] ?? CATEGORY_LABEL_FALLBACK}
                     </p>
-                    <p className="mt-1 text-[13.5px] text-text-secondary">
+                    <p className="mt-1 text-[14px] text-text-secondary">
                       {job.companyName}
                       {job.companyAvgRating && ` · ★ ${job.companyAvgRating}`}
                     </p>
@@ -442,14 +455,14 @@ export default function InicioPage() {
               </div>
 
               <div className="mt-3.5 flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[12.5px] font-semibold text-text">
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[14px] font-semibold text-text">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" strokeWidth="2" />
                     <path d="M3 9h18M8 3v4M16 3v4" stroke="currentColor" strokeWidth="2" />
                   </svg>
                   {formatDateRange(job.startsAt, job.endsAt)}
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[12.5px] font-semibold text-text">
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[14px] font-semibold text-text">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path
                       d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z"
@@ -461,13 +474,13 @@ export default function InicioPage() {
                   {job.distanceKm} km
                 </span>
                 {job.requiresExperience && (
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-warning/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-warning">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-warning/10 px-2.5 py-1.5 text-[14px] font-semibold text-warning">
                     Experiência necessária
                   </span>
                 )}
                 {job.cnhCategory && (
                   <span
-                    className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] font-semibold ${
+                    className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[14px] font-semibold ${
                       job.cnhRequired ? 'bg-warning/10 text-warning' : 'bg-background text-text'
                     }`}
                   >
@@ -475,25 +488,25 @@ export default function InicioPage() {
                   </span>
                 )}
                 {formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação') && (
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[12.5px] font-semibold text-text">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[14px] font-semibold text-text">
                     {formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação')}
                   </span>
                 )}
                 {formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte') && (
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[12.5px] font-semibold text-text">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[14px] font-semibold text-text">
                     {formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte')}
                   </span>
                 )}
               </div>
 
               {!job.matchesSkills && (
-                <p className="mt-2.5 rounded-lg bg-danger/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-danger">
+                <p className="mt-2.5 rounded-lg bg-danger/10 px-2.5 py-1.5 text-[14px] font-semibold text-danger">
                   Você não tem essa especialidade no seu perfil — pode se candidatar mesmo assim.
                 </p>
               )}
 
               {job.experienceMismatch && (
-                <label className="mt-2.5 flex items-start gap-2 rounded-lg bg-danger/10 px-2.5 py-2 text-[12.5px] font-semibold text-danger">
+                <label className="mt-2.5 flex items-start gap-2 rounded-lg bg-danger/10 px-2.5 py-2 text-[14px] font-semibold text-danger">
                   <input
                     type="checkbox"
                     checked={experienceConfirmed}
@@ -506,7 +519,7 @@ export default function InicioPage() {
               )}
 
               {job.cnhMismatch && (
-                <p className="mt-2.5 rounded-lg bg-danger/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-danger">
+                <p className="mt-2.5 rounded-lg bg-danger/10 px-2.5 py-1.5 text-[14px] font-semibold text-danger">
                   {job.cnhRequired
                     ? `Essa vaga exige CNH categoria ${job.cnhCategory} — você não tem essa categoria no perfil, então não pode se candidatar.`
                     : `Essa vaga prefere CNH categoria ${job.cnhCategory} — você pode se candidatar mesmo assim.`}
@@ -517,22 +530,22 @@ export default function InicioPage() {
                 addressLabel={job.addressLabel}
                 lat={job.locationLat}
                 lng={job.locationLng}
-                className="mt-2 text-[13.5px]"
+                className="mt-2 text-[14px]"
               />
               {job.dressCode && (
-                <p className="mt-1 text-[13.5px] text-text-secondary">
+                <p className="mt-1 text-[14px] text-text-secondary">
                   <span className="font-semibold text-text">Vestimenta:</span> {job.dressCode}
                 </p>
               )}
               {job.toolsRequired && (
-                <p className="mt-1 text-[13.5px] text-text-secondary">
+                <p className="mt-1 text-[14px] text-text-secondary">
                   <span className="font-semibold text-text">Leve com você:</span> {job.toolsRequired}
                 </p>
               )}
 
               <Link
                 href={`/vaga/${job.id}`}
-                className="mt-2 inline-block text-[13.5px] font-semibold text-primary underline underline-offset-2"
+                className="mt-2 inline-block text-[14px] font-semibold text-primary underline underline-offset-2"
               >
                 Ver detalhes da vaga
               </Link>

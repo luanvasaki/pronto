@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { CardListSkeleton } from '../../../components/ui/skeleton';
 import { listMyShifts, Shift } from '../../../lib/shifts-api';
 
 /**
@@ -87,8 +88,8 @@ export default function GanhosPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando seus ganhos...</p>
+      <main className="flex flex-1 flex-col gap-6 px-5 py-8">
+        <CardListSkeleton />
       </main>
     );
   }
@@ -131,10 +132,10 @@ export default function GanhosPage() {
       {monthGroups.length > 0 && (
         <div className="flex flex-col gap-4">
           {monthGroups.map((group) => (
-            <div key={group.key} className="rounded-[20px] border border-border bg-surface p-4">
+            <div key={group.key} className="rounded-lg border border-border bg-surface p-4">
               <div className="flex items-center justify-between">
-                <h2 className="font-heading text-[15px] font-bold text-text">{group.label}</h2>
-                <p className="font-heading text-[15px] font-bold text-primary">{CURRENCY_FORMATTER.format(group.total)}</p>
+                <h2 className="font-heading text-[16px] font-bold text-text">{group.label}</h2>
+                <p className="font-heading text-[16px] font-bold text-primary">{CURRENCY_FORMATTER.format(group.total)}</p>
               </div>
 
               <ul className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
@@ -142,15 +143,15 @@ export default function GanhosPage() {
                   <li key={shift.id} className="rounded-xl bg-background p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-[13.5px] font-semibold text-text">{shift.companyName}</p>
-                        <p className="mt-0.5 text-[12.5px] text-text-secondary">{formatDate(shift.job.startsAt)}</p>
+                        <p className="text-[14px] font-semibold text-text">{shift.companyName}</p>
+                        <p className="mt-0.5 text-[14px] text-text-secondary">{formatDate(shift.job.startsAt)}</p>
                       </div>
-                      <p className="whitespace-nowrap font-heading text-[15px] font-bold text-text">
+                      <p className="whitespace-nowrap font-heading text-[16px] font-bold text-text">
                         {CURRENCY_FORMATTER.format(Number(shift.payAmountSnapshot))}
                       </p>
                     </div>
                     {shift.payment && (
-                      <p className="mt-1 text-[11.5px] text-text-secondary">
+                      <p className="mt-1 text-[11px] text-text-secondary">
                         {PAYMENT_STATUS_LABEL[shift.payment.status] ?? shift.payment.status}
                       </p>
                     )}

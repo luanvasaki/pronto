@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
+import { CardListSkeleton } from '../../../components/ui/skeleton';
 import { AdminCompany, listAdminCompanies, resetUserPassword } from '../../../lib/admin-api';
 
 const VERIFICATION_LABEL: Record<string, string> = {
@@ -88,8 +89,8 @@ export default function AdminEmpresasPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando empresas...</p>
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5">
+        <CardListSkeleton />
       </main>
     );
   }
@@ -139,7 +140,7 @@ export default function AdminEmpresasPage() {
               <div className="flex items-center gap-3">
                 <Avatar name={company.tradeName} photoUrl={company.logoUrl} size="sm" shape="square" />
                 <div>
-                  <p className="font-heading text-[15.5px] font-bold text-text">{company.tradeName}</p>
+                  <p className="font-heading text-[16px] font-bold text-text">{company.tradeName}</p>
                   <p className="text-sm text-text-secondary">{company.legalName}</p>
                 </div>
               </div>
@@ -156,7 +157,7 @@ export default function AdminEmpresasPage() {
             </p>
             {company.ownerEmail && <p className="mt-1 text-sm text-text-secondary">{company.ownerEmail}</p>}
 
-            <div className="mt-2.5 flex flex-wrap gap-2 text-[12.5px] font-semibold text-text-secondary">
+            <div className="mt-2.5 flex flex-wrap gap-2 text-[14px] font-semibold text-text-secondary">
               <span className="rounded-lg bg-background px-2.5 py-1">{company.jobsPosted} vaga(s) publicada(s)</span>
               <span className="rounded-lg bg-background px-2.5 py-1">{company.shiftsCompleted} escala(s) concluída(s)</span>
               {company.avgRating && <span className="rounded-lg bg-background px-2.5 py-1">★ {company.avgRating}</span>}

@@ -21,14 +21,31 @@ const PERKS = [
   },
 ];
 
+const CheckIcon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const StarIcon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path
+      d="M12 3l2.5 5.6 6.1.6-4.6 4.1 1.3 6-5.3-3.1-5.3 3.1 1.3-6-4.6-4.1 6.1-.6L12 3z"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const TRUST_ITEMS = [
   {
-    icon: '✓',
+    icon: CheckIcon,
     title: 'Verificação por documento',
     description: 'Envie seu documento uma vez — ele é conferido antes de você aparecer para as empresas.',
   },
   {
-    icon: '★',
+    icon: StarIcon,
     title: 'Avaliação dos dois lados',
     description: 'Empresa avalia profissional e vice-versa. Reputação real, construída escala a escala.',
   },
@@ -70,14 +87,14 @@ export default function Home() {
       <section className="flex flex-col items-center gap-6 px-5 py-14 text-center">
         <div>
           <h1 className="font-heading text-3xl font-bold text-text">Renda extra quando você quiser</h1>
-          <p className="mt-2 text-[15px] text-text-secondary">
+          <p className="mt-2 text-[16px] text-text-secondary">
             Vagas de bares, eventos e hotéis pertinho de você.
           </p>
         </div>
 
         <Link
           href="/cadastro/conta"
-          className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-[15px] font-bold text-white shadow-[0_10px_26px_rgba(245,83,30,0.3)] transition hover:brightness-90"
+          className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-[16px] font-bold text-white shadow-[0_10px_26px_rgba(245,83,30,0.3)] transition hover:brightness-90"
         >
           Criar conta grátis
         </Link>
@@ -114,7 +131,7 @@ export default function Home() {
         <div className="mt-6 flex flex-col divide-y divide-border border-t border-border">
           {FAQ.map((item) => (
             <details key={item.question} className="group py-4">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-heading text-[17px] font-bold text-text">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-heading text-[16px] font-bold text-text">
                 {item.question}
                 <span className="text-xl text-primary group-open:rotate-45">+</span>
               </summary>
@@ -127,12 +144,12 @@ export default function Home() {
       <section className="px-5 py-14">
         <div className="mx-auto max-w-2xl rounded-3xl bg-primary px-8 py-12 text-center">
           <h2 className="font-heading text-3xl font-extrabold text-white">Bora trabalhar?</h2>
-          <p className="mt-3 text-[17px] text-white/90">
+          <p className="mt-3 text-[16px] text-white/90">
             Crie sua conta e comece a ver escalas perto de você hoje mesmo.
           </p>
           <Link
             href="/cadastro/conta"
-            className="mt-6 inline-flex items-center justify-center rounded-xl bg-secondary px-6 py-3 text-[15px] font-bold text-background transition hover:brightness-125"
+            className="mt-6 inline-flex items-center justify-center rounded-xl bg-secondary px-6 py-3 text-[16px] font-bold text-background transition hover:brightness-125"
           >
             Criar conta grátis
           </Link>

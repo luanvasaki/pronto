@@ -291,7 +291,7 @@ export default function PerfilPage() {
 
       {profile.avgCategoryScores && (
         <div>
-          <h2 className="font-heading text-[17px] font-bold text-text">Seus pontos fortes</h2>
+          <h2 className="font-heading text-[16px] font-bold text-text">Seus pontos fortes</h2>
           <p className="mt-1 text-xs text-text-secondary">
             A média de cada categoria que as empresas avaliaram em você — aparece pra elas quando você se
             candidata a uma vaga.
@@ -303,7 +303,7 @@ export default function PerfilPage() {
               return [
                 <span
                   key={category.id}
-                  className="rounded-full bg-primary/10 px-3 py-1.5 text-[12.5px] font-semibold text-primary"
+                  className="rounded-full bg-primary/10 px-3 py-1.5 text-[14px] font-semibold text-primary"
                 >
                   ★ {score} {category.label}
                 </span>,
@@ -314,7 +314,7 @@ export default function PerfilPage() {
       )}
 
       <div>
-        <h2 className="font-heading text-[17px] font-bold text-text">Seu histórico</h2>
+        <h2 className="font-heading text-[16px] font-bold text-text">Seu histórico</h2>
         <div className="mt-2.5 flex flex-wrap gap-3">
           <StatCard label="empresas atendidas" value={String(profile.companiesServed)} />
           <StatCard
@@ -331,7 +331,7 @@ export default function PerfilPage() {
 
       {!isLoadingRatingHistory && ratingHistory.length > 0 && (
         <div>
-          <h2 className="font-heading text-[17px] font-bold text-text">Avaliações recebidas</h2>
+          <h2 className="font-heading text-[16px] font-bold text-text">Avaliações recebidas</h2>
           <ul className="mt-2.5 flex flex-col gap-3">
             {ratingHistory.map((entry) => {
               const categoryName = categories.find((category) => category.id === entry.categoryId)?.name;
@@ -341,7 +341,7 @@ export default function PerfilPage() {
                   className="rounded-2xl border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <p className="font-heading text-[15px] font-bold text-text">{entry.companyName}</p>
+                    <p className="font-heading text-[16px] font-bold text-text">{entry.companyName}</p>
                     <span className="whitespace-nowrap text-sm font-bold text-primary">★ {entry.score}</span>
                   </div>
                   <p className="mt-1 text-xs text-text-secondary">
@@ -356,7 +356,7 @@ export default function PerfilPage() {
                         return [
                           <span
                             key={category.id}
-                            className="rounded-lg bg-background px-2 py-1 text-[11.5px] font-semibold text-text-secondary"
+                            className="rounded-lg bg-background px-2 py-1 text-[11px] font-semibold text-text-secondary"
                           >
                             ★{score} {category.label}
                           </span>,
@@ -372,7 +372,7 @@ export default function PerfilPage() {
       )}
 
       <div>
-        <h2 className="font-heading text-[17px] font-bold text-text">Minhas funções</h2>
+        <h2 className="font-heading text-[16px] font-bold text-text">Minhas funções</h2>
         <p className="mt-1 text-xs text-text-secondary">Toque pra adicionar ou remover uma função.</p>
         {categoriesError && <p className="mt-1.5 text-xs text-danger">{categoriesError}</p>}
         <div className="mt-2.5 flex flex-wrap gap-2">
@@ -402,7 +402,7 @@ export default function PerfilPage() {
         </div>
 
         {isAddingCategory && (
-          <div className="mt-3 flex flex-col gap-2 rounded-[18px] border border-dashed border-border p-4">
+          <div className="mt-3 flex flex-col gap-2 rounded-lg border border-dashed border-border p-4">
             <Input
               id="newCategoryName"
               label="Nome da nova categoria"
@@ -463,7 +463,7 @@ export default function PerfilPage() {
       </div>
 
       <form onSubmit={handleSaveProfile} className="flex flex-col gap-4 border-t border-border pt-6">
-        <h2 className="font-heading text-[17px] font-bold text-text">Editar perfil</h2>
+        <h2 className="font-heading text-[16px] font-bold text-text">Editar perfil</h2>
 
         <Input
           id="fullName"

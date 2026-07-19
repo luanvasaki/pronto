@@ -82,8 +82,12 @@ export function InstallAppBanner() {
   return (
     <>
       <div className="flex items-center gap-3 border-b border-border bg-surface px-5 py-3">
-        <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-primary/10 text-lg" aria-hidden="true">
-          📲
+        <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="7" y="2" width="10" height="20" rx="2" stroke="currentColor" strokeWidth="2" />
+            <path d="M12 18h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M12 7v6m0 0l-2.5-2.5M12 13l2.5-2.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </div>
         <div className="flex-1 text-left">
           <p className="text-sm font-semibold text-text">Instale o app Pronto</p>
@@ -102,7 +106,9 @@ export function InstallAppBanner() {
           aria-label="Fechar aviso de instalação"
           className="flex-none text-text-secondary hover:text-text"
         >
-          ✕
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
         </button>
       </div>
 
@@ -126,7 +132,22 @@ export function InstallAppBanner() {
                 <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
                   1
                 </span>
-                Toque no ícone de compartilhar <span aria-hidden="true">⬆️</span> na barra do Safari.
+                Toque no ícone de compartilhar{' '}
+                <svg
+                  className="inline-block h-[1em] w-[1em] align-[-0.15em]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>{' '}
+                na barra do Safari.
               </li>
               <li className="flex items-center gap-3">
                 <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">

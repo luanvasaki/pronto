@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
+import { CardListSkeleton } from '../../../components/ui/skeleton';
 import { AdminWorker, listAdminWorkers, resetUserPassword } from '../../../lib/admin-api';
 
 const KYC_LABEL: Record<string, string> = {
@@ -83,8 +84,8 @@ export default function AdminTrabalhadoresPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando trabalhadores...</p>
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5">
+        <CardListSkeleton />
       </main>
     );
   }
@@ -140,7 +141,7 @@ export default function AdminTrabalhadoresPage() {
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <Avatar name={worker.fullName} photoUrl={worker.photoUrl} size="sm" />
-                <p className="font-heading text-[15.5px] font-bold text-text">{worker.fullName}</p>
+                <p className="font-heading text-[16px] font-bold text-text">{worker.fullName}</p>
               </div>
               <span
                 className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -160,7 +161,7 @@ export default function AdminTrabalhadoresPage() {
               </a>
             )}
 
-            <div className="mt-2.5 flex flex-wrap gap-2 text-[12.5px] font-semibold text-text-secondary">
+            <div className="mt-2.5 flex flex-wrap gap-2 text-[14px] font-semibold text-text-secondary">
               <span className="rounded-lg bg-background px-2.5 py-1">{worker.shiftsCompleted} escala(s) concluída(s)</span>
               <span className="rounded-lg bg-background px-2.5 py-1">{worker.hoursWorked}h trabalhadas</span>
               {worker.avgRating && <span className="rounded-lg bg-background px-2.5 py-1">★ {worker.avgRating}</span>}

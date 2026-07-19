@@ -41,14 +41,31 @@ const CATEGORIES = [
   'Limpeza',
 ];
 
+const CheckIcon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const StarIcon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path
+      d="M12 3l2.5 5.6 6.1.6-4.6 4.1 1.3 6-5.3-3.1-5.3 3.1 1.3-6-4.6-4.1 6.1-.6L12 3z"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const TRUST_ITEMS = [
   {
-    icon: '✓',
+    icon: CheckIcon,
     title: 'Verificado de verdade',
     description: 'Documento conferido antes do profissional aparecer disponível na plataforma.',
   },
   {
-    icon: '★',
+    icon: StarIcon,
     title: 'Avaliação dos dois lados',
     description: 'Você avalia o profissional e ele avalia sua empresa. Reputação real, dos dois lados.',
   },
@@ -74,14 +91,14 @@ export default function Home() {
       <section className="flex flex-col items-center gap-6 px-5 py-14 text-center">
         <div>
           <h1 className="font-heading text-3xl font-bold text-text">Contrate reforço em minutos</h1>
-          <p className="mt-2 text-[15px] text-text-secondary">
+          <p className="mt-2 text-[16px] text-text-secondary">
             Publique vagas avulsas e encontre gente disponível perto de você.
           </p>
         </div>
 
         <Link
           href="/cadastro/conta"
-          className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-[15px] font-bold text-white shadow-[0_10px_26px_rgba(245,83,30,0.3)] transition hover:brightness-90"
+          className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-[16px] font-bold text-white shadow-[0_10px_26px_rgba(245,83,30,0.3)] transition hover:brightness-90"
         >
           Acessar minha empresa
         </Link>
@@ -93,8 +110,15 @@ export default function Home() {
             <p className="text-xs font-semibold tracking-wide text-text-secondary uppercase">Hoje</p>
             <ul className="mt-4 flex flex-col gap-3">
               {COMPARISON_TODAY.map((item) => (
-                <li key={item} className="flex gap-2.5 text-[15px] text-text-secondary">
-                  <span className="font-bold text-danger">✕</span>
+                <li key={item} className="flex gap-2.5 text-[16px] text-text-secondary">
+                  <svg
+                    className="mt-0.5 h-5 w-5 flex-none text-danger"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
                   {item}
                 </li>
               ))}
@@ -104,8 +128,15 @@ export default function Home() {
             <p className="text-xs font-semibold tracking-wide text-primary uppercase">Com Pronto</p>
             <ul className="mt-4 flex flex-col gap-3">
               {COMPARISON_PRONTO.map((item) => (
-                <li key={item} className="flex gap-2.5 text-[15px]">
-                  <span className="font-bold text-success">✓</span>
+                <li key={item} className="flex gap-2.5 text-[16px]">
+                  <svg
+                    className="mt-0.5 h-5 w-5 flex-none text-success"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                   {item}
                 </li>
               ))}
@@ -161,12 +192,12 @@ export default function Home() {
       <section className="px-5 py-14">
         <div className="mx-auto max-w-2xl rounded-3xl bg-primary px-8 py-12 text-center">
           <h2 className="font-heading text-3xl font-extrabold text-white">Faltou gente? Já sabe.</h2>
-          <p className="mt-3 text-[17px] text-white/90">
+          <p className="mt-3 text-[16px] text-white/90">
             Publique sua primeira escala hoje e sinta a diferença de resolver em minutos.
           </p>
           <Link
             href="/cadastro/conta"
-            className="mt-6 inline-flex items-center justify-center rounded-xl bg-secondary px-6 py-3 text-[15px] font-bold text-background transition hover:brightness-125"
+            className="mt-6 inline-flex items-center justify-center rounded-xl bg-secondary px-6 py-3 text-[16px] font-bold text-background transition hover:brightness-125"
           >
             Acessar minha empresa
           </Link>

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { RatingForm, RatingSummary } from '../../../components/rating-form';
 import { Button } from '../../../components/ui/button';
 import { MapLink } from '../../../components/ui/map-link';
+import { CardListSkeleton } from '../../../components/ui/skeleton';
 import { checkIn, checkOut, confirmPayment, listMyShifts, Shift } from '../../../lib/shifts-api';
 
 const CATEGORY_LABEL_FALLBACK = 'Categoria';
@@ -151,10 +152,10 @@ function TimelineRow({ label, time, done, active, last }: TimelineRowProps) {
           {active && !done && <span className="h-2 w-2 rounded-full bg-surface" aria-hidden="true" />}
         </span>
         <div>
-          <p className={`text-[15px] font-semibold ${done || active ? 'text-text' : 'text-text-secondary'}`}>
+          <p className={`text-[16px] font-semibold ${done || active ? 'text-text' : 'text-text-secondary'}`}>
             {label}
           </p>
-          <p className="text-[12.5px] text-text-secondary">{time}</p>
+          <p className="text-[14px] text-text-secondary">{time}</p>
         </div>
       </div>
       {!last && <div className="ml-[13px] my-1 h-4 w-0.5 bg-border" />}
@@ -302,8 +303,8 @@ export default function AgendaPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando suas escalas...</p>
+      <main className="flex flex-1 flex-col gap-4 px-5 py-8">
+        <CardListSkeleton />
       </main>
     );
   }
@@ -354,9 +355,9 @@ export default function AgendaPage() {
       )}
 
       {shifts.length > 0 && (
-        <div className="rounded-[20px] border border-border bg-surface p-4">
+        <div className="rounded-lg border border-border bg-surface p-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-heading text-[15px] font-bold text-text">{monthLabel(currentMonth)}</h2>
+            <h2 className="font-heading text-[16px] font-bold text-text">{monthLabel(currentMonth)}</h2>
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
@@ -376,7 +377,7 @@ export default function AgendaPage() {
                   setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
                   setSelectedDateKey(null);
                 }}
-                className="rounded-lg border border-border px-2 py-1 text-[12px] font-semibold text-text transition hover:border-primary hover:text-primary"
+                className="rounded-lg border border-border px-2 py-1 text-[11px] font-semibold text-text transition hover:border-primary hover:text-primary"
               >
                 Hoje
               </button>
@@ -394,7 +395,7 @@ export default function AgendaPage() {
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[10px] font-semibold tracking-[0.06em] text-text-secondary uppercase">
+          <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold tracking-[0.06em] text-text-secondary uppercase">
             {WEEKDAY_LABEL.map((label) => (
               <span key={label}>{label}</span>
             ))}
@@ -419,7 +420,7 @@ export default function AgendaPage() {
                   }`}
                 >
                   <span
-                    className={`flex h-5 w-5 items-center justify-center rounded-full text-[11.5px] font-semibold ${
+                    className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold ${
                       isToday
                         ? 'bg-primary text-white'
                         : inCurrentMonth
@@ -442,7 +443,7 @@ export default function AgendaPage() {
             })}
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-3 text-[11.5px] text-text-secondary">
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-3 text-[11px] text-text-secondary">
             <span className="flex items-center gap-1.5">
               <span className="h-[7px] w-[7px] rounded-full bg-warning" /> Agendada
             </span>
@@ -459,7 +460,7 @@ export default function AgendaPage() {
               {selectedDayShifts.map((shift) => (
                 <li key={shift.id} className="rounded-xl bg-background p-3">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[13.5px] font-semibold text-text">
+                    <p className="text-[14px] font-semibold text-text">
                       {categoryNames[shift.job.categoryId] ?? CATEGORY_LABEL_FALLBACK}
                     </p>
                     <span
@@ -470,8 +471,8 @@ export default function AgendaPage() {
                       {SHIFT_STATUS_LABEL[shift.status] ?? shift.status}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-[12.5px] font-semibold text-text-secondary">{shift.companyName}</p>
-                  <p className="mt-1 text-[12.5px] text-text-secondary">
+                  <p className="mt-0.5 text-[14px] font-semibold text-text-secondary">{shift.companyName}</p>
+                  <p className="mt-1 text-[14px] text-text-secondary">
                     {formatFullDate(shift.job.startsAt)} · {formatTime(shift.job.startsAt)}–
                     {formatTime(shift.job.endsAt)}
                   </p>
@@ -479,15 +480,15 @@ export default function AgendaPage() {
                     addressLabel={shift.job.addressLabel}
                     lat={shift.job.locationLat}
                     lng={shift.job.locationLng}
-                    className="mt-1 text-[12.5px]"
+                    className="mt-1 text-[14px]"
                   />
                   {shift.job.dressCode && (
-                    <p className="mt-1 text-[12.5px] text-text-secondary">
+                    <p className="mt-1 text-[14px] text-text-secondary">
                       <span className="font-semibold text-text">Vestimenta:</span> {shift.job.dressCode}
                     </p>
                   )}
                   {shift.job.toolsRequired && (
-                    <p className="mt-1 text-[12.5px] text-text-secondary">
+                    <p className="mt-1 text-[14px] text-text-secondary">
                       <span className="font-semibold text-text">Leve com você:</span> {shift.job.toolsRequired}
                     </p>
                   )}
@@ -514,14 +515,14 @@ export default function AgendaPage() {
           return (
             <li
               key={shift.id}
-              className="rounded-[20px] border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
+              className="rounded-lg border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-heading text-[17px] font-bold text-text">
+                  <p className="font-heading text-[16px] font-bold text-text">
                     {categoryNames[shift.job.categoryId] ?? CATEGORY_LABEL_FALLBACK}
                   </p>
-                  <p className="text-[13px] font-semibold text-text-secondary">{shift.companyName}</p>
+                  <p className="text-[14px] font-semibold text-text-secondary">{shift.companyName}</p>
                 </div>
                 <span
                   className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -533,11 +534,20 @@ export default function AgendaPage() {
               </div>
               {reminder && (
                 <p
-                  className={`mt-2 rounded-lg px-2.5 py-1.5 text-[12.5px] font-semibold ${
+                  className={`mt-2 rounded-lg px-2.5 py-1.5 text-[14px] font-semibold ${
                     reminder.urgent ? 'bg-danger/10 text-danger' : 'bg-warning/10 text-warning'
                   }`}
                 >
-                  ⏰ {reminder.message}
+                  <svg
+                    className="mr-1 inline-block h-[1em] w-[1em] align-[-0.15em]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                    <path d="M12 7v5l3.5 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  {reminder.message}
                 </p>
               )}
               <MapLink
@@ -591,7 +601,7 @@ export default function AgendaPage() {
               )}
 
               {showTimeline && (
-                <div className="mt-3.5 rounded-[18px] border border-border bg-background p-4">
+                <div className="mt-3.5 rounded-lg border border-border bg-background p-4">
                   <TimelineRow
                     label="Check-in"
                     done={step >= 1}

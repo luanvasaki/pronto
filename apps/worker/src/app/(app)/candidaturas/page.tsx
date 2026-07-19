@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { MapLink } from '../../../components/ui/map-link';
+import { CardListSkeleton } from '../../../components/ui/skeleton';
 import { listMyApplications, MyApplication, withdrawApplication } from '../../../lib/applications-api';
 
 const CATEGORY_LABEL_FALLBACK = 'Categoria';
@@ -98,8 +99,8 @@ export default function CandidaturasPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando suas candidaturas...</p>
+      <main className="flex flex-1 flex-col gap-4 px-5 py-8">
+        <CardListSkeleton />
       </main>
     );
   }
@@ -119,14 +120,14 @@ export default function CandidaturasPage() {
         {applications.map((application) => (
           <li
             key={application.id}
-            className="rounded-[20px] border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
+            className="rounded-lg border border-border bg-surface p-4 shadow-[0_4px_14px_rgba(26,23,18,0.05)]"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="font-heading text-[17px] font-bold text-text">
+                <p className="font-heading text-[16px] font-bold text-text">
                   {categoryNames[application.job.categoryId] ?? CATEGORY_LABEL_FALLBACK}
                 </p>
-                <p className="text-[13px] font-semibold text-text-secondary">{application.companyName}</p>
+                <p className="text-[14px] font-semibold text-text-secondary">{application.companyName}</p>
               </div>
               <span
                 className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(application)}`}

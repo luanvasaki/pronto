@@ -2,7 +2,7 @@ const AVATAR_COLORS = ['bg-primary', 'bg-secondary', 'bg-accent', 'bg-success'];
 
 const SIZE_CLASSES = {
   sm: 'h-7 w-7 text-[11px]',
-  md: 'h-[46px] w-[46px] text-[15px]',
+  md: 'h-[46px] w-[46px] text-[16px]',
   lg: 'h-16 w-16 text-xl',
 } as const;
 

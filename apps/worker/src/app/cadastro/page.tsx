@@ -189,7 +189,7 @@ export default function CadastroPage() {
         <Logo className="mb-2" />
         <div>
           <h1 className="font-heading text-2xl font-bold text-text">Complete seu cadastro</h1>
-          <p className="mt-1 text-[15px] text-text-secondary">
+          <p className="mt-1 text-[16px] text-text-secondary">
             Nome e categoria de trabalho — o resto você ajusta depois.
           </p>
         </div>
@@ -272,7 +272,7 @@ export default function CadastroPage() {
         </div>
 
         {isMinor && !isUnderage && (
-          <div className="flex flex-col gap-4 rounded-[18px] border border-border bg-surface p-4">
+          <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4">
             <div>
               <h2 className="font-heading text-base font-bold text-text">Dados do responsável</h2>
               <p className="mt-1 text-xs text-text-secondary">
@@ -313,7 +313,7 @@ export default function CadastroPage() {
               onChange={(event) => setGuardianPhone(extractDigits(event.target.value).slice(0, 11))}
             />
 
-            <label className="flex items-start gap-2 text-[12.5px] text-text-secondary">
+            <label className="flex items-start gap-2 text-[14px] text-text-secondary">
               <input
                 type="checkbox"
                 checked={guardianAuthorized}
@@ -392,7 +392,7 @@ export default function CadastroPage() {
                 return (
                   <div
                     key={category.id}
-                    className={`rounded-[18px] border p-4 transition ${
+                    className={`rounded-lg border p-4 transition ${
                       selected
                         ? 'border-2 border-primary bg-surface shadow-[0_8px_20px_rgba(245,83,30,0.1)]'
                         : 'border-[1.5px] border-border bg-surface'
@@ -405,7 +405,7 @@ export default function CadastroPage() {
                         onChange={() => toggleCategory(category.id)}
                         className="sr-only"
                       />
-                      <span className="flex-1 font-heading text-[17px] font-bold text-text">
+                      <span className="flex-1 font-heading text-[16px] font-bold text-text">
                         {category.name}
                       </span>
                       <span
@@ -466,7 +466,7 @@ export default function CadastroPage() {
           )}
 
           {isAddingCategory ? (
-            <div className="mt-3 flex flex-col gap-2 rounded-[18px] border border-dashed border-border p-4">
+            <div className="mt-3 flex flex-col gap-2 rounded-lg border border-dashed border-border p-4">
               <Input
                 id="newCategoryName"
                 label="Nome da nova categoria"
@@ -505,7 +505,7 @@ export default function CadastroPage() {
             <button
               type="button"
               onClick={() => setIsAddingCategory(true)}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-[18px] border border-dashed border-border p-4 text-sm font-semibold text-text-secondary transition hover:text-text"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border p-4 text-sm font-semibold text-text-secondary transition hover:text-text"
             >
               + Criar nova categoria
             </button>

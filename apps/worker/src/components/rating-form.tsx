@@ -30,12 +30,12 @@ export function RatingForm({
   const isComplete = categories.length > 0 && categories.every((category) => Boolean(scores[category.id]));
 
   return (
-    <div className="mt-3.5 flex flex-col gap-4 rounded-[18px] border border-border p-4">
-      <p className="font-heading text-[15px] font-bold text-text">{title}</p>
+    <div className="mt-3.5 flex flex-col gap-4 rounded-lg border border-border p-4">
+      <p className="font-heading text-[16px] font-bold text-text">{title}</p>
       <div className="flex flex-col gap-3">
         {categories.map((category) => (
           <div key={category.id}>
-            <p className="text-[13.5px] font-semibold text-text-secondary">{category.label}</p>
+            <p className="text-[14px] font-semibold text-text-secondary">{category.label}</p>
             <div className="mt-1 flex gap-1.5" role="group" aria-label={`${category.label} — nota de 1 a 5`}>
               {STAR_VALUES.map((value) => {
                 const selected = (scores[category.id] ?? 0) >= value;
@@ -61,7 +61,7 @@ export function RatingForm({
         placeholder="Escreva um comentário (opcional)"
         value={comment}
         onChange={(event) => onChangeComment(event.target.value)}
-        className="w-full rounded-[14px] border border-border bg-surface px-3.5 py-3 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+        className="w-full rounded-sm border border-border bg-surface px-3.5 py-3 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
       />
       {error && <p className="text-sm text-danger">{error}</p>}
       <Button type="button" isLoading={isSubmitting} disabled={!isComplete} onClick={onSubmit}>
@@ -89,7 +89,7 @@ export function RatingSummary({ rating, categories }: RatingSummaryProps) {
             return (
               <span
                 key={category.id}
-                className="rounded-lg bg-background px-2.5 py-1 text-[12.5px] font-semibold text-text-secondary"
+                className="rounded-lg bg-background px-2.5 py-1 text-[14px] font-semibold text-text-secondary"
               >
                 ★{score} {category.label}
               </span>

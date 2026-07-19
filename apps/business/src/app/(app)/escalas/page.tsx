@@ -4,6 +4,7 @@ import { ApiError, formatBenefitLabel, listSkillCategories } from '@shift/shared
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
+import { CardListSkeleton } from '../../../components/ui/skeleton';
 import { JobApplication } from '../../../lib/applications-api';
 import { fetchApplicationsByJobId } from '../../../lib/job-applications-summary';
 import { cancelJob, Job, listMyJobs } from '../../../lib/jobs-api';
@@ -83,8 +84,8 @@ export default function EscalasPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4">
-        <p className="text-sm text-text-secondary">Carregando suas escalas...</p>
+      <main className="flex flex-1 flex-col gap-3.5">
+        <CardListSkeleton />
       </main>
     );
   }
@@ -110,7 +111,7 @@ export default function EscalasPage() {
             key={value}
             type="button"
             onClick={() => setTimeFilter(value)}
-            className={`rounded-[10px] border px-3 py-1.5 text-[13px] font-semibold transition ${
+            className={`rounded-md border px-3 py-1.5 text-[14px] font-semibold transition ${
               timeFilter === value
                 ? 'border-primary bg-primary text-white'
                 : 'border-border text-text-secondary hover:border-primary hover:text-primary'
@@ -141,17 +142,17 @@ export default function EscalasPage() {
             >
               <div className="flex flex-wrap items-center gap-4 sm:flex-nowrap sm:gap-5">
                 <div
-                  className={`flex h-[52px] w-[52px] shrink-0 flex-col items-center justify-center rounded-[13px] ${
+                  className={`flex h-[52px] w-[52px] shrink-0 flex-col items-center justify-center rounded-lg ${
                     past ? 'bg-border/60 text-text-secondary' : 'bg-primary/10 text-primary'
                   }`}
                 >
                   <span className="font-heading text-lg leading-none font-extrabold">{start.getDate()}</span>
-                  <span className="text-[10px] font-semibold tracking-[0.06em] uppercase">
+                  <span className="text-[11px] font-semibold tracking-[0.06em] uppercase">
                     {DAY_LABEL[start.getDay()]}
                   </span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-heading text-[17px] font-bold text-text">
+                  <p className="font-heading text-[16px] font-bold text-text">
                     {categoryNames[job.categoryId] ?? 'Categoria'} · {job.positionsTotal - job.positionsFilled}{' '}
                     vaga(s)
                     {past && (
@@ -160,12 +161,12 @@ export default function EscalasPage() {
                       </span>
                     )}
                   </p>
-                  <p className="mt-0.5 text-[13.5px] text-text-secondary">
+                  <p className="mt-0.5 text-[14px] text-text-secondary">
                     {formatTimeRange(job.startsAt, job.endsAt)} · R$ {job.payAmount} por pessoa
                   </p>
                   {(formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação') ||
                     formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte')) && (
-                    <p className="mt-1 text-[12px] text-text-secondary">
+                    <p className="mt-1 text-[11px] text-text-secondary">
                       {[
                         formatBenefitLabel(job.mealProvision, job.mealAmount, 'Alimentação'),
                         formatBenefitLabel(job.transportProvision, job.transportAmount, 'Transporte'),
@@ -176,13 +177,13 @@ export default function EscalasPage() {
                   )}
                 </div>
                 <div className="flex w-full shrink-0 items-center justify-between gap-3.5 sm:w-auto sm:justify-start">
-                  <span className="flex items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[13px] font-semibold text-text">
+                  <span className="flex items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[14px] font-semibold text-text">
                     <span className="h-[7px] w-[7px] rounded-full bg-success" />
                     {pendingCount} candidatos
                   </span>
                   <Link
                     href={`/vagas/${job.id}`}
-                    className="rounded-[10px] border-[1.5px] border-secondary bg-secondary px-4 py-2 text-[13.5px] font-bold text-background"
+                    className="rounded-md border-[1.5px] border-secondary bg-secondary px-4 py-2 text-[14px] font-bold text-background"
                   >
                     Ver candidatos
                   </Link>
