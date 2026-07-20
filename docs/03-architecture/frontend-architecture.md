@@ -28,6 +28,12 @@ Onde o mesmo formulário aparece em mais de um lugar (ex: publicar vaga e editar
 
 Ações destrutivas ou irreversíveis (aprovar candidato, remover candidato, cancelar vaga, confirmar saída de turno, marcar como pago) usam o mesmo padrão de "confirmação em duas etapas" — um estado local tipo `confirming<X>Id` que troca o botão original por um par "sim/cancelar". Esse padrão é reimplementado em cada tela, não é um componente genérico reutilizável.
 
+## Error tracking no client (Sentry)
+
+Cada app tem `src/lib/sentry.ts` (`initSentry()`) e `src/app/init-sentry.tsx` — um client component montado no `layout.tsx`, no mesmo padrão de `register-service-worker.tsx`, que chama `initSentry()` uma vez no mount. Mesma regra do backend (`apps/backend/src/config/sentry.ts`): sem `NEXT_PUBLIC_SENTRY_DSN` configurada, `Sentry.init`/`captureException` viram no-op — nenhum código precisa checar se está ativo. `src/app/global-error.tsx` captura qualquer exceção de render que escape de todos os error boundaries locais (App Router substitui o layout inteiro nesse caso) e mostra um fallback com botão de recarregar, em vez de deixar a página em branco. Isso não pega falha de **parse** do bundle (ex: JS incompatível com um navegador muito antigo — ver seção de PWA acima) porque nesse caso nenhum JS roda; cobre exceção de runtime, promise rejeitada sem handler, e erro de render React.
+
+Como os três arquivos (`sentry.ts`, `init-sentry.tsx`, `global-error.tsx`) são duplicados por app — mesmo padrão de duplicação do resto do frontend (ver seção acima) — qualquer mudança de comportamento (ex: adicionar tags, sample rate, integrações) precisa ser replicada manualmente nos três.
+
 ## Design tokens
 
 Paleta clara/escura via variáveis CSS + Tailwind v4 (`@theme inline`), com convenção explícita de nunca usar cor hexadecimal direto nos componentes — sempre pelos tokens semânticos definidos globalmente.

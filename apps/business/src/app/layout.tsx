@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import { RegisterServiceWorker } from "./register-service-worker";
+import { InitSentry } from "./init-sentry";
 import "./globals.css";
 
 // Hanken Grotesk carrega o texto e os botões; Bricolage Grotesque só
@@ -55,6 +56,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         {children}
         <RegisterServiceWorker />
+        <InitSentry />
       </body>
     </html>
   );
