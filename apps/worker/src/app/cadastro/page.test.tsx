@@ -101,7 +101,8 @@ describe('CadastroPage', () => {
     await user.type(screen.getByLabelText('Telefone'), '11912345678');
     expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
 
-    await user.type(screen.getByLabelText('Endereço completo'), 'Rua das Flores, 123, Centro, São Paulo - SP');
+    await user.type(screen.getByLabelText('Rua'), 'Rua das Flores');
+    await user.type(screen.getByLabelText('Número'), '123');
     fireEvent.change(screen.getByLabelText('Data de nascimento'), { target: { value: '2000-01-01' } });
     expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
 
@@ -117,7 +118,8 @@ describe('CadastroPage', () => {
     await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
     await user.type(screen.getByLabelText('CPF'), '11111111111');
     await user.type(screen.getByLabelText('Telefone'), '11912345678');
-    await user.type(screen.getByLabelText('Endereço completo'), 'Rua das Flores, 123, Centro, São Paulo - SP');
+    await user.type(screen.getByLabelText('Rua'), 'Rua das Flores');
+    await user.type(screen.getByLabelText('Número'), '123');
     fireEvent.change(screen.getByLabelText('Data de nascimento'), { target: { value: '2000-01-01' } });
     await user.click(screen.getByLabelText('Garçom'));
 
@@ -136,7 +138,8 @@ describe('CadastroPage', () => {
     await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
     await user.type(screen.getByLabelText('CPF'), '52998224725');
     await user.type(screen.getByLabelText('Telefone'), '11912345678');
-    await user.type(screen.getByLabelText('Endereço completo'), 'Rua das Flores, 123, Centro, São Paulo - SP');
+    await user.type(screen.getByLabelText('Rua'), 'Rua das Flores');
+    await user.type(screen.getByLabelText('Número'), '123');
     fireEvent.change(screen.getByLabelText('Data de nascimento'), { target: { value: underageBirthDate } });
     await user.click(screen.getByLabelText('Garçom'));
 
@@ -162,7 +165,8 @@ describe('CadastroPage', () => {
       await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
       await user.type(screen.getByLabelText('CPF'), '52998224725');
       await user.type(screen.getByLabelText('Telefone'), '11912345678');
-      await user.type(screen.getByLabelText('Endereço completo'), 'Rua das Flores, 123, Centro, São Paulo - SP');
+      await user.type(screen.getByLabelText('Rua'), 'Rua das Flores');
+    await user.type(screen.getByLabelText('Número'), '123');
       fireEvent.change(screen.getByLabelText('Data de nascimento'), { target: { value: seventeenYearsAgoBirthDate() } });
       await user.click(screen.getByLabelText('Garçom'));
     }
@@ -248,13 +252,14 @@ describe('CadastroPage', () => {
     await screen.findByLabelText('Garçom');
 
     expect(
-      screen.getByText(/falta preencher:.*nome completo.*cpf.*telefone.*endereço completo.*categoria/i),
+      screen.getByText(/falta preencher:.*nome completo.*cpf.*telefone.*rua.*número.*categoria/i),
     ).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
     await user.type(screen.getByLabelText('CPF'), '52998224725');
     await user.type(screen.getByLabelText('Telefone'), '11912345678');
-    await user.type(screen.getByLabelText('Endereço completo'), 'Rua das Flores, 123, Centro, São Paulo - SP');
+    await user.type(screen.getByLabelText('Rua'), 'Rua das Flores');
+    await user.type(screen.getByLabelText('Número'), '123');
     fireEvent.change(screen.getByLabelText('Data de nascimento'), { target: { value: '2000-01-01' } });
     await user.click(screen.getByLabelText('Garçom'));
 
@@ -275,7 +280,8 @@ describe('CadastroPage', () => {
     await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
     await user.type(screen.getByLabelText('CPF'), '52998224725');
     await user.type(screen.getByLabelText('Telefone'), '11912345678');
-    await user.type(screen.getByLabelText('Endereço completo'), 'Rua das Flores, 123, Centro, São Paulo - SP');
+    await user.type(screen.getByLabelText('Rua'), 'Rua das Flores');
+    await user.type(screen.getByLabelText('Número'), '123');
     fireEvent.change(screen.getByLabelText('Data de nascimento'), { target: { value: '2000-01-01' } });
     await user.click(screen.getByLabelText('Garçom'));
     expect(screen.getByRole('button', { name: /continuar/i })).toBeEnabled();
@@ -289,7 +295,7 @@ describe('CadastroPage', () => {
       photoUrl: 'https://lh3.googleusercontent.com/foto',
       cpf: '52998224725',
       phone: '11912345678',
-      homeAddressFull: 'Rua das Flores, 123, Centro, São Paulo - SP',
+      homeAddressFull: 'Rua das Flores, 123',
 
       birthDate: '2000-01-01',
       experienceByCategory: {},
@@ -307,7 +313,8 @@ describe('CadastroPage', () => {
     await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
     await user.type(screen.getByLabelText('CPF'), '52998224725');
     await user.type(screen.getByLabelText('Telefone'), '11912345678');
-    await user.type(screen.getByLabelText('Endereço completo'), 'Rua das Flores, 123, Centro, São Paulo - SP');
+    await user.type(screen.getByLabelText('Rua'), 'Rua das Flores');
+    await user.type(screen.getByLabelText('Número'), '123');
     fireEvent.change(screen.getByLabelText('Data de nascimento'), { target: { value: '2000-01-01' } });
     await user.click(screen.getByLabelText('Garçom'));
     const file = new File(['foto'], 'foto.jpg', { type: 'image/jpeg' });
@@ -321,7 +328,7 @@ describe('CadastroPage', () => {
       photoUrl: undefined,
       cpf: '52998224725',
       phone: '11912345678',
-      homeAddressFull: 'Rua das Flores, 123, Centro, São Paulo - SP',
+      homeAddressFull: 'Rua das Flores, 123',
 
       birthDate: '2000-01-01',
       experienceByCategory: {},
@@ -338,7 +345,8 @@ describe('CadastroPage', () => {
     await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
     await user.type(screen.getByLabelText('CPF'), '52998224725');
     await user.type(screen.getByLabelText('Telefone'), '11912345678');
-    await user.type(screen.getByLabelText('Endereço completo'), 'Rua das Flores, 123, Centro, São Paulo - SP');
+    await user.type(screen.getByLabelText('Rua'), 'Rua das Flores');
+    await user.type(screen.getByLabelText('Número'), '123');
     fireEvent.change(screen.getByLabelText('Data de nascimento'), { target: { value: '2000-01-01' } });
     await user.click(screen.getByLabelText('Garçom'));
     const file = new File(['foto'], 'foto.jpg', { type: 'image/jpeg' });
@@ -368,7 +376,8 @@ describe('CadastroPage', () => {
     await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
     await user.type(screen.getByLabelText('CPF'), '52998224725');
     await user.type(screen.getByLabelText('Telefone'), '11912345678');
-    await user.type(screen.getByLabelText('Endereço completo'), 'Rua das Flores, 123, Centro, São Paulo - SP');
+    await user.type(screen.getByLabelText('Rua'), 'Rua das Flores');
+    await user.type(screen.getByLabelText('Número'), '123');
     fireEvent.change(screen.getByLabelText('Data de nascimento'), { target: { value: '2000-01-01' } });
     await user.selectOptions(screen.getByLabelText(/categoria da cnh/i), 'B');
     await user.click(screen.getByLabelText('Garçom'));
@@ -396,7 +405,8 @@ describe('CadastroPage', () => {
     await user.type(screen.getByLabelText('Nome completo'), 'Ana Souza');
     await user.type(screen.getByLabelText('CPF'), '52998224725');
     await user.type(screen.getByLabelText('Telefone'), '11912345678');
-    await user.type(screen.getByLabelText('Endereço completo'), 'Rua das Flores, 123, Centro, São Paulo - SP');
+    await user.type(screen.getByLabelText('Rua'), 'Rua das Flores');
+    await user.type(screen.getByLabelText('Número'), '123');
     fireEvent.change(screen.getByLabelText('Data de nascimento'), { target: { value: '2000-01-01' } });
     const file = new File(['foto'], 'foto.jpg', { type: 'image/jpeg' });
     await user.upload(screen.getByLabelText(/adicionar foto/i), file);

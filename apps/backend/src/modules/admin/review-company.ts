@@ -14,14 +14,23 @@ export interface ReviewCompanyResult {
   verificationStatus: string;
 }
 
-/** UPDATE condicional (WHERE verification_status = 'pending') fecha a corrida de duas revisões simultâneas. */
+/**
+ * UPDATE condicional (WHERE verification_status = 'pending') fecha a corrida de duas revisões simultâneas.
+ * `reason` é obrigatório pra rejeitar — é o que a empresa vê no lugar do
+ * badge genérico "Verificação recusada" (ver get-company-profile.ts) e o
+ * que fica registrado pro admin lembrar depois por que rejeitou.
+ */
 export async function reviewCompany(
   adminUserId: string,
   companyId: string,
   status: string | undefined,
+  reason?: string,
 ): Promise<ReviewCompanyResult> {
   if (!status || !isReviewStatus(status)) {
     throw new HttpError(400, 'Status inválido — use "approved" ou "rejected".');
+  }
+  if (status === 'rejected' && !reason?.trim()) {
+    throw new HttpError(400, 'É preciso informar o motivo da rejeição.');
   }
 
   const company = await db.query.companies.findFirst({ where: eq(companies.id, companyId) });
@@ -34,7 +43,13 @@ export async function reviewCompany(
 
   const [updated] = await db
     .update(companies)
-    .set({ verificationStatus: status, reviewedBy: adminUserId, reviewedAt: new Date(), updatedAt: new Date() })
+    .set({
+      verificationStatus: status,
+      rejectionReason: status === 'rejected' ? reason!.trim() : null,
+      reviewedBy: adminUserId,
+      reviewedAt: new Date(),
+      updatedAt: new Date(),
+    })
     .where(and(eq(companies.id, companyId), eq(companies.verificationStatus, 'pending')))
     .returning();
   if (!updated) {

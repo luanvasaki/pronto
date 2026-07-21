@@ -16,6 +16,7 @@ export interface CompanyProfileDetails {
   businessSegment: string | null;
   businessSegmentOther: string | null;
   verificationStatus: string;
+  rejectionReason: string | null;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
   jobsPosted: number;
@@ -111,6 +112,7 @@ export async function getCompanyProfile(ownerUserId: string): Promise<CompanyPro
     businessSegment: company.businessSegment,
     businessSegmentOther: company.businessSegmentOther,
     verificationStatus: company.verificationStatus,
+    rejectionReason: company.rejectionReason,
     avgRating: company.avgRating,
     avgCategoryScores: company.avgCategoryScores ?? null,
     jobsPosted: Number(jobsPosted),

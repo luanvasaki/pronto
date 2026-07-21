@@ -262,6 +262,9 @@ export default function PerfilPage() {
               <p className="text-sm font-semibold text-danger">
                 Seu documento não foi aprovado — envie um novo pra tentar de novo.
               </p>
+              {profile.rejectionReason && (
+                <p className="mt-1 text-sm text-danger">Motivo: {profile.rejectionReason}</p>
+              )}
               <p className="mt-1 text-xs text-text-secondary">
                 {isIndividual
                   ? 'Uma foto ou PDF do seu RG ou CNH.'

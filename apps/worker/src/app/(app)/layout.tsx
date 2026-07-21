@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { TabBar } from '../../components/ui/tab-bar';
 import { CalledNotification, Topbar } from '../../components/ui/topbar';
+import { VerificationBanner } from '../../components/ui/verification-banner';
 import { listMyApplications } from '../../lib/applications-api';
 import { useRequireAuth } from '../../hooks/use-require-auth';
 import { listMyShifts } from '../../lib/shifts-api';
@@ -135,6 +136,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           workerName={profile.fullName}
           photoUrl={profile.photoUrl}
         />
+        <VerificationBanner kycStatus={profile.kycStatus} />
         {/* pb reserva espaço pra pílula flutuante (fixed, fora do fluxo) nunca cobrir o fim do conteúdo. */}
         <div className="flex flex-1 flex-col pb-24">{children}</div>
         <TabBar />

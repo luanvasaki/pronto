@@ -14,8 +14,8 @@ export async function reviewCompanyHandler(req: Request, res: Response, next: Ne
       throw new HttpError(404, 'Empresa não encontrada.');
     }
 
-    const { status } = req.body as { status?: string };
-    const result = await reviewCompany(adminUserId, companyId, status);
+    const { status, reason } = req.body as { status?: string; reason?: string };
+    const result = await reviewCompany(adminUserId, companyId, status, reason);
     res.status(200).json(result);
   } catch (error) {
     next(error);

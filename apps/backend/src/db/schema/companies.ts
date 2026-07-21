@@ -4,6 +4,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  text,
   timestamp,
   uniqueIndex,
   uuid,
@@ -81,6 +82,11 @@ export const companies = pgTable(
     // documents.reviewedBy/reviewedAt (ver review-company.ts).
     reviewedBy: uuid('reviewed_by').references(() => users.id),
     reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    // Só preenchido quando verificationStatus === 'rejected' — texto livre
+    // do admin explicando o motivo (ver review-company.ts). Limpo no reenvio
+    // de documento (ver upload-company-document.ts), pra não sobrar motivo
+    // velho junto de um novo ciclo de revisão.
+    rejectionReason: text('rejection_reason'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

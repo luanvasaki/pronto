@@ -94,7 +94,7 @@ O `apps/admin` (construído por último, extraído do business) segue os tokens 
 
 ### `apps/worker`
 
-**Prioridade**: cadastro é uma maratona de 3 telas sem indicador de progresso nem botão voltar (`cadastro/conta` → `cadastro` → `cadastro/documento`) — maior risco de abandono do funil. Endereço é texto livre sem CEP/autocomplete, apesar de alimentar diretamente a busca por proximidade ("vagas perto de você") — um erro de digitação quebra a promessa central do produto silenciosamente. Upload de documento/selfie não mostra prévia da imagem, no momento de maior ansiedade do onboarding (verificação de identidade).
+**Prioridade**: cadastro é uma maratona de 3 telas sem indicador de progresso nem botão voltar (`cadastro/conta` → `cadastro` → `cadastro/documento`) — maior risco de abandono do funil. ~~Endereço é texto livre sem CEP/autocomplete~~ **Feito**: `/cadastro` agora usa `AddressFields` (CEP → rua/bairro/cidade/UF automático via ViaCEP, mesmo componente do endereço de vaga da empresa) + número/complemento, no lugar do campo único de texto livre — a nota de que isso não alimentava "vagas perto de você" (`homeAddressFull` é só identidade, `homeLat/Lng` vem do GPS em `/inicio`) continua valendo, então o ganho aqui é evitar erro de digitação na identidade, não geolocalização. Upload de documento/selfie não mostra prévia da imagem, no momento de maior ansiedade do onboarding (verificação de identidade).
 
 **Pontos fortes**: candidatura e check-in/check-out já são de fato mais rápidos que negociar num grupo de WhatsApp (um toque). Mensagens de erro específicas, não genéricas. Tokens de cor/elevação fiéis ao handoff.
 

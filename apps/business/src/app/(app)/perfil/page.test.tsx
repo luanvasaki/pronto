@@ -52,6 +52,7 @@ const BASE_PROFILE: CompanyProfileDetails = {
   businessSegment: null,
   businessSegmentOther: null,
   verificationStatus: 'approved',
+  rejectionReason: null,
   avgRating: '4.2',
   avgCategoryScores: { pontualidade_pagamento: '4.5', clareza_vaga: '4.0' },
   jobsPosted: 5,
@@ -193,6 +194,22 @@ describe('PerfilPage', () => {
 
     expect(screen.getByText(/envie um novo pra tentar de novo/i)).toBeInTheDocument();
     expect(screen.getByText(/cartão cnpj ou contrato social/i)).toBeInTheDocument();
+  });
+
+  it('mostra o motivo da rejeição quando o admin informou um', () => {
+    renderWithProfile({
+      ...BASE_PROFILE,
+      verificationStatus: 'rejected',
+      rejectionReason: 'Foto do cartão CNPJ ilegível',
+    });
+
+    expect(screen.getByText('Motivo: Foto do cartão CNPJ ilegível')).toBeInTheDocument();
+  });
+
+  it('não mostra linha de motivo quando não há rejectionReason', () => {
+    renderWithProfile({ ...BASE_PROFILE, verificationStatus: 'rejected', rejectionReason: null });
+
+    expect(screen.queryByText(/^Motivo:/)).not.toBeInTheDocument();
   });
 
   it('mostra CTA de reenviar documento (RG/CNH) pra empresa pessoa física recusada', () => {

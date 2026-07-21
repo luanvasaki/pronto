@@ -49,7 +49,7 @@ export async function uploadCompanyDocument(
   if (company.verificationStatus === 'rejected') {
     await db
       .update(companies)
-      .set({ verificationStatus: 'pending', updatedAt: new Date() })
+      .set({ verificationStatus: 'pending', rejectionReason: null, updatedAt: new Date() })
       .where(eq(companies.id, company.id));
   }
 

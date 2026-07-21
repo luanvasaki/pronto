@@ -20,6 +20,8 @@
 
 Tipos de documento: `identity` (RG ou CNH, foto ou PDF), `selfie` (só foto), `cnh` (só PDF da CNH Digital), `guardian_identity` (documento do responsável, só quando menor). Validação por assinatura real de bytes do arquivo, não pelo `Content-Type` declarado pelo cliente.
 
+`reviewDocument` (`modules/admin/review-document.ts`) exige `reason` no corpo quando `status: 'rejected'` (400 sem isso), gravado em `documents.rejection_reason`. Como reenviar nunca atualiza a linha antiga (sempre insere uma nova, `upload-document.ts`), `get-worker-profile.ts` calcula `hasDocument`/`hasSelfie`/`hasCnhDocument`/`hasGuardianDocument` a partir do **documento mais recente de cada tipo** — um tipo cujo mais recente está `rejected` conta como "falta enviar" de novo (bug corrigido: antes bastava existir qualquer linha do tipo, aprovada ou não, pra achar que já tinha sido enviado, travando o reenvio pela tela de `/cadastro/documento`). O motivo do mais recente rejeitado vem em `documentRejectionReason`/`selfieRejectionReason`/`cnhRejectionReason`/`guardianDocumentRejectionReason`, mostrado acima do campo de upload correspondente. Enquanto `kycStatus !== 'approved'`, o app worker mostra um banner persistente no layout (`VerificationBanner`, visível em qualquer tela).
+
 ## Menor de idade
 
 `MIN_WORKER_AGE_YEARS = 16` — abaixo disso, bloqueado sem exceção. `ADULT_AGE_YEARS = 18` — 16-17 exige dados do responsável + autorização explícita. `isMinor` é sempre calculado no servidor a partir de `birthDate`, nunca confia no valor enviado pelo cliente. Ver bug histórico corrigido em [`04-development/knowledge.md`](../../04-development/knowledge.md).

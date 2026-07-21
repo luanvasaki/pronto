@@ -94,6 +94,7 @@ describe('getCompanyProfile', () => {
 
     expect(result.tradeName).toBe('Bar do Zé');
     expect(result.verificationStatus).toBe('pending');
+    expect(result.rejectionReason).toBeNull();
     expect(result.avgRating).toBeNull();
     expect(result.jobsPosted).toBe(0);
     expect(result.shiftsCompleted).toBe(0);
@@ -102,6 +103,20 @@ describe('getCompanyProfile', () => {
     expect(result.workersHiredThisMonth).toBe(0);
     expect(result.topHiredWorkerName).toBeNull();
     expect(result.topHiredWorkerCount).toBe(0);
+  });
+
+  it('reflete o motivo da rejeição quando a empresa foi recusada', async () => {
+    const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    await upsertCompanyProfile(user.id, { legalName: 'Bar do Zé Ltda', tradeName: 'Bar do Zé', cnpj: TEST_CNPJ });
+    await db
+      .update(companies)
+      .set({ verificationStatus: 'rejected', rejectionReason: 'Foto do cartão CNPJ ilegível' })
+      .where(eq(companies.ownerUserId, user.id));
+
+    const result = await getCompanyProfile(user.id);
+
+    expect(result.verificationStatus).toBe('rejected');
+    expect(result.rejectionReason).toBe('Foto do cartão CNPJ ilegível');
   });
 
   it('reflete avgRating quando já existe', async () => {

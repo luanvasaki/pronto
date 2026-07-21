@@ -98,13 +98,17 @@ describe('uploadCompanyDocument', () => {
       personType: 'fisica',
       cpf: TEST_CPF,
     });
-    await db.update(companies).set({ verificationStatus: 'rejected' }).where(eq(companies.id, company.id));
+    await db
+      .update(companies)
+      .set({ verificationStatus: 'rejected', rejectionReason: 'Foto não é do documento pedido' })
+      .where(eq(companies.id, company.id));
     const file = { buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9]), mimetype: 'image/jpeg', size: 4 };
 
     await uploadCompanyDocument(user.id, file, storage);
 
     const updated = await db.query.companies.findFirst({ where: eq(companies.id, company.id) });
     expect(updated?.verificationStatus).toBe('pending');
+    expect(updated?.rejectionReason).toBeNull();
   });
 
   it('não mexe no status quando a empresa já está aprovada', async () => {

@@ -35,6 +35,13 @@ export default function DocumentoPage() {
   const [needsGuardianDocument, setNeedsGuardianDocument] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  // Motivo do mais recente de cada tipo, só quando reprovado (ver
+  // get-worker-profile.ts) — mostrado acima do campo de upload
+  // correspondente, pra saber o que corrigir antes de reenviar.
+  const [documentRejectionReason, setDocumentRejectionReason] = useState<string | null>(null);
+  const [selfieRejectionReason, setSelfieRejectionReason] = useState<string | null>(null);
+  const [cnhRejectionReason, setCnhRejectionReason] = useState<string | null>(null);
+  const [guardianRejectionReason, setGuardianRejectionReason] = useState<string | null>(null);
 
   // Cobre não só "tentar de novo depois de um erro" (mesmo carregamento
   // de página) mas também "recarregou ou saiu e voltou no meio do
@@ -56,6 +63,10 @@ export default function DocumentoPage() {
         setNeedsCnh(Boolean(profile.cnhCategory));
         setGuardianUploaded(profile.hasGuardianDocument);
         setNeedsGuardianDocument(profile.isMinor);
+        setDocumentRejectionReason(profile.documentRejectionReason);
+        setSelfieRejectionReason(profile.selfieRejectionReason);
+        setCnhRejectionReason(profile.cnhRejectionReason);
+        setGuardianRejectionReason(profile.guardianDocumentRejectionReason);
       })
       .catch(() => setLoadError(true))
       .finally(() => setIsCheckingStatus(false));
@@ -135,6 +146,11 @@ export default function DocumentoPage() {
         </div>
 
         <div>
+          {documentRejectionReason && (
+            <p className="mb-1.5 rounded-lg bg-danger/10 px-2.5 py-2 text-sm text-danger">
+              Documento reprovado: {documentRejectionReason}
+            </p>
+          )}
           <label
             htmlFor="document"
             className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary transition hover:border-primary"
@@ -152,6 +168,11 @@ export default function DocumentoPage() {
         </div>
 
         <div>
+          {selfieRejectionReason && (
+            <p className="mb-1.5 rounded-lg bg-danger/10 px-2.5 py-2 text-sm text-danger">
+              Selfie reprovada: {selfieRejectionReason}
+            </p>
+          )}
           <label
             htmlFor="selfie"
             className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary transition hover:border-primary"
@@ -173,6 +194,11 @@ export default function DocumentoPage() {
 
         {needsCnh && (
           <div>
+            {cnhRejectionReason && (
+              <p className="mb-1.5 rounded-lg bg-danger/10 px-2.5 py-2 text-sm text-danger">
+                CNH reprovada: {cnhRejectionReason}
+              </p>
+            )}
             <label
               htmlFor="cnh"
               className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary transition hover:border-primary"
@@ -195,6 +221,11 @@ export default function DocumentoPage() {
 
         {needsGuardianDocument && (
           <div>
+            {guardianRejectionReason && (
+              <p className="mb-1.5 rounded-lg bg-danger/10 px-2.5 py-2 text-sm text-danger">
+                Documento do responsável reprovado: {guardianRejectionReason}
+              </p>
+            )}
             <label
               htmlFor="guardianDocument"
               className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary transition hover:border-primary"

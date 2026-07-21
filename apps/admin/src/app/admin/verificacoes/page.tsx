@@ -86,6 +86,12 @@ export default function AdminVerificacoesPage() {
   const [confirmingCompany, setConfirmingCompany] = useState<ConfirmTarget | null>(null);
   const [confirmingSkillCategory, setConfirmingSkillCategory] = useState<ConfirmTarget | null>(null);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
+  // Motivo é obrigatório pra rejeitar (ver reviewDocument/reviewCompany) —
+  // rascunho por id, tanto pro clique quanto pro atalho de teclado 'r'.
+  const [documentReasonDrafts, setDocumentReasonDrafts] = useState<Record<string, string>>({});
+  const [companyReasonDrafts, setCompanyReasonDrafts] = useState<Record<string, string>>({});
+  const [documentReasonMissingId, setDocumentReasonMissingId] = useState<string | null>(null);
+  const [companyReasonMissingId, setCompanyReasonMissingId] = useState<string | null>(null);
 
   useEffect(() => {
     listPendingVerifications()
@@ -133,6 +139,13 @@ export default function AdminVerificacoesPage() {
     : (flatDocuments[0]?.id ?? null);
 
   async function handleReviewDocument(documentId: string, status: 'approved' | 'rejected'): Promise<void> {
+    if (status === 'rejected' && !documentReasonDrafts[documentId]?.trim()) {
+      setDocumentReasonMissingId(documentId);
+      document.getElementById(`document-reason-${documentId}`)?.focus();
+      return;
+    }
+    setDocumentReasonMissingId(null);
+
     if (!isConfirming(confirmingDocument, documentId, status)) {
       setConfirmingDocument({ id: documentId, status });
       return;
@@ -142,7 +155,11 @@ export default function AdminVerificacoesPage() {
     setActingId(documentId);
 
     try {
-      await reviewDocument(documentId, status);
+      if (status === 'rejected') {
+        await reviewDocument(documentId, status, documentReasonDrafts[documentId].trim());
+      } else {
+        await reviewDocument(documentId, status);
+      }
       setDocuments((current) => current.filter((document) => document.id !== documentId));
     } catch {
       setError('Não foi possível revisar o documento.');
@@ -194,6 +211,13 @@ export default function AdminVerificacoesPage() {
   });
 
   async function handleReviewCompany(companyId: string, status: 'approved' | 'rejected'): Promise<void> {
+    if (status === 'rejected' && !companyReasonDrafts[companyId]?.trim()) {
+      setCompanyReasonMissingId(companyId);
+      document.getElementById(`company-reason-${companyId}`)?.focus();
+      return;
+    }
+    setCompanyReasonMissingId(null);
+
     if (!isConfirming(confirmingCompany, companyId, status)) {
       setConfirmingCompany({ id: companyId, status });
       return;
@@ -203,7 +227,11 @@ export default function AdminVerificacoesPage() {
     setActingId(companyId);
 
     try {
-      await reviewCompany(companyId, status);
+      if (status === 'rejected') {
+        await reviewCompany(companyId, status, companyReasonDrafts[companyId].trim());
+      } else {
+        await reviewCompany(companyId, status);
+      }
       setCompanies((current) => current.filter((company) => company.id !== companyId));
     } catch {
       setError('Não foi possível revisar a empresa.');
@@ -308,6 +336,27 @@ export default function AdminVerificacoesPage() {
                         />
                       )
                     )}
+                    <div>
+                      <label
+                        htmlFor={`document-reason-${document.id}`}
+                        className="mb-1 block text-xs font-medium text-text-secondary"
+                      >
+                        Motivo da rejeição (obrigatório pra rejeitar)
+                      </label>
+                      <textarea
+                        id={`document-reason-${document.id}`}
+                        rows={2}
+                        placeholder="Ex.: foto não é do documento pedido"
+                        value={documentReasonDrafts[document.id] ?? ''}
+                        onChange={(event) =>
+                          setDocumentReasonDrafts((current) => ({ ...current, [document.id]: event.target.value }))
+                        }
+                        className="w-full rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+                      />
+                      {documentReasonMissingId === document.id && (
+                        <p className="mt-1 text-xs text-danger">Escreva o motivo antes de rejeitar.</p>
+                      )}
+                    </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
                         type="button"
@@ -396,7 +445,28 @@ export default function AdminVerificacoesPage() {
                   <p className="mt-1 text-sm text-danger">Nenhum documento enviado.</p>
                 )}
               </div>
-              <div className="mt-3.5 flex flex-wrap items-center gap-2">
+              <div className="mt-3.5">
+                <label
+                  htmlFor={`company-reason-${company.id}`}
+                  className="mb-1 block text-xs font-medium text-text-secondary"
+                >
+                  Motivo da rejeição (obrigatório pra rejeitar)
+                </label>
+                <textarea
+                  id={`company-reason-${company.id}`}
+                  rows={2}
+                  placeholder="Ex.: foto do cartão CNPJ ilegível"
+                  value={companyReasonDrafts[company.id] ?? ''}
+                  onChange={(event) =>
+                    setCompanyReasonDrafts((current) => ({ ...current, [company.id]: event.target.value }))
+                  }
+                  className="w-full rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+                />
+                {companyReasonMissingId === company.id && (
+                  <p className="mt-1 text-xs text-danger">Escreva o motivo antes de rejeitar.</p>
+                )}
+              </div>
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
                   variant={isConfirming(confirmingCompany, company.id, 'approved') ? 'danger' : 'success'}

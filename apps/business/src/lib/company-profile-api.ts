@@ -22,6 +22,7 @@ export interface CompanyProfileDetails {
   businessSegment: string | null;
   businessSegmentOther: string | null;
   verificationStatus: string;
+  rejectionReason: string | null;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
   jobsPosted: number;

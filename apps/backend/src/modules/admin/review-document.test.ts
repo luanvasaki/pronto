@@ -51,7 +51,7 @@ describe('reviewDocument', () => {
 
   it('rejeita revisar o mesmo documento duas vezes', async () => {
     const { admin, document } = await setupPendingDocument();
-    await reviewDocument(admin.id, document.id, 'rejected');
+    await reviewDocument(admin.id, document.id, 'rejected', 'Foto cortada');
 
     await expect(reviewDocument(admin.id, document.id, 'approved')).rejects.toThrow('já foi revisado');
   });
@@ -61,7 +61,7 @@ describe('reviewDocument', () => {
 
     const results = await Promise.allSettled([
       reviewDocument(admin.id, document.id, 'approved'),
-      reviewDocument(admin.id, document.id, 'rejected'),
+      reviewDocument(admin.id, document.id, 'rejected', 'Foto cortada'),
     ]);
 
     const fulfilled = results.filter((result) => result.status === 'fulfilled');
@@ -69,6 +69,21 @@ describe('reviewDocument', () => {
     expect(fulfilled).toHaveLength(1);
     expect(rejected).toHaveLength(1);
     expect((rejected[0] as PromiseRejectedResult).reason.message).toContain('já foi revisado');
+  });
+
+  it('exige motivo pra rejeitar', async () => {
+    const { admin, document } = await setupPendingDocument();
+
+    await expect(reviewDocument(admin.id, document.id, 'rejected')).rejects.toThrow('motivo da rejeição');
+  });
+
+  it('grava o motivo da rejeição no documento', async () => {
+    const { admin, document } = await setupPendingDocument();
+
+    await reviewDocument(admin.id, document.id, 'rejected', 'Foto não é do documento pedido');
+
+    const updated = await db.query.documents.findFirst({ where: eq(documents.id, document.id) });
+    expect(updated?.rejectionReason).toBe('Foto não é do documento pedido');
   });
 
   it('só marca o kycStatus como aprovado quando identidade e selfie estão aprovadas', async () => {
@@ -95,7 +110,7 @@ describe('reviewDocument', () => {
       .returning();
 
     await reviewDocument(admin.id, identityDocument.id, 'approved');
-    await reviewDocument(admin.id, selfieDocument.id, 'rejected');
+    await reviewDocument(admin.id, selfieDocument.id, 'rejected', 'Selfie não bate com o documento');
 
     const profile = await db.query.workerProfiles.findFirst({ where: eq(workerProfiles.userId, worker.id) });
     expect(profile?.kycStatus).toBe('rejected');
@@ -110,7 +125,7 @@ describe('reviewDocument', () => {
 
     // Documento de identidade rejeitado — trabalhador reenvia (nova
     // linha, upload-document.ts nunca atualiza a antiga).
-    await reviewDocument(admin.id, identityDocument.id, 'rejected');
+    await reviewDocument(admin.id, identityDocument.id, 'rejected', 'Foto cortada');
     const [resentIdentityDocument] = await db
       .insert(documents)
       .values({ workerId: worker.id, fileUrl: 'documents/x/y-v2.jpg', type: 'identity' })

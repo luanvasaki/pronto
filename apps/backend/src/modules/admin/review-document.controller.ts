@@ -14,8 +14,8 @@ export async function reviewDocumentHandler(req: Request, res: Response, next: N
       throw new HttpError(404, 'Documento não encontrado.');
     }
 
-    const { status } = req.body as { status?: string };
-    const result = await reviewDocument(adminUserId, documentId, status);
+    const { status, reason } = req.body as { status?: string; reason?: string };
+    const result = await reviewDocument(adminUserId, documentId, status, reason);
     res.status(200).json(result);
   } catch (error) {
     next(error);

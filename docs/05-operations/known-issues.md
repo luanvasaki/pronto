@@ -25,6 +25,7 @@
 
 - **Duplo significado de `applications.status = 'rejected'`** — usado tanto pra rejeição comum quanto pra "aprovação desfeita" (distinguido só por `removedAt`). Decisão deliberada, mas exige sempre checar os dois campos juntos.
 - **Design handoff (`design_handoff_pronto/`) descreve login por OTP de telefone**, nunca implementado — a autenticação real é e-mail/senha + Google. O handoff é referência visual desatualizada nesse ponto específico.
+- **Aprovar empresa sem documento enviado é bloqueado só no front, não no backend** — `apps/admin/src/app/admin/verificacoes/page.tsx` (`cannotApprove = !company.documentId`) desabilita o botão, mas `reviewCompany` (`apps/backend/src/modules/admin/review-company.ts`) aceita `status: 'approved'` de qualquer empresa `pending`, com ou sem `company_documents`. Achado ao mexer no motivo de rejeição (mesmo módulo) — não corrigido nesta tarefa por não ter sido pedido; um admin chamando a API direto (ou uma versão futura do front sem essa checagem) conseguiria aprovar sem nunca ter visto um documento.
 
 ## Perguntas em aberto (não são bugs, são decisões pendentes de negócio/produto)
 

@@ -25,6 +25,10 @@ export interface WorkerProfileDetails {
   guardianPhone: string | null;
   guardianAuthorizedAt: string | null;
   hasGuardianDocument: boolean;
+  documentRejectionReason: string | null;
+  selfieRejectionReason: string | null;
+  cnhRejectionReason: string | null;
+  guardianDocumentRejectionReason: string | null;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
   totalShiftsCompleted: number;

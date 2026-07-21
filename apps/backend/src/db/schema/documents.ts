@@ -36,6 +36,11 @@ export const documents = pgTable('documents', {
   status: documentStatusEnum('status').notNull().default('pending'),
   reviewedBy: uuid('reviewed_by').references(() => users.id),
   reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+  // Só preenchido quando status === 'rejected' — texto livre do admin
+  // explicando o motivo (ver review-document.ts). Reenviar cria uma linha
+  // nova (nunca atualiza esta), então o motivo do documento antigo fica
+  // preservado no histórico, sem precisar ser limpo.
+  rejectionReason: text('rejection_reason'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

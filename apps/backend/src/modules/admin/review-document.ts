@@ -38,9 +38,13 @@ export async function reviewDocument(
   adminUserId: string,
   documentId: string,
   status: string | undefined,
+  reason?: string,
 ): Promise<ReviewDocumentResult> {
   if (!status || !isReviewStatus(status)) {
     throw new HttpError(400, 'Status inválido — use "approved" ou "rejected".');
+  }
+  if (status === 'rejected' && !reason?.trim()) {
+    throw new HttpError(400, 'É preciso informar o motivo da rejeição.');
   }
 
   const document = await db.query.documents.findFirst({ where: eq(documents.id, documentId) });
@@ -59,7 +63,13 @@ export async function reviewDocument(
   return db.transaction(async (tx) => {
     const [updated] = await tx
       .update(documents)
-      .set({ status, reviewedBy: adminUserId, reviewedAt: new Date(), updatedAt: new Date() })
+      .set({
+        status,
+        rejectionReason: status === 'rejected' ? reason!.trim() : null,
+        reviewedBy: adminUserId,
+        reviewedAt: new Date(),
+        updatedAt: new Date(),
+      })
       .where(and(eq(documents.id, documentId), eq(documents.status, 'pending')))
       .returning();
     if (!updated) {

@@ -19,7 +19,7 @@ Conta de login. `email` nullable (por conveniência de fixture de teste, não po
 Extensão 1:1 de `users` (`userId` é PK e FK, cascade). Dados pessoais, `birthDate` (decide bloqueio de menor de 16 e exigência de responsável pra 16-17), campos de responsável, `homeLat/Lng` + `homeAddressLabel` (público) vs. `homeAddressFull` (privado, nunca exposto pra empresa), `searchRadiusKm` (default 10), `kycStatus`, `avgRating`/`avgCategoryScores`. "Horas de voo" (turnos concluídos, horas trabalhadas, etc.) são sempre recalculadas ao vivo a partir de `shifts` — não existe coluna acumulada pra isso. Único: `cpf`.
 
 ### `companies`
-`ownerUserId` único (modelo mono-dono deliberado — um usuário só por empresa hoje). `personType` (jurídica/física) decide se `cnpj` ou `cpf` está preenchido. `businessSegment` (bar/restaurante/buffet/hotel/eventos/casa_noturna/outro). `verificationStatus`. Vagas publicadas são sempre contadas ao vivo (`count(*)` em `jobs`) — não existe coluna acumulada pra isso. `isDemo` marca dados de demonstração removíveis em lote pelo admin.
+`ownerUserId` único (modelo mono-dono deliberado — um usuário só por empresa hoje). `personType` (jurídica/física) decide se `cnpj` ou `cpf` está preenchido. `businessSegment` (bar/restaurante/buffet/hotel/eventos/casa_noturna/outro). `verificationStatus`, `rejectionReason` (texto livre do admin, só preenchido quando `rejected`; limpo no reenvio de documento). Vagas publicadas são sempre contadas ao vivo (`count(*)` em `jobs`) — não existe coluna acumulada pra isso. `isDemo` marca dados de demonstração removíveis em lote pelo admin.
 
 ### `company_documents`
 Documento de identidade de empresa pessoa física. Sem cascade próprio — a decisão de verificação é sobre a empresa inteira.
@@ -52,7 +52,7 @@ Quem foi avaliado é sempre "a outra ponta do mesmo turno" — não é uma colun
 Campos mínimos, porque um split de verdade seria feito por um PSP, não por um ledger próprio. `status` (pending/charged/released/confirmed/disputed/failed/refunded). Hoje, `charged`/`released`/`confirmed`/`disputed`/`failed` são os únicos estados realmente alcançados em produção — `refunded` nunca é escrito (ver [`05-operations/known-issues.md`](../05-operations/known-issues.md)). Único: `shiftId`.
 
 ### `documents`
-Documento de KYC do trabalhador (a empresa não tem upload equivalente hoje, exceto pessoa física via `company_documents`). Cascade (é extensão de identidade). `type` (identity/selfie/cnh/guardian_identity — os dois últimos adicionados em migrations posteriores, conforme o KYC evoluiu). `status`, `reviewedBy`/`reviewedAt`.
+Documento de KYC do trabalhador (a empresa não tem upload equivalente hoje, exceto pessoa física via `company_documents`). Cascade (é extensão de identidade). `type` (identity/selfie/cnh/guardian_identity — os dois últimos adicionados em migrations posteriores, conforme o KYC evoluiu). `status`, `reviewedBy`/`reviewedAt`, `rejectionReason` (texto livre do admin, só preenchido quando `rejected`; reenvio nunca atualiza a linha antiga, então o motivo do documento anterior fica preservado no histórico).
 
 ### `refresh_tokens`
 Só o hash do token (nunca o valor em texto puro), `expiresAt`, `revokedAt`. Cascade. Único: `tokenHash`.

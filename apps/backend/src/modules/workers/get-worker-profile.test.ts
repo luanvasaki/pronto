@@ -213,6 +213,60 @@ describe('getWorkerProfile', () => {
     expect(afterUpload.hasSelfie).toBe(false);
   });
 
+  it('documento reprovado não conta como "has" — precisa reaparecer pra reenvio — e expõe o motivo', async () => {
+    const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await upsertWorkerProfile(user.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      photoUrl: undefined,
+      bio: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
+    });
+    await db.insert(documents).values({
+      workerId: user.id,
+      fileUrl: 'documents/fake.jpg',
+      status: 'rejected',
+      rejectionReason: 'Foto não é do documento pedido',
+    });
+
+    const result = await getWorkerProfile(user.id);
+
+    expect(result.hasDocument).toBe(false);
+    expect(result.documentRejectionReason).toBe('Foto não é do documento pedido');
+  });
+
+  it('reenviar documento (nova linha aprovada) volta a contar como "has" e some com o motivo', async () => {
+    const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    await upsertWorkerProfile(user.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      photoUrl: undefined,
+      bio: undefined,
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
+    });
+    await db.insert(documents).values({
+      workerId: user.id,
+      fileUrl: 'documents/fake-v1.jpg',
+      status: 'rejected',
+      rejectionReason: 'Foto não é do documento pedido',
+      createdAt: new Date(Date.now() - 1000),
+    });
+    await db.insert(documents).values({ workerId: user.id, fileUrl: 'documents/fake-v2.jpg' });
+
+    const result = await getWorkerProfile(user.id);
+
+    expect(result.hasDocument).toBe(true);
+    expect(result.documentRejectionReason).toBeNull();
+  });
+
   it('isMinor vem false e sem dados de responsável pra trabalhador maior de idade', async () => {
     const [user] = await db.insert(users).values({ phone: TEST_PHONE }).returning();
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();

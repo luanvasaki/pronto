@@ -17,5 +17,6 @@
 ## Notas
 
 - Todas as ações de aprovar/rejeitar exigem confirmação de duplo clique.
+- Rejeitar (documento de trabalhador ou empresa) exige preencher um motivo antes de armar a confirmação — clique ou atalho de teclado `r` sem texto só focam o campo, sem chamar a API. O motivo persiste (`rejection_reason`) e aparece pro trabalhador/empresa saber o que corrigir antes de reenviar.
 - Preview de documento (imagem/PDF) é buscado via fetch autenticado que vira blob URL — se o fetch falhar, os botões de aprovar/rejeitar continuam funcionando **sem preview visível**, sem aviso disso na tela (ver [`05-operations/known-issues.md`](../../05-operations/known-issues.md)).
 - Lista de "Pagamentos com falha" é só leitura — texto explícito na própria tela reconhecendo que não há retry automático.

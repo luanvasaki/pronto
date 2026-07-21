@@ -55,6 +55,7 @@ const PROFILE: CompanyProfileDetails = {
   businessSegment: null,
   businessSegmentOther: null,
   verificationStatus: 'approved',
+  rejectionReason: null,
   avgRating: null,
   avgCategoryScores: null,
   jobsPosted: 0,

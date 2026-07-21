@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, documents, jobs, shifts, workerProfiles, workerSkills } from '../../db/schema';
 import { updateWorkerRatingAggregate } from '../ratings/update-rating-aggregates';
@@ -36,6 +36,13 @@ export interface WorkerProfileDetails {
   hasSelfie: boolean;
   hasCnhDocument: boolean;
   hasGuardianDocument: boolean;
+  // Motivo do mais recente de cada tipo, só quando ele está `rejected` —
+  // é o que a tela de cadastro/documento mostra pro trabalhador saber o
+  // que corrigir antes de reenviar (ver review-document.ts).
+  documentRejectionReason: string | null;
+  selfieRejectionReason: string | null;
+  cnhRejectionReason: string | null;
+  guardianDocumentRejectionReason: string | null;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
   totalShiftsCompleted: number;
@@ -59,11 +66,37 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
   }
 
   const skills = await db.query.workerSkills.findMany({ where: eq(workerSkills.workerId, userId) });
-  const workerDocuments = await db.query.documents.findMany({ where: eq(documents.workerId, userId) });
-  const hasDocument = workerDocuments.some((document) => document.type === 'identity');
-  const hasSelfie = workerDocuments.some((document) => document.type === 'selfie');
-  const hasCnhDocument = workerDocuments.some((document) => document.type === 'cnh');
-  const hasGuardianDocument = workerDocuments.some((document) => document.type === 'guardian_identity');
+  const workerDocuments = await db.query.documents.findMany({
+    where: eq(documents.workerId, userId),
+    orderBy: desc(documents.createdAt),
+  });
+  // Mais recente de cada tipo, não "existe algum já enviado" — reenviar
+  // nunca atualiza a linha antiga (sempre insere uma nova, ver
+  // upload-document.ts), então um tipo com o mais recente `rejected`
+  // precisa contar como "falta enviar" de novo, senão a tela de cadastro
+  // (ver cadastro/documento/page.tsx) acha que já está tudo enviado e
+  // nunca deixa o trabalhador reenviar o documento certo.
+  const latestByType = new Map<string, (typeof workerDocuments)[number]>();
+  for (const document of workerDocuments) {
+    if (!latestByType.has(document.type)) {
+      latestByType.set(document.type, document);
+    }
+  }
+  const hasDocument = latestByType.get('identity')?.status !== 'rejected' && latestByType.has('identity');
+  const hasSelfie = latestByType.get('selfie')?.status !== 'rejected' && latestByType.has('selfie');
+  const hasCnhDocument = latestByType.get('cnh')?.status !== 'rejected' && latestByType.has('cnh');
+  const hasGuardianDocument =
+    latestByType.get('guardian_identity')?.status !== 'rejected' && latestByType.has('guardian_identity');
+  const documentRejectionReason =
+    latestByType.get('identity')?.status === 'rejected' ? (latestByType.get('identity')?.rejectionReason ?? null) : null;
+  const selfieRejectionReason =
+    latestByType.get('selfie')?.status === 'rejected' ? (latestByType.get('selfie')?.rejectionReason ?? null) : null;
+  const cnhRejectionReason =
+    latestByType.get('cnh')?.status === 'rejected' ? (latestByType.get('cnh')?.rejectionReason ?? null) : null;
+  const guardianDocumentRejectionReason =
+    latestByType.get('guardian_identity')?.status === 'rejected'
+      ? (latestByType.get('guardian_identity')?.rejectionReason ?? null)
+      : null;
   const isMinor = checkIsMinor(profile.birthDate);
 
   // "Horas de voo": sempre calculadas ao vivo a partir dos turnos —
@@ -136,6 +169,10 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
     hasSelfie,
     hasCnhDocument,
     hasGuardianDocument,
+    documentRejectionReason,
+    selfieRejectionReason,
+    cnhRejectionReason,
+    guardianDocumentRejectionReason,
     avgRating: profile.avgRating,
     avgCategoryScores: profile.avgCategoryScores ?? null,
     totalShiftsCompleted,

@@ -50,3 +50,5 @@ Estados (`aguardando`/`atrasado`/`chegou`/`concluido`) calculados na hora, compa
 ## Cadastro e verificação
 
 Upsert do perfil (`upsert-company-profile.ts`) — trocar razão social/CNPJ/CPF depois de `approved` **reseta `verificationStatus` pra `pending`** (o admin verificou os dados antigos, não os novos). Reenviar documento depois de `rejected` também volta pra `pending`, senão a empresa ficaria travada pra sempre (`create-job` exige aprovação).
+
+`reviewCompany` (`modules/admin/review-company.ts`) exige `reason` no corpo quando `status: 'rejected'` (400 sem isso) — gravado em `companies.rejection_reason`, devolvido por `get-company-profile.ts` e mostrado no banner de `/perfil` (business). Reenviar documento depois de `rejected` limpa o campo (`upload-company-document.ts`), pra não sobrar motivo velho junto de um novo ciclo de revisão. Enquanto `verificationStatus !== 'approved'`, o app business mostra um banner persistente no layout (`VerificationBanner`, visível em qualquer tela, não só `/perfil` ou `/vagas/nova`).

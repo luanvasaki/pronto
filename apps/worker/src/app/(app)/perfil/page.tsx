@@ -283,6 +283,21 @@ export default function PerfilPage() {
       </div>
       {photoError && <p className="-mt-4 text-xs text-danger">{photoError}</p>}
 
+      {profile.kycStatus === 'rejected' && (
+        <div className="rounded-2xl border border-danger/30 bg-danger/10 p-4">
+          <p className="text-sm font-semibold text-danger">
+            Um dos seus documentos foi reprovado — envie um novo pra tentar de novo.
+          </p>
+          <button
+            type="button"
+            onClick={() => router.push('/cadastro/documento')}
+            className="mt-2 text-sm font-semibold text-primary underline underline-offset-2"
+          >
+            Ver motivo e reenviar
+          </button>
+        </div>
+      )}
+
       <div className="flex gap-3">
         <StatCard label="horas trabalhadas" value={`${profile.totalHoursWorked}h`} />
         <StatCard label="escalas" value={String(profile.totalShiftsCompleted)} />

@@ -52,7 +52,7 @@ describe('reviewCompany', () => {
 
   it('rejeita revisar a mesma empresa duas vezes', async () => {
     const { admin, company } = await setupPendingCompany();
-    await reviewCompany(admin.id, company.id, 'rejected');
+    await reviewCompany(admin.id, company.id, 'rejected', 'Documento ilegível');
 
     await expect(reviewCompany(admin.id, company.id, 'approved')).rejects.toThrow('já foi revisada');
   });
@@ -62,7 +62,7 @@ describe('reviewCompany', () => {
 
     const results = await Promise.allSettled([
       reviewCompany(admin.id, company.id, 'approved'),
-      reviewCompany(admin.id, company.id, 'rejected'),
+      reviewCompany(admin.id, company.id, 'rejected', 'Documento ilegível'),
     ]);
 
     const fulfilled = results.filter((result) => result.status === 'fulfilled');
@@ -70,5 +70,31 @@ describe('reviewCompany', () => {
     expect(fulfilled).toHaveLength(1);
     expect(rejected).toHaveLength(1);
     expect((rejected[0] as PromiseRejectedResult).reason.message).toContain('já foi revisada');
+  });
+
+  it('exige motivo pra rejeitar', async () => {
+    const { admin, company } = await setupPendingCompany();
+
+    await expect(reviewCompany(admin.id, company.id, 'rejected')).rejects.toThrow('motivo da rejeição');
+    await expect(reviewCompany(admin.id, company.id, 'rejected', '   ')).rejects.toThrow('motivo da rejeição');
+  });
+
+  it('grava o motivo da rejeição', async () => {
+    const { admin, company } = await setupPendingCompany();
+
+    await reviewCompany(admin.id, company.id, 'rejected', 'Foto do documento cortada, não dá pra ler o CNPJ.');
+
+    const updated = await db.query.companies.findFirst({ where: eq(companies.id, company.id) });
+    expect(updated?.rejectionReason).toBe('Foto do documento cortada, não dá pra ler o CNPJ.');
+  });
+
+  it('não grava motivo quando aprova', async () => {
+    const { admin, company } = await setupPendingCompany();
+
+    const result = await reviewCompany(admin.id, company.id, 'approved');
+
+    expect(result.verificationStatus).toBe('approved');
+    const updated = await db.query.companies.findFirst({ where: eq(companies.id, company.id) });
+    expect(updated?.rejectionReason).toBeNull();
   });
 });

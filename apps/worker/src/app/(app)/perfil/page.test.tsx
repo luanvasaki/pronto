@@ -62,6 +62,10 @@ const BASE_PROFILE: WorkerProfileDetails = {
   guardianPhone: null,
   guardianAuthorizedAt: null,
   hasGuardianDocument: false,
+  documentRejectionReason: null,
+  selfieRejectionReason: null,
+  cnhRejectionReason: null,
+  guardianDocumentRejectionReason: null,
   avgRating: '4.5',
   avgCategoryScores: { pontualidade: '4.7', educacao: '4.3' },
   totalShiftsCompleted: 3,
@@ -172,6 +176,25 @@ describe('PerfilPage', () => {
     await screen.findByText('Ana Souza');
     expect(screen.getByText('Documento em análise')).toBeInTheDocument();
     expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
+  it('mostra aviso de documento reprovado com link pra reenviar', async () => {
+    const user = userEvent.setup();
+    renderWithProfile({ ...BASE_PROFILE, kycStatus: 'rejected' });
+
+    await screen.findByText('Ana Souza');
+    expect(screen.getByText('Um dos seus documentos foi reprovado — envie um novo pra tentar de novo.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Ver motivo e reenviar' }));
+
+    expect(pushMock).toHaveBeenCalledWith('/cadastro/documento');
+  });
+
+  it('não mostra aviso de documento reprovado quando o kyc não foi recusado', async () => {
+    renderWithProfile(BASE_PROFILE);
+
+    await screen.findByText('Ana Souza');
+    expect(screen.queryByText(/foi reprovado/)).not.toBeInTheDocument();
   });
 
   it('mostra mensagem quando o perfil não está disponível', () => {

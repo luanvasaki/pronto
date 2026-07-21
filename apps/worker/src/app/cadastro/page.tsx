@@ -14,6 +14,7 @@ import {
   listSkillCategories,
   SkillCategory,
 } from '@shift/shared';
+import { AddressFields, buildAddressLabel } from '../../components/ui/address-fields';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Logo } from '../../components/ui/logo';
@@ -39,7 +40,11 @@ export default function CadastroPage() {
   const [fullName, setFullName] = useState('');
   const [cpf, setCpf] = useState('');
   const [phone, setPhone] = useState('');
-  const [homeAddressFull, setHomeAddressFull] = useState('');
+  const [cep, setCep] = useState('');
+  const [street, setStreet] = useState('');
+  const [number, setNumber] = useState('');
+  const [complement, setComplement] = useState('');
+  const [resolvedAddress, setResolvedAddress] = useState({ neighborhood: '', city: '', state: '' });
   const [birthDate, setBirthDate] = useState('');
   const [cnhCategory, setCnhCategory] = useState('');
   const [guardianFullName, setGuardianFullName] = useState('');
@@ -133,7 +138,8 @@ export default function CadastroPage() {
   if (fullName.trim().length < 2) missingFields.push('nome completo');
   if (!isValidCpf(cpf)) missingFields.push('CPF');
   if (phone.length < 10 || phone.length > 11) missingFields.push('telefone');
-  if (homeAddressFull.trim().length < 8) missingFields.push('endereço completo');
+  if (street.trim().length < 2) missingFields.push('rua');
+  if (number.trim().length < 1) missingFields.push('número');
   if (!birthDate) missingFields.push('data de nascimento');
   if (selectedIds.length === 0) missingFields.push('ao menos uma categoria');
   const isUnderage = birthDate.length > 0 && calculateAge(birthDate, new Date()) < MIN_WORKER_AGE_YEARS;
@@ -165,7 +171,7 @@ export default function CadastroPage() {
         photoUrl: useGooglePhoto ? googlePhotoUrl! : undefined,
         cpf,
         phone,
-        homeAddressFull: homeAddressFull.trim(),
+        homeAddressFull: buildAddressLabel({ street, number, complement, ...resolvedAddress }),
         birthDate,
         cnhCategory: cnhCategory || undefined,
         experienceByCategory,
@@ -235,13 +241,19 @@ export default function CadastroPage() {
         </div>
 
         <div>
-          <Input
-            id="homeAddressFull"
-            label="Endereço completo"
-            type="text"
-            placeholder="Rua, número, bairro, cidade - UF"
-            value={homeAddressFull}
-            onChange={(event) => setHomeAddressFull(event.target.value)}
+          <AddressFields
+            cep={cep}
+            onChangeCep={setCep}
+            street={street}
+            onChangeStreet={setStreet}
+            number={number}
+            onChangeNumber={setNumber}
+            complement={complement}
+            onChangeComplement={setComplement}
+            neighborhood={resolvedAddress.neighborhood}
+            city={resolvedAddress.city}
+            state={resolvedAddress.state}
+            onResolvedCep={setResolvedAddress}
           />
           <p className="mt-1.5 text-xs text-text-secondary">
             Só pra confirmar sua identidade — protegido, empresas nunca veem esse endereço.

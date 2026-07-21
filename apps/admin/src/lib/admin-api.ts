@@ -84,20 +84,22 @@ export function getAdminGrowthMetrics(): Promise<AdminGrowthMetrics> {
 export function reviewDocument(
   documentId: string,
   status: 'approved' | 'rejected',
+  reason?: string,
 ): Promise<{ id: string; status: string }> {
   return apiFetch(`/admin/documents/${documentId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, reason }),
   });
 }
 
 export function reviewCompany(
   companyId: string,
   status: 'approved' | 'rejected',
+  reason?: string,
 ): Promise<{ id: string; verificationStatus: string }> {
   return apiFetch(`/admin/companies/${companyId}/verification`, {
     method: 'PATCH',
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, reason }),
   });
 }
 

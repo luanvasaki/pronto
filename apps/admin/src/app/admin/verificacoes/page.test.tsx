@@ -219,6 +219,7 @@ describe('AdminVerificacoesPage', () => {
 
     render(<AdminVerificacoesPage />);
     await screen.findByText('Bar do Zé');
+    await user.type(screen.getByLabelText(/motivo da rejeição/i), 'Foto do cartão CNPJ ilegível');
     await user.click(screen.getByRole('button', { name: /^rejeitar$/i }));
 
     expect(reviewCompanyMock).not.toHaveBeenCalled();
@@ -226,8 +227,23 @@ describe('AdminVerificacoesPage', () => {
 
     await user.click(confirmButton);
 
-    await waitFor(() => expect(reviewCompanyMock).toHaveBeenCalledWith('company-1', 'rejected'));
+    await waitFor(() =>
+      expect(reviewCompanyMock).toHaveBeenCalledWith('company-1', 'rejected', 'Foto do cartão CNPJ ilegível'),
+    );
     await waitFor(() => expect(screen.queryByText('Bar do Zé')).not.toBeInTheDocument());
+  });
+
+  it('não deixa rejeitar uma empresa sem preencher o motivo', async () => {
+    listPendingVerificationsMock.mockResolvedValue({ documents: [], companies: [PENDING_COMPANY], skillCategories: [] });
+    const user = userEvent.setup();
+
+    render(<AdminVerificacoesPage />);
+    await screen.findByText('Bar do Zé');
+    await user.click(screen.getByRole('button', { name: /^rejeitar$/i }));
+
+    expect(await screen.findByText('Escreva o motivo antes de rejeitar.')).toBeInTheDocument();
+    expect(reviewCompanyMock).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /confirmar rejeição/i })).not.toBeInTheDocument();
   });
 
   it('mostra erro e mantém a empresa na lista quando revisar falha', async () => {
@@ -237,6 +253,7 @@ describe('AdminVerificacoesPage', () => {
 
     render(<AdminVerificacoesPage />);
     await screen.findByText('Bar do Zé');
+    await user.type(screen.getByLabelText(/motivo da rejeição/i), 'Foto do cartão CNPJ ilegível');
     await user.click(screen.getByRole('button', { name: /^rejeitar$/i }));
     await user.click(await screen.findByRole('button', { name: /confirmar rejeição/i }));
 
@@ -438,7 +455,7 @@ describe('AdminVerificacoesPage', () => {
     await waitFor(() => expect(reviewDocumentMock).toHaveBeenCalledWith('doc-1', 'approved'));
   });
 
-  it('rejeita o documento em destaque com "r" duas vezes', async () => {
+  it('rejeita o documento em destaque com "r" duas vezes, depois de preencher o motivo', async () => {
     listPendingVerificationsMock.mockResolvedValue({ documents: [PENDING_DOCUMENT], companies: [], skillCategories: [] });
     reviewDocumentMock.mockResolvedValue({ id: 'doc-1', status: 'rejected' });
     const user = userEvent.setup();
@@ -446,11 +463,34 @@ describe('AdminVerificacoesPage', () => {
     render(<AdminVerificacoesPage />);
     await screen.findByText('Rafael Lima');
 
+    // Sem motivo, "r" só foca o campo de texto — não arma a confirmação.
+    await user.keyboard('r');
+    expect(screen.queryByRole('button', { name: /confirmar rejeição/i })).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/motivo da rejeição/i)).toHaveFocus();
+
+    await user.type(screen.getByLabelText(/motivo da rejeição/i), 'Foto não é do documento pedido');
+    await user.tab();
+
     await user.keyboard('r');
     expect(await screen.findByRole('button', { name: /confirmar rejeição/i })).toBeInTheDocument();
 
     await user.keyboard('r');
-    await waitFor(() => expect(reviewDocumentMock).toHaveBeenCalledWith('doc-1', 'rejected'));
+    await waitFor(() =>
+      expect(reviewDocumentMock).toHaveBeenCalledWith('doc-1', 'rejected', 'Foto não é do documento pedido'),
+    );
+  });
+
+  it('não deixa rejeitar um documento sem preencher o motivo', async () => {
+    listPendingVerificationsMock.mockResolvedValue({ documents: [PENDING_DOCUMENT], companies: [], skillCategories: [] });
+    const user = userEvent.setup();
+
+    render(<AdminVerificacoesPage />);
+    await screen.findByText('Rafael Lima');
+    await user.click(screen.getByRole('button', { name: /^rejeitar$/i }));
+
+    expect(await screen.findByText('Escreva o motivo antes de rejeitar.')).toBeInTheDocument();
+    expect(reviewDocumentMock).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /confirmar rejeição/i })).not.toBeInTheDocument();
   });
 
   it('cancela a confirmação pendente do atalho de teclado com Esc', async () => {

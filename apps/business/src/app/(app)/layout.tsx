@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sidebar } from '../../components/ui/sidebar';
 import { Topbar } from '../../components/ui/topbar';
+import { VerificationBanner } from '../../components/ui/verification-banner';
 import { useRequireAuth } from '../../hooks/use-require-auth';
 import {
   CheckedInNotification,
@@ -162,6 +163,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             pendingRatingsCount={pendingRatingsCount}
             pendingRatingsNotifications={pendingRatingsNotifications}
           />
+          {profile && (
+            <VerificationBanner verificationStatus={profile.verificationStatus} rejectionReason={profile.rejectionReason} />
+          )}
           <div className="flex-1 overflow-y-auto p-4 lg:p-7">{children}</div>
         </div>
       </div>
