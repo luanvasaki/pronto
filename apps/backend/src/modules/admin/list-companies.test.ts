@@ -1,8 +1,20 @@
 import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
-import { applications, companies, jobs, payments, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
+import {
+  applications,
+  companies,
+  jobs,
+  loginConsents,
+  payments,
+  shifts,
+  skillCategories,
+  users,
+  workerProfiles,
+} from '../../db/schema';
 import { createApplication } from '../applications/create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { PaymentGateway } from '../payments/payment-gateway';
 import { checkIn } from '../shifts/check-in';
@@ -43,6 +55,7 @@ describe('listAdminCompanies', () => {
       }
       await db.delete(companies).where(eq(companies.ownerUserId, owner.id));
     }
+    if (owner) await db.delete(loginConsents).where(eq(loginConsents.userId, owner.id));
     await db.delete(users).where(eq(users.phone, WORKER_PHONE));
     await db.delete(users).where(eq(users.phone, OWNER_PHONE));
     await db.delete(skillCategories).where(eq(skillCategories.name, TEST_CATEGORY_NAME));
@@ -79,7 +92,7 @@ describe('listAdminCompanies', () => {
         endsAt: TOMORROW_PLUS_5H,
       })
       .returning();
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
@@ -95,5 +108,71 @@ describe('listAdminCompanies', () => {
     expect(found?.logoUrl).toBe('/uploads/public/beta-logo.jpg');
     expect(found?.jobsPosted).toBeGreaterThanOrEqual(1);
     expect(found?.shiftsCompleted).toBeGreaterThanOrEqual(1);
+  });
+
+  it('inclui o histórico de aceite de termos (cadastro, login e vagas com termo de menores)', async () => {
+    const [owner] = await db
+      .insert(users)
+      .values({
+        phone: OWNER_PHONE,
+        email: OWNER_EMAIL,
+        termsAcceptedAt: new Date('2026-01-05T10:00:00.000Z'),
+        termsVersion: 'lc-terms-1.1',
+        termsIpAddress: '203.0.113.20',
+      })
+      .returning();
+    await db.insert(loginConsents).values({
+      userId: owner.id,
+      version: 'lc-login-1.0',
+      acceptedAt: new Date('2026-01-06T10:00:00.000Z'),
+      ipAddress: '203.0.113.21',
+    });
+    const [company] = await db
+      .insert(companies)
+      .values({
+        ownerUserId: owner.id,
+        legalName: 'Espaço de Eventos Delta Ltda',
+        tradeName: 'Espaço Delta',
+        cnpj: TEST_CNPJ,
+        verificationStatus: 'approved',
+      })
+      .returning();
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    const [job] = await db
+      .insert(jobs)
+      .values({
+        companyId: company.id,
+        categoryId: category.id,
+        description: 'Vaga de teste pra menores de 16-17 anos.',
+        addressLabel: 'Endereço de teste',
+        locationLat: -23.55,
+        locationLng: -46.63,
+        positionsTotal: 1,
+        payAmount: '150.00',
+        startsAt: TOMORROW,
+        endsAt: TOMORROW_PLUS_5H,
+        minorsAllowed: true,
+        minorsTermsAcceptedAt: new Date('2026-01-07T10:00:00.000Z'),
+        minorsTermsVersion: 'lc-minors-1.1',
+        minorsTermsIpAddress: '203.0.113.22',
+      })
+      .returning();
+
+    const result = await listAdminCompanies();
+
+    const found = result.find((row) => row.id === company.id);
+    expect(found?.termsAcceptedAt).toEqual(new Date('2026-01-05T10:00:00.000Z'));
+    expect(found?.termsVersion).toBe('lc-terms-1.1');
+    expect(found?.loginTermsVersion).toBe('lc-login-1.0');
+    expect(found?.loginTermsIpAddress).toBe('203.0.113.21');
+    expect(found?.minorsTermsJobs).toEqual([
+      {
+        jobId: job.id,
+        description: 'Vaga de teste pra menores de 16-17 anos.',
+        minorsTermsAcceptedAt: new Date('2026-01-07T10:00:00.000Z'),
+        minorsTermsVersion: 'lc-minors-1.1',
+        minorsTermsIpAddress: '203.0.113.22',
+      },
+    ]);
   });
 });

@@ -8,7 +8,6 @@ import { Button } from '../../components/ui/button';
 import { GoogleLoginButton } from '../../components/ui/google-login-button';
 import { Input } from '../../components/ui/input';
 import { Logo } from '../../components/ui/logo';
-import { TermsCheckbox } from '../../components/ui/terms-checkbox';
 import { useRedirectIfAuthenticated } from '../../hooks/use-redirect-if-authenticated';
 
 export default function EntrarPage() {
@@ -16,7 +15,6 @@ export default function EntrarPage() {
   const { isChecking } = useRedirectIfAuthenticated('/painel');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,19 +36,12 @@ export default function EntrarPage() {
     }
   }
 
-  /**
-   * O backend só exige aceite dos termos pra CRIAR conta — quem já tem
-   * conta via Google faz login direto, sem precisar marcar o checkbox
-   * de novo (ver google-login.ts). Por isso o botão não fica travado
-   * atrás do checkbox: só pedimos pra marcar se o backend responder
-   * que é preciso (ou seja, só na primeira vez, pra conta nova).
-   */
   async function handleGoogleSuccess(idToken: string): Promise<void> {
     setError(null);
     setIsSubmitting(true);
 
     try {
-      await googleLogin(idToken, termsAccepted);
+      await googleLogin(idToken);
       router.push('/painel');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível entrar com o Google.');
@@ -85,11 +76,6 @@ export default function EntrarPage() {
         </div>
 
         <GoogleLoginButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
-
-        <TermsCheckbox checked={termsAccepted} onChange={setTermsAccepted} id="terms-accepted-entrar" />
-        <p className="-mt-3 text-xs text-text-secondary">
-          Só necessário se essa for sua primeira vez entrando com o Google.
-        </p>
 
         <div className="flex items-center gap-3 text-xs font-medium text-text-secondary">
           <span className="h-px flex-1 bg-border" />

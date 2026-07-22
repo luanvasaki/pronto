@@ -13,6 +13,8 @@ import {
   workerProfiles,
 } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { withdrawApplication } from '../applications/withdraw-application';
 import { PaymentGateway } from '../payments/payment-gateway';
@@ -58,7 +60,7 @@ async function createCompanyAndJob(ownerPhone: string, cnpj: string, categoryId:
 }
 
 async function completeShift(workerId: string, ownerId: string, jobId: string) {
-  const application = await createApplication(workerId, jobId, true);
+  const application = await createApplication(workerId, jobId, CONSENT);
   await updateApplicationStatus(ownerId, application.id, 'approved');
   const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
   if (!shift) throw new Error('Turno não foi criado no setup do teste.');
@@ -357,7 +359,7 @@ describe('getWorkerProfile', () => {
       })
       .returning();
 
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
@@ -430,7 +432,7 @@ describe('getWorkerProfile', () => {
     await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
 
     const { owner, job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
@@ -552,7 +554,7 @@ describe('getWorkerProfile', () => {
     });
     await db.update(workerProfiles).set({ kycStatus: 'approved' }).where(eq(workerProfiles.userId, worker.id));
     const { job } = await createCompanyAndJob(OWNER_PHONE, TEST_CNPJ, category.id);
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await withdrawApplication(worker.id, application.id);
 
     const result = await getWorkerProfile(worker.id);
@@ -581,13 +583,13 @@ describe('getWorkerProfile', () => {
     await completeShift(worker.id, owner.id, job.id);
 
     const noShowJob = await createJobForCompany(company.id, category.id);
-    const noShowApplication = await createApplication(worker.id, noShowJob.id, true);
+    const noShowApplication = await createApplication(worker.id, noShowJob.id, CONSENT);
     await updateApplicationStatus(owner.id, noShowApplication.id, 'approved');
     const noShowShift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, noShowApplication.id) });
     await db.update(shifts).set({ status: 'no_show' }).where(eq(shifts.id, noShowShift!.id));
 
     const cancelledJob = await createJobForCompany(company.id, category.id);
-    const cancelledApplication = await createApplication(worker.id, cancelledJob.id, true);
+    const cancelledApplication = await createApplication(worker.id, cancelledJob.id, CONSENT);
     await updateApplicationStatus(owner.id, cancelledApplication.id, 'approved');
     const cancelledShift = await db.query.shifts.findFirst({
       where: eq(shifts.applicationId, cancelledApplication.id),

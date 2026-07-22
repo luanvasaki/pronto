@@ -6,7 +6,7 @@
 
 | Rota | Função |
 |---|---|
-| `GET/PUT /company-profile` | Ver/atualizar perfil da empresa |
+| `GET/PUT /company-profile` | Ver/atualizar perfil da empresa (`GET` inclui `needsTermsAcceptance`/`hasAcceptedLoginTerms` — ver [`05-operations/auth-and-security.md`](../../05-operations/auth-and-security.md)) |
 | `GET /company-profile/ratings` | Avaliações recebidas |
 | `GET /company-profile/notifications` | Sino de notificações |
 | `GET /company-profile/dashboard` | Painel (cobertura 48h + ações) |

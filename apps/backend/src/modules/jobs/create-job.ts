@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies, jobs, skillCategories } from '../../db/schema';
+import { getLatestConsentDocument } from '../consent-documents/get-consent-document';
 import { HttpError } from '../../shared/errors/http-error';
-import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
 import { JobInput, validateJobInput } from './job-input-validation';
 import { JobResponse, toJobResponse } from './job-response';
 
@@ -11,12 +11,22 @@ export type CreateJobInput = JobInput;
 /** `db` de fora ou uma transação — mesmo formato aceito por `db.transaction`. */
 type DbClient = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+export interface CreateJobConsent {
+  termsAccepted: boolean | undefined;
+  minorsTermsAccepted: boolean | undefined;
+  ipAddress: string | null;
+  userAgent: string | null;
+}
+
 /**
  * companyId sempre vem do dono autenticado, nunca do corpo da requisição.
  *
- * `termsAccepted` fica fora de `CreateJobInput`/`validateJobInput` de
- * propósito: é exigido só na criação, não faz sentido reenviado a cada
- * edição (ver updateJob, que reusa o mesmo validador de campos).
+ * `consent` fica fora de `CreateJobInput`/`validateJobInput` de propósito:
+ * é exigido só na criação, não faz sentido reenviado a cada edição (ver
+ * updateJob, que reusa o mesmo validador de campos). `minorsTermsAccepted`
+ * só é exigido quando `minorsAllowed` está ligado — é o aceite do termo
+ * específico de habilitar candidaturas de 16-17 anos naquela vaga (ver
+ * consent_documents type 'minors_opportunity').
  *
  * `dbClient` aceita uma transação (`db.transaction(async (tx) => ...)`) no
  * lugar da conexão default — usado por duplicateWeek pra criar várias vagas
@@ -25,7 +35,7 @@ type DbClient = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 export async function createJob(
   ownerUserId: string,
   input: CreateJobInput,
-  termsAccepted: boolean | undefined,
+  consent: CreateJobConsent,
   dbClient: DbClient = db,
 ): Promise<JobResponse> {
   const company = await dbClient.query.companies.findFirst({ where: eq(companies.ownerUserId, ownerUserId) });
@@ -35,11 +45,15 @@ export async function createJob(
   if (company.verificationStatus !== 'approved') {
     throw new HttpError(403, 'Complete a verificação da empresa antes de publicar vagas.');
   }
-  if (!termsAccepted) {
+  if (!consent.termsAccepted) {
     throw new HttpError(400, 'É preciso confirmar que essa escala é intermediação avulsa antes de publicar.');
   }
 
   const validated = validateJobInput(input);
+
+  if (validated.minorsAllowed && !consent.minorsTermsAccepted) {
+    throw new HttpError(400, 'É preciso aceitar o termo de habilitar candidaturas de 16-17 anos.');
+  }
 
   const category = await dbClient.query.skillCategories.findFirst({
     where: eq(skillCategories.id, validated.categoryId),
@@ -47,6 +61,9 @@ export async function createJob(
   if (!category) {
     throw new HttpError(400, 'Categoria inválida.');
   }
+
+  const latestTerms = await getLatestConsentDocument('platform_terms');
+  const latestMinorsTerms = validated.minorsAllowed ? await getLatestConsentDocument('minors_opportunity') : null;
 
   const [job] = await dbClient
     .insert(jobs)
@@ -73,7 +90,17 @@ export async function createJob(
       endsAt: validated.endsAt,
       applicationsCloseAt: validated.applicationsCloseAt,
       termsAcceptedAt: new Date(),
-      termsVersion: CURRENT_TERMS_VERSION,
+      termsVersion: latestTerms.version,
+      termsIpAddress: consent.ipAddress,
+      termsUserAgent: consent.userAgent,
+      ...(latestMinorsTerms
+        ? {
+            minorsTermsAcceptedAt: new Date(),
+            minorsTermsVersion: latestMinorsTerms.version,
+            minorsTermsIpAddress: consent.ipAddress,
+            minorsTermsUserAgent: consent.userAgent,
+          }
+        : {}),
     })
     .returning();
 

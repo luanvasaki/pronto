@@ -365,6 +365,13 @@
       "when": 1784675815381,
       "tag": "0051_nosy_norman_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1784682665331,
+      "tag": "0052_heavy_lester",
+      "breakpoints": true
     }
   ]
 }

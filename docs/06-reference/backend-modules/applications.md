@@ -27,7 +27,7 @@ Nenhuma transição de volta pra `pending`/`approved` a partir de `rejected`/`wi
 
 **Criar candidatura** (`create-application.ts`), em cadeia:
 1. Trabalhador com `kycStatus = 'approved'`.
-2. Termos aceitos.
+2. Termos aceitos — não é um documento próprio, é um recorte (capítulos 3 "natureza da intermediação" e 6 "cancelamentos/no-show") do mesmo `platform_terms` consolidado, mostrado num modal na hora de se candidatar (`JobApplicationTermsModal`, worker). Versão/IP/user-agent gravados em `termsVersion`/`termsIpAddress`/`termsUserAgent`.
 3. Dono da empresa não pode se candidatar à própria vaga (evita ambiguidade em quem avalia quem).
 4. Vaga `open` e não cheia; prazo de candidatura não vencido.
 5. CNH e idade mínima bloqueiam de verdade aqui (diferente do "aviso" na listagem de vagas próximas).

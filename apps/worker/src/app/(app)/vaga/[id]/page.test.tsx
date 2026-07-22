@@ -13,10 +13,12 @@ vi.mock('@shift/shared', async (importOriginal) => {
   return {
     ...actual,
     listSkillCategories: (...args: unknown[]) => listSkillCategoriesMock(...args),
+    getConsentDocument: (...args: unknown[]) => getConsentDocumentMock(...args),
   };
 });
 
 const listSkillCategoriesMock = vi.fn();
+const getConsentDocumentMock = vi.fn();
 const getJobDetailMock = vi.fn();
 const applyToJobMock = vi.fn();
 vi.mock('../../../../lib/jobs-api', () => ({
@@ -70,6 +72,11 @@ const JOB: Awaited<ReturnType<typeof getJobDetailMock>> = {
   hasApplied: false,
 };
 
+async function acceptJobTerms(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  await user.click(await screen.findByRole('button', { name: 'Ler termo e candidatar-se' }));
+  await user.click(await screen.findByRole('button', { name: /^li e aceito$/i }));
+}
+
 describe('VagaDetalhePage', () => {
   beforeEach(() => {
     listSkillCategoriesMock.mockReset().mockResolvedValue({ categories: [{ id: 'cat-1', name: 'Garçom' }] });
@@ -78,6 +85,15 @@ describe('VagaDetalhePage', () => {
     listJobAnnouncementsMock.mockReset().mockResolvedValue({ announcements: [] });
     listJobQuestionsMock.mockReset().mockResolvedValue({ questions: [] });
     askQuestionMock.mockReset();
+    getConsentDocumentMock.mockReset().mockResolvedValue({
+      type: 'platform_terms',
+      version: '1.1',
+      chapters: [
+        { number: '3', heading: 'Natureza da intermediação', body: 'Corpo do capítulo 3.' },
+        { number: '6', heading: 'Cancelamentos e no-show', body: 'Corpo do capítulo 6.' },
+      ],
+      declaration: 'Declaração de teste.',
+    });
   });
 
   it('mostra a descrição completa da vaga', async () => {
@@ -102,6 +118,21 @@ describe('VagaDetalhePage', () => {
     expect(await screen.findByRole('button', { name: 'Aceitar escala' })).toBeDisabled();
   });
 
+  it('abre o modal do termo, mostra o recorte de capítulos e aceita', async () => {
+    const user = userEvent.setup();
+
+    render(<VagaDetalhePage />);
+    await user.click(await screen.findByRole('button', { name: 'Ler termo e candidatar-se' }));
+
+    expect(await screen.findByText('Natureza da intermediação')).toBeInTheDocument();
+    expect(screen.getByText('Cancelamentos e no-show')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^li e aceito$/i }));
+
+    expect(screen.getByText('Termo lido e aceito ✓')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeEnabled();
+  });
+
   it('nunca destrava "Aceitar escala" quando a vaga exige CNH que o trabalhador não tem, mesmo confirmando os termos', async () => {
     getJobDetailMock.mockReset().mockResolvedValue({
       ...JOB,
@@ -115,7 +146,7 @@ describe('VagaDetalhePage', () => {
     expect(
       await screen.findByText(/Essa vaga exige CNH categoria B — você não tem essa categoria no perfil/),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole('checkbox'));
+    await acceptJobTerms(user);
 
     expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeDisabled();
   });
@@ -133,7 +164,7 @@ describe('VagaDetalhePage', () => {
     expect(
       await screen.findByText(/Essa vaga prefere CNH categoria B — você pode se candidatar mesmo assim/),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole('checkbox'));
+    await acceptJobTerms(user);
 
     expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeEnabled();
   });
@@ -144,7 +175,7 @@ describe('VagaDetalhePage', () => {
 
     render(<VagaDetalhePage />);
     expect(await screen.findByText('Essa vaga não está disponível pra menores de idade.')).toBeInTheDocument();
-    await user.click(screen.getByRole('checkbox'));
+    await acceptJobTerms(user);
 
     expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeDisabled();
   });
@@ -169,14 +200,13 @@ describe('VagaDetalhePage', () => {
     const user = userEvent.setup();
 
     render(<VagaDetalhePage />);
-    const checkboxes = await screen.findAllByRole('checkbox');
-    expect(checkboxes).toHaveLength(2);
+    const experienceCheckbox = await screen.findByRole('checkbox');
 
-    // Só marcar os termos não é suficiente — falta a confirmação de experiência.
-    await user.click(checkboxes[1]);
+    // Só aceitar os termos não é suficiente — falta a confirmação de experiência.
+    await acceptJobTerms(user);
     expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeDisabled();
 
-    await user.click(checkboxes[0]);
+    await user.click(experienceCheckbox);
     expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeEnabled();
   });
 
@@ -185,7 +215,7 @@ describe('VagaDetalhePage', () => {
     const user = userEvent.setup();
 
     render(<VagaDetalhePage />);
-    await user.click(await screen.findByRole('checkbox'));
+    await acceptJobTerms(user);
     await user.click(screen.getByRole('button', { name: 'Aceitar escala' }));
 
     await waitFor(() => expect(applyToJobMock).toHaveBeenCalledWith('job-1'));
@@ -198,7 +228,7 @@ describe('VagaDetalhePage', () => {
     const user = userEvent.setup();
 
     render(<VagaDetalhePage />);
-    await user.click(await screen.findByRole('checkbox'));
+    await acceptJobTerms(user);
     await user.click(screen.getByRole('button', { name: 'Aceitar escala' }));
 
     expect(await screen.findByText('Essa vaga já está preenchida.')).toBeInTheDocument();

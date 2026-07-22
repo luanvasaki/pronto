@@ -66,6 +66,8 @@ const BASE_PROFILE: WorkerProfileDetails = {
   selfieRejectionReason: null,
   cnhRejectionReason: null,
   guardianDocumentRejectionReason: null,
+  needsTermsAcceptance: false,
+  hasAcceptedLoginTerms: true,
   avgRating: '4.5',
   avgCategoryScores: { pontualidade: '4.7', educacao: '4.3' },
   totalShiftsCompleted: 3,

@@ -1,8 +1,20 @@
 import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
-import { applications, companies, jobs, payments, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
+import {
+  applications,
+  companies,
+  jobs,
+  loginConsents,
+  payments,
+  shifts,
+  skillCategories,
+  users,
+  workerProfiles,
+} from '../../db/schema';
 import { createApplication } from '../applications/create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { PaymentGateway } from '../payments/payment-gateway';
 import { checkIn } from '../shifts/check-in';
@@ -43,6 +55,8 @@ describe('listAdminWorkers', () => {
       }
       await db.delete(companies).where(eq(companies.ownerUserId, owner.id));
     }
+    const worker = await db.query.users.findFirst({ where: eq(users.phone, WORKER_PHONE) });
+    if (worker) await db.delete(loginConsents).where(eq(loginConsents.userId, worker.id));
     await db.delete(users).where(eq(users.phone, WORKER_PHONE));
     await db.delete(users).where(eq(users.phone, OWNER_PHONE));
     await db.delete(skillCategories).where(eq(skillCategories.name, TEST_CATEGORY_NAME));
@@ -84,7 +98,7 @@ describe('listAdminWorkers', () => {
         endsAt: TOMORROW_PLUS_5H,
       })
       .returning();
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
@@ -139,7 +153,7 @@ describe('listAdminWorkers', () => {
         endsAt: TOMORROW_PLUS_5H,
       })
       .returning();
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
@@ -150,5 +164,43 @@ describe('listAdminWorkers', () => {
     const found = result.find((row) => row.userId === worker.id);
     expect(found?.shiftsCompleted).toBe(0);
     expect(found?.hoursWorked).toBe(0);
+  });
+
+  it('inclui o histórico de aceite de termos (cadastro e login) pra prova em disputa', async () => {
+    const [worker] = await db
+      .insert(users)
+      .values({
+        phone: WORKER_PHONE,
+        email: WORKER_EMAIL,
+        termsAcceptedAt: new Date('2026-01-10T12:00:00.000Z'),
+        termsVersion: 'lw-terms-1.1',
+        termsIpAddress: '203.0.113.10',
+      })
+      .returning();
+    await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Camila Souza', kycStatus: 'approved' });
+    await db.insert(loginConsents).values([
+      {
+        userId: worker.id,
+        version: 'lw-login-1.0',
+        acceptedAt: new Date('2026-01-11T09:00:00.000Z'),
+        ipAddress: '203.0.113.11',
+      },
+      {
+        userId: worker.id,
+        version: 'lw-login-1.1',
+        acceptedAt: new Date('2026-02-01T09:00:00.000Z'),
+        ipAddress: '203.0.113.12',
+      },
+    ]);
+
+    const result = await listAdminWorkers();
+
+    const found = result.find((row) => row.userId === worker.id);
+    expect(found?.termsAcceptedAt).toEqual(new Date('2026-01-10T12:00:00.000Z'));
+    expect(found?.termsVersion).toBe('lw-terms-1.1');
+    expect(found?.termsIpAddress).toBe('203.0.113.10');
+    // Pega a versão mais recente, não a primeira inserida.
+    expect(found?.loginTermsVersion).toBe('lw-login-1.1');
+    expect(found?.loginTermsIpAddress).toBe('203.0.113.12');
   });
 });

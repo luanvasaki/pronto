@@ -21,6 +21,12 @@ const WORKER = {
   shiftsCompleted: 5,
   hoursWorked: 20,
   createdAt: '2026-07-01T12:00:00.000Z',
+  termsAcceptedAt: '2026-06-01T10:00:00.000Z',
+  termsVersion: '1.1',
+  termsIpAddress: '203.0.113.1',
+  loginTermsAcceptedAt: '2026-06-02T10:00:00.000Z',
+  loginTermsVersion: '1.0',
+  loginTermsIpAddress: '203.0.113.2',
 };
 
 describe('AdminTrabalhadoresPage', () => {
@@ -105,5 +111,19 @@ describe('AdminTrabalhadoresPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Confirmar envio' }));
 
     expect(await screen.findByText('Não foi possível enviar o link.')).toBeInTheDocument();
+  });
+
+  it('mostra o histórico de aceite de termos ao expandir', async () => {
+    listAdminWorkersMock.mockResolvedValue({ workers: [WORKER] });
+    const user = userEvent.setup();
+
+    render(<AdminTrabalhadoresPage />);
+    await screen.findByText('Rafael Lima');
+    expect(screen.queryByText(/^v1\.1 ·/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Ver histórico de aceite de termos' }));
+
+    expect(screen.getByText(/^v1\.1 · .* IP 203\.0\.113\.1$/)).toBeInTheDocument();
+    expect(screen.getByText(/^v1\.0 · .* IP 203\.0\.113\.2$/)).toBeInTheDocument();
   });
 });

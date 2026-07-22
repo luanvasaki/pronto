@@ -118,6 +118,14 @@ export function reviewSkillCategory(
   });
 }
 
+export interface AdminMinorsTermsJob {
+  jobId: string;
+  description: string;
+  minorsTermsAcceptedAt: string;
+  minorsTermsVersion: string | null;
+  minorsTermsIpAddress: string | null;
+}
+
 export interface AdminCompany {
   id: string;
   legalName: string;
@@ -133,6 +141,13 @@ export interface AdminCompany {
   jobsPosted: number;
   shiftsCompleted: number;
   createdAt: string;
+  termsAcceptedAt: string | null;
+  termsVersion: string | null;
+  termsIpAddress: string | null;
+  loginTermsAcceptedAt: string | null;
+  loginTermsVersion: string | null;
+  loginTermsIpAddress: string | null;
+  minorsTermsJobs: AdminMinorsTermsJob[];
 }
 
 export function listAdminCompanies(): Promise<{ companies: AdminCompany[] }> {
@@ -150,6 +165,12 @@ export interface AdminWorker {
   shiftsCompleted: number;
   hoursWorked: number;
   createdAt: string;
+  termsAcceptedAt: string | null;
+  termsVersion: string | null;
+  termsIpAddress: string | null;
+  loginTermsAcceptedAt: string | null;
+  loginTermsVersion: string | null;
+  loginTermsIpAddress: string | null;
 }
 
 export function listAdminWorkers(): Promise<{ workers: AdminWorker[] }> {

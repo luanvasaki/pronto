@@ -35,6 +35,7 @@ export async function updateJobHandler(req: Request, res: Response, next: NextFu
       startsAt,
       endsAt,
       applicationsCloseAt,
+      minorsTermsAccepted,
     } = req.body as {
       categoryId?: string;
       description?: string;
@@ -56,30 +57,40 @@ export async function updateJobHandler(req: Request, res: Response, next: NextFu
       startsAt?: string;
       endsAt?: string;
       applicationsCloseAt?: string;
+      minorsTermsAccepted?: boolean;
     };
 
-    const result = await updateJob(userId, jobId, {
-      categoryId,
-      description,
-      requiresExperience,
-      dressCode,
-      toolsRequired,
-      cnhCategory,
-      cnhRequired,
-      mealProvision,
-      mealAmount,
-      transportProvision,
-      transportAmount,
-      minorsAllowed,
-      addressLabel,
-      locationLat,
-      locationLng,
-      positionsTotal,
-      payAmount,
-      startsAt,
-      endsAt,
-      applicationsCloseAt,
-    });
+    const result = await updateJob(
+      userId,
+      jobId,
+      {
+        categoryId,
+        description,
+        requiresExperience,
+        dressCode,
+        toolsRequired,
+        cnhCategory,
+        cnhRequired,
+        mealProvision,
+        mealAmount,
+        transportProvision,
+        transportAmount,
+        minorsAllowed,
+        addressLabel,
+        locationLat,
+        locationLng,
+        positionsTotal,
+        payAmount,
+        startsAt,
+        endsAt,
+        applicationsCloseAt,
+      },
+      {
+        minorsTermsAccepted,
+        ipAddress: req.ip ?? null,
+        userAgent: req.get('user-agent') ?? null,
+      },
+    );
     res.status(200).json(result);
   } catch (error) {
     next(error);

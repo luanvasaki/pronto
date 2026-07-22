@@ -48,7 +48,7 @@ function extractTokenFromResetUrl(resetUrl: string): string {
 }
 
 async function register(agent: Agent, email: string, password = TEST_PASSWORD) {
-  return agent.post('/auth/register').send({ email, password, termsAccepted: true });
+  return agent.post('/auth/register').send({ email, password });
 }
 
 describe('POST /auth/register', () => {
@@ -90,21 +90,9 @@ describe('POST /auth/register', () => {
     const app = createApp();
     await register(request.agent(app), email);
 
-    const response = await request(app)
-      .post('/auth/register')
-      .send({ email, password: TEST_PASSWORD, termsAccepted: true });
+    const response = await request(app).post('/auth/register').send({ email, password: TEST_PASSWORD });
 
     expect(response.status).toBe(409);
-  });
-
-  it('responde 400 sem aceitar os termos de uso', async () => {
-    const app = createApp();
-
-    const response = await request(app)
-      .post('/auth/register')
-      .send({ email, password: TEST_PASSWORD, termsAccepted: false });
-
-    expect(response.status).toBe(400);
   });
 });
 
@@ -181,23 +169,10 @@ describe('POST /auth/google', () => {
     });
     const app = createApp({ authRoutes: { googleTokenVerifier: verifier } });
 
-    const response = await request(app)
-      .post('/auth/google')
-      .send({ idToken: 'token-novo', termsAccepted: true });
+    const response = await request(app).post('/auth/google').send({ idToken: 'token-novo' });
 
     expect(response.status).toBe(200);
     expect(response.body.user.email).toBe(newAccountEmail);
-  });
-
-  it('responde 400 quando cria conta nova sem aceitar os termos de uso', async () => {
-    const verifier = new FakeGoogleTokenVerifier({
-      'token-sem-termos': { email: newAccountEmail, googleId: 'google-sub-sem-termos', emailVerified: true },
-    });
-    const app = createApp({ authRoutes: { googleTokenVerifier: verifier } });
-
-    const response = await request(app).post('/auth/google').send({ idToken: 'token-sem-termos' });
-
-    expect(response.status).toBe(400);
   });
 
   it('loga numa conta existente pelo googleId', async () => {
@@ -206,9 +181,7 @@ describe('POST /auth/google', () => {
     });
     const app = createApp({ authRoutes: { googleTokenVerifier: verifier } });
 
-    const first = await request(app)
-      .post('/auth/google')
-      .send({ idToken: 'token-existente', termsAccepted: true });
+    const first = await request(app).post('/auth/google').send({ idToken: 'token-existente' });
     const second = await request(app).post('/auth/google').send({ idToken: 'token-existente' });
 
     expect(first.status).toBe(200);

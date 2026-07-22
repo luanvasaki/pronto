@@ -8,6 +8,7 @@ import { Button } from '../../../../../components/ui/button';
 import { Input } from '../../../../../components/ui/input';
 import { JobBenefitsFields } from '../../../../../components/ui/job-benefits-fields';
 import { JobRequirementsFields } from '../../../../../components/ui/job-requirements-fields';
+import { MinorsTermsModal } from '../../../../../components/ui/minors-terms-modal';
 import { Skeleton } from '../../../../../components/ui/skeleton';
 import { useAddressGeocoding } from '../../../../../hooks/use-address-geocoding';
 import { useJobFormValidation } from '../../../../../hooks/use-job-form-validation';
@@ -43,6 +44,16 @@ export default function EditarVagaPage() {
   const [cnhCategory, setCnhCategory] = useState('');
   const [cnhRequired, setCnhRequired] = useState(false);
   const [minorsAllowed, setMinorsAllowed] = useState(false);
+  const [minorsTermsAccepted, setMinorsTermsAccepted] = useState(false);
+  const [showMinorsTermsModal, setShowMinorsTermsModal] = useState(false);
+
+  /** Mesma lógica de vagas/nova — só abre o termo se ainda não tinha sido aceito antes (ver job.hasMinorsTermsAccepted). */
+  function handleMinorsAllowedChange(value: boolean): void {
+    setMinorsAllowed(value);
+    if (value && !minorsTermsAccepted) {
+      setShowMinorsTermsModal(true);
+    }
+  }
   const [mealProvision, setMealProvision] = useState<BenefitProvision>('none');
   const [mealAmount, setMealAmount] = useState('');
   const [transportProvision, setTransportProvision] = useState<BenefitProvision>('none');
@@ -108,6 +119,7 @@ export default function EditarVagaPage() {
         setCnhCategory(job.cnhCategory ?? '');
         setCnhRequired(job.cnhRequired);
         setMinorsAllowed(job.minorsAllowed);
+        setMinorsTermsAccepted(job.hasMinorsTermsAccepted);
         setMealProvision(job.mealProvision);
         setMealAmount(job.mealAmount ?? '');
         setTransportProvision(job.transportProvision);
@@ -147,6 +159,8 @@ export default function EditarVagaPage() {
     startsAt,
     endsAt,
     applicationsCloseAt,
+    minorsAllowed,
+    minorsTermsAccepted,
   });
 
   async function handleSubmit(event: FormEvent): Promise<void> {
@@ -157,28 +171,32 @@ export default function EditarVagaPage() {
     setIsSubmitting(true);
 
     try {
-      await updateJob(jobId, {
-        categoryId,
-        description,
-        requiresExperience,
-        dressCode: dressCode.trim() || undefined,
-        toolsRequired: toolsRequired.trim() || undefined,
-        cnhCategory: cnhCategory || undefined,
-        cnhRequired,
-        minorsAllowed,
-        mealProvision,
-        mealAmount: mealProvision === 'paid' ? mealAmount.replace(',', '.') : undefined,
-        transportProvision,
-        transportAmount: transportProvision === 'paid' ? transportAmount.replace(',', '.') : undefined,
-        addressLabel,
-        locationLat: lat,
-        locationLng: lng,
-        positionsTotal: positionsTotalNumber,
-        payAmount: payAmount.replace(',', '.'),
-        startsAt: new Date(startsAt).toISOString(),
-        endsAt: new Date(endsAt).toISOString(),
-        applicationsCloseAt: applicationsCloseAt ? new Date(applicationsCloseAt).toISOString() : undefined,
-      });
+      await updateJob(
+        jobId,
+        {
+          categoryId,
+          description,
+          requiresExperience,
+          dressCode: dressCode.trim() || undefined,
+          toolsRequired: toolsRequired.trim() || undefined,
+          cnhCategory: cnhCategory || undefined,
+          cnhRequired,
+          minorsAllowed,
+          mealProvision,
+          mealAmount: mealProvision === 'paid' ? mealAmount.replace(',', '.') : undefined,
+          transportProvision,
+          transportAmount: transportProvision === 'paid' ? transportAmount.replace(',', '.') : undefined,
+          addressLabel,
+          locationLat: lat,
+          locationLng: lng,
+          positionsTotal: positionsTotalNumber,
+          payAmount: payAmount.replace(',', '.'),
+          startsAt: new Date(startsAt).toISOString(),
+          endsAt: new Date(endsAt).toISOString(),
+          applicationsCloseAt: applicationsCloseAt ? new Date(applicationsCloseAt).toISOString() : undefined,
+        },
+        minorsAllowed ? minorsTermsAccepted : undefined,
+      );
       router.push('/painel');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível salvar a vaga.');
@@ -244,7 +262,7 @@ export default function EditarVagaPage() {
           cnhRequired={cnhRequired}
           onCnhRequiredChange={setCnhRequired}
           minorsAllowed={minorsAllowed}
-          onMinorsAllowedChange={setMinorsAllowed}
+          onMinorsAllowedChange={handleMinorsAllowedChange}
         />
 
         <JobBenefitsFields
@@ -391,6 +409,19 @@ export default function EditarVagaPage() {
           Salvar alterações
         </Button>
       </form>
+
+      {showMinorsTermsModal && (
+        <MinorsTermsModal
+          onAccept={() => {
+            setMinorsTermsAccepted(true);
+            setShowMinorsTermsModal(false);
+          }}
+          onCancel={() => {
+            setMinorsAllowed(false);
+            setShowMinorsTermsModal(false);
+          }}
+        />
+      )}
     </main>
   );
 }

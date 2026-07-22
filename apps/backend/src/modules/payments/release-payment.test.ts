@@ -4,6 +4,8 @@ import { updateApplicationStatus } from '../applications/update-application-stat
 import { db } from '../../db/client';
 import { applications, companies, jobs, payments, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
 import { chargeForShift } from './charge-for-shift';
@@ -49,7 +51,7 @@ async function setupChargedShift() {
       endsAt: TOMORROW_PLUS_5H,
     })
     .returning();
-  const application = await createApplication(worker.id, job.id, true);
+  const application = await createApplication(worker.id, job.id, CONSENT);
   await updateApplicationStatus(owner.id, application.id, 'approved');
   const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
   if (!shift) {

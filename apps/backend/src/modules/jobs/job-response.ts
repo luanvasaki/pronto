@@ -16,6 +16,10 @@ export interface JobResponse {
   transportProvision: string;
   transportAmount: string | null;
   minorsAllowed: boolean;
+  // Não expõe o timestamp/versão/IP em si (auditoria fica só no banco) —
+  // só se já existe aceite registrado, pra o front saber que não precisa
+  // pedir o termo de novo numa edição que mantém minorsAllowed ligado.
+  hasMinorsTermsAccepted: boolean;
   addressLabel: string;
   locationLat: number;
   locationLng: number;
@@ -43,6 +47,7 @@ export function toJobResponse(job: JobRow): JobResponse {
     transportProvision: job.transportProvision,
     transportAmount: job.transportAmount,
     minorsAllowed: job.minorsAllowed,
+    hasMinorsTermsAccepted: job.minorsTermsAcceptedAt !== null,
     addressLabel: job.addressLabel,
     locationLat: job.locationLat,
     locationLng: job.locationLng,

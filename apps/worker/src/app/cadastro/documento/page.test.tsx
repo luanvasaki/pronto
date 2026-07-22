@@ -60,11 +60,11 @@ describe('DocumentoPage', () => {
     expect(screen.getByRole('button', { name: /enviar/i })).toBeDisabled();
   });
 
-  it('mostra "Passo 3 de 3" e volta com o botão de voltar', async () => {
+  it('mostra "Passo 4 de 4" e volta com o botão de voltar', async () => {
     const user = userEvent.setup();
     render(<DocumentoPage />);
 
-    expect(screen.getByText('Passo 3 de 3')).toBeInTheDocument();
+    expect(screen.getByText('Passo 4 de 4')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Voltar' }));
 
     expect(backMock).toHaveBeenCalled();

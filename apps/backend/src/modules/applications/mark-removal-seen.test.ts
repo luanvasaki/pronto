@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from './create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { markRemovalSeen } from './mark-removal-seen';
 import { removeApprovedWorker } from './remove-approved-worker';
 import { updateApplicationStatus } from './update-application-status';
@@ -40,7 +42,7 @@ async function setup() {
       endsAt: TOMORROW_PLUS_5H,
     })
     .returning();
-  const application = await createApplication(worker.id, job.id, true);
+  const application = await createApplication(worker.id, job.id, CONSENT);
   await updateApplicationStatus(owner.id, application.id, 'approved');
   await removeApprovedWorker(owner.id, application.id);
   return { worker, owner, application };

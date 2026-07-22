@@ -3,6 +3,7 @@
 import { ApiError } from '@shift/shared';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { LoginTermsModal } from '../../components/ui/login-terms-modal';
 import { TabBar } from '../../components/ui/tab-bar';
 import { CalledNotification, Topbar } from '../../components/ui/topbar';
 import { VerificationBanner } from '../../components/ui/verification-banner';
@@ -44,6 +45,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<WorkerProfileDetails | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [showLoginTermsModal, setShowLoginTermsModal] = useState(false);
   const [calledCount, setCalledCount] = useState(0);
   const [calledNotifications, setCalledNotifications] = useState<CalledNotification[]>([]);
 
@@ -59,12 +61,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         // nunca aprova o KYC dele sem esse terceiro documento (ver
         // review-document.ts) e nada nunca manda essa pessoa de volta
         // pro upload que falta.
+        if (data.needsTermsAcceptance) {
+          setIsRedirecting(true);
+          router.replace('/cadastro/termos');
+          return;
+        }
         if (!data.hasDocument || !data.hasSelfie || (data.isMinor && !data.hasGuardianDocument)) {
           setIsRedirecting(true);
           router.replace('/cadastro/documento');
           return;
         }
         setProfile(data);
+        setShowLoginTermsModal(!data.hasAcceptedLoginTerms);
       })
       .catch((err) => {
         if (err instanceof ApiError && err.status === 404) {
@@ -129,6 +137,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <WorkerProfileProvider initialProfile={profile}>
+      {showLoginTermsModal && <LoginTermsModal onAccepted={() => setShowLoginTermsModal(false)} />}
       <div className="flex flex-1 flex-col">
         <Topbar
           calledCount={calledCount}

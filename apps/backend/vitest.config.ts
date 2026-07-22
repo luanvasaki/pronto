@@ -14,6 +14,7 @@ delete process.env.GOOGLE_CLIENT_ID;
 export default defineConfig({
   test: {
     environment: 'node',
+    globalSetup: ['./src/test-global-setup.ts'],
     include: ['src/**/*.test.ts'],
     // Todo teste bate no mesmo Postgres (sem schema isolado por
     // arquivo) — rodar os arquivos em paralelo deixava alguns poucos

@@ -3,7 +3,6 @@ import { db } from '../../db/client';
 import { users } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { isUniqueViolation } from '../../shared/is-unique-violation';
-import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
 import { isValidEmail } from './email';
 import { IssuedTokens, issueTokens } from './issue-tokens';
 import { hashPassword, isValidPassword } from './password';
@@ -13,19 +12,20 @@ export interface RegisterResult extends IssuedTokens {
   user: UserResponse;
 }
 
-export async function register(
-  email: string | undefined,
-  password: string | undefined,
-  termsAccepted: boolean | undefined,
-): Promise<RegisterResult> {
+/**
+ * Criar a conta não exige mais aceite de termos aqui — isso virou uma
+ * tela própria depois do cadastro (`PUT /auth/accept-terms`, ver
+ * accept-terms.ts), documento completo e versionado, em vez de um
+ * checkbox solto no mesmo formulário de email/senha. Cobre também quem
+ * entra pela primeira vez via Google (ver google-login.ts) através do
+ * mesmo gate no layout autenticado do front.
+ */
+export async function register(email: string | undefined, password: string | undefined): Promise<RegisterResult> {
   if (!email || !isValidEmail(email)) {
     throw new HttpError(400, 'E-mail inválido.');
   }
   if (!password || !isValidPassword(password)) {
     throw new HttpError(400, 'Senha deve ter entre 8 e 72 caracteres.');
-  }
-  if (!termsAccepted) {
-    throw new HttpError(400, 'É preciso aceitar os Termos de Uso para criar uma conta.');
   }
 
   const existing = await db.query.users.findFirst({ where: eq(users.email, email) });
@@ -36,10 +36,7 @@ export async function register(
   const passwordHash = await hashPassword(password);
   let createdUser;
   try {
-    [createdUser] = await db
-      .insert(users)
-      .values({ email, passwordHash, termsAcceptedAt: new Date(), termsVersion: CURRENT_TERMS_VERSION })
-      .returning();
+    [createdUser] = await db.insert(users).values({ email, passwordHash }).returning();
   } catch (error) {
     if (isUniqueViolation(error)) {
       throw new HttpError(409, 'Já existe uma conta com este e-mail.');

@@ -10,12 +10,14 @@ vi.mock('next/navigation', () => ({
 }));
 
 const listSkillCategoriesMock = vi.fn();
+const getConsentDocumentMock = vi.fn();
 vi.mock('@shift/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shift/shared')>();
   return {
     ...actual,
     getCurrentUser: vi.fn().mockResolvedValue({ user: { id: '1' } }),
     listSkillCategories: (...args: unknown[]) => listSkillCategoriesMock(...args),
+    getConsentDocument: (...args: unknown[]) => getConsentDocumentMock(...args),
   };
 });
 
@@ -54,6 +56,8 @@ const JOB = {
   endsAt: '2026-08-01T23:00:00.000Z',
   applicationsCloseAt: null,
   status: 'open',
+  minorsAllowed: false,
+  hasMinorsTermsAccepted: false,
 };
 
 describe('EditarVagaPage', () => {
@@ -63,6 +67,12 @@ describe('EditarVagaPage', () => {
     updateJobMock.mockReset();
     pushMock.mockReset();
     geocodeJobAddressMock.mockReset().mockResolvedValue({ lat: null, lng: null });
+    getConsentDocumentMock.mockReset().mockResolvedValue({
+      type: 'minors_opportunity',
+      version: '1.1',
+      chapters: [{ number: '1', heading: 'Teste', body: 'Corpo de teste.' }],
+      declaration: 'Declaração de teste.',
+    });
   });
 
   it('pré-preenche o formulário com os dados atuais da vaga', async () => {
@@ -190,6 +200,7 @@ describe('EditarVagaPage', () => {
     await user.click(mealButtons[0]);
     await user.type(screen.getByLabelText(/valor da alimentação/i), '20,00');
     await user.click(screen.getByLabelText(/vaga disponível pra menores de idade/i));
+    await user.click(await screen.findByRole('button', { name: /^li e aceito$/i }));
     await user.click(screen.getByRole('button', { name: /salvar alterações/i }));
 
     await waitFor(() => expect(updateJobMock).toHaveBeenCalled());
@@ -198,6 +209,22 @@ describe('EditarVagaPage', () => {
       mealAmount: '20.00',
       minorsAllowed: true,
     });
+    expect(updateJobMock.mock.calls[0][2]).toBe(true);
+  });
+
+  it('não exige aceitar o termo de menores de novo quando a vaga já tinha isso aceito antes', async () => {
+    listMyJobsMock.mockResolvedValue({ jobs: [{ ...JOB, minorsAllowed: true, hasMinorsTermsAccepted: true }] });
+    updateJobMock.mockResolvedValue(JOB);
+    const user = userEvent.setup();
+
+    render(<EditarVagaPage />);
+    await screen.findByDisplayValue('130.00');
+
+    expect(screen.getByLabelText(/vaga disponível pra menores de idade/i)).toBeChecked();
+    await user.click(screen.getByRole('button', { name: /salvar alterações/i }));
+
+    await waitFor(() => expect(updateJobMock).toHaveBeenCalled());
+    expect(screen.queryByText('Habilitar candidaturas de 16-17 anos')).not.toBeInTheDocument();
   });
 
   it('envia o novo prazo de candidatura quando alterado', async () => {

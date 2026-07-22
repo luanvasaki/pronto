@@ -72,6 +72,8 @@ const PROFILE = {
   selfieRejectionReason: null,
   cnhRejectionReason: null,
   guardianDocumentRejectionReason: null,
+  needsTermsAcceptance: false,
+  hasAcceptedLoginTerms: true,
   avgRating: '4.8',
   avgCategoryScores: null,
   totalShiftsCompleted: 10,

@@ -29,6 +29,8 @@ export interface WorkerProfileDetails {
   selfieRejectionReason: string | null;
   cnhRejectionReason: string | null;
   guardianDocumentRejectionReason: string | null;
+  needsTermsAcceptance: boolean;
+  hasAcceptedLoginTerms: boolean;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
   totalShiftsCompleted: number;

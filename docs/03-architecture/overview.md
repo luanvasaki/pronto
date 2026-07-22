@@ -39,7 +39,7 @@ Isso separa regra de negócio de protocolo HTTP — a função de domínio pode 
 
 ## Os módulos de domínio
 
-`auth`, `companies`, `jobs`, `applications`, `shifts`, `payments`, `ratings`, `workers`, `skill-categories`, `questions`, `announcements`, `push`, `admin`, `health`. Cada um documentado em detalhe em [`06-reference/backend-modules/`](../06-reference/).
+`auth`, `companies`, `jobs`, `applications`, `shifts`, `payments`, `ratings`, `workers`, `skill-categories`, `questions`, `announcements`, `push`, `admin`, `consent-documents`, `health`. Cada um documentado em detalhe em [`06-reference/backend-modules/`](../06-reference/).
 
 ## Fluxo de dados de ponta a ponta (exemplo: aprovar uma candidatura)
 

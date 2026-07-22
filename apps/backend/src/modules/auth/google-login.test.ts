@@ -2,7 +2,6 @@ import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { users } from '../../db/schema';
-import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
 import { googleLogin } from './google-login';
 import { GoogleTokenVerifier, GoogleUserInfo } from './google-token-verifier';
 
@@ -27,7 +26,7 @@ describe('googleLogin', () => {
       picture: 'https://example.com/photo.jpg',
     });
 
-    await expect(googleLogin('fake-token', true, verifier)).rejects.toThrow('E-mail do Google não verificado');
+    await expect(googleLogin('fake-token', verifier)).rejects.toThrow('E-mail do Google não verificado');
 
     const rows = await db.query.users.findMany({ where: eq(users.email, TEST_EMAIL) });
     expect(rows).toHaveLength(0);
@@ -41,10 +40,7 @@ describe('googleLogin', () => {
       picture: 'https://example.com/photo.jpg',
     });
 
-    const results = await Promise.all([
-      googleLogin('fake-token', true, verifier),
-      googleLogin('fake-token', true, verifier),
-    ]);
+    const results = await Promise.all([googleLogin('fake-token', verifier), googleLogin('fake-token', verifier)]);
 
     expect(results[0].user.id).toBe(results[1].user.id);
 
@@ -56,10 +52,7 @@ describe('googleLogin', () => {
     // Simula deterministicamente o que a corrida acima só produz por
     // timing: a conta Google já existe (outra chamada "venceu") no
     // instante em que o byEmail desta chamada roda.
-    const [existing] = await db
-      .insert(users)
-      .values({ email: TEST_EMAIL, googleId: TEST_GOOGLE_ID, termsAcceptedAt: new Date() })
-      .returning();
+    const [existing] = await db.insert(users).values({ email: TEST_EMAIL, googleId: TEST_GOOGLE_ID }).returning();
 
     const verifier = fakeVerifier({
       email: TEST_EMAIL,
@@ -68,13 +61,12 @@ describe('googleLogin', () => {
       picture: 'https://example.com/photo.jpg',
     });
 
-    const result = await googleLogin('fake-token', true, verifier);
+    const result = await googleLogin('fake-token', verifier);
 
     expect(result.user.id).toBe(existing.id);
   });
 
-  it('grava o momento e a versão do aceite dos termos ao criar a conta', async () => {
-    const before = new Date();
+  it('cria a conta sem nenhum aceite de termos ainda — isso agora é uma etapa separada (ver accept-terms.ts)', async () => {
     const verifier = fakeVerifier({
       email: TEST_EMAIL,
       googleId: TEST_GOOGLE_ID,
@@ -82,12 +74,11 @@ describe('googleLogin', () => {
       picture: 'https://example.com/photo.jpg',
     });
 
-    await googleLogin('fake-token', true, verifier);
+    await googleLogin('fake-token', verifier);
 
     const [row] = await db.query.users.findMany({ where: eq(users.email, TEST_EMAIL) });
-    expect(row.termsAcceptedAt).not.toBeNull();
-    expect(row.termsAcceptedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
-    expect(row.termsVersion).toBe(CURRENT_TERMS_VERSION);
+    expect(row.termsAcceptedAt).toBeNull();
+    expect(row.termsVersion).toBeNull();
   });
 
   it('continua recusando quando o e-mail já é de uma conta de senha de verdade (sem googleId)', async () => {
@@ -100,6 +91,6 @@ describe('googleLogin', () => {
       picture: 'https://example.com/photo.jpg',
     });
 
-    await expect(googleLogin('fake-token', true, verifier)).rejects.toThrow('Já existe uma conta com senha');
+    await expect(googleLogin('fake-token', verifier)).rejects.toThrow('Já existe uma conta com senha');
   });
 });

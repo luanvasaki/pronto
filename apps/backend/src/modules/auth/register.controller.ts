@@ -4,12 +4,8 @@ import { register } from './register';
 
 export async function registerHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { email, password, termsAccepted } = req.body as {
-      email?: string;
-      password?: string;
-      termsAccepted?: boolean;
-    };
-    const result = await register(email, password, termsAccepted);
+    const { email, password } = req.body as { email?: string; password?: string };
+    const result = await register(email, password);
 
     setAuthCookies(res, result);
     res.status(201).json({ user: result.user });

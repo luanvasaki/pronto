@@ -14,6 +14,7 @@ export interface Job {
   transportProvision: BenefitProvision;
   transportAmount: string | null;
   minorsAllowed: boolean;
+  hasMinorsTermsAccepted: boolean;
   addressLabel: string;
   locationLat: number;
   locationLng: number;
@@ -54,19 +55,23 @@ export interface CreateJobInput {
   applicationsCloseAt?: string;
 }
 
-export function createJob(input: CreateJobInput, termsAccepted: boolean): Promise<Job> {
+export function createJob(
+  input: CreateJobInput,
+  termsAccepted: boolean,
+  minorsTermsAccepted?: boolean,
+): Promise<Job> {
   return apiFetch('/jobs', {
     method: 'POST',
-    body: JSON.stringify({ ...input, termsAccepted }),
+    body: JSON.stringify({ ...input, termsAccepted, minorsTermsAccepted }),
   });
 }
 
 export type UpdateJobInput = CreateJobInput;
 
-export function updateJob(jobId: string, input: UpdateJobInput): Promise<Job> {
+export function updateJob(jobId: string, input: UpdateJobInput, minorsTermsAccepted?: boolean): Promise<Job> {
   return apiFetch(`/jobs/${jobId}`, {
     method: 'PATCH',
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, minorsTermsAccepted }),
   });
 }
 
@@ -95,9 +100,13 @@ export interface DuplicateWeekInput {
   targetWeekStart: string;
 }
 
-export function duplicateWeek(input: DuplicateWeekInput, termsAccepted: boolean): Promise<{ jobs: Job[] }> {
+export function duplicateWeek(
+  input: DuplicateWeekInput,
+  termsAccepted: boolean,
+  minorsTermsAccepted?: boolean,
+): Promise<{ jobs: Job[] }> {
   return apiFetch('/jobs/duplicate-week', {
     method: 'POST',
-    body: JSON.stringify({ ...input, termsAccepted }),
+    body: JSON.stringify({ ...input, termsAccepted, minorsTermsAccepted }),
   });
 }

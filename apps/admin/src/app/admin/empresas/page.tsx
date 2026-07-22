@@ -4,6 +4,7 @@ import { ApiError } from '@shift/shared';
 import { useEffect, useMemo, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
+import { ConsentHistory } from '../../../components/ui/consent-history';
 import { Input } from '../../../components/ui/input';
 import { CardListSkeleton } from '../../../components/ui/skeleton';
 import { AdminCompany, listAdminCompanies, resetUserPassword } from '../../../lib/admin-api';
@@ -186,6 +187,16 @@ export default function AdminEmpresasPage() {
                 </button>
               )}
             </div>
+
+            <ConsentHistory
+              termsAcceptedAt={company.termsAcceptedAt}
+              termsVersion={company.termsVersion}
+              termsIpAddress={company.termsIpAddress}
+              loginTermsAcceptedAt={company.loginTermsAcceptedAt}
+              loginTermsVersion={company.loginTermsVersion}
+              loginTermsIpAddress={company.loginTermsIpAddress}
+              minorsTermsJobs={company.minorsTermsJobs}
+            />
           </li>
         ))}
       </ul>

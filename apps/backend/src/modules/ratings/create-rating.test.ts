@@ -14,6 +14,8 @@ import {
   workerProfiles,
 } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
 import { confirmCheckOut } from '../shifts/confirm-check-out';
@@ -70,7 +72,7 @@ async function setupCompletedShift() {
       endsAt: TOMORROW_PLUS_5H,
     })
     .returning();
-  const application = await createApplication(worker.id, job.id, true);
+  const application = await createApplication(worker.id, job.id, CONSENT);
   await updateApplicationStatus(owner.id, application.id, 'approved');
   const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
   if (!shift) {
@@ -168,7 +170,7 @@ describe('createRating', () => {
         endsAt: TOMORROW_PLUS_5H,
       })
       .returning();
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
 
@@ -238,7 +240,7 @@ describe('createRating', () => {
     // (ou somando errado), a média não bateria com a conta manual abaixo.
     const [secondWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: secondWorker.id, fullName: 'Beatriz Lima' });
-    const secondApplication = await createApplication(secondWorker.id, job.id, true);
+    const secondApplication = await createApplication(secondWorker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, secondApplication.id, 'approved');
     const secondShift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, secondApplication.id) });
     if (!secondShift) throw new Error('Segundo turno não foi criado no setup do teste.');

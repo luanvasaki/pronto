@@ -3,6 +3,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { companies, jobs, skillCategories, users, workerProfiles, workerSkills } from '../../db/schema';
 import { createJob } from './create-job';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
+const MINORS_CONSENT = { ...CONSENT, minorsTermsAccepted: true } as const;
 import { listNearbyJobs } from './list-nearby-jobs';
 
 // Fixtures únicas entre arquivos de teste (ver README).
@@ -62,7 +65,7 @@ async function createTestJob(
     applicationsCloseAt,
     cnhCategory,
     cnhRequired,
-  }, true);
+  }, CONSENT);
 }
 
 describe('listNearbyJobs', () => {
@@ -303,7 +306,7 @@ describe('listNearbyJobs', () => {
           endsAt: TOMORROW_PLUS_5H.toISOString(),
           minorsAllowed: true,
         },
-        true,
+        MINORS_CONSENT,
       );
 
       const result = await listNearbyJobs(worker.id);

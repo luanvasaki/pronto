@@ -2,6 +2,8 @@ import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { updateApplicationStatus } from '../modules/applications/update-application-status';
 import { createApplication } from '../modules/applications/create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { checkIn } from '../modules/shifts/check-in';
 import { checkOut } from '../modules/shifts/check-out';
 import { chargeForShift } from '../modules/payments/charge-for-shift';
@@ -55,7 +57,7 @@ describe('deleteCompanyJobsAndDependents', () => {
         endsAt: TOMORROW_PLUS_5H,
       })
       .returning();
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');

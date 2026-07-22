@@ -122,7 +122,7 @@ export default function DocumentoPage() {
     return (
       <main className="flex flex-1 items-center justify-center px-4 py-8">
         <div className="flex w-full max-w-sm flex-col items-center gap-4 text-center">
-          <SignupProgress step={3} />
+          <SignupProgress step={4} totalSteps={4} />
           <Logo className="mb-2" />
           <p className="text-sm text-danger">Não foi possível carregar o status do seu cadastro.</p>
           <Button type="button" onClick={handleRetryLoad}>
@@ -136,7 +136,7 @@ export default function DocumentoPage() {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-8">
       <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-5">
-        <SignupProgress step={3} />
+        <SignupProgress step={4} totalSteps={4} />
         <Logo className="mb-2" />
         <div>
           <h1 className="font-heading text-2xl font-bold text-text">Confirme sua identidade</h1>

@@ -14,6 +14,8 @@ import {
   workerProfiles,
 } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
 import { chargeForShift } from '../payments/charge-for-shift';
@@ -102,7 +104,7 @@ describe('deleteDemoData', () => {
         endsAt: TOMORROW_PLUS_5H,
       })
       .returning();
-    const application = await createApplication(worker.id, demoJob.id, true);
+    const application = await createApplication(worker.id, demoJob.id, CONSENT);
     await updateApplicationStatus(demoOwner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');

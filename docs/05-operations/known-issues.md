@@ -16,10 +16,16 @@
 - **`payment.status = 'disputed'` sem fluxo de resolução** — sem endpoint ou processo de mediação depois que o trabalhador contesta um pagamento. Torna-se mais urgente quando o pagamento passar a ser processado de verdade (ver [`01-business/monetization.md`](../01-business/monetization.md)).
 - **`refunded` nunca é atingido** — enum existe (`payments.ts` schema), zero escritas em código de produção.
 - **Verificação de telefone nunca implementada** — `apps/backend/src/db/schema/users.ts` (`phone`, `phoneVerifiedAt`), reservado pra uma fase futura que nunca chegou.
+- **Sistema disciplinar progressivo (advertência → suspensão 7/14/28 dias → bloqueio) descrito no termo de uso não tem enforcement real** — só o texto/aceite existem (`consent_documents`, ver [`05-operations/auth-and-security.md`](./auth-and-security.md)). Decisão explícita do usuário: penalização de verdade fica pra uma tarefa futura separada, não faz parte desta implementação.
 
 ## Código morto confirmado (grep, sem escritor/consumidor em produção)
 
 - `shift_status.no_show`, `payment_status.refunded` — enum values nunca escritos em produção, ver seção de funcionalidades inacabadas acima. Diferente das colunas mortas já removidas (ver [`03-architecture/database-schema.md`](../03-architecture/database-schema.md#colunas-mortas-conhecidas)), esses ficam: são estado modelado pra um caso que ainda não acontece, não sujeira de coluna nunca usada.
+
+## Pendências antes de produção real
+
+- **Dados institucionais faltando no termo de uso seedado** — o capítulo 12 do `platform_terms` (`apps/backend/src/db/seed-consent-documents.ts`) tem placeholders `[A PREENCHER]` (razão social/CNPJ da entidade, endereço, canais de suporte/privacidade/denúncia). Precisa de dado real do usuário antes de qualquer versão ir pra produção de verdade — nova versão = nova linha em `consent_documents`, nunca UPDATE.
+- **Seed de `consent_documents` não roda sozinho em produção** — `npm run db:seed-consent-documents` precisa ser executado manualmente contra o banco do Railway. O `vitest globalSetup` (`test-global-setup.ts`) só garante que os testes tenham os documentos, não cobre o deploy real.
 
 ## Inconsistências
 

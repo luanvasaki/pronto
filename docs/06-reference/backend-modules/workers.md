@@ -6,7 +6,7 @@
 
 | Rota | Função |
 |---|---|
-| `GET /worker-profile/me` | Perfil próprio (com métricas calculadas ao vivo) |
+| `GET /worker-profile/me` | Perfil próprio (com métricas calculadas ao vivo, mais `needsTermsAcceptance`/`hasAcceptedLoginTerms` — ver [`05-operations/auth-and-security.md`](../../05-operations/auth-and-security.md)) |
 | `PUT /worker-profile` | Atualizar perfil |
 | `GET /worker-profile/ratings` | Avaliações recebidas |
 | `PATCH /worker-profile/location` | Atualizar localização (`homeLat/Lng`) |

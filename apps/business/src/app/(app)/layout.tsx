@@ -3,6 +3,7 @@
 import { ApiError } from '@shift/shared';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { LoginTermsModal } from '../../components/ui/login-terms-modal';
 import { Sidebar } from '../../components/ui/sidebar';
 import { Topbar } from '../../components/ui/topbar';
 import { VerificationBanner } from '../../components/ui/verification-banner';
@@ -68,6 +69,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<CompanyProfileDetails | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [needsCadastro, setNeedsCadastro] = useState(false);
+  const [needsTerms, setNeedsTerms] = useState(false);
+  const [showLoginTermsModal, setShowLoginTermsModal] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
   const [pendingApplications, setPendingApplications] = useState<PendingApplicationNotification[]>([]);
@@ -82,7 +85,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (isChecking) return;
 
     getCompanyProfile()
-      .then(setProfile)
+      .then((data) => {
+        if (data.needsTermsAcceptance) {
+          setNeedsTerms(true);
+          router.replace('/cadastro/termos');
+          return;
+        }
+        setProfile(data);
+        setShowLoginTermsModal(!data.hasAcceptedLoginTerms);
+      })
       .catch((err) => {
         // Perfil ainda não existe (cadastro nunca completado — comum
         // logo após entrar pelo Google, que pula direto pro app) — leva
@@ -97,7 +108,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [isChecking, router]);
 
   useEffect(() => {
-    if (isChecking || needsCadastro) return;
+    if (isChecking || needsCadastro || needsTerms) return;
 
     let cancelled = false;
 
@@ -123,13 +134,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       cancelled = true;
       clearInterval(intervalId);
     };
-  }, [isChecking, needsCadastro]);
+  }, [isChecking, needsCadastro, needsTerms]);
 
-  if (isChecking || isLoadingProfile || needsCadastro) {
+  if (isChecking || isLoadingProfile || needsCadastro || needsTerms) {
     return (
       <main className="flex flex-1 items-center justify-center px-4">
         <p className="text-sm text-text-secondary">
-          {isChecking ? 'Confirmando sua sessão...' : needsCadastro ? 'Redirecionando...' : 'Carregando...'}
+          {isChecking ? 'Confirmando sua sessão...' : needsCadastro || needsTerms ? 'Redirecionando...' : 'Carregando...'}
         </p>
       </main>
     );
@@ -140,6 +151,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <CompanyProfileProvider initialProfile={profile}>
+      {showLoginTermsModal && <LoginTermsModal onAccepted={() => setShowLoginTermsModal(false)} />}
       <div className="flex h-screen overflow-hidden">
         <Sidebar
           companyName={tradeName}

@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from './create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { updateApplicationStatus } from './update-application-status';
 
 // Fixtures únicas entre arquivos de teste (ver README).
@@ -40,7 +42,7 @@ async function setup(positionsTotal = 2) {
       endsAt: TOMORROW_PLUS_5H,
     })
     .returning();
-  const application = await createApplication(worker.id, job.id, true);
+  const application = await createApplication(worker.id, job.id, CONSENT);
   return { worker, owner, job, application };
 }
 
@@ -145,7 +147,7 @@ describe('updateApplicationStatus', () => {
     const { owner, job, application } = await setup(1);
     const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: otherWorker.id, fullName: 'Beatriz Lima' });
-    const otherApplication = await createApplication(otherWorker.id, job.id, true);
+    const otherApplication = await createApplication(otherWorker.id, job.id, CONSENT);
 
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
@@ -167,7 +169,7 @@ describe('updateApplicationStatus', () => {
     const { owner, job, application } = await setup(1);
     const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: otherWorker.id, fullName: 'Beatriz Lima' });
-    const otherApplication = await createApplication(otherWorker.id, job.id, true);
+    const otherApplication = await createApplication(otherWorker.id, job.id, CONSENT);
 
     const results = await Promise.allSettled([
       updateApplicationStatus(owner.id, application.id, 'approved'),
@@ -200,7 +202,7 @@ describe('updateApplicationStatus', () => {
     const { owner, job, application } = await setup(1);
     const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: otherWorker.id, fullName: 'Beatriz Lima' });
-    const otherApplication = await createApplication(otherWorker.id, job.id, true);
+    const otherApplication = await createApplication(otherWorker.id, job.id, CONSENT);
 
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const result = await updateApplicationStatus(owner.id, otherApplication.id, 'rejected');
@@ -241,7 +243,7 @@ describe('updateApplicationStatus', () => {
         minorsAllowed: true,
       })
       .returning();
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
 
     await db.update(jobs).set({ minorsAllowed: false }).where(eq(jobs.id, job.id));
 

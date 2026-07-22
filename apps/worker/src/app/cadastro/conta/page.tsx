@@ -8,19 +8,17 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Logo } from '../../../components/ui/logo';
 import { SignupProgress } from '../../../components/ui/signup-progress';
-import { TermsCheckbox } from '../../../components/ui/terms-checkbox';
 
 export default function CadastroContaPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const passwordsMatch = password === confirmPassword;
-  const isValid = email.trim().length > 0 && isValidPassword(password) && passwordsMatch && termsAccepted;
+  const isValid = email.trim().length > 0 && isValidPassword(password) && passwordsMatch;
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -30,8 +28,8 @@ export default function CadastroContaPage() {
     setIsSubmitting(true);
 
     try {
-      await register(email, password, termsAccepted);
-      router.push('/cadastro');
+      await register(email, password);
+      router.push('/cadastro/termos');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível criar sua conta.');
       setIsSubmitting(false);
@@ -41,7 +39,7 @@ export default function CadastroContaPage() {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-8">
       <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-5">
-        <SignupProgress step={1} />
+        <SignupProgress step={1} totalSteps={4} />
         <Logo className="mb-2" />
         <div>
           <h1 className="font-heading text-2xl font-bold text-text">Crie sua conta</h1>
@@ -76,8 +74,6 @@ export default function CadastroContaPage() {
           onChange={(event) => setConfirmPassword(event.target.value)}
           error={confirmPassword.length > 0 && !passwordsMatch ? 'As senhas não coincidem.' : undefined}
         />
-
-        <TermsCheckbox checked={termsAccepted} onChange={setTermsAccepted} />
 
         {error && <p className="text-sm text-danger">{error}</p>}
 

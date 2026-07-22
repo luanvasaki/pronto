@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { applications, companies, jobs, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { duplicateWeek } from './duplicate-week';
 
 // Fixtures únicas entre arquivos de teste (ver README).
@@ -86,7 +88,7 @@ describe('duplicateWeek', () => {
     const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
 
     await expect(
-      duplicateWeek(owner.id, { sourceWeekStart: SOURCE_WEEK_START, targetWeekStart: TARGET_WEEK_START, termsAccepted: true }),
+      duplicateWeek(owner.id, { sourceWeekStart: SOURCE_WEEK_START, targetWeekStart: TARGET_WEEK_START, termsAccepted: true, ipAddress: null, userAgent: null }),
     ).rejects.toThrow('Complete o cadastro');
   });
 
@@ -94,7 +96,7 @@ describe('duplicateWeek', () => {
     const { owner } = await setup();
 
     await expect(
-      duplicateWeek(owner.id, { sourceWeekStart: SOURCE_WEEK_START, targetWeekStart: TARGET_WEEK_START, termsAccepted: true }),
+      duplicateWeek(owner.id, { sourceWeekStart: SOURCE_WEEK_START, targetWeekStart: TARGET_WEEK_START, termsAccepted: true, ipAddress: null, userAgent: null }),
     ).rejects.toThrow('Não há escalas');
   });
 
@@ -109,12 +111,14 @@ describe('duplicateWeek', () => {
       startsAt: jobStartsAt(4, 20), // sexta-feira 20h da semana de origem
       positionsTotal: 3,
     });
-    await createApplication(worker.id, sourceJob.id, true);
+    await createApplication(worker.id, sourceJob.id, CONSENT);
 
     const result = await duplicateWeek(owner.id, {
       sourceWeekStart: SOURCE_WEEK_START,
       targetWeekStart: TARGET_WEEK_START,
       termsAccepted: true,
+      ipAddress: null,
+      userAgent: null,
     });
 
     expect(result).toHaveLength(1);
@@ -142,6 +146,8 @@ describe('duplicateWeek', () => {
       sourceWeekStart: SOURCE_WEEK_START,
       targetWeekStart: TARGET_WEEK_START,
       termsAccepted: true,
+      ipAddress: null,
+      userAgent: null,
     });
 
     expect(result).toHaveLength(2);
@@ -159,6 +165,8 @@ describe('duplicateWeek', () => {
       sourceWeekStart: SOURCE_WEEK_START,
       targetWeekStart: TARGET_WEEK_START,
       termsAccepted: true,
+      ipAddress: null,
+      userAgent: null,
     });
 
     expect(result).toHaveLength(1);
@@ -174,7 +182,7 @@ describe('duplicateWeek', () => {
     await createSourceJob(company.id, category.id, { startsAt: jobStartsAt(2, 14), positionsTotal: 0 });
 
     await expect(
-      duplicateWeek(owner.id, { sourceWeekStart: SOURCE_WEEK_START, targetWeekStart: TARGET_WEEK_START, termsAccepted: true }),
+      duplicateWeek(owner.id, { sourceWeekStart: SOURCE_WEEK_START, targetWeekStart: TARGET_WEEK_START, termsAccepted: true, ipAddress: null, userAgent: null }),
     ).rejects.toThrow('Número de vagas precisa ser pelo menos 1');
 
     const jobsAfter = await db.query.jobs.findMany({ where: eq(jobs.companyId, company.id) });

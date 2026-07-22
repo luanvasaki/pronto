@@ -9,6 +9,7 @@ import { Input } from '../../../../components/ui/input';
 import { JobBenefitsFields } from '../../../../components/ui/job-benefits-fields';
 import { JobRequirementsFields } from '../../../../components/ui/job-requirements-fields';
 import { JobTermsCheckbox } from '../../../../components/ui/job-terms-checkbox';
+import { MinorsTermsModal } from '../../../../components/ui/minors-terms-modal';
 import { useAddressGeocoding } from '../../../../hooks/use-address-geocoding';
 import { useJobFormValidation } from '../../../../hooks/use-job-form-validation';
 import { createJob, Job, listMyJobs } from '../../../../lib/jobs-api';
@@ -60,6 +61,21 @@ function NovaVagaForm() {
   const [cnhCategory, setCnhCategory] = useState('');
   const [cnhRequired, setCnhRequired] = useState(false);
   const [minorsAllowed, setMinorsAllowed] = useState(false);
+  const [minorsTermsAccepted, setMinorsTermsAccepted] = useState(false);
+  const [showMinorsTermsModal, setShowMinorsTermsModal] = useState(false);
+
+  /**
+   * Ligar a opção abre o termo específico na hora — desligar de novo
+   * (sem nunca ter aceitado) some com a exigência sem precisar de um
+   * segundo aceite; religar depois de já ter aceitado uma vez nesta
+   * sessão não pede de novo.
+   */
+  function handleMinorsAllowedChange(value: boolean): void {
+    setMinorsAllowed(value);
+    if (value && !minorsTermsAccepted) {
+      setShowMinorsTermsModal(true);
+    }
+  }
   const [mealProvision, setMealProvision] = useState<BenefitProvision>('none');
   const [mealAmount, setMealAmount] = useState('');
   const [transportProvision, setTransportProvision] = useState<BenefitProvision>('none');
@@ -139,7 +155,7 @@ function NovaVagaForm() {
     setToolsRequired(template.toolsRequired ?? '');
     setCnhCategory(template.cnhCategory ?? '');
     setCnhRequired(template.cnhRequired);
-    setMinorsAllowed(template.minorsAllowed);
+    handleMinorsAllowedChange(template.minorsAllowed);
     setMealProvision(template.mealProvision);
     setMealAmount(template.mealAmount ?? '');
     setTransportProvision(template.transportProvision);
@@ -191,6 +207,8 @@ function NovaVagaForm() {
     endsAt,
     applicationsCloseAt,
     termsAccepted,
+    minorsAllowed,
+    minorsTermsAccepted,
   });
 
   // `!profile` (ainda carregando) não bloqueia — só quando o perfil já
@@ -236,6 +254,7 @@ function NovaVagaForm() {
           applicationsCloseAt: applicationsCloseAt ? new Date(applicationsCloseAt).toISOString() : undefined,
         },
         termsAccepted,
+        minorsAllowed ? minorsTermsAccepted : undefined,
       );
       router.push('/painel');
     } catch (err) {
@@ -337,7 +356,7 @@ function NovaVagaForm() {
           cnhRequired={cnhRequired}
           onCnhRequiredChange={setCnhRequired}
           minorsAllowed={minorsAllowed}
-          onMinorsAllowedChange={setMinorsAllowed}
+          onMinorsAllowedChange={handleMinorsAllowedChange}
         />
 
         <JobBenefitsFields
@@ -488,6 +507,19 @@ function NovaVagaForm() {
           Publicar
         </Button>
       </form>
+
+      {showMinorsTermsModal && (
+        <MinorsTermsModal
+          onAccept={() => {
+            setMinorsTermsAccepted(true);
+            setShowMinorsTermsModal(false);
+          }}
+          onCancel={() => {
+            setMinorsAllowed(false);
+            setShowMinorsTermsModal(false);
+          }}
+        />
+      )}
     </main>
   );
 }

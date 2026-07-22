@@ -5,22 +5,33 @@ vi.mock('./api', () => ({
   apiFetch: (...args: unknown[]) => apiFetchMock(...args),
 }));
 
-const { register, login, googleLogin, forgotPassword, resetPassword, getCurrentUser, refreshSession, logout } =
-  await import('./auth-api');
+const {
+  register,
+  login,
+  googleLogin,
+  forgotPassword,
+  resetPassword,
+  getCurrentUser,
+  refreshSession,
+  logout,
+  acceptTerms,
+  acceptLoginTerms,
+  getConsentDocument,
+} = await import('./auth-api');
 
 describe('register', () => {
   beforeEach(() => {
     apiFetchMock.mockReset();
   });
 
-  it('chama POST /auth/register com email, senha e aceite dos termos no corpo', async () => {
+  it('chama POST /auth/register com email e senha no corpo', async () => {
     apiFetchMock.mockResolvedValue({ user: { id: '1' } });
 
-    await register('pessoa@example.com', 'senha12345', true);
+    await register('pessoa@example.com', 'senha12345');
 
     expect(apiFetchMock).toHaveBeenCalledWith('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email: 'pessoa@example.com', password: 'senha12345', termsAccepted: true }),
+      body: JSON.stringify({ email: 'pessoa@example.com', password: 'senha12345' }),
     });
   });
 });
@@ -47,14 +58,14 @@ describe('googleLogin', () => {
     apiFetchMock.mockReset();
   });
 
-  it('chama POST /auth/google com o idToken e o aceite dos termos no corpo', async () => {
+  it('chama POST /auth/google com o idToken no corpo', async () => {
     apiFetchMock.mockResolvedValue({ user: { id: '1' } });
 
-    await googleLogin('token-do-google', true);
+    await googleLogin('token-do-google');
 
     expect(apiFetchMock).toHaveBeenCalledWith('/auth/google', {
       method: 'POST',
-      body: JSON.stringify({ idToken: 'token-do-google', termsAccepted: true }),
+      body: JSON.stringify({ idToken: 'token-do-google' }),
     });
   });
 });
@@ -118,6 +129,54 @@ describe('refreshSession', () => {
     await refreshSession();
 
     expect(apiFetchMock).toHaveBeenCalledWith('/auth/refresh', { method: 'POST' });
+  });
+});
+
+describe('getConsentDocument', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama GET /consent-documents/:type', async () => {
+    apiFetchMock.mockResolvedValue({ type: 'platform_terms', version: '1.1', chapters: [], declaration: '' });
+
+    await getConsentDocument('platform_terms');
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/consent-documents/platform_terms');
+  });
+});
+
+describe('acceptTerms', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama PUT /auth/accept-terms com a versão no corpo', async () => {
+    apiFetchMock.mockResolvedValue({ termsVersion: '1.1' });
+
+    await acceptTerms('1.1');
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/auth/accept-terms', {
+      method: 'PUT',
+      body: JSON.stringify({ version: '1.1' }),
+    });
+  });
+});
+
+describe('acceptLoginTerms', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('chama POST /auth/accept-login-terms com a versão no corpo', async () => {
+    apiFetchMock.mockResolvedValue({ version: '1.1' });
+
+    await acceptLoginTerms('1.1');
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/auth/accept-login-terms', {
+      method: 'POST',
+      body: JSON.stringify({ version: '1.1' }),
+    });
   });
 });
 

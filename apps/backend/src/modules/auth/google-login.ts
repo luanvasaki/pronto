@@ -3,7 +3,6 @@ import { db } from '../../db/client';
 import { users } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { isUniqueViolation } from '../../shared/is-unique-violation';
-import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
 import { GoogleTokenVerifier } from './google-token-verifier';
 import { IssuedTokens, issueTokens } from './issue-tokens';
 import { toUserResponse, UserResponse } from './user-response';
@@ -22,7 +21,6 @@ export interface GoogleLoginResult extends IssuedTokens {
  */
 export async function googleLogin(
   idToken: string | undefined,
-  termsAccepted: boolean | undefined,
   verifier: GoogleTokenVerifier,
 ): Promise<GoogleLoginResult> {
   if (!idToken) {
@@ -69,12 +67,10 @@ export async function googleLogin(
     );
   }
 
-  // Só exige aceite dos termos na criação da conta — quem já tem conta
-  // via Google não precisa aceitar de novo a cada login.
-  if (!termsAccepted) {
-    throw new HttpError(400, 'É preciso aceitar os Termos de Uso para criar uma conta.');
-  }
-
+  // Não exige mais aceite de termos aqui — quem cria conta pela primeira
+  // vez via Google passa pelo mesmo gate de /cadastro/termos que quem se
+  // registra por e-mail/senha, no primeiro acesso autenticado (ver
+  // register.ts e o layout do front).
   let createdUser;
   try {
     [createdUser] = await db
@@ -83,8 +79,6 @@ export async function googleLogin(
         email: googleUser.email,
         googleId: googleUser.googleId,
         googlePhotoUrl: googleUser.picture,
-        termsAcceptedAt: new Date(),
-        termsVersion: CURRENT_TERMS_VERSION,
       })
       .returning();
   } catch (error) {

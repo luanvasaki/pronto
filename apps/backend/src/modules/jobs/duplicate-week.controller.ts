@@ -9,10 +9,11 @@ export async function duplicateWeekHandler(req: Request, res: Response, next: Ne
       throw new HttpError(401, 'Sessão inválida ou expirada.');
     }
 
-    const { sourceWeekStart, targetWeekStart, termsAccepted } = req.body as {
+    const { sourceWeekStart, targetWeekStart, termsAccepted, minorsTermsAccepted } = req.body as {
       sourceWeekStart?: string;
       targetWeekStart?: string;
       termsAccepted?: boolean;
+      minorsTermsAccepted?: boolean;
     };
 
     const parsedSource = sourceWeekStart ? new Date(sourceWeekStart) : undefined;
@@ -31,6 +32,9 @@ export async function duplicateWeekHandler(req: Request, res: Response, next: Ne
       sourceWeekStart: parsedSource,
       targetWeekStart: parsedTarget,
       termsAccepted,
+      minorsTermsAccepted,
+      ipAddress: req.ip ?? null,
+      userAgent: req.get('user-agent') ?? null,
     });
     res.status(201).json({ jobs: result });
   } catch (error) {

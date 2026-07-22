@@ -4,15 +4,21 @@ import { applications, companies, jobs, workerProfiles } from '../../db/schema';
 import { isMinor as checkIsMinor } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
 import { isUniqueViolation } from '../../shared/is-unique-violation';
-import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
+import { getLatestConsentDocument } from '../consent-documents/get-consent-document';
 import { areApplicationsClosed } from '../jobs/applications-close';
 import { satisfiesCnhRequirement } from '../jobs/cnh';
 import { ApplicationResponse, toApplicationResponse } from './application-response';
 
+export interface CreateApplicationConsent {
+  termsAccepted: boolean | undefined;
+  ipAddress: string | null;
+  userAgent: string | null;
+}
+
 export async function createApplication(
   workerId: string,
   jobId: string,
-  termsAccepted: boolean | undefined,
+  consent: CreateApplicationConsent,
 ): Promise<ApplicationResponse> {
   const profile = await db.query.workerProfiles.findFirst({
     where: eq(workerProfiles.userId, workerId),
@@ -23,7 +29,7 @@ export async function createApplication(
   if (profile.kycStatus !== 'approved') {
     throw new HttpError(403, 'Complete a verificação do seu documento antes de se candidatar.');
   }
-  if (!termsAccepted) {
+  if (!consent.termsAccepted) {
     throw new HttpError(400, 'É preciso confirmar que essa candidatura é intermediação avulsa antes de se candidatar.');
   }
 
@@ -64,11 +70,20 @@ export async function createApplication(
     throw new HttpError(400, 'Você já se candidatou a essa vaga.');
   }
 
+  const latestTerms = await getLatestConsentDocument('platform_terms');
+
   let application;
   try {
     [application] = await db
       .insert(applications)
-      .values({ jobId, workerId, termsAcceptedAt: new Date(), termsVersion: CURRENT_TERMS_VERSION })
+      .values({
+        jobId,
+        workerId,
+        termsAcceptedAt: new Date(),
+        termsVersion: latestTerms.version,
+        termsIpAddress: consent.ipAddress,
+        termsUserAgent: consent.userAgent,
+      })
       .returning();
   } catch (error) {
     if (isUniqueViolation(error)) {

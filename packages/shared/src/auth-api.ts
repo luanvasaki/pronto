@@ -8,14 +8,10 @@ export interface UserResponse {
   googlePhotoUrl: string | null;
 }
 
-export function register(
-  email: string,
-  password: string,
-  termsAccepted: boolean,
-): Promise<{ user: UserResponse }> {
+export function register(email: string, password: string): Promise<{ user: UserResponse }> {
   return apiFetch('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ email, password, termsAccepted }),
+    body: JSON.stringify({ email, password }),
   });
 }
 
@@ -26,10 +22,10 @@ export function login(email: string, password: string): Promise<{ user: UserResp
   });
 }
 
-export function googleLogin(idToken: string, termsAccepted: boolean): Promise<{ user: UserResponse }> {
+export function googleLogin(idToken: string): Promise<{ user: UserResponse }> {
   return apiFetch('/auth/google', {
     method: 'POST',
-    body: JSON.stringify({ idToken, termsAccepted }),
+    body: JSON.stringify({ idToken }),
   });
 }
 
@@ -49,6 +45,40 @@ export function resetPassword(token: string, newPassword: string): Promise<{ mes
 
 export function getCurrentUser(): Promise<{ user: UserResponse }> {
   return apiFetch('/auth/me');
+}
+
+export interface ConsentDocumentChapter {
+  number: string;
+  heading: string;
+  body: string;
+}
+
+export interface ConsentDocumentResponse {
+  type: 'platform_terms' | 'minors_opportunity' | 'login_summary';
+  version: string;
+  chapters: ConsentDocumentChapter[];
+  declaration: string;
+}
+
+/** Sem auth — o texto vigente do termo precisa ficar acessível de qualquer tela. */
+export function getConsentDocument(
+  type: ConsentDocumentResponse['type'],
+): Promise<ConsentDocumentResponse> {
+  return apiFetch(`/consent-documents/${type}`);
+}
+
+export function acceptTerms(version: string): Promise<{ termsVersion: string }> {
+  return apiFetch('/auth/accept-terms', {
+    method: 'PUT',
+    body: JSON.stringify({ version }),
+  });
+}
+
+export function acceptLoginTerms(version: string): Promise<{ version: string }> {
+  return apiFetch('/auth/accept-login-terms', {
+    method: 'POST',
+    body: JSON.stringify({ version }),
+  });
 }
 
 let inFlightRefresh: Promise<{ success: true }> | null = null;

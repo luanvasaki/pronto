@@ -1,6 +1,7 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies, jobs, shifts, workerProfiles } from '../../db/schema';
+import { getConsentStatus } from '../auth/get-consent-status';
 import { updateCompanyRatingAggregate } from '../ratings/update-rating-aggregates';
 import { HttpError } from '../../shared/errors/http-error';
 
@@ -17,6 +18,8 @@ export interface CompanyProfileDetails {
   businessSegmentOther: string | null;
   verificationStatus: string;
   rejectionReason: string | null;
+  needsTermsAcceptance: boolean;
+  hasAcceptedLoginTerms: boolean;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
   jobsPosted: number;
@@ -40,6 +43,7 @@ export async function getCompanyProfile(ownerUserId: string): Promise<CompanyPro
   // precisar de uma avaliação nova pra disparar o recalculo.
   await updateCompanyRatingAggregate(existing.id);
   const company = (await db.query.companies.findFirst({ where: eq(companies.id, existing.id) })) ?? existing;
+  const consentStatus = await getConsentStatus(ownerUserId);
 
   // `jobsPosted` conta ao vivo — mesmo padrão já usado pro admin em
   // list-companies.ts.
@@ -113,6 +117,8 @@ export async function getCompanyProfile(ownerUserId: string): Promise<CompanyPro
     businessSegmentOther: company.businessSegmentOther,
     verificationStatus: company.verificationStatus,
     rejectionReason: company.rejectionReason,
+    needsTermsAcceptance: consentStatus.needsTermsAcceptance,
+    hasAcceptedLoginTerms: consentStatus.hasAcceptedLoginTerms,
     avgRating: company.avgRating,
     avgCategoryScores: company.avgCategoryScores ?? null,
     jobsPosted: Number(jobsPosted),

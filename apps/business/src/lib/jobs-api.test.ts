@@ -48,6 +48,30 @@ describe('createJob', () => {
       body: JSON.stringify({ ...input, termsAccepted: true }),
     });
   });
+
+  it('inclui minorsTermsAccepted no corpo quando informado', async () => {
+    const input = {
+      categoryId: 'cat-1',
+      description: 'Descrição da vaga',
+      requiresExperience: false,
+      addressLabel: 'Vila Madalena, São Paulo',
+      locationLat: -23.55,
+      locationLng: -46.63,
+      positionsTotal: 2,
+      payAmount: '120.00',
+      startsAt: '2026-08-01T18:00:00.000Z',
+      endsAt: '2026-08-01T23:00:00.000Z',
+      minorsAllowed: true,
+    };
+    apiFetchMock.mockResolvedValue({ id: '1', ...input, positionsFilled: 0, status: 'open' });
+
+    await createJob(input, true, true);
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/jobs', {
+      method: 'POST',
+      body: JSON.stringify({ ...input, termsAccepted: true, minorsTermsAccepted: true }),
+    });
+  });
 });
 
 describe('updateJob', () => {
@@ -75,6 +99,30 @@ describe('updateJob', () => {
     expect(apiFetchMock).toHaveBeenCalledWith('/jobs/job-1', {
       method: 'PATCH',
       body: JSON.stringify(input),
+    });
+  });
+
+  it('inclui minorsTermsAccepted no corpo quando informado', async () => {
+    const input = {
+      categoryId: 'cat-1',
+      description: 'Descrição da vaga',
+      requiresExperience: false,
+      addressLabel: 'Vila Madalena, São Paulo',
+      locationLat: -23.55,
+      locationLng: -46.63,
+      positionsTotal: 2,
+      payAmount: '120.00',
+      startsAt: '2026-08-01T18:00:00.000Z',
+      endsAt: '2026-08-01T23:00:00.000Z',
+      minorsAllowed: true,
+    };
+    apiFetchMock.mockResolvedValue({ id: 'job-1', ...input, positionsFilled: 0, status: 'open' });
+
+    await updateJob('job-1', input, true);
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/jobs/job-1', {
+      method: 'PATCH',
+      body: JSON.stringify({ ...input, minorsTermsAccepted: true }),
     });
   });
 });

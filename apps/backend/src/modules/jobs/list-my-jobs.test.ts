@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { companies, jobs, skillCategories, users } from '../../db/schema';
 import { createJob } from './create-job';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { listMyJobs } from './list-my-jobs';
 
 // Fixtures únicas entre arquivos de teste (ver README).
@@ -57,7 +59,7 @@ describe('listMyJobs', () => {
       payAmount: '100.00',
       startsAt: TOMORROW.toISOString(),
       endsAt: TOMORROW_PLUS_5H.toISOString(),
-    }, true);
+    }, CONSENT);
     const second = await createJob(owner.id, {
       categoryId: category.id,
       description: 'Segunda vaga publicada, descrição bem detalhada.',
@@ -69,7 +71,7 @@ describe('listMyJobs', () => {
       payAmount: '150.00',
       startsAt: TOMORROW.toISOString(),
       endsAt: TOMORROW_PLUS_5H.toISOString(),
-    }, true);
+    }, CONSENT);
 
     const result = await listMyJobs(owner.id);
 

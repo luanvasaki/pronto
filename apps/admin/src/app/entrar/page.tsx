@@ -8,7 +8,6 @@ import { Button } from '../../components/ui/button';
 import { GoogleLoginButton } from '../../components/ui/google-login-button';
 import { Input } from '../../components/ui/input';
 import { Logo } from '../../components/ui/logo';
-import { TermsCheckbox } from '../../components/ui/terms-checkbox';
 
 const NOT_ADMIN_MESSAGE = 'Essa conta não tem acesso de administrador.';
 
@@ -25,7 +24,6 @@ export default function EntrarPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,7 +63,7 @@ export default function EntrarPage() {
     setIsSubmitting(true);
 
     try {
-      await googleLogin(idToken, termsAccepted);
+      await googleLogin(idToken);
       await requireAdminOrReject();
       router.push('/admin');
     } catch (err) {
@@ -93,11 +91,6 @@ export default function EntrarPage() {
         </div>
 
         <GoogleLoginButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
-
-        <TermsCheckbox checked={termsAccepted} onChange={setTermsAccepted} id="terms-accepted-entrar" />
-        <p className="-mt-3 text-xs text-text-secondary">
-          Só necessário se essa for sua primeira vez entrando com o Google.
-        </p>
 
         <div className="flex items-center gap-3 text-xs font-medium text-text-secondary">
           <span className="h-px flex-1 bg-border" />

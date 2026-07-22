@@ -4,6 +4,8 @@ import { updateApplicationStatus } from '../applications/update-application-stat
 import { db } from '../../db/client';
 import { applications, companies, jobs, payments, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { checkIn } from '../shifts/check-in';
 import { checkOut } from '../shifts/check-out';
 import { chargeForShift } from './charge-for-shift';
@@ -50,7 +52,7 @@ async function setupReleasedShift() {
       endsAt: TOMORROW_PLUS_5H,
     })
     .returning();
-  const application = await createApplication(worker.id, job.id, true);
+  const application = await createApplication(worker.id, job.id, CONSENT);
   await updateApplicationStatus(owner.id, application.id, 'approved');
   const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
   if (!shift) {
@@ -91,7 +93,7 @@ describe('confirmPayment', () => {
     const { shift } = await setupReleasedShift();
     const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
 
-    await expect(confirmPayment(otherWorker.id, shift.id, true)).rejects.toThrow('não tem acesso');
+    await expect(confirmPayment(otherWorker.id, shift.id, CONSENT)).rejects.toThrow('não tem acesso');
   });
 
   it('rejeita confirmar antes da empresa marcar como pago', async () => {
@@ -118,7 +120,7 @@ describe('confirmPayment', () => {
         endsAt: TOMORROW_PLUS_5H,
       })
       .returning();
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');
@@ -126,7 +128,7 @@ describe('confirmPayment', () => {
     const completed = await checkOut(worker.id, shift.id);
     await chargeForShift(SUCCESS_GATEWAY, completed.id, completed.payAmountSnapshot);
 
-    await expect(confirmPayment(worker.id, completed.id, true)).rejects.toThrow(
+    await expect(confirmPayment(worker.id, completed.id, CONSENT)).rejects.toThrow(
       'ainda não foi marcado como pago',
     );
   });
@@ -134,7 +136,7 @@ describe('confirmPayment', () => {
   it('confirma o recebimento', async () => {
     const { worker, shift } = await setupReleasedShift();
 
-    const result = await confirmPayment(worker.id, shift.id, true);
+    const result = await confirmPayment(worker.id, shift.id, CONSENT);
 
     expect(result.status).toBe('confirmed');
     expect(result.confirmedAt).toBeInstanceOf(Date);
@@ -147,8 +149,8 @@ describe('confirmPayment', () => {
     const { worker, shift } = await setupReleasedShift();
 
     const results = await Promise.allSettled([
-      confirmPayment(worker.id, shift.id, true),
-      confirmPayment(worker.id, shift.id, true),
+      confirmPayment(worker.id, shift.id, CONSENT),
+      confirmPayment(worker.id, shift.id, CONSENT),
     ]);
 
     const fulfilled = results.filter((result) => result.status === 'fulfilled');
@@ -179,13 +181,13 @@ describe('confirmPayment', () => {
 
   it('rejeita confirmar duas vezes', async () => {
     const { worker, shift } = await setupReleasedShift();
-    await confirmPayment(worker.id, shift.id, true);
+    await confirmPayment(worker.id, shift.id, CONSENT);
 
     // Depois da 1ª confirmação, o status já não é mais 'released' —
     // a 2ª chamada cai na mesma guarda de "ainda não foi marcado como
     // pago", não porque a empresa não liberou, mas porque já saiu do
     // estado que aceita confirmação.
-    await expect(confirmPayment(worker.id, shift.id, true)).rejects.toThrow(
+    await expect(confirmPayment(worker.id, shift.id, CONSENT)).rejects.toThrow(
       'ainda não foi marcado como pago',
     );
   });

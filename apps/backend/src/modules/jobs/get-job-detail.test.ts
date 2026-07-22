@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { applications, companies, jobs, skillCategories, users, workerProfiles, workerSkills } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { createJob } from './create-job';
 import { getJobDetailForWorker } from './get-job-detail';
 
@@ -34,7 +36,7 @@ async function setup() {
       startsAt: TOMORROW.toISOString(),
       endsAt: TOMORROW_PLUS_5H.toISOString(),
     },
-    true,
+    CONSENT,
   );
   const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
   await db.insert(workerProfiles).values({ userId: worker.id, fullName: 'Ana Souza', kycStatus: 'approved' });
@@ -86,7 +88,7 @@ describe('getJobDetailForWorker', () => {
 
   it('marca hasApplied quando o trabalhador já se candidatou', async () => {
     const { worker, job } = await setup();
-    await createApplication(worker.id, job.id, true);
+    await createApplication(worker.id, job.id, CONSENT);
 
     const result = await getJobDetailForWorker(worker.id, job.id);
 
@@ -102,7 +104,7 @@ describe('getJobDetailForWorker', () => {
 
   it('deixa ver vaga não aberta se o trabalhador já se candidatou antes', async () => {
     const { worker, job } = await setup();
-    await createApplication(worker.id, job.id, true);
+    await createApplication(worker.id, job.id, CONSENT);
     await db.update(jobs).set({ status: 'filled' }).where(eq(jobs.id, job.id));
 
     const result = await getJobDetailForWorker(worker.id, job.id);

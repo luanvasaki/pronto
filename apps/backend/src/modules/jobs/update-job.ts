@@ -4,10 +4,17 @@ import { applications, jobs, skillCategories, workerProfiles } from '../../db/sc
 import { assertOwnsCompany } from '../../shared/assert-owns-company';
 import { isMinor as checkIsMinor } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
+import { getLatestConsentDocument } from '../consent-documents/get-consent-document';
 import { JobInput, validateJobInput } from './job-input-validation';
 import { JobResponse, toJobResponse } from './job-response';
 
 export type UpdateJobInput = JobInput;
+
+export interface UpdateJobConsent {
+  minorsTermsAccepted: boolean | undefined;
+  ipAddress: string | null;
+  userAgent: string | null;
+}
 
 /**
  * Substitui os dados da vaga (mesmo formato de createJob), só
@@ -21,6 +28,7 @@ export async function updateJob(
   ownerUserId: string,
   jobId: string,
   input: UpdateJobInput,
+  consent: UpdateJobConsent,
 ): Promise<JobResponse> {
   const job = await db.query.jobs.findFirst({ where: eq(jobs.id, jobId) });
   if (!job) {
@@ -76,6 +84,16 @@ export async function updateJob(
     throw new HttpError(400, 'Categoria inválida.');
   }
 
+  // Só exige (e regrava) o aceite do termo de menores quando a vaga
+  // ainda não tinha esse aceite registrado — se já foi aceito antes
+  // (job.minorsTermsAcceptedAt preenchido) e continua ligado, não
+  // pede de novo a cada edição.
+  const needsMinorsTermsAcceptance = validated.minorsAllowed && !job.minorsTermsAcceptedAt;
+  if (needsMinorsTermsAcceptance && !consent.minorsTermsAccepted) {
+    throw new HttpError(400, 'É preciso aceitar o termo de habilitar candidaturas de 16-17 anos.');
+  }
+  const latestMinorsTerms = needsMinorsTermsAcceptance ? await getLatestConsentDocument('minors_opportunity') : null;
+
   const [updated] = await db
     .update(jobs)
     .set({
@@ -100,6 +118,14 @@ export async function updateJob(
       endsAt: validated.endsAt,
       applicationsCloseAt: validated.applicationsCloseAt,
       updatedAt: new Date(),
+      ...(latestMinorsTerms
+        ? {
+            minorsTermsAcceptedAt: new Date(),
+            minorsTermsVersion: latestMinorsTerms.version,
+            minorsTermsIpAddress: consent.ipAddress,
+            minorsTermsUserAgent: consent.userAgent,
+          }
+        : {}),
     })
     .where(and(eq(jobs.id, jobId), eq(jobs.status, 'open')))
     .returning();

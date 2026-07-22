@@ -75,11 +75,11 @@ describe('CadastroPage', () => {
     expect(await screen.findByText('Não foi possível carregar as categorias.')).toBeInTheDocument();
   });
 
-  it('mostra "Passo 2 de 3" e volta com o botão de voltar', async () => {
+  it('mostra "Passo 3 de 4" e volta com o botão de voltar', async () => {
     const user = userEvent.setup();
     render(<CadastroPage />);
 
-    expect(screen.getByText('Passo 2 de 3')).toBeInTheDocument();
+    expect(screen.getByText('Passo 3 de 4')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Voltar' }));
 
     expect(backMock).toHaveBeenCalled();

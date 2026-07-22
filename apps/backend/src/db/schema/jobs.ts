@@ -75,9 +75,19 @@ export const jobs = pgTable('jobs', {
   // users.termsAcceptedAt, mas por vaga: dá respaldo jurídico de que a
   // empresa confirmou isso pra cada escala publicada, não só uma vez no cadastro.
   termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
-  // Qual redação do texto foi aceita (ver shared/terms-version.ts) —
+  // Qual versão de consent_documents (type 'platform_terms') foi aceita —
   // nulo pras vagas criadas antes desse campo existir.
   termsVersion: varchar('terms_version', { length: 20 }),
+  termsIpAddress: varchar('terms_ip_address', { length: 64 }),
+  termsUserAgent: text('terms_user_agent'),
+  // Aceite do termo específico de habilitar candidaturas de 16-17 anos
+  // (consent_documents type 'minors_opportunity') — só preenchido quando
+  // minorsAllowed é true; exigido em create-job.ts/update-job.ts sempre
+  // que minorsAllowed estiver ligado, mesmo padrão do termo geral acima.
+  minorsTermsAcceptedAt: timestamp('minors_terms_accepted_at', { withTimezone: true }),
+  minorsTermsVersion: varchar('minors_terms_version', { length: 20 }),
+  minorsTermsIpAddress: varchar('minors_terms_ip_address', { length: 64 }),
+  minorsTermsUserAgent: text('minors_terms_user_agent'),
   status: jobStatusEnum('status').notNull().default('open'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

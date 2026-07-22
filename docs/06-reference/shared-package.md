@@ -5,7 +5,7 @@
 | Arquivo | Exports | Notas |
 |---|---|---|
 | `api.ts` | `ApiError`, `apiFetch<T>` | `credentials: 'include'` sempre; detecta `FormData` pra não forçar `Content-Type` |
-| `auth-api.ts` | `register`, `login`, `googleLogin`, `forgotPassword`, `resetPassword`, `getCurrentUser`, `refreshSession`, `logout`, tipo `UserResponse` | `refreshSession` deduplica chamadas concorrentes (evita disparo de detecção de reuso de token em StrictMode do React) |
+| `auth-api.ts` | `register`, `login`, `googleLogin`, `forgotPassword`, `resetPassword`, `getCurrentUser`, `refreshSession`, `logout`, `getConsentDocument`, `acceptTerms`, `acceptLoginTerms`, tipos `UserResponse`/`ConsentDocumentChapter`/`ConsentDocumentResponse` | `refreshSession` deduplica chamadas concorrentes (evita disparo de detecção de reuso de token em StrictMode do React). `register`/`googleLogin` não recebem mais argumento de aceite de termos — ver [`05-operations/auth-and-security.md`](../05-operations/auth-and-security.md) |
 | `benefits.ts` | `formatBenefitLabel`, tipo `BenefitProvision` | Retorna `null` (não texto errado) se `paid` sem valor |
 | `cep-api.ts` | `lookupCep`, tipo `CepLookupResult` | Chama ViaCEP direto do navegador, não passa pelo backend |
 | `cnh.ts` | `CNH_CATEGORY_OPTIONS` | Duplicado de propósito do schema do backend, sem import cruzado |

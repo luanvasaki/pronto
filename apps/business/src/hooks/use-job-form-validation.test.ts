@@ -22,6 +22,8 @@ function baseInput() {
     startsAt: TOMORROW,
     endsAt: TOMORROW_PLUS_5H,
     applicationsCloseAt: '',
+    minorsAllowed: false,
+    minorsTermsAccepted: false,
   };
 }
 
@@ -62,6 +64,23 @@ describe('useJobFormValidation', () => {
 
     const accepted = renderHook(() => useJobFormValidation({ ...baseInput(), termsAccepted: true }));
     expect(accepted.result.current.missingFields).toEqual([]);
+  });
+
+  it('exige aceite do termo de menores só quando minorsAllowed está ligado', () => {
+    const withoutMinors = renderHook(() => useJobFormValidation({ ...baseInput(), minorsAllowed: false }));
+    expect(withoutMinors.result.current.isValid).toBe(true);
+
+    const minorsNotAccepted = renderHook(() =>
+      useJobFormValidation({ ...baseInput(), minorsAllowed: true, minorsTermsAccepted: false }),
+    );
+    expect(minorsNotAccepted.result.current.missingFields).toContain(
+      'aceite do termo de habilitar candidaturas de 16-17 anos',
+    );
+
+    const minorsAccepted = renderHook(() =>
+      useJobFormValidation({ ...baseInput(), minorsAllowed: true, minorsTermsAccepted: true }),
+    );
+    expect(minorsAccepted.result.current.isValid).toBe(true);
   });
 
   it('rejeita término antes do início e início no passado', () => {

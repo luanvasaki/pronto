@@ -31,6 +31,7 @@ export async function createJobHandler(req: Request, res: Response, next: NextFu
       endsAt,
       applicationsCloseAt,
       termsAccepted,
+      minorsTermsAccepted,
     } = req.body as {
       categoryId?: string;
       description?: string;
@@ -53,6 +54,7 @@ export async function createJobHandler(req: Request, res: Response, next: NextFu
       endsAt?: string;
       applicationsCloseAt?: string;
       termsAccepted?: boolean;
+      minorsTermsAccepted?: boolean;
     };
 
     const result = await createJob(
@@ -79,7 +81,12 @@ export async function createJobHandler(req: Request, res: Response, next: NextFu
         endsAt,
         applicationsCloseAt,
       },
-      termsAccepted,
+      {
+        termsAccepted,
+        minorsTermsAccepted,
+        ipAddress: req.ip ?? null,
+        userAgent: req.get('user-agent') ?? null,
+      },
     );
     res.status(201).json(result);
   } catch (error) {

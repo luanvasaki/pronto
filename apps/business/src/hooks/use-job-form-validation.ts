@@ -23,6 +23,9 @@ export interface JobFormValidationInput {
   applicationsCloseAt: string;
   /** Undefined = não exigido de novo (edição não repete o aceite, só a criação). */
   termsAccepted?: boolean;
+  minorsAllowed: boolean;
+  /** Só relevante quando `minorsAllowed` é true (ver MinorsTermsModal). */
+  minorsTermsAccepted: boolean;
 }
 
 export interface JobFormValidationResult {
@@ -101,6 +104,9 @@ export function useJobFormValidation(input: JobFormValidationInput): JobFormVali
     missingFields.push('prazo de candidatura até o início');
   }
   if (input.termsAccepted === false) missingFields.push('confirmação de que a escala é intermediação avulsa');
+  if (input.minorsAllowed && !input.minorsTermsAccepted) {
+    missingFields.push('aceite do termo de habilitar candidaturas de 16-17 anos');
+  }
 
   return {
     positionsTotalNumber,

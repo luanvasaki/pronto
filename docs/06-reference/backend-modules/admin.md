@@ -14,7 +14,7 @@
 | `PATCH /admin/companies/:id/verification` | Aprova/rejeita empresa |
 | `PATCH /admin/skill-categories/:id` | Aprova (com correção de nome opcional) / rejeita categoria |
 | `DELETE /admin/demo-data` | Remove em cascata manual tudo marcado `isDemo: true` |
-| `GET /admin/companies`, `/admin/workers` | Listas com métricas agregadas, ordenadas por volume |
+| `GET /admin/companies`, `/admin/workers` | Listas com métricas agregadas, ordenadas por volume — inclui histórico de aceite de termos (versão/data/IP do `platform_terms`, do `login_consents` mais recente, e pra empresa, cada vaga com `minorsTermsAcceptedAt`), pra prova em disputa jurídica |
 | `GET /admin/failed-payments` | Pagamentos `failed`, pra ação manual (sem retry automático) |
 | `POST /admin/users/:id/reset-password` | Dispara o fluxo de "esqueci senha" em nome do admin |
 
@@ -24,3 +24,4 @@
 - **Aprovação de empresa/categoria**: UPDATE condicional (`WHERE status = 'pending'`) fecha a corrida de revisão dupla, mesmo padrão do resto do sistema.
 - **`DELETE /admin/demo-data`**: apaga na ordem certa (ratings→payments→shifts→applications→jobs→users donos) porque as FKs de negócio não têm `onDelete: cascade`.
 - **`totalJobsPosted`/`totalShiftsCompleted` são colunas mortas** — as listagens de empresas/workers aqui contam tudo ao vivo via `count(*) filter`, não confiam nessas colunas.
+- **Histórico de aceite de termos** (`list-companies.ts`/`list-workers.ts`): só leitura, sem endpoint próprio. `login_consents` pode ter várias linhas por usuário (uma por versão já aceita) — a listagem pega sempre a mais recente por `acceptedAt`. Renderizado colapsado (componente `ConsentHistory`, apps/admin) nas páginas `/admin/empresas`/`/admin/trabalhadores`.

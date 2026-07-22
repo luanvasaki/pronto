@@ -9,6 +9,13 @@ export interface DuplicateWeekInput {
   sourceWeekStart: Date;
   targetWeekStart: Date;
   termsAccepted: boolean;
+  // Só é checado de verdade (ver createJob) se alguma vaga da semana de
+  // origem tiver minorsAllowed — um aceite só pro lote inteiro, não um
+  // por vaga duplicada, senão duplicar uma semana com vaga pra menor
+  // vira um modal por vaga no meio de uma ação em lote.
+  minorsTermsAccepted?: boolean;
+  ipAddress: string | null;
+  userAgent: string | null;
 }
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -83,7 +90,12 @@ export async function duplicateWeek(ownerUserId: string, input: DuplicateWeekInp
           endsAt: endsAt.toISOString(),
           applicationsCloseAt: applicationsCloseAt?.toISOString(),
         },
-        input.termsAccepted,
+        {
+          termsAccepted: input.termsAccepted,
+          minorsTermsAccepted: input.minorsTermsAccepted,
+          ipAddress: input.ipAddress,
+          userAgent: input.userAgent,
+        },
         tx,
       );
       created.push(job);

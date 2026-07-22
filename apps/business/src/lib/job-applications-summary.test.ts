@@ -23,6 +23,7 @@ function makeJob(id: string): Job {
     transportProvision: 'none',
     transportAmount: null,
     minorsAllowed: false,
+    hasMinorsTermsAccepted: false,
     addressLabel: '',
     locationLat: 0,
     locationLng: 0,

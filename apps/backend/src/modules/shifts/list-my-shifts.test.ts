@@ -4,6 +4,8 @@ import { updateApplicationStatus } from '../applications/update-application-stat
 import { db } from '../../db/client';
 import { applications, companies, jobs, payments, ratings, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { createRating } from '../ratings/create-rating';
 import { COMPANY_RATING_CATEGORIES, WORKER_RATING_CATEGORIES } from '../ratings/rating-categories';
 import { checkIn } from './check-in';
@@ -82,7 +84,7 @@ describe('listMyShifts', () => {
         endsAt: TOMORROW_PLUS_5H,
       })
       .returning();
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
     const result = await listMyShifts(worker.id);
@@ -118,7 +120,7 @@ describe('listMyShifts', () => {
         endsAt: TOMORROW_PLUS_5H,
       })
       .returning();
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const shift = await db.query.shifts.findFirst({ where: eq(shifts.applicationId, application.id) });
     if (!shift) throw new Error('Turno não foi criado no setup do teste.');

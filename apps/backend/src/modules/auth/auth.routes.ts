@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { createAuthRateLimiter, createLoginAccountRateLimiter } from '../../shared/middlewares/rate-limit';
+import { acceptLoginTermsHandler } from './accept-login-terms.controller';
+import { acceptTermsHandler } from './accept-terms.controller';
 import { changePasswordHandler } from './change-password.controller';
 import { createEmailSender } from './create-email-sender';
 import { createGoogleTokenVerifier } from './create-google-token-verifier';
@@ -38,6 +40,8 @@ export function createAuthRoutes(options: AuthRoutesOptions = {}): Router {
   authRoutes.post('/auth/forgot-password', authRateLimiter, createForgotPasswordHandler(emailSender));
   authRoutes.post('/auth/reset-password', authRateLimiter, resetPasswordHandler);
   authRoutes.get('/auth/me', requireAuth, getMeHandler);
+  authRoutes.put('/auth/accept-terms', requireAuth, acceptTermsHandler);
+  authRoutes.post('/auth/accept-login-terms', requireAuth, acceptLoginTermsHandler);
   authRoutes.post('/auth/change-password', requireAuth, changePasswordHandler);
   authRoutes.post('/auth/refresh', authRateLimiter, refreshSessionHandler);
   authRoutes.post('/auth/logout', logoutHandler);

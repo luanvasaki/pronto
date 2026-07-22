@@ -1,4 +1,4 @@
-import { boolean, pgEnum, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import { boolean, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 
 /**
  * Login é email + senha, ou Google (`googleId`) — `passwordHash` fica
@@ -26,13 +26,20 @@ export const users = pgTable(
     // atualizado depois (se a foto do Google mudar, não seguimos).
     // Usado como sugestão de foto de perfil do trabalhador.
     googlePhotoUrl: varchar('google_photo_url', { length: 500 }),
-    // Aceite da cláusula "Pronto é só intermediário, sem vínculo
-    // empregatício" — obrigatório no registro/primeiro login com Google.
+    // Aceite da tela cheia de /cadastro/termos (não mais no registro —
+    // ver accept-terms.ts e modules/consent-documents).
     termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
-    // Qual redação do texto foi aceita (ver shared/terms-version.ts) —
-    // nulo pras contas criadas antes desse campo existir, já que não dá
-    // pra saber retroativamente qual versão elas viram.
+    // Qual versão de consent_documents (type 'platform_terms') foi
+    // aceita — nulo pras contas criadas antes desse campo existir, já
+    // que não dá pra saber retroativamente qual versão elas viram.
     termsVersion: varchar('terms_version', { length: 20 }),
+    // IP e user-agent no momento do aceite — evidência técnica exigida
+    // pelo próprio Termo de Uso (seção "Evidência do aceite, governança
+    // de versões e canais"), pra provar numa disputa que o usuário teve
+    // acesso ao conteúdo e clicou aceitar. Nulo pras contas anteriores a
+    // esse campo existir, mesma razão do termsVersion acima.
+    termsIpAddress: varchar('terms_ip_address', { length: 64 }),
+    termsUserAgent: text('terms_user_agent'),
     phoneVerifiedAt: timestamp('phone_verified_at', { withTimezone: true }),
     status: userStatusEnum('status').notNull().default('active'),
     // Sem self-serve pra virar admin — só concedido via update direto

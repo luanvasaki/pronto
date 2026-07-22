@@ -25,6 +25,21 @@ const COMPANY = {
   jobsPosted: 3,
   shiftsCompleted: 5,
   createdAt: '2026-07-01T12:00:00.000Z',
+  termsAcceptedAt: '2026-06-01T10:00:00.000Z',
+  termsVersion: '1.1',
+  termsIpAddress: '203.0.113.1',
+  loginTermsAcceptedAt: '2026-06-02T10:00:00.000Z',
+  loginTermsVersion: '1.0',
+  loginTermsIpAddress: '203.0.113.2',
+  minorsTermsJobs: [
+    {
+      jobId: 'job-1',
+      description: 'Vaga de garçom pra evento',
+      minorsTermsAcceptedAt: '2026-06-03T10:00:00.000Z',
+      minorsTermsVersion: '1.1',
+      minorsTermsIpAddress: '203.0.113.3',
+    },
+  ],
 };
 
 describe('AdminEmpresasPage', () => {
@@ -111,5 +126,20 @@ describe('AdminEmpresasPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Confirmar envio' }));
 
     expect(await screen.findByText('Não foi possível enviar o link.')).toBeInTheDocument();
+  });
+
+  it('mostra o histórico de aceite de termos (incluindo o de vagas pra menores) ao expandir', async () => {
+    listAdminCompaniesMock.mockResolvedValue({ companies: [COMPANY] });
+    const user = userEvent.setup();
+
+    render(<AdminEmpresasPage />);
+    await screen.findByText('Bar do Zé');
+    expect(screen.queryByText(/^v1\.1 ·/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Ver histórico de aceite de termos' }));
+
+    expect(screen.getByText(/^v1\.1 · .* IP 203\.0\.113\.1$/)).toBeInTheDocument();
+    expect(screen.getByText(/^v1\.0 · .* IP 203\.0\.113\.2$/)).toBeInTheDocument();
+    expect(screen.getByText(/Vaga de garçom pra evento — v1\.1 · .* IP 203\.0\.113\.3$/)).toBeInTheDocument();
   });
 });

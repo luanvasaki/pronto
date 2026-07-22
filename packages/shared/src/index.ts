@@ -4,7 +4,10 @@ export type { BenefitProvision } from './benefits';
 export { CNH_CATEGORY_OPTIONS } from './cnh';
 export type { CnhCategoryOption } from './cnh';
 export {
+  acceptLoginTerms,
+  acceptTerms,
   forgotPassword,
+  getConsentDocument,
   getCurrentUser,
   googleLogin,
   login,
@@ -13,7 +16,7 @@ export {
   register,
   resetPassword,
 } from './auth-api';
-export type { UserResponse } from './auth-api';
+export type { ConsentDocumentChapter, ConsentDocumentResponse, UserResponse } from './auth-api';
 export { isValidCnpj, isValidCpf } from './cpf-cnpj';
 export { lookupCep } from './cep-api';
 export type { CepLookupResult } from './cep-api';

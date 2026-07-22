@@ -1,6 +1,7 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, documents, jobs, shifts, workerProfiles, workerSkills } from '../../db/schema';
+import { getConsentStatus } from '../auth/get-consent-status';
 import { updateWorkerRatingAggregate } from '../ratings/update-rating-aggregates';
 import { isMinor as checkIsMinor } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
@@ -43,6 +44,8 @@ export interface WorkerProfileDetails {
   selfieRejectionReason: string | null;
   cnhRejectionReason: string | null;
   guardianDocumentRejectionReason: string | null;
+  needsTermsAcceptance: boolean;
+  hasAcceptedLoginTerms: boolean;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
   totalShiftsCompleted: number;
@@ -64,6 +67,7 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
   if (!profile) {
     throw new HttpError(404, 'Complete seu cadastro antes de ver o perfil.');
   }
+  const consentStatus = await getConsentStatus(userId);
 
   const skills = await db.query.workerSkills.findMany({ where: eq(workerSkills.workerId, userId) });
   const workerDocuments = await db.query.documents.findMany({
@@ -173,6 +177,8 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
     selfieRejectionReason,
     cnhRejectionReason,
     guardianDocumentRejectionReason,
+    needsTermsAcceptance: consentStatus.needsTermsAcceptance,
+    hasAcceptedLoginTerms: consentStatus.hasAcceptedLoginTerms,
     avgRating: profile.avgRating,
     avgCategoryScores: profile.avgCategoryScores ?? null,
     totalShiftsCompleted,

@@ -16,6 +16,7 @@ vi.mock('next/navigation', () => ({
 const listSkillCategoriesMock = vi.fn();
 const createSkillCategoryMock = vi.fn();
 const lookupCepMock = vi.fn();
+const getConsentDocumentMock = vi.fn();
 vi.mock('@shift/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shift/shared')>();
   return {
@@ -24,6 +25,7 @@ vi.mock('@shift/shared', async (importOriginal) => {
     listSkillCategories: (...args: unknown[]) => listSkillCategoriesMock(...args),
     createSkillCategory: (...args: unknown[]) => createSkillCategoryMock(...args),
     lookupCep: (...args: unknown[]) => lookupCepMock(...args),
+    getConsentDocument: (...args: unknown[]) => getConsentDocumentMock(...args),
   };
 });
 
@@ -56,6 +58,8 @@ const PROFILE: CompanyProfileDetails = {
   businessSegmentOther: null,
   verificationStatus: 'approved',
   rejectionReason: null,
+  needsTermsAcceptance: false,
+  hasAcceptedLoginTerms: true,
   avgRating: null,
   avgCategoryScores: null,
   jobsPosted: 0,
@@ -101,6 +105,12 @@ describe('NovaVagaPage', () => {
     createSkillCategoryMock.mockReset();
     lookupCepMock.mockReset();
     geocodeJobAddressMock.mockReset().mockResolvedValue({ lat: null, lng: null });
+    getConsentDocumentMock.mockReset().mockResolvedValue({
+      type: 'minors_opportunity',
+      version: '1.1',
+      chapters: [{ number: '1', heading: 'Teste', body: 'Corpo de teste.' }],
+      declaration: 'Declaração de teste.',
+    });
     Object.defineProperty(window.navigator, 'geolocation', {
       value: {
         getCurrentPosition: vi.fn((success) => success({ coords: { latitude: -23.55, longitude: -46.63 } })),
@@ -196,6 +206,7 @@ describe('NovaVagaPage', () => {
     expect(createJobMock).toHaveBeenCalledWith(
       expect.objectContaining({ categoryId: 'cat-1', positionsTotal: 4, payAmount: '130.00' }),
       true,
+      undefined,
     );
   });
 
@@ -234,6 +245,7 @@ describe('NovaVagaPage', () => {
       expect(createJobMock).toHaveBeenCalledWith(
         expect.objectContaining({ addressLabel: 'Rua Augusta, 1200 - Sala 4 - Consolação, São Paulo - SP' }),
         true,
+        undefined,
       ),
     );
   });
@@ -271,6 +283,7 @@ describe('NovaVagaPage', () => {
           toolsRequired: 'Câmera própria',
         }),
         true,
+        undefined,
       ),
     );
   });
@@ -290,6 +303,7 @@ describe('NovaVagaPage', () => {
       expect(createJobMock).toHaveBeenCalledWith(
         expect.objectContaining({ cnhCategory: 'B', cnhRequired: true }),
         true,
+        undefined,
       ),
     );
   });
@@ -435,7 +449,7 @@ describe('NovaVagaPage', () => {
 
     await waitFor(() => expect(createSkillCategoryMock).toHaveBeenCalledWith('Manobrista'));
     await waitFor(() =>
-      expect(createJobMock).toHaveBeenCalledWith(expect.objectContaining({ categoryId: 'cat-new' }), true),
+      expect(createJobMock).toHaveBeenCalledWith(expect.objectContaining({ categoryId: 'cat-new' }), true, undefined),
     );
   });
 
@@ -449,7 +463,7 @@ describe('NovaVagaPage', () => {
     await user.click(screen.getByRole('button', { name: /^publicar$/i }));
 
     await waitFor(() =>
-      expect(createJobMock).toHaveBeenCalledWith(expect.objectContaining({ applicationsCloseAt: undefined }), true),
+      expect(createJobMock).toHaveBeenCalledWith(expect.objectContaining({ applicationsCloseAt: undefined }), true, undefined),
     );
   });
 
@@ -468,6 +482,7 @@ describe('NovaVagaPage', () => {
       expect(createJobMock).toHaveBeenCalledWith(
         expect.objectContaining({ applicationsCloseAt: new Date(closeAt).toISOString() }),
         true,
+        undefined,
       ),
     );
   });
@@ -504,8 +519,40 @@ describe('NovaVagaPage', () => {
           minorsAllowed: false,
         }),
         true,
+        undefined,
       ),
     );
+  });
+
+  it('abre o termo de menores ao marcar a opção, e trava o botão até aceitar', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Garçom');
+
+    await fillValidForm(user);
+    expect(screen.getByRole('button', { name: /^publicar$/i })).toBeEnabled();
+
+    await user.click(screen.getByLabelText(/vaga disponível pra menores de idade/i));
+
+    expect(await screen.findByText('Habilitar candidaturas de 16-17 anos')).toBeInTheDocument();
+    expect(screen.getByText(/falta preencher:/i)).toHaveTextContent(/termo de habilitar candidaturas/i);
+    expect(screen.getByRole('button', { name: /^publicar$/i })).toBeDisabled();
+  });
+
+  it('cancelar o termo de menores desliga a opção de novo', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Garçom');
+
+    await fillValidForm(user);
+    await user.click(screen.getByLabelText(/vaga disponível pra menores de idade/i));
+    await screen.findByText('Habilitar candidaturas de 16-17 anos');
+
+    await user.click(screen.getByRole('button', { name: /^cancelar$/i }));
+
+    expect(screen.queryByText('Habilitar candidaturas de 16-17 anos')).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/vaga disponível pra menores de idade/i)).not.toBeChecked();
+    expect(screen.getByRole('button', { name: /^publicar$/i })).toBeEnabled();
   });
 
   it('envia o valor da alimentação/transporte quando "Por um valor" é escolhido, e minorsAllowed quando marcado', async () => {
@@ -522,6 +569,7 @@ describe('NovaVagaPage', () => {
     await user.click(transportButtons[1]);
     await user.type(screen.getByLabelText(/valor do transporte/i), '15,50');
     await user.click(screen.getByLabelText(/vaga disponível pra menores de idade/i));
+    await user.click(await screen.findByRole('button', { name: /^li e aceito$/i }));
     await user.click(screen.getByRole('button', { name: /^publicar$/i }));
 
     await waitFor(() =>
@@ -533,6 +581,7 @@ describe('NovaVagaPage', () => {
           transportAmount: '15.50',
           minorsAllowed: true,
         }),
+        true,
         true,
       ),
     );

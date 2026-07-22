@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from './create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { removeApprovedWorker } from './remove-approved-worker';
 import { updateApplicationStatus } from './update-application-status';
 
@@ -40,7 +42,7 @@ async function setup(positionsTotal = 2) {
       endsAt: TOMORROW_PLUS_5H,
     })
     .returning();
-  const application = await createApplication(worker.id, job.id, true);
+  const application = await createApplication(worker.id, job.id, CONSENT);
   return { worker, owner, job, application };
 }
 
@@ -148,7 +150,7 @@ describe('removeApprovedWorker', () => {
     await updateApplicationStatus(owner.id, application.id, 'approved');
     const [otherWorker] = await db.insert(users).values({ phone: OTHER_WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: otherWorker.id, fullName: 'Beatriz Lima' });
-    const otherApplication = await createApplication(otherWorker.id, job.id, true);
+    const otherApplication = await createApplication(otherWorker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, otherApplication.id, 'approved');
     const filledJob = await db.query.jobs.findFirst({ where: eq(jobs.id, job.id) });
     expect(filledJob?.positionsFilled).toBe(2);

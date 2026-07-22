@@ -7,6 +7,10 @@ import { createApplication } from '../applications/create-application';
 import { createJob } from './create-job';
 import { updateJob } from './update-job';
 
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
+const MINORS_CONSENT = { ...CONSENT, minorsTermsAccepted: true } as const;
+const UPDATE_CONSENT = { minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
+
 // Fixtures únicas entre arquivos de teste (ver README).
 const OWNER_PHONE = '+5511966660050';
 const OTHER_OWNER_PHONE = '+5511966660051';
@@ -42,7 +46,7 @@ async function setup() {
     .insert(companies)
     .values({ verificationStatus: 'approved', ownerUserId: owner.id, legalName: 'Buffet Aurora Ltda', tradeName: 'Buffet Aurora', cnpj: TEST_CNPJ });
   const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
-  const job = await createJob(owner.id, baseInput(category.id), true);
+  const job = await createJob(owner.id, baseInput(category.id), CONSENT);
   return { owner, category, job };
 }
 
@@ -72,7 +76,7 @@ describe('updateJob', () => {
     const { category, job } = await setup();
     const [otherOwner] = await db.insert(users).values({ phone: OTHER_OWNER_PHONE }).returning();
 
-    await expect(updateJob(otherOwner.id, job.id, baseInput(category.id))).rejects.toThrow(
+    await expect(updateJob(otherOwner.id, job.id, baseInput(category.id), UPDATE_CONSENT)).rejects.toThrow(
       'não tem acesso',
     );
   });
@@ -82,7 +86,7 @@ describe('updateJob', () => {
     const [owner] = await db.query.users.findMany({ where: eq(users.phone, OWNER_PHONE) });
 
     await expect(
-      updateJob(owner.id, '00000000-0000-0000-0000-000000000000', baseInput(category.id)),
+      updateJob(owner.id, '00000000-0000-0000-0000-000000000000', baseInput(category.id), UPDATE_CONSENT),
     ).rejects.toThrow('não encontrada');
   });
 
@@ -90,7 +94,7 @@ describe('updateJob', () => {
     const { owner, category, job } = await setup();
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
     // baseInput usa positionsTotal 2 — preenche a segunda posição também pra fechar a vaga.
     const [secondWorkerUser] = await db
@@ -98,10 +102,10 @@ describe('updateJob', () => {
       .values({ phone: SECOND_WORKER_PHONE })
       .returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: secondWorkerUser.id, fullName: 'Beatriz Lima' });
-    const secondApplication = await createApplication(secondWorkerUser.id, job.id, true);
+    const secondApplication = await createApplication(secondWorkerUser.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, secondApplication.id, 'approved');
 
-    await expect(updateJob(owner.id, job.id, baseInput(category.id))).rejects.toThrow(
+    await expect(updateJob(owner.id, job.id, baseInput(category.id), UPDATE_CONSENT)).rejects.toThrow(
       'Só é possível editar vagas abertas',
     );
   });
@@ -110,19 +114,24 @@ describe('updateJob', () => {
     const { owner, category, job } = await setup();
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
     const [secondWorkerUser] = await db.insert(users).values({ phone: SECOND_WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: secondWorkerUser.id, fullName: 'Beatriz Lima' });
-    const secondApplication = await createApplication(secondWorkerUser.id, job.id, true);
+    const secondApplication = await createApplication(secondWorkerUser.id, job.id, CONSENT);
 
     // A docstring de updateJob promete fechar "a corrida de editar bem
     // no instante em que uma candidatura é aprovada" — isso é
     // literalmente essa aprovação (a 2ª de 2 posições, que preenche a
     // vaga) rodando ao mesmo tempo que uma edição.
     const results = await Promise.allSettled([
-      updateJob(owner.id, job.id, { ...baseInput(category.id), description: 'Descrição editada durante a corrida.' }),
+      updateJob(
+        owner.id,
+        job.id,
+        { ...baseInput(category.id), description: 'Descrição editada durante a corrida.' },
+        UPDATE_CONSENT,
+      ),
       updateApplicationStatus(owner.id, secondApplication.id, 'approved'),
     ]);
 
@@ -142,17 +151,56 @@ describe('updateJob', () => {
     const { owner, category, job } = await setup();
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
     await expect(
-      updateJob(owner.id, job.id, { ...baseInput(category.id), positionsTotal: 0 }),
+      updateJob(owner.id, job.id, { ...baseInput(category.id), positionsTotal: 0 }, UPDATE_CONSENT),
     ).rejects.toThrow('Número de vagas precisa ser pelo menos 1');
+  });
+
+  it('rejeita ligar minorsAllowed numa edição sem aceitar o termo de menores', async () => {
+    const { owner, category, job } = await setup();
+
+    await expect(
+      updateJob(owner.id, job.id, { ...baseInput(category.id), minorsAllowed: true }, UPDATE_CONSENT),
+    ).rejects.toThrow('termo de habilitar candidaturas de 16-17 anos');
+  });
+
+  it('permite ligar minorsAllowed numa edição quando o termo de menores é aceito', async () => {
+    const { owner, category, job } = await setup();
+
+    const updated = await updateJob(
+      owner.id,
+      job.id,
+      { ...baseInput(category.id), minorsAllowed: true },
+      { ...UPDATE_CONSENT, minorsTermsAccepted: true },
+    );
+
+    expect(updated.minorsAllowed).toBe(true);
+    const row = await db.query.jobs.findFirst({ where: eq(jobs.id, job.id) });
+    expect(row?.minorsTermsAcceptedAt).not.toBeNull();
+  });
+
+  it('não exige aceitar o termo de menores de novo numa edição que já tinha minorsAllowed aceito antes', async () => {
+    const { owner, category } = await setup();
+    const job = await createJob(owner.id, { ...baseInput(category.id), minorsAllowed: true }, MINORS_CONSENT);
+
+    // Edita outro campo, mantendo minorsAllowed true, sem reenviar o aceite —
+    // não deveria travar, já que job.minorsTermsAcceptedAt já está preenchido.
+    const updated = await updateJob(
+      owner.id,
+      job.id,
+      { ...baseInput(category.id), minorsAllowed: true, description: 'Descrição atualizada, ainda detalhada.' },
+      UPDATE_CONSENT,
+    );
+
+    expect(updated.minorsAllowed).toBe(true);
   });
 
   it('rejeita desmarcar minorsAllowed quando já existe trabalhador menor de idade aprovado nessa vaga', async () => {
     const { owner, category } = await setup();
-    const job = await createJob(owner.id, { ...baseInput(category.id), minorsAllowed: true }, true);
+    const job = await createJob(owner.id, { ...baseInput(category.id), minorsAllowed: true }, MINORS_CONSENT);
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
     const seventeenYearsAgo = new Date();
     seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
@@ -160,23 +208,23 @@ describe('updateJob', () => {
     await db
       .insert(workerProfiles)
       .values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza', birthDate });
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
     await expect(
-      updateJob(owner.id, job.id, { ...baseInput(category.id), minorsAllowed: false }),
+      updateJob(owner.id, job.id, { ...baseInput(category.id), minorsAllowed: false }, UPDATE_CONSENT),
     ).rejects.toThrow('já existe um trabalhador menor de idade aprovado');
   });
 
   it('permite desmarcar minorsAllowed quando os aprovados na vaga são todos maiores de idade', async () => {
     const { owner, category } = await setup();
-    const job = await createJob(owner.id, { ...baseInput(category.id), minorsAllowed: true }, true);
+    const job = await createJob(owner.id, { ...baseInput(category.id), minorsAllowed: true }, MINORS_CONSENT);
     const [worker] = await db.insert(users).values({ phone: WORKER_PHONE }).returning();
     await db.insert(workerProfiles).values({ kycStatus: 'approved', userId: worker.id, fullName: 'Ana Souza' });
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
-    const updated = await updateJob(owner.id, job.id, { ...baseInput(category.id), minorsAllowed: false });
+    const updated = await updateJob(owner.id, job.id, { ...baseInput(category.id), minorsAllowed: false }, UPDATE_CONSENT);
 
     expect(updated.minorsAllowed).toBe(false);
   });
@@ -185,7 +233,7 @@ describe('updateJob', () => {
     const { owner, job } = await setup();
 
     await expect(
-      updateJob(owner.id, job.id, baseInput('00000000-0000-0000-0000-000000000000')),
+      updateJob(owner.id, job.id, baseInput('00000000-0000-0000-0000-000000000000'), UPDATE_CONSENT),
     ).rejects.toThrow('Categoria inválida');
   });
 
@@ -204,7 +252,7 @@ describe('updateJob', () => {
       payAmount: '150.00',
       startsAt: IN_TWO_DAYS.toISOString(),
       endsAt: IN_TWO_DAYS_PLUS_5H.toISOString(),
-    });
+    }, UPDATE_CONSENT);
 
     expect(result.categoryId).toBe(otherCategory.id);
     expect(result.requiresExperience).toBe(true);

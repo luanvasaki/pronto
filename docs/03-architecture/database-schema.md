@@ -1,6 +1,6 @@
 # Schema do banco de dados — Pronto
 
-> Postgres via Drizzle ORM (`drizzle-orm/node-postgres`). 18 tabelas, 15 enums, ~48 migrations até o momento desta documentação. Padrões gerais antes do detalhe tabela por tabela.
+> Postgres via Drizzle ORM (`drizzle-orm/node-postgres`). 19 tabelas, 16 enums, ~54 migrations até o momento desta documentação. Padrões gerais antes do detalhe tabela por tabela.
 
 ## Padrões gerais
 
@@ -13,7 +13,13 @@
 ## Tabelas
 
 ### `users`
-Conta de login. `email` nullable (por conveniência de fixture de teste, não por regra de produto — na aplicação é obrigatório), `passwordHash` nullable (null = conta só-Google), `googleId`, `phone`/`phoneVerifiedAt` (reservados pra uma verificação por celular que nunca foi implementada), `status` (active/suspended/banned), `isAdmin` (só setado por update direto no banco). Únicos: `phone`, `email`, `googleId`.
+Conta de login. `email` nullable (por conveniência de fixture de teste, não por regra de produto — na aplicação é obrigatório), `passwordHash` nullable (null = conta só-Google), `googleId`, `phone`/`phoneVerifiedAt` (reservados pra uma verificação por celular que nunca foi implementada), `status` (active/suspended/banned), `isAdmin` (só setado por update direto no banco). `termsAcceptedAt`/`termsVersion`/`termsIpAddress`/`termsUserAgent` — aceite do documento completo (`consent_documents.type = 'platform_terms'`) na tela `/cadastro/termos`, não mais na criação da conta (ver módulo `auth` e [`05-operations/auth-and-security.md`](../05-operations/auth-and-security.md)). Únicos: `phone`, `email`, `googleId`.
+
+### `consent_documents`
+Texto legal versionado (aceite auditável, seção 12.5 do termo consolidado — nunca uma frase solta embutida em componente). `type` (`platform_terms`/`minors_opportunity`/`login_summary`), `version` (varchar), `chapters` (jsonb: `{ number, heading, body }[]`), `declaration` (texto da declaração final). **Nunca dá UPDATE numa linha existente** — nova versão do texto é sempre uma linha nova, histórico completo preservado. Único: par (`type`, `version`). Seedado por `db/seed-consent-documents.ts` (idempotente, `npm run db:seed-consent-documents` — precisa ser rodado manualmente contra produção, o `vitest globalSetup` só cobre testes). Servido publicamente (sem auth) por `GET /consent-documents/:type`.
+
+### `login_consents`
+Aceite do "Termo Resumido de Ciência" no login — independente do aceite em `users.termsAcceptedAt`, roda uma vez por versão. `userId` (FK **sem** `onDelete: cascade` — é registro de auditoria, precisa sobreviver mesmo se a conta for excluída no futuro), `version`, `ipAddress`, `userAgent`, `acceptedAt`. Único: par (`userId`, `version`).
 
 ### `worker_profiles`
 Extensão 1:1 de `users` (`userId` é PK e FK, cascade). Dados pessoais, `birthDate` (decide bloqueio de menor de 16 e exigência de responsável pra 16-17), campos de responsável, `homeLat/Lng` + `homeAddressLabel` (público) vs. `homeAddressFull` (privado, nunca exposto pra empresa), `searchRadiusKm` (default 10), `kycStatus`, `avgRating`/`avgCategoryScores`. "Horas de voo" (turnos concluídos, horas trabalhadas, etc.) são sempre recalculadas ao vivo a partir de `shifts` — não existe coluna acumulada pra isso. Único: `cpf`.
@@ -31,7 +37,7 @@ Só o enum `cnh_category` (A/B/AB/C/D/E), compartilhado entre `worker_profiles` 
 Deliberadamente plana (sem hierarquia) — decisão de manter simples até haver demanda real por categorias aninhadas. `status` (approved/pending/rejected, default **approved** pra não quebrar a migração das categorias fixas originais). Qualquer usuário pode criar sob demanda. Único: `lower(name)` — case-insensitive de propósito, pra "Manobrista" e "manobrista" criadas em corrida não virarem duas categorias.
 
 ### `jobs`
-A vaga/escala. Sem cascade em `companyId`/`categoryId` — é registro de negócio, não identidade. Campos de exigência (`requiresExperience`, `cnhCategory`/`cnhRequired`, `minorsAllowed`), benefícios (`mealProvision`/`transportProvision`: none/on_site/paid + valor), `positionsTotal`/`positionsFilled`, `payAmount`, datas (`startsAt`/`endsAt`/`applicationsCloseAt`), `termsAcceptedAt`/`termsVersion` **por vaga** (não só no cadastro — respaldo jurídico repetido a cada publicação). `status` (open/filled/cancelled). `addressLabel` (texto, monta-se no front a partir de CEP/rua/número/complemento/bairro/cidade/UF via `AddressFields`) + `locationLat`/`locationLng` (`doublePrecision`, ambos `.notNull()`) — populados por geocodificação automática do endereço (Nominatim, `POST /jobs/geocode-address`), com "usar minha localização atual" (GPS do dispositivo) como ajuste fino opcional, não obrigatório.
+A vaga/escala. Sem cascade em `companyId`/`categoryId` — é registro de negócio, não identidade. Campos de exigência (`requiresExperience`, `cnhCategory`/`cnhRequired`, `minorsAllowed`), benefícios (`mealProvision`/`transportProvision`: none/on_site/paid + valor), `positionsTotal`/`positionsFilled`, `payAmount`, datas (`startsAt`/`endsAt`/`applicationsCloseAt`), `termsAcceptedAt`/`termsVersion`/`termsIpAddress`/`termsUserAgent` **por vaga** (não só no cadastro — respaldo jurídico repetido a cada publicação; versão sempre lida ao vivo de `consent_documents.type = 'platform_terms'`, não uma constante fixa). `minorsTermsAcceptedAt`/`minorsTermsVersion`/`minorsTermsIpAddress`/`minorsTermsUserAgent` — aceite específico do termo `minors_opportunity`, exigido só quando `minorsAllowed: true`, gravado uma vez (edições seguintes não pedem de novo se já preenchido). `status` (open/filled/cancelled). `addressLabel` (texto, monta-se no front a partir de CEP/rua/número/complemento/bairro/cidade/UF via `AddressFields`) + `locationLat`/`locationLng` (`doublePrecision`, ambos `.notNull()`) — populados por geocodificação automática do endereço (Nominatim, `POST /jobs/geocode-address`), com "usar minha localização atual" (GPS do dispositivo) como ajuste fino opcional, não obrigatório.
 
 ### `job_announcements`
 Avisos da empresa numa vaga. Sem cascade, sem coluna de autor (implícito pelo `jobId` — só o dono publica).
@@ -40,7 +46,7 @@ Avisos da empresa numa vaga. Sem cascade, sem coluna de autor (implícito pelo `
 Pergunta pública + resposta. `answer`/`answeredAt` nulos = ainda não respondida.
 
 ### `applications`
-Candidatura. `status` (pending/approved/rejected/withdrawn). `removedAt`/`workerSeenRemovalAt` distinguem "aprovação desfeita" de rejeição comum, mesmo status (`rejected`) usado pros dois casos — ver nota em [`02-product/glossary.md`](../02-product/glossary.md). Único: par (`jobId`, `workerId`) — não candidata duas vezes à mesma vaga.
+Candidatura. `status` (pending/approved/rejected/withdrawn). `removedAt`/`workerSeenRemovalAt` distinguem "aprovação desfeita" de rejeição comum, mesmo status (`rejected`) usado pros dois casos — ver nota em [`02-product/glossary.md`](../02-product/glossary.md). `termsAcceptedAt`/`termsVersion`/`termsIpAddress`/`termsUserAgent` — aceite do recorte de capítulos (3 e 6) do `platform_terms`, mostrado num modal na hora de se candidatar. Único: par (`jobId`, `workerId`) — não candidata duas vezes à mesma vaga.
 
 ### `shifts`
 Nasce de uma candidatura aprovada — não existe tabela de convite separada. `jobId`/`workerId` são denormalizados de `applicationId` só pra leitura rápida, não são segunda fonte de verdade. `status` (scheduled/checked_in/checked_out/completed/no_show/cancelled — `checked_out` foi inserido no meio do enum numa migration recente). `payAmountSnapshot` congela o valor no momento da aprovação. `checkInAt`/`checkOutAt` (ação do trabalhador) separados de `checkInConfirmedAt`/`checkOutConfirmedAt` (confirmação da empresa, independentes entre si) — sem coordenadas de geolocalização (removidas do check-in/check-out, colunas dropadas na migration `0049`). `companyRatingSkippedAt`/`workerRatingSkippedAt` (ver módulo `ratings`). Único: `applicationId`.
@@ -68,7 +74,7 @@ N:N entre trabalhador e categoria. Cascade em `workerId`, sem cascade em `catego
 
 ## Enums
 
-`user_status`, `kyc_status`, `company_verification_status`, `company_person_type`, `business_segment`, `skill_category_status`, `job_status`, `benefit_provision`, `cnh_category`, `application_status`, `shift_status`, `rater_role`, `payment_status`, `document_status`, `document_type`.
+`user_status`, `kyc_status`, `company_verification_status`, `company_person_type`, `business_segment`, `skill_category_status`, `job_status`, `benefit_provision`, `cnh_category`, `application_status`, `shift_status`, `rater_role`, `payment_status`, `document_status`, `document_type`, `consent_document_type` (`platform_terms`/`minors_opportunity`/`login_summary`).
 
 ## Colunas mortas conhecidas
 

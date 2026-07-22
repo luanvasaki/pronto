@@ -4,6 +4,7 @@ import { ApiError, formatBenefitLabel, listSkillCategories } from '@shift/shared
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../../components/ui/button';
+import { JobApplicationTermsModal } from '../../../../components/ui/job-application-terms-modal';
 import { MapLink } from '../../../../components/ui/map-link';
 import { CardListSkeleton } from '../../../../components/ui/skeleton';
 import { JobAnnouncement, listJobAnnouncements } from '../../../../lib/announcements-api';
@@ -32,6 +33,7 @@ export default function VagaDetalhePage() {
 
   const [applied, setApplied] = useState(false);
   const [termsConfirmed, setTermsConfirmed] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [experienceConfirmed, setExperienceConfirmed] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
@@ -225,15 +227,13 @@ export default function VagaDetalhePage() {
             </p>
           )}
 
-          <label className="flex items-start gap-2 text-[14px] text-text-secondary">
-            <input
-              type="checkbox"
-              checked={termsConfirmed}
-              onChange={() => setTermsConfirmed((current) => !current)}
-              className="mt-0.5 shrink-0"
-            />
-            Sei que essa é uma escala avulsa, sem vínculo empregatício com a empresa nem com o Pronto.
-          </label>
+          {termsConfirmed ? (
+            <p className="text-[14px] font-semibold text-success">Termo lido e aceito ✓</p>
+          ) : (
+            <Button type="button" variant="outlined" onClick={() => setShowTermsModal(true)}>
+              Ler termo e candidatar-se
+            </Button>
+          )}
 
           {applyError && <p className="text-sm text-danger">{applyError}</p>}
 
@@ -326,6 +326,16 @@ export default function VagaDetalhePage() {
             </div>
           </section>
         </>
+      )}
+
+      {showTermsModal && (
+        <JobApplicationTermsModal
+          onAccept={() => {
+            setTermsConfirmed(true);
+            setShowTermsModal(false);
+          }}
+          onClose={() => setShowTermsModal(false)}
+        />
       )}
     </main>
   );

@@ -23,6 +23,8 @@ export interface CompanyProfileDetails {
   businessSegmentOther: string | null;
   verificationStatus: string;
   rejectionReason: string | null;
+  needsTermsAcceptance: boolean;
+  hasAcceptedLoginTerms: boolean;
   avgRating: string | null;
   avgCategoryScores: Record<string, string> | null;
   jobsPosted: number;

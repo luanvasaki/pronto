@@ -193,7 +193,7 @@ export default function CadastroPage() {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-8">
       <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-5">
-        <SignupProgress step={2} />
+        <SignupProgress step={3} totalSteps={4} />
         <Logo className="mb-2" />
         <div>
           <h1 className="font-heading text-2xl font-bold text-text">Complete seu cadastro</h1>

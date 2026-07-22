@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { applications, companies, jobs, shifts, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from '../applications/create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { updateApplicationStatus } from '../applications/update-application-status';
 import { getCompanyDashboard } from './get-company-dashboard';
 
@@ -97,7 +99,7 @@ describe('getCompanyDashboard', () => {
       endsAt: IN_15H,
       positionsTotal: 2,
     });
-    const application = await createApplication(worker.id, nearJob.id, true);
+    const application = await createApplication(worker.id, nearJob.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
     // Fora da janela de 48h — não deve entrar na conta de cobertura.
@@ -148,7 +150,7 @@ describe('getCompanyDashboard', () => {
       endsAt: IN_15H,
       positionsTotal: 1,
     });
-    const application = await createApplication(worker.id, job.id, true);
+    const application = await createApplication(worker.id, job.id, CONSENT);
     await updateApplicationStatus(owner.id, application.id, 'approved');
 
     const result = await getCompanyDashboard(owner.id);
@@ -164,7 +166,7 @@ describe('getCompanyDashboard', () => {
       endsAt: IN_15H,
       positionsTotal: 1,
     });
-    await createApplication(worker.id, job.id, true);
+    await createApplication(worker.id, job.id, CONSENT);
 
     const result = await getCompanyDashboard(owner.id);
 

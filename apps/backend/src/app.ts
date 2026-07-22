@@ -8,6 +8,7 @@ import { announcementsRoutes } from './modules/announcements/announcements.route
 import { applicationsRoutes } from './modules/applications/applications.routes';
 import { AuthRoutesOptions, createAuthRoutes } from './modules/auth/auth.routes';
 import { companyProfileRoutes } from './modules/companies/company-profile.routes';
+import { consentDocumentsRoutes } from './modules/consent-documents/consent-documents.routes';
 import { jobsRoutes } from './modules/jobs/jobs.routes';
 import { healthRoutes } from './modules/health/health.routes';
 import { paymentsRoutes } from './modules/payments/payments.routes';
@@ -59,6 +60,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
 
   app.use(healthRoutes);
   app.use(skillCategoriesRoutes);
+  app.use(consentDocumentsRoutes);
   app.use(createAuthRoutes(options.authRoutes));
   app.use(companyProfileRoutes);
   app.use(jobsRoutes);

@@ -53,6 +53,8 @@ const BASE_PROFILE: CompanyProfileDetails = {
   businessSegmentOther: null,
   verificationStatus: 'approved',
   rejectionReason: null,
+  needsTermsAcceptance: false,
+  hasAcceptedLoginTerms: true,
   avgRating: '4.2',
   avgCategoryScores: { pontualidade_pagamento: '4.5', clareza_vaga: '4.0' },
   jobsPosted: 5,

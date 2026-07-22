@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { applications, companies, jobs, skillCategories, users, workerProfiles } from '../../db/schema';
 import { createApplication } from './create-application';
+
+const CONSENT = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null } as const;
 import { listMyApplications } from './list-my-applications';
 
 // Fixtures únicas entre arquivos de teste (ver README).
@@ -64,7 +66,7 @@ describe('listMyApplications', () => {
         endsAt: TOMORROW_PLUS_5H,
       })
       .returning();
-    await createApplication(worker.id, job.id, true);
+    await createApplication(worker.id, job.id, CONSENT);
 
     const result = await listMyApplications(worker.id);
 

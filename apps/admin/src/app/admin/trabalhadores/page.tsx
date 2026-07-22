@@ -4,6 +4,7 @@ import { ApiError, formatPhone } from '@shift/shared';
 import { useEffect, useMemo, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
+import { ConsentHistory } from '../../../components/ui/consent-history';
 import { Input } from '../../../components/ui/input';
 import { CardListSkeleton } from '../../../components/ui/skeleton';
 import { AdminWorker, listAdminWorkers, resetUserPassword } from '../../../lib/admin-api';
@@ -190,6 +191,15 @@ export default function AdminTrabalhadoresPage() {
                 </button>
               )}
             </div>
+
+            <ConsentHistory
+              termsAcceptedAt={worker.termsAcceptedAt}
+              termsVersion={worker.termsVersion}
+              termsIpAddress={worker.termsIpAddress}
+              loginTermsAcceptedAt={worker.loginTermsAcceptedAt}
+              loginTermsVersion={worker.loginTermsVersion}
+              loginTermsIpAddress={worker.loginTermsIpAddress}
+            />
           </li>
         ))}
       </ul>

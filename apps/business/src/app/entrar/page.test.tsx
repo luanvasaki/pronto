@@ -45,25 +45,15 @@ describe('EntrarPage', () => {
     refreshSessionMock.mockReset().mockRejectedValue(new Error('sem refresh token'));
   });
 
-  it('manda o aceite dos termos pro login com Google quando o checkbox está marcado', async () => {
+  it('chama googleLogin só com o idToken, sem checkbox de termos na tela de entrar', async () => {
     googleLoginMock.mockResolvedValue({ user: { id: '1' } });
     const user = userEvent.setup();
     render(<EntrarPage />);
 
-    await user.click(await screen.findByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: /simular sucesso do google/i }));
-
-    await waitFor(() => expect(googleLoginMock).toHaveBeenCalledWith('fake-id-token', true));
-  });
-
-  it('não manda o aceite dos termos pro login com Google quando o checkbox não está marcado', async () => {
-    googleLoginMock.mockResolvedValue({ user: { id: '1' } });
-    const user = userEvent.setup();
-    render(<EntrarPage />);
-
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     await user.click(await screen.findByRole('button', { name: /simular sucesso do google/i }));
 
-    await waitFor(() => expect(googleLoginMock).toHaveBeenCalledWith('fake-id-token', false));
+    await waitFor(() => expect(googleLoginMock).toHaveBeenCalledWith('fake-id-token'));
   });
 
   it('começa com o botão desabilitado', async () => {

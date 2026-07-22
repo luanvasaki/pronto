@@ -2,8 +2,11 @@ import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { companies, jobs, skillCategories, users } from '../../db/schema';
-import { CURRENT_TERMS_VERSION } from '../../shared/terms-version';
-import { createJob } from './create-job';
+import { getLatestConsentDocument } from '../consent-documents/get-consent-document';
+import { createJob, CreateJobConsent } from './create-job';
+
+const CONSENT: CreateJobConsent = { termsAccepted: true, minorsTermsAccepted: undefined, ipAddress: null, userAgent: null };
+const MINORS_CONSENT: CreateJobConsent = { ...CONSENT, minorsTermsAccepted: true };
 
 // Fixtures únicas entre arquivos de teste (ver README).
 const TEST_PHONE = '+5511966660006';
@@ -67,7 +70,7 @@ describe('createJob', () => {
     const owner = await createTestCompanyOwner();
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
-    await expect(createJob(owner.id, baseInput(category.id), true)).rejects.toThrow(
+    await expect(createJob(owner.id, baseInput(category.id), CONSENT)).rejects.toThrow(
       'Complete o cadastro da empresa',
     );
   });
@@ -77,7 +80,7 @@ describe('createJob', () => {
     await createTestCompany(owner.id, { verificationStatus: 'pending' });
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
-    await expect(createJob(owner.id, baseInput(category.id), true)).rejects.toThrow(
+    await expect(createJob(owner.id, baseInput(category.id), CONSENT)).rejects.toThrow(
       'Complete a verificação da empresa',
     );
   });
@@ -87,7 +90,7 @@ describe('createJob', () => {
     await createTestCompany(owner.id);
 
     await expect(
-      createJob(owner.id, baseInput('00000000-0000-0000-0000-000000000000'), true),
+      createJob(owner.id, baseInput('00000000-0000-0000-0000-000000000000'), CONSENT),
     ).rejects.toThrow('Categoria inválida');
   });
 
@@ -97,7 +100,7 @@ describe('createJob', () => {
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), description: 'curta' }, true),
+      createJob(owner.id, { ...baseInput(category.id), description: 'curta' }, CONSENT),
     ).rejects.toThrow('Descrição precisa');
   });
 
@@ -107,7 +110,7 @@ describe('createJob', () => {
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), startsAt: TOMORROW_PLUS_5H.toISOString(), endsAt: TOMORROW.toISOString() }, true),
+      createJob(owner.id, { ...baseInput(category.id), startsAt: TOMORROW_PLUS_5H.toISOString(), endsAt: TOMORROW.toISOString() }, CONSENT),
     ).rejects.toThrow('Data de término precisa ser depois do início');
   });
 
@@ -118,7 +121,7 @@ describe('createJob', () => {
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), startsAt: yesterday.toISOString() }, true),
+      createJob(owner.id, { ...baseInput(category.id), startsAt: yesterday.toISOString() }, CONSENT),
     ).rejects.toThrow('Data de início precisa ser no futuro');
   });
 
@@ -127,26 +130,56 @@ describe('createJob', () => {
     await createTestCompany(owner.id);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
-    await expect(createJob(owner.id, baseInput(category.id), false)).rejects.toThrow(
-      'preciso confirmar que essa escala',
-    );
-    await expect(createJob(owner.id, baseInput(category.id), undefined)).rejects.toThrow(
-      'preciso confirmar que essa escala',
-    );
+    await expect(
+      createJob(owner.id, baseInput(category.id), { ...CONSENT, termsAccepted: false }),
+    ).rejects.toThrow('preciso confirmar que essa escala');
+    await expect(
+      createJob(owner.id, baseInput(category.id), { ...CONSENT, termsAccepted: undefined }),
+    ).rejects.toThrow('preciso confirmar que essa escala');
   });
 
-  it('grava o momento do aceite da vaga ao criar', async () => {
+  it('grava o momento, a versão vigente do termo, IP e user-agent do aceite da vaga ao criar', async () => {
     const owner = await createTestCompanyOwner();
     await createTestCompany(owner.id);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
     const before = new Date();
-    const result = await createJob(owner.id, baseInput(category.id), true);
+    const latestTerms = await getLatestConsentDocument('platform_terms');
+    const result = await createJob(owner.id, baseInput(category.id), {
+      ...CONSENT,
+      ipAddress: '203.0.113.1',
+      userAgent: 'test-agent',
+    });
 
     const [row] = await db.query.jobs.findMany({ where: eq(jobs.id, result.id) });
     expect(row.termsAcceptedAt).not.toBeNull();
     expect(row.termsAcceptedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
-    expect(row.termsVersion).toBe(CURRENT_TERMS_VERSION);
+    expect(row.termsVersion).toBe(latestTerms.version);
+    expect(row.termsIpAddress).toBe('203.0.113.1');
+    expect(row.termsUserAgent).toBe('test-agent');
+  });
+
+  it('rejeita quando minorsAllowed está ligado mas o termo de menores não foi aceito', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+
+    await expect(
+      createJob(owner.id, { ...baseInput(category.id), minorsAllowed: true }, CONSENT),
+    ).rejects.toThrow('termo de habilitar candidaturas de 16-17 anos');
+  });
+
+  it('grava o aceite do termo de menores quando minorsAllowed está ligado e o termo foi aceito', async () => {
+    const owner = await createTestCompanyOwner();
+    await createTestCompany(owner.id);
+    const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
+    const latestMinorsTerms = await getLatestConsentDocument('minors_opportunity');
+
+    const result = await createJob(owner.id, { ...baseInput(category.id), minorsAllowed: true }, MINORS_CONSENT);
+
+    const [row] = await db.query.jobs.findMany({ where: eq(jobs.id, result.id) });
+    expect(row.minorsTermsAcceptedAt).not.toBeNull();
+    expect(row.minorsTermsVersion).toBe(latestMinorsTerms.version);
   });
 
   it('cria a vaga com status "open" por padrão', async () => {
@@ -154,7 +187,7 @@ describe('createJob', () => {
     await createTestCompany(owner.id);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
-    const result = await createJob(owner.id, baseInput(category.id), true);
+    const result = await createJob(owner.id, baseInput(category.id), CONSENT);
 
     expect(result.status).toBe('open');
     expect(result.positionsFilled).toBe(0);
@@ -169,7 +202,7 @@ describe('createJob', () => {
     await createTestCompany(owner.id);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
-    const result = await createJob(owner.id, baseInput(category.id), true);
+    const result = await createJob(owner.id, baseInput(category.id), CONSENT);
 
     expect(result.mealProvision).toBe('none');
     expect(result.transportProvision).toBe('none');
@@ -190,7 +223,7 @@ describe('createJob', () => {
         transportProvision: 'on_site',
         minorsAllowed: true,
       },
-      true,
+      MINORS_CONSENT,
     );
 
     expect(result.mealProvision).toBe('paid');
@@ -206,7 +239,7 @@ describe('createJob', () => {
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), requiresExperience: undefined }, true),
+      createJob(owner.id, { ...baseInput(category.id), requiresExperience: undefined }, CONSENT),
     ).rejects.toThrow('Informe se a vaga exige experiência anterior');
   });
 
@@ -223,7 +256,7 @@ describe('createJob', () => {
         dressCode: 'Social completo, preto e branco',
         toolsRequired: 'Câmera profissional própria',
       },
-      true,
+      CONSENT,
     );
 
     expect(result.requiresExperience).toBe(true);
@@ -236,7 +269,7 @@ describe('createJob', () => {
     await createTestCompany(owner.id);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
-    const result = await createJob(owner.id, baseInput(category.id), true);
+    const result = await createJob(owner.id, baseInput(category.id), CONSENT);
 
     expect(result.applicationsCloseAt).toBeNull();
   });
@@ -253,7 +286,7 @@ describe('createJob', () => {
         ...baseInput(category.id),
         applicationsCloseAt: closeAt.toISOString(),
       },
-      true,
+      CONSENT,
     );
 
     expect(result.applicationsCloseAt?.toISOString()).toBe(closeAt.toISOString());
@@ -266,7 +299,7 @@ describe('createJob', () => {
     const afterStart = new Date(TOMORROW.getTime() + 60 * 60 * 1000);
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), applicationsCloseAt: afterStart.toISOString() }, true),
+      createJob(owner.id, { ...baseInput(category.id), applicationsCloseAt: afterStart.toISOString() }, CONSENT),
     ).rejects.toThrow('até o início do turno');
   });
 
@@ -277,7 +310,7 @@ describe('createJob', () => {
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), applicationsCloseAt: yesterday.toISOString() }, true),
+      createJob(owner.id, { ...baseInput(category.id), applicationsCloseAt: yesterday.toISOString() }, CONSENT),
     ).rejects.toThrow('Prazo pra se candidatar precisa ser no futuro');
   });
 
@@ -287,7 +320,7 @@ describe('createJob', () => {
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), cnhCategory: 'Z' }, true),
+      createJob(owner.id, { ...baseInput(category.id), cnhCategory: 'Z' }, CONSENT),
     ).rejects.toThrow('Categoria de CNH inválida');
   });
 
@@ -297,7 +330,7 @@ describe('createJob', () => {
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
     await expect(
-      createJob(owner.id, { ...baseInput(category.id), cnhRequired: true }, true),
+      createJob(owner.id, { ...baseInput(category.id), cnhRequired: true }, CONSENT),
     ).rejects.toThrow('Escolha a categoria de CNH exigida');
   });
 
@@ -313,7 +346,7 @@ describe('createJob', () => {
         cnhCategory: 'B',
         cnhRequired: true,
       },
-      true,
+      CONSENT,
     );
 
     expect(result.cnhCategory).toBe('B');
@@ -325,7 +358,7 @@ describe('createJob', () => {
     await createTestCompany(owner.id);
     const [category] = await db.insert(skillCategories).values({ name: TEST_CATEGORY_NAME }).returning();
 
-    const result = await createJob(owner.id, { ...baseInput(category.id), cnhCategory: 'B' }, true);
+    const result = await createJob(owner.id, { ...baseInput(category.id), cnhCategory: 'B' }, CONSENT);
 
     expect(result.cnhCategory).toBe('B');
     expect(result.cnhRequired).toBe(false);
