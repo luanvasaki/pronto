@@ -9,12 +9,6 @@ import { consentDocuments, ConsentDocumentChapter } from './schema';
  * — nunca via migration (texto jurídico não é schema), via
  * `npx tsx src/db/seed-consent-documents.ts`. Idempotente: pula qualquer
  * (type, version) que já exista.
- *
- * ATENÇÃO: o capítulo 12 do platform_terms ainda tem "[A PREENCHER]" nos
- * dados institucionais (razão social/CNPJ da entidade, endereços, canais
- * de suporte/privacidade/denúncia) — o jurídico deixou esses campos em
- * aberto no documento original, pendentes de definição antes de uma
- * versão realmente ir pra produção.
  */
 
 const PLATFORM_TERMS_VERSION = '1.1';
