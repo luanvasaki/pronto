@@ -173,20 +173,38 @@ export default function DocumentoPage() {
               Selfie reprovada: {selfieRejectionReason}
             </p>
           )}
-          <label
-            htmlFor="selfie"
-            className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary transition hover:border-primary"
-          >
-            {selfieFile ? selfieFile.name : 'Toque para tirar ou escolher uma selfie'}
-            <input
-              id="selfie"
-              type="file"
-              accept="image/jpeg,image/png"
-              capture="user"
-              className="hidden"
-              onChange={(event) => setSelfieFile(event.target.files?.[0] ?? null)}
-            />
-          </label>
+          <div className="flex flex-col items-center gap-3 rounded-md border border-dashed border-border px-4 py-6 text-center">
+            {selfieFile && <p className="text-sm font-medium text-text">{selfieFile.name}</p>}
+            <div className="flex gap-3">
+              <label
+                htmlFor="selfie-camera"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-border px-4 py-2.5 text-sm font-semibold text-text transition hover:border-primary hover:text-primary"
+              >
+                Tirar selfie
+                <input
+                  id="selfie-camera"
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  capture="user"
+                  className="hidden"
+                  onChange={(event) => setSelfieFile(event.target.files?.[0] ?? null)}
+                />
+              </label>
+              <label
+                htmlFor="selfie-gallery"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-border px-4 py-2.5 text-sm font-semibold text-text transition hover:border-primary hover:text-primary"
+              >
+                Escolher do álbum
+                <input
+                  id="selfie-gallery"
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  className="hidden"
+                  onChange={(event) => setSelfieFile(event.target.files?.[0] ?? null)}
+                />
+              </label>
+            </div>
+          </div>
           <p className="mt-1.5 text-xs text-text-secondary">
             Uma foto do seu rosto, pra comparar com o documento e confirmar que é você mesmo.
           </p>

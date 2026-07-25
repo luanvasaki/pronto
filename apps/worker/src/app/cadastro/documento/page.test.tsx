@@ -33,7 +33,7 @@ function createTestFile(name = 'rg.jpg'): File {
 
 async function uploadBoth(user: ReturnType<typeof userEvent.setup>) {
   await user.upload(screen.getByLabelText(/toque para escolher uma foto/i), createTestFile('rg.jpg'));
-  await user.upload(screen.getByLabelText(/toque para tirar ou escolher uma selfie/i), createTestFile('selfie.jpg'));
+  await user.upload(screen.getByLabelText('Escolher do álbum'), createTestFile('selfie.jpg'));
 }
 
 describe('DocumentoPage', () => {
@@ -109,6 +109,30 @@ describe('DocumentoPage', () => {
 
     expect(screen.getByText('rg.jpg')).toBeInTheDocument();
     expect(screen.getByText('selfie.jpg')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /enviar/i })).toBeEnabled();
+  });
+
+  it('oferece as duas opções pra selfie: tirar na hora (força câmera) ou escolher do álbum', () => {
+    render(<DocumentoPage />);
+
+    const cameraInput = screen.getByLabelText('Tirar selfie');
+    const galleryInput = screen.getByLabelText('Escolher do álbum');
+
+    // `capture="user"` é o que sugere ao navegador abrir a câmera frontal
+    // direto, em vez do seletor padrão de arquivo — só a opção "Tirar
+    // selfie" deve ter esse atributo.
+    expect(cameraInput).toHaveAttribute('capture', 'user');
+    expect(galleryInput).not.toHaveAttribute('capture');
+  });
+
+  it('aceita a selfie tirada na hora (opção "Tirar selfie")', async () => {
+    const user = userEvent.setup();
+    render(<DocumentoPage />);
+
+    await user.upload(screen.getByLabelText(/toque para escolher uma foto/i), createTestFile('rg.jpg'));
+    await user.upload(screen.getByLabelText('Tirar selfie'), createTestFile('selfie-camera.jpg'));
+
+    expect(screen.getByText('selfie-camera.jpg')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enviar/i })).toBeEnabled();
   });
 
