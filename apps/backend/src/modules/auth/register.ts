@@ -3,6 +3,7 @@ import { db } from '../../db/client';
 import { users } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { isUniqueViolation } from '../../shared/is-unique-violation';
+import { EmailSender } from './email-sender';
 import { isValidEmail } from './email';
 import { IssuedTokens, issueTokens } from './issue-tokens';
 import { hashPassword, isValidPassword } from './password';
@@ -20,7 +21,11 @@ export interface RegisterResult extends IssuedTokens {
  * entra pela primeira vez via Google (ver google-login.ts) através do
  * mesmo gate no layout autenticado do front.
  */
-export async function register(email: string | undefined, password: string | undefined): Promise<RegisterResult> {
+export async function register(
+  email: string | undefined,
+  password: string | undefined,
+  sender: EmailSender,
+): Promise<RegisterResult> {
   if (!email || !isValidEmail(email)) {
     throw new HttpError(400, 'E-mail inválido.');
   }
@@ -45,6 +50,14 @@ export async function register(email: string | undefined, password: string | und
   }
   if (!createdUser) {
     throw new HttpError(500, 'Falha ao criar usuário.');
+  }
+
+  // Best-effort: a conta já foi criada e não pode deixar de existir (nem
+  // devolver erro pro usuário) só porque o provedor de e-mail falhou.
+  try {
+    await sender.sendWelcomeEmail(email);
+  } catch (error) {
+    console.error('[register] Falha ao enviar e-mail de boas-vindas:', error);
   }
 
   const tokens = await issueTokens(createdUser.id);

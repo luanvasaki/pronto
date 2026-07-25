@@ -14,7 +14,7 @@ import { listWorkersHandler } from './list-workers.controller';
 import { requireAdmin } from './require-admin';
 import { createResetUserPasswordHandler } from './reset-user-password.controller';
 import { reviewCompanyHandler } from './review-company.controller';
-import { reviewDocumentHandler } from './review-document.controller';
+import { createReviewDocumentHandler } from './review-document.controller';
 import { reviewSkillCategoryHandler } from './review-skill-category.controller';
 
 export interface AdminRoutesOptions {
@@ -34,7 +34,7 @@ export function createAdminRoutes(options: AdminRoutesOptions = {}): Router {
   adminRoutes.get('/admin/verifications', requireAuth, requireAdmin, listPendingVerificationsHandler);
   adminRoutes.get('/admin/documents/:id/file', requireAuth, requireAdmin, getDocumentFileHandler);
   adminRoutes.get('/admin/company-documents/:id/file', requireAuth, requireAdmin, getCompanyDocumentFileHandler);
-  adminRoutes.patch('/admin/documents/:id', requireAuth, requireAdmin, reviewDocumentHandler);
+  adminRoutes.patch('/admin/documents/:id', requireAuth, requireAdmin, createReviewDocumentHandler(emailSender));
   adminRoutes.patch('/admin/companies/:id/verification', requireAuth, requireAdmin, reviewCompanyHandler);
   adminRoutes.patch('/admin/skill-categories/:id', requireAuth, requireAdmin, reviewSkillCategoryHandler);
   adminRoutes.delete('/admin/demo-data', requireAuth, requireAdmin, deleteDemoDataHandler);

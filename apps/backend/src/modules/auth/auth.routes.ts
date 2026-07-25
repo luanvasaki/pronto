@@ -13,7 +13,7 @@ import { loginHandler } from './login.controller';
 import { logoutHandler } from './logout.controller';
 import { getMeHandler } from './me.controller';
 import { refreshSessionHandler } from './refresh-session.controller';
-import { registerHandler } from './register.controller';
+import { createRegisterHandler } from './register.controller';
 import { requireAuth } from './require-auth';
 import { resetPasswordHandler } from './reset-password.controller';
 
@@ -34,9 +34,9 @@ export function createAuthRoutes(options: AuthRoutesOptions = {}): Router {
   const authRateLimiter = createAuthRateLimiter();
   const loginAccountRateLimiter = createLoginAccountRateLimiter();
 
-  authRoutes.post('/auth/register', authRateLimiter, registerHandler);
+  authRoutes.post('/auth/register', authRateLimiter, createRegisterHandler(emailSender));
   authRoutes.post('/auth/login', authRateLimiter, loginAccountRateLimiter, loginHandler);
-  authRoutes.post('/auth/google', authRateLimiter, createGoogleLoginHandler(googleTokenVerifier));
+  authRoutes.post('/auth/google', authRateLimiter, createGoogleLoginHandler(googleTokenVerifier, emailSender));
   authRoutes.post('/auth/forgot-password', authRateLimiter, createForgotPasswordHandler(emailSender));
   authRoutes.post('/auth/reset-password', authRateLimiter, resetPasswordHandler);
   authRoutes.get('/auth/me', requireAuth, getMeHandler);

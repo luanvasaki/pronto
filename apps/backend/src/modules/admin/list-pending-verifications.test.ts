@@ -4,11 +4,19 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../db/client';
 import { companies, documents, skillCategories, users, workerProfiles } from '../../db/schema';
+import { EmailSender } from '../auth/email-sender';
 import { upsertCompanyProfile } from '../companies/upsert-company-profile';
 import { LocalFileStorage } from '../workers/file-storage';
 import { uploadCompanyDocument } from '../companies/upload-company-document';
 import { listPendingVerifications } from './list-pending-verifications';
 import { reviewDocument } from './review-document';
+
+class NoopEmailSender implements EmailSender {
+  async sendPasswordResetEmail(): Promise<void> {}
+  async sendWelcomeEmail(): Promise<void> {}
+  async sendKycApprovedEmail(): Promise<void> {}
+  async sendKycRejectedEmail(): Promise<void> {}
+}
 
 // Fixtures únicas entre arquivos de teste (ver README).
 const WORKER_PHONE = '+5511966660045';
@@ -54,7 +62,7 @@ describe('listPendingVerifications', () => {
       .insert(documents)
       .values({ workerId: worker.id, fileUrl: 'documents/x/reviewed.jpg' })
       .returning();
-    await reviewDocument(admin.id, reviewedDocument.id, 'approved');
+    await reviewDocument(admin.id, reviewedDocument.id, 'approved', new NoopEmailSender());
 
     const [owner] = await db.insert(users).values({ phone: OWNER_PHONE }).returning();
     await db

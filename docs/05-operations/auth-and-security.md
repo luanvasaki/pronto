@@ -21,6 +21,18 @@ Dois cookies **httpOnly**: um access token (JWT HS256, 15 minutos de validade) e
 - **Logout**: idempotente — funciona mesmo chamado duas vezes ou numa sessão já expirada.
 - **Verificação de telefone**: schema existe (`users.phone`, `phoneVerifiedAt`) mas **nunca foi implementada** — não é um fluxo ativo hoje.
 
+## E-mails transacionais
+
+`EmailSender` (`apps/backend/src/modules/auth/email-sender.ts`) tem 4 métodos — o de redefinição de senha (pré-existente) e 3 novos:
+
+- **Boas-vindas**: disparado em `register.ts` (cadastro por senha) e em `google-login.ts`, mas só no caminho que realmente **cria** a conta — não dispara de novo pra quem já tinha conta, nem pra quem perde a corrida de duas chamadas simultâneas de login Google (a chamada vencedora já mandou o e-mail).
+- **Cadastro/KYC aprovado**: disparado em `review-document.ts` só na **transição** real de `workerProfiles.kycStatus` pra `'approved'` (compara o status anterior com o novo dentro da mesma transação) — revisar um documento adicional depois que o perfil já está aprovado (ex.: CNH reenviada) não reenvia o e-mail.
+- **Documento reprovado**: disparado em `review-document.ts` sempre que a revisão em questão rejeita um documento, com o motivo (texto livre do admin) escapado antes de entrar no HTML do e-mail.
+
+Se o trabalhador não tem e-mail cadastrado (`users.email` é nullable — contas só com telefone existem), a notificação correspondente simplesmente não é enviada, sem erro.
+
+**Divergência deliberada do tratamento de erro**: o e-mail de redefinição de senha (`forgot-password`/`reset-user-password`) deixa a falha de envio propagar e derrubar a resposta HTTP — ali o e-mail é o próprio propósito do endpoint. Os 3 e-mails novos são **best-effort** (try/catch, loga e segue) porque a ação crítica é outra — criar a conta, ou decidir aprovação/rejeição de KYC — e não pode falhar só porque o Resend teve uma instabilidade.
+
 ## Termos de uso e aceite auditável
 
 Documentos legais versionados vivem em `consent_documents` (`type`: `platform_terms`, `minors_opportunity`, `login_summary`) — nunca mais uma frase solta embutida em componente. Nova versão nunca faz UPDATE numa linha existente, sempre insere uma nova (histórico completo preservado, requisito explícito do texto jurídico, seção 12.5). Servidos publicamente (sem auth) por `GET /consent-documents/:type`, porque o texto vigente precisa ficar acessível fora de qualquer contexto autenticado.

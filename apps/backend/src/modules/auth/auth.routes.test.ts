@@ -20,6 +20,10 @@ class CapturingEmailSender implements EmailSender {
     this.lastEmail = email;
     this.lastResetUrl = resetUrl;
   }
+
+  async sendWelcomeEmail(): Promise<void> {}
+  async sendKycApprovedEmail(): Promise<void> {}
+  async sendKycRejectedEmail(): Promise<void> {}
 }
 
 class FakeGoogleTokenVerifier implements GoogleTokenVerifier {

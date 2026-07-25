@@ -11,10 +11,22 @@ import { EmailSender } from '../auth/email-sender';
 class CapturingEmailSender implements EmailSender {
   public lastEmail?: string;
   public lastResetUrl?: string;
+  public approvedEmails: string[] = [];
+  public rejectedEmails: Array<{ email: string; reason: string }> = [];
 
   async sendPasswordResetEmail(email: string, resetUrl: string): Promise<void> {
     this.lastEmail = email;
     this.lastResetUrl = resetUrl;
+  }
+
+  async sendWelcomeEmail(): Promise<void> {}
+
+  async sendKycApprovedEmail(email: string): Promise<void> {
+    this.approvedEmails.push(email);
+  }
+
+  async sendKycRejectedEmail(email: string, reason: string): Promise<void> {
+    this.rejectedEmails.push({ email, reason });
   }
 }
 

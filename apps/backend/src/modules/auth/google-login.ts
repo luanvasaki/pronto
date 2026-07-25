@@ -3,6 +3,7 @@ import { db } from '../../db/client';
 import { users } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
 import { isUniqueViolation } from '../../shared/is-unique-violation';
+import { EmailSender } from './email-sender';
 import { GoogleTokenVerifier } from './google-token-verifier';
 import { IssuedTokens, issueTokens } from './issue-tokens';
 import { toUserResponse, UserResponse } from './user-response';
@@ -22,6 +23,7 @@ export interface GoogleLoginResult extends IssuedTokens {
 export async function googleLogin(
   idToken: string | undefined,
   verifier: GoogleTokenVerifier,
+  sender: EmailSender,
 ): Promise<GoogleLoginResult> {
   if (!idToken) {
     throw new HttpError(400, 'Token do Google ausente.');
@@ -97,6 +99,15 @@ export async function googleLogin(
   }
   if (!createdUser) {
     throw new HttpError(500, 'Falha ao criar usuário.');
+  }
+
+  // Best-effort, e só nesse caminho: quem caiu no `raceWinner` acima está
+  // entrando numa conta que OUTRA chamada concorrente acabou de criar —
+  // essa outra chamada já mandou (ou vai mandar) o e-mail de boas-vindas.
+  try {
+    await sender.sendWelcomeEmail(createdUser.email!);
+  } catch (error) {
+    console.error('[googleLogin] Falha ao enviar e-mail de boas-vindas:', error);
   }
 
   const tokens = await issueTokens(createdUser.id);

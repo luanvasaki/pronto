@@ -1,6 +1,7 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { documents, workerProfiles } from '../../db/schema';
+import { documents, users, workerProfiles } from '../../db/schema';
+import { EmailSender } from '../auth/email-sender';
 import { isMinor as checkIsMinor } from '../../shared/age';
 import { HttpError } from '../../shared/errors/http-error';
 
@@ -38,6 +39,7 @@ export async function reviewDocument(
   adminUserId: string,
   documentId: string,
   status: string | undefined,
+  sender: EmailSender,
   reason?: string,
 ): Promise<ReviewDocumentResult> {
   if (!status || !isReviewStatus(status)) {
@@ -60,7 +62,7 @@ export async function reviewDocument(
   // segunda escrita falhasse, o documento ficaria revisado mas o
   // perfil continuaria "pending" pra sempre, sem nada no sistema
   // sabendo corrigir isso depois (mesmo raciocínio de cancel-job.ts).
-  return db.transaction(async (tx) => {
+  const { result, notification } = await db.transaction(async (tx) => {
     const [updated] = await tx
       .update(documents)
       .set({
@@ -80,6 +82,7 @@ export async function reviewDocument(
       where: eq(workerProfiles.userId, document.workerId),
     });
     const isMinor = checkIsMinor(workerProfile?.birthDate);
+    const previousKycStatus = workerProfile?.kycStatus;
 
     const workerDocuments = await tx.query.documents.findMany({
       where: eq(documents.workerId, document.workerId),
@@ -117,6 +120,37 @@ export async function reviewDocument(
       .set({ kycStatus: newKycStatus, updatedAt: new Date() })
       .where(eq(workerProfiles.userId, document.workerId));
 
-    return { id: updated.id, status: updated.status };
+    const workerUser = await tx.query.users.findFirst({ where: eq(users.id, document.workerId) });
+
+    return {
+      result: { id: updated.id, status: updated.status },
+      notification: {
+        email: workerUser?.email ?? null,
+        // Sempre que ESTA revisão rejeita — reflete a mesma decisão que já
+        // aparece no app (documentRejectionReason). Aprovado só dispara na
+        // TRANSIÇÃO de verdade pra approved, não a cada documento revisado
+        // depois (ex.: reenvio de CNH após o KYC já estar aprovado não deve
+        // reenviar o e-mail de "cadastro aprovado" de novo).
+        rejectedReason: status === 'rejected' ? reason!.trim() : null,
+        approvedTransition: previousKycStatus !== 'approved' && newKycStatus === 'approved',
+      },
+    };
   });
+
+  // Fora da transação e sem propagar falha: a decisão de KYC já está
+  // gravada e não pode ser desfeita ou bloqueada por uma instabilidade do
+  // provedor de e-mail — o e-mail é só um aviso a mais, best-effort.
+  if (notification.email) {
+    try {
+      if (notification.rejectedReason) {
+        await sender.sendKycRejectedEmail(notification.email, notification.rejectedReason);
+      } else if (notification.approvedTransition) {
+        await sender.sendKycApprovedEmail(notification.email);
+      }
+    } catch (error) {
+      console.error('[reviewDocument] Falha ao enviar e-mail de notificação de KYC:', error);
+    }
+  }
+
+  return result;
 }

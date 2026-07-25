@@ -8,7 +8,7 @@
 
 ## E-mail — real, com trava de segurança em produção
 
-`ConsoleEmailSender` (loga o link de reset de senha em texto puro em vez de enviar) é o fallback de desenvolvimento quando `RESEND_API_KEY` não está configurada. Em produção, **a ausência dessa env var trava o boot da aplicação** em vez de cair nesse fallback — decisão deliberada pra nunca vazar um link de reset de senha real nos logs de produção.
+`ConsoleEmailSender` (loga em texto puro em vez de enviar — reset de senha, boas-vindas, cadastro/KYC aprovado, documento reprovado) é o fallback de desenvolvimento quando `RESEND_API_KEY` não está configurada. Em produção, **a ausência dessa env var trava o boot da aplicação** em vez de cair nesse fallback — decisão deliberada pra nunca vazar um link de reset de senha real nos logs de produção. Detalhe de quando cada e-mail dispara em [`05-operations/auth-and-security.md`](../05-operations/auth-and-security.md#e-mails-transacionais).
 
 ## Login com Google — real, com a mesma trava
 
