@@ -2,7 +2,7 @@ import { and, eq, lt } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, jobs, shifts, workerProfiles } from '../../db/schema';
 import { assertOwnsCompany } from '../../shared/assert-owns-company';
-import { isMinor as checkIsMinor } from '../../shared/age';
+import { isMinor as checkIsMinor } from '../../shared/validation/age';
 import { HttpError } from '../../shared/errors/http-error';
 import { ApplicationResponse, toApplicationResponse } from './application-response';
 

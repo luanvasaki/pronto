@@ -1,7 +1,7 @@
 'use client';
 
 import { formatCpf, formatPhone } from '@shift/shared';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { CardListSkeleton } from '../../../components/ui/skeleton';
@@ -81,6 +81,11 @@ export default function AdminVerificacoesPage() {
   const [categoryNameDrafts, setCategoryNameDrafts] = useState<Record<string, string>>({});
   const [documentFiles, setDocumentFiles] = useState<Record<string, DocumentFile>>({});
   const [companyDocumentFiles, setCompanyDocumentFiles] = useState<Record<string, DocumentFile>>({});
+  // Antes o catch de baixo engolia o erro em silêncio — a foto só
+  // "não aparecia", sem nenhum jeito de saber se foi 401 (sessão),
+  // 404 (arquivo sumiu) ou rede. Agora fica um erro visível + retry.
+  const [documentFileErrors, setDocumentFileErrors] = useState<Record<string, boolean>>({});
+  const [companyDocumentFileErrors, setCompanyDocumentFileErrors] = useState<Record<string, boolean>>({});
   const [actingId, setActingId] = useState<string | null>(null);
   const [confirmingDocument, setConfirmingDocument] = useState<ConfirmTarget | null>(null);
   const [confirmingCompany, setConfirmingCompany] = useState<ConfirmTarget | null>(null);
@@ -105,27 +110,56 @@ export default function AdminVerificacoesPage() {
       .finally(() => setIsLoading(false));
   }, []);
 
+  function loadDocumentFile(documentId: string): void {
+    setDocumentFileErrors((current) => {
+      if (!current[documentId]) return current;
+      const next = { ...current };
+      delete next[documentId];
+      return next;
+    });
+    fetchDocumentFile(documentId)
+      .then((file) => setDocumentFiles((current) => ({ ...current, [documentId]: file })))
+      .catch((err) => {
+        console.error(`[verificacoes] falha ao carregar documento ${documentId}:`, err);
+        setDocumentFileErrors((current) => ({ ...current, [documentId]: true }));
+      });
+  }
+
+  function loadCompanyDocumentFile(documentId: string): void {
+    setCompanyDocumentFileErrors((current) => {
+      if (!current[documentId]) return current;
+      const next = { ...current };
+      delete next[documentId];
+      return next;
+    });
+    fetchCompanyDocumentFile(documentId)
+      .then((file) => setCompanyDocumentFiles((current) => ({ ...current, [documentId]: file })))
+      .catch((err) => {
+        console.error(`[verificacoes] falha ao carregar documento da empresa ${documentId}:`, err);
+        setCompanyDocumentFileErrors((current) => ({ ...current, [documentId]: true }));
+      });
+  }
+
+  // Não depende de documentFiles/documentFileErrors de propósito — só
+  // de `documents` (a lista muda quando um documento é revisado e sai
+  // da fila). Se dependesse do resultado do próprio fetch, toda vez que
+  // UM documento resolvesse o efeito rodaria nos outros de novo à toa.
   useEffect(() => {
     documents.forEach((document) => {
-      if (documentFiles[document.id]) return;
-      fetchDocumentFile(document.id)
-        .then((file) => setDocumentFiles((current) => ({ ...current, [document.id]: file })))
-        .catch(() => {
-          // Sem preview nesse caso — os botões de aprovar/rejeitar continuam funcionando.
-        });
+      if (documentFiles[document.id] || documentFileErrors[document.id]) return;
+      loadDocumentFile(document.id);
     });
-  }, [documents, documentFiles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documents]);
 
   useEffect(() => {
     companies.forEach((company) => {
-      if (!company.documentId || companyDocumentFiles[company.documentId]) return;
-      fetchCompanyDocumentFile(company.documentId)
-        .then((file) => setCompanyDocumentFiles((current) => ({ ...current, [company.documentId!]: file })))
-        .catch(() => {
-          // Sem preview nesse caso — os botões de aprovar/rejeitar continuam funcionando.
-        });
+      if (!company.documentId) return;
+      if (companyDocumentFiles[company.documentId] || companyDocumentFileErrors[company.documentId]) return;
+      loadCompanyDocumentFile(company.documentId);
     });
-  }, [companies, companyDocumentFiles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companies]);
 
   const documentsByWorker = groupDocumentsByWorker(documents);
   const flatDocuments = documentsByWorker.flatMap((group) => group.documents);
@@ -178,9 +212,19 @@ export default function AdminVerificacoesPage() {
    * em lote sem revisão, só remove o deslocamento de mouse entre um
    * documento e o outro. Ignorado enquanto o foco está num campo de
    * texto (ex: nome da categoria pendente), pra não capturar digitação.
+   *
+   * O listener de `keydown` é registrado só uma vez (efeito com `[]`,
+   * logo abaixo) — sem isso, remover/recriar o listener do `window` a
+   * cada render seria trabalho à toa. Pra evitar closure velha (o
+   * listener enxergando `flatDocuments`/`resolvedActiveDocumentId` do
+   * primeiro render pra sempre), a função de verdade fica numa ref
+   * atualizada a cada render; o listener registrado uma vez só chama
+   * o que estiver na ref no momento do evento.
    */
+  const handleKeyDownRef = useRef<(event: KeyboardEvent) => void>(() => {});
+
   useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent): void {
+    handleKeyDownRef.current = (event: KeyboardEvent) => {
       const target = event.target;
       if (target instanceof HTMLElement && ['INPUT', 'TEXTAREA'].includes(target.tagName)) return;
       if (flatDocuments.length === 0) return;
@@ -204,11 +248,17 @@ export default function AdminVerificacoesPage() {
       } else if (event.key === 'Escape') {
         setConfirmingDocument(null);
       }
+    };
+  });
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent): void {
+      handleKeyDownRef.current(event);
     }
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  });
+  }, []);
 
   async function handleReviewCompany(companyId: string, status: 'approved' | 'rejected'): Promise<void> {
     if (status === 'rejected' && !companyReasonDrafts[companyId]?.trim()) {
@@ -318,7 +368,18 @@ export default function AdminVerificacoesPage() {
                     <span className="text-xs font-semibold text-text-secondary uppercase">
                       {DOCUMENT_TYPE_LABEL[document.type] ?? document.type}
                     </span>
-                    {documentFiles[document.id] && documentFiles[document.id].contentType === 'application/pdf' ? (
+                    {documentFileErrors[document.id] ? (
+                      <div className="flex max-h-64 flex-col items-start gap-2 rounded-xl border border-danger/30 bg-danger/5 p-3 text-sm text-danger">
+                        <span>Não foi possível carregar essa foto.</span>
+                        <button
+                          type="button"
+                          onClick={() => loadDocumentFile(document.id)}
+                          className="font-semibold underline underline-offset-2"
+                        >
+                          Tentar de novo
+                        </button>
+                      </div>
+                    ) : documentFiles[document.id] && documentFiles[document.id].contentType === 'application/pdf' ? (
                       <a
                         href={documentFiles[document.id].url}
                         target="_blank"
@@ -422,7 +483,22 @@ export default function AdminVerificacoesPage() {
                 </span>
                 {company.documentId ? (
                   (() => {
-                    const file = companyDocumentFiles[company.documentId];
+                    const documentId = company.documentId;
+                    if (companyDocumentFileErrors[documentId]) {
+                      return (
+                        <div className="mt-1 flex max-h-64 flex-col items-start gap-2 rounded-xl border border-danger/30 bg-danger/5 p-3 text-sm text-danger">
+                          <span>Não foi possível carregar esse documento.</span>
+                          <button
+                            type="button"
+                            onClick={() => loadCompanyDocumentFile(documentId)}
+                            className="font-semibold underline underline-offset-2"
+                          >
+                            Tentar de novo
+                          </button>
+                        </div>
+                      );
+                    }
+                    const file = companyDocumentFiles[documentId];
                     if (!file) return null;
                     return file.contentType === 'application/pdf' ? (
                       <a

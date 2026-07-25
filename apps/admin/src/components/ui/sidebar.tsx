@@ -5,13 +5,13 @@ import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { Logo } from './logo';
 
-interface AdminNavItem {
+interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
 }
 
-const NAV_ITEMS: AdminNavItem[] = [
+const NAV_ITEMS: NavItem[] = [
   {
     href: '/admin',
     label: 'Visão geral',
@@ -57,7 +57,7 @@ const NAV_ITEMS: AdminNavItem[] = [
   },
 ];
 
-export interface AdminNavProps {
+export interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   pendingVerificationsCount?: number;
@@ -66,14 +66,16 @@ export interface AdminNavProps {
 /**
  * Menu lateral do site pronto-admin (app dedicado — ver
  * app/admin/layout.tsx). Sem "voltar pra empresa": esse site é só
- * admin, não tem painel de empresa pra voltar.
+ * admin, não tem painel de empresa pra voltar. Mesmo nome de arquivo e
+ * de componente do equivalente em apps/business (sidebar.tsx/Sidebar)
+ * — mesma peça conceitual nos dois apps, só o conteúdo do menu muda.
  *
  * Badge em "Verificações" repete o mesmo número do sino no topo — dois
  * lugares pro mesmo aviso, de propósito: o sino chama atenção assim que
  * a tela abre, o badge continua visível enquanto o admin navega por
  * outras telas do painel.
  */
-export function AdminNav({ isOpen, onClose, pendingVerificationsCount = 0 }: AdminNavProps) {
+export function Sidebar({ isOpen, onClose, pendingVerificationsCount = 0 }: SidebarProps) {
   const pathname = usePathname();
 
   useEffect(() => {

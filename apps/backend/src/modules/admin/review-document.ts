@@ -2,7 +2,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { documents, users, workerProfiles } from '../../db/schema';
 import { EmailSender } from '../auth/email-sender';
-import { isMinor as checkIsMinor } from '../../shared/age';
+import { isMinor as checkIsMinor } from '../../shared/validation/age';
 import { HttpError } from '../../shared/errors/http-error';
 
 type ReviewStatus = 'approved' | 'rejected';

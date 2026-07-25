@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, companies, jobs, workerProfiles } from '../../db/schema';
-import { isMinor as checkIsMinor } from '../../shared/age';
+import { isMinor as checkIsMinor } from '../../shared/validation/age';
 import { HttpError } from '../../shared/errors/http-error';
 import { isUniqueViolation } from '../../shared/is-unique-violation';
 import { getLatestConsentDocument } from '../consent-documents/get-consent-document';

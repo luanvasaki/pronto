@@ -2,7 +2,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { applications, jobs, skillCategories, workerProfiles } from '../../db/schema';
 import { assertOwnsCompany } from '../../shared/assert-owns-company';
-import { isMinor as checkIsMinor } from '../../shared/age';
+import { isMinor as checkIsMinor } from '../../shared/validation/age';
 import { HttpError } from '../../shared/errors/http-error';
 import { getLatestConsentDocument } from '../consent-documents/get-consent-document';
 import { JobInput, validateJobInput } from './job-input-validation';

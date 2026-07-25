@@ -1,7 +1,7 @@
 import { desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies, companyDocuments, documents, skillCategories, workerProfiles } from '../../db/schema';
-import { isMinor as checkIsMinor } from '../../shared/age';
+import { isMinor as checkIsMinor } from '../../shared/validation/age';
 
 export interface PendingDocument {
   id: string;

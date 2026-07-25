@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isValidCnpj as backendIsValidCnpj, isValidCpf as backendIsValidCpf } from './cpf-cnpj';
-import { isValidCnpj as sharedIsValidCnpj, isValidCpf as sharedIsValidCpf } from '../../../../packages/shared/src/cpf-cnpj';
+import { isValidCnpj as sharedIsValidCnpj, isValidCpf as sharedIsValidCpf } from '../../../../../packages/shared/src/cpf-cnpj';
 
 /**
  * `apps/backend/src/shared/cpf-cnpj.ts` é uma cópia deliberada de

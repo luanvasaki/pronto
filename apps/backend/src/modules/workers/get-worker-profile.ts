@@ -3,7 +3,7 @@ import { db } from '../../db/client';
 import { applications, documents, jobs, shifts, workerProfiles, workerSkills } from '../../db/schema';
 import { getConsentStatus } from '../auth/get-consent-status';
 import { updateWorkerRatingAggregate } from '../ratings/update-rating-aggregates';
-import { isMinor as checkIsMinor } from '../../shared/age';
+import { isMinor as checkIsMinor } from '../../shared/validation/age';
 import { HttpError } from '../../shared/errors/http-error';
 
 export interface WorkerProfileDetails {

@@ -1,3 +1,4 @@
+// Import circular deliberado e seguro — ver comentário em api.ts.
 import { apiFetch } from './api';
 
 export interface UserResponse {

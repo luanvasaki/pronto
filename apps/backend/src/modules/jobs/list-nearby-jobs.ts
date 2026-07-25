@@ -1,7 +1,7 @@
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies, jobs, workerProfiles, workerSkills } from '../../db/schema';
-import { isMinor as checkIsMinor } from '../../shared/age';
+import { isMinor as checkIsMinor } from '../../shared/validation/age';
 import { HttpError } from '../../shared/errors/http-error';
 import { areApplicationsClosed } from './applications-close';
 import { satisfiesCnhRequirement } from './cnh';

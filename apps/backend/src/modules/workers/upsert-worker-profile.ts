@@ -2,8 +2,8 @@ import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { skillCategories, users, workerProfiles, workerSkills } from '../../db/schema';
 import { CnhCategory, isCnhCategory } from '../jobs/cnh';
-import { calculateAge, isMinor as checkIsMinor } from '../../shared/age';
-import { isValidCpf } from '../../shared/cpf-cnpj';
+import { calculateAge, isMinor as checkIsMinor } from '../../shared/validation/age';
+import { isValidCpf } from '../../shared/validation/cpf-cnpj';
 import { HttpError } from '../../shared/errors/http-error';
 
 const PHONE_REGEX = /^\d{10,11}$/;

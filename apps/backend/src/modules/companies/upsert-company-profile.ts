@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies } from '../../db/schema';
-import { isValidCnpj, isValidCpf } from '../../shared/cpf-cnpj';
+import { isValidCnpj, isValidCpf } from '../../shared/validation/cpf-cnpj';
 import { HttpError } from '../../shared/errors/http-error';
 
 const BUSINESS_SEGMENTS = ['bar', 'restaurante', 'buffet', 'hotel', 'eventos', 'casa_noturna', 'outro'] as const;

@@ -1,3 +1,8 @@
+// Import circular deliberado: auth-api.ts importa apiFetch/ApiError daqui.
+// É seguro porque os dois lados são function declarations (hoisted) só
+// referenciadas dentro de corpo de função (nunca no top-level do módulo)
+// — nenhum dos dois é lido antes de existir. Não trocar por `const`
+// arrow function em nenhum dos dois arquivos sem repensar isso.
 import { refreshSession } from './auth-api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
