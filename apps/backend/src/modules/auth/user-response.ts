@@ -6,6 +6,7 @@ export interface UserResponse {
   status: string;
   isAdmin: boolean;
   googlePhotoUrl: string | null;
+  fullName: string | null;
 }
 
 /**
@@ -21,5 +22,6 @@ export function toUserResponse(user: typeof users.$inferSelect): UserResponse {
     status: user.status,
     isAdmin: user.isAdmin,
     googlePhotoUrl: user.googlePhotoUrl,
+    fullName: user.fullName,
   };
 }

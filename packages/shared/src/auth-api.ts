@@ -7,6 +7,7 @@ export interface UserResponse {
   status: string;
   isAdmin: boolean;
   googlePhotoUrl: string | null;
+  fullName: string | null;
 }
 
 export function register(email: string, password: string): Promise<{ user: UserResponse }> {

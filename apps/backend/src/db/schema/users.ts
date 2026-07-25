@@ -26,6 +26,12 @@ export const users = pgTable(
     // atualizado depois (se a foto do Google mudar, não seguimos).
     // Usado como sugestão de foto de perfil do trabalhador.
     googlePhotoUrl: varchar('google_photo_url', { length: 500 }),
+    // Nome de exibição — hoje só usado pelo painel admin, que não tem
+    // tabela de perfil própria (diferente de worker_profiles.fullName
+    // e companies.legalName/tradeName). Nulo por padrão: quando ausente,
+    // o admin exibe a parte do e-mail antes do "@" (ver displayName()
+    // em apps/admin/src/app/admin/layout.tsx).
+    fullName: varchar('full_name', { length: 255 }),
     // Aceite da tela cheia de /cadastro/termos (não mais no registro —
     // ver accept-terms.ts e modules/consent-documents).
     termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),

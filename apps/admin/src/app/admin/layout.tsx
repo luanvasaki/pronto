@@ -3,7 +3,7 @@
 import { getCurrentUser, logout, UserResponse } from '@shift/shared';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { AdminNav } from '../../components/ui/admin-nav';
+import { Sidebar } from '../../components/ui/sidebar';
 import { Topbar } from '../../components/ui/topbar';
 import { useRequireAuth } from '../../hooks/use-require-auth';
 import { listPendingVerifications, PendingVerifications } from '../../lib/admin-api';
@@ -21,10 +21,15 @@ function pageTitle(pathname: string): string {
   return 'Administração';
 }
 
-/** Admin não tem nome de exibição próprio (só email) — usa a parte antes do "@", mesmo espírito do resto do app. */
-function displayName(email: string): string {
-  return email.split('@')[0] ?? email;
+/** Fallback pra admin sem `fullName` configurado (ver users.full_name) — usa a parte antes do "@", mesmo espírito do resto do app. */
+function displayName(user: UserResponse): string {
+  return user.fullName ?? user.email.split('@')[0] ?? user.email;
 }
+
+// Painel é só dos dois donos da Pronto hoje — sem foto do Google
+// configurada, mostra o próprio logo da marca em vez de iniciais
+// genéricas, em vez de exigir upload de foto de perfil só pra isso.
+const FALLBACK_ADMIN_PHOTO_URL = '/icons/icon-192.png';
 
 /**
  * Layout próprio pro painel admin, fora do grupo `(app)` de propósito —
@@ -122,7 +127,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <AdminNav
+      <Sidebar
         isOpen={isNavOpen}
         onClose={() => setIsNavOpen(false)}
         pendingVerificationsCount={pendingVerificationsCount}
@@ -130,8 +135,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
           title={pageTitle(pathname)}
-          adminName={currentUser ? displayName(currentUser.email) : 'admin'}
-          adminPhotoUrl={currentUser?.googlePhotoUrl}
+          adminName={currentUser ? displayName(currentUser) : 'admin'}
+          adminPhotoUrl={currentUser?.googlePhotoUrl ?? FALLBACK_ADMIN_PHOTO_URL}
           onMenuClick={() => setIsNavOpen(true)}
           onLogout={handleLogout}
           isLoggingOut={isLoggingOut}

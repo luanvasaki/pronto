@@ -372,6 +372,13 @@
       "when": 1784682665331,
       "tag": "0052_heavy_lester",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1784943613046,
+      "tag": "0053_glorious_squadron_sinister",
+      "breakpoints": true
     }
   ]
 }

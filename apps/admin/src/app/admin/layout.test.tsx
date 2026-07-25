@@ -134,6 +134,73 @@ describe('AdminLayout', () => {
     }
   });
 
+  it('mostra o fullName cadastrado em vez do prefixo do e-mail', async () => {
+    getCurrentUserMock.mockResolvedValue({
+      user: { id: '1', isAdmin: true, email: 'luanvasaki9@gmail.com', fullName: 'Luan' },
+    });
+
+    render(
+      <AdminLayout>
+        <p>conteúdo</p>
+      </AdminLayout>,
+    );
+
+    await screen.findByText('conteúdo');
+    expect(screen.getByText(/Luan/)).toBeInTheDocument();
+    expect(screen.queryByText(/luanvasaki9/)).not.toBeInTheDocument();
+  });
+
+  it('cai no prefixo do e-mail quando não há fullName cadastrado (admin sem nome configurado)', async () => {
+    getCurrentUserMock.mockResolvedValue({
+      user: { id: '1', isAdmin: true, email: 'novo-admin@pronto.work', fullName: null },
+    });
+
+    render(
+      <AdminLayout>
+        <p>conteúdo</p>
+      </AdminLayout>,
+    );
+
+    await screen.findByText('conteúdo');
+    expect(screen.getByText(/novo-admin/)).toBeInTheDocument();
+  });
+
+  it('mostra o logo da Pronto na foto quando o admin não tem foto do Google', async () => {
+    getCurrentUserMock.mockResolvedValue({
+      user: { id: '1', isAdmin: true, email: 'luanvasaki9@gmail.com', fullName: 'Luan', googlePhotoUrl: null },
+    });
+
+    render(
+      <AdminLayout>
+        <p>conteúdo</p>
+      </AdminLayout>,
+    );
+
+    await screen.findByText('conteúdo');
+    expect(screen.getByAltText('Luan')).toHaveAttribute('src', '/icons/icon-192.png');
+  });
+
+  it('usa a foto do Google quando ela existe, em vez do logo da Pronto', async () => {
+    getCurrentUserMock.mockResolvedValue({
+      user: {
+        id: '1',
+        isAdmin: true,
+        email: 'luanvasaki9@gmail.com',
+        fullName: 'Luan',
+        googlePhotoUrl: 'https://exemplo.com/foto.jpg',
+      },
+    });
+
+    render(
+      <AdminLayout>
+        <p>conteúdo</p>
+      </AdminLayout>,
+    );
+
+    await screen.findByText('conteúdo');
+    expect(screen.getByAltText('Luan')).toHaveAttribute('src', 'https://exemplo.com/foto.jpg');
+  });
+
   it('desloga e manda pro login', async () => {
     getCurrentUserMock.mockResolvedValue({ user: { id: '1', isAdmin: true, email: 'admin@pronto.work' } });
     const { default: userEvent } = await import('@testing-library/user-event');
