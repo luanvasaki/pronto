@@ -137,4 +137,21 @@ describe('releasePayment', () => {
     // uma escrever, e o gateway seria chamado duas vezes.
     expect(releaseCallCount).toBe(1);
   });
+
+  it('marca o pagamento como "failed" (não deixa "released" mentindo) quando o gateway falha ao confirmar a liberação', async () => {
+    const { owner, shift } = await setupChargedShift();
+    const failingGateway: PaymentGateway = {
+      charge: SUCCESS_GATEWAY.charge,
+      release: async () => {
+        throw new Error('Falha simulada no gateway de pagamento.');
+      },
+    };
+
+    await expect(releasePayment(failingGateway, owner.id, shift.id)).rejects.toThrow(
+      'Não foi possível confirmar a liberação',
+    );
+
+    const payment = await db.query.payments.findFirst({ where: eq(payments.shiftId, shift.id) });
+    expect(payment?.status).toBe('failed');
+  });
 });

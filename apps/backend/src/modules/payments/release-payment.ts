@@ -54,7 +54,26 @@ export async function releasePayment(
   }
 
   if (updated.pspChargeId) {
-    await gateway.release(updated.pspChargeId);
+    try {
+      await gateway.release(updated.pspChargeId);
+    } catch (error) {
+      // Já vencemos a corrida (status virou "released" acima) — não dá
+      // pra saber se o gateway processou antes de falhar, então não
+      // reverte pra "charged" (reverter arriscaria uma segunda chamada
+      // real ao PSP se a primeira tiver ido, só demorou a confirmar).
+      // "failed" é o mesmo estado terminal que chargeForShift usa: sem
+      // retry automático, mas visível pra um admin resolver na mão em
+      // GET /admin/failed-payments (ver list-failed-payments.ts).
+      console.error(`[releasePayment] liberação falhou pro pagamento ${updated.id}:`, error);
+      await db
+        .update(payments)
+        .set({ status: 'failed', updatedAt: new Date() })
+        .where(eq(payments.id, updated.id));
+      throw new HttpError(
+        502,
+        'Não foi possível confirmar a liberação no gateway de pagamento. Um admin foi notificado.',
+      );
+    }
   }
 
   return toPaymentResponse(updated);
