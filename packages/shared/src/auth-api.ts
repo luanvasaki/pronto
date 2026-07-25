@@ -12,6 +12,7 @@ export function register(email: string, password: string): Promise<{ user: UserR
   return apiFetch('/auth/register', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
+    skipAuthRetry: true,
   });
 }
 
@@ -19,6 +20,7 @@ export function login(email: string, password: string): Promise<{ user: UserResp
   return apiFetch('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
+    skipAuthRetry: true,
   });
 }
 
@@ -26,6 +28,7 @@ export function googleLogin(idToken: string): Promise<{ user: UserResponse }> {
   return apiFetch('/auth/google', {
     method: 'POST',
     body: JSON.stringify({ idToken }),
+    skipAuthRetry: true,
   });
 }
 
@@ -33,6 +36,7 @@ export function forgotPassword(email: string): Promise<{ message: string }> {
   return apiFetch('/auth/forgot-password', {
     method: 'POST',
     body: JSON.stringify({ email }),
+    skipAuthRetry: true,
   });
 }
 
@@ -40,6 +44,7 @@ export function resetPassword(token: string, newPassword: string): Promise<{ mes
   return apiFetch('/auth/reset-password', {
     method: 'POST',
     body: JSON.stringify({ token, newPassword }),
+    skipAuthRetry: true,
   });
 }
 
@@ -96,7 +101,10 @@ let inFlightRefresh: Promise<{ success: true }> | null = null;
  */
 export function refreshSession(): Promise<{ success: true }> {
   if (!inFlightRefresh) {
-    inFlightRefresh = apiFetch<{ success: true }>('/auth/refresh', { method: 'POST' }).finally(() => {
+    inFlightRefresh = apiFetch<{ success: true }>('/auth/refresh', {
+      method: 'POST',
+      skipAuthRetry: true,
+    }).finally(() => {
       inFlightRefresh = null;
     });
   }
@@ -104,5 +112,5 @@ export function refreshSession(): Promise<{ success: true }> {
 }
 
 export function logout(): Promise<{ message: string }> {
-  return apiFetch('/auth/logout', { method: 'POST' });
+  return apiFetch('/auth/logout', { method: 'POST', skipAuthRetry: true });
 }

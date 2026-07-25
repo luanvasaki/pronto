@@ -68,4 +68,38 @@ describe('apiFetch', () => {
       expect((error as ApiError).status).toBe(429);
     }
   });
+
+  it('renova a sessão automaticamente num 401 e repete a chamada original', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ error: 'Sessão inválida.' }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ success: true }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ user: { id: '1' } }) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await apiFetch<{ user: { id: string } }>('/auth/me');
+
+    expect(result.user.id).toBe('1');
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[1][0]).toEqual(expect.stringContaining('/auth/refresh'));
+  });
+
+  it('propaga o 401 original quando a renovação da sessão também falha', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ error: 'Sessão inválida.' }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ error: 'Refresh token inválido.' }) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(apiFetch('/auth/me')).rejects.toThrow('Sessão inválida.');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('não tenta renovar a sessão quando skipAuthRetry é true', async () => {
+    mockFetch({ ok: false, status: 401, json: async () => ({ error: 'Credenciais inválidas.' }) });
+
+    await expect(apiFetch('/auth/login', { method: 'POST', skipAuthRetry: true })).rejects.toThrow(
+      'Credenciais inválidas.',
+    );
+  });
 });

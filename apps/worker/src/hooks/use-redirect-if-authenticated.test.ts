@@ -8,13 +8,11 @@ vi.mock('next/navigation', () => ({
 }));
 
 const getCurrentUserMock = vi.fn();
-const refreshSessionMock = vi.fn();
 vi.mock('@shift/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shift/shared')>();
   return {
     ...actual,
     getCurrentUser: (...args: unknown[]) => getCurrentUserMock(...args),
-    refreshSession: (...args: unknown[]) => refreshSessionMock(...args),
   };
 });
 
@@ -22,7 +20,6 @@ describe('useRedirectIfAuthenticated', () => {
   beforeEach(() => {
     replaceMock.mockClear();
     getCurrentUserMock.mockReset();
-    refreshSessionMock.mockReset();
   });
 
   it('começa checando a sessão', () => {
@@ -33,30 +30,16 @@ describe('useRedirectIfAuthenticated', () => {
     expect(result.current.isChecking).toBe(true);
   });
 
-  it('redireciona quando já existe sessão válida', async () => {
+  it('redireciona quando já existe sessão válida (o apiFetch já tenta renovar sozinho num 401)', async () => {
     getCurrentUserMock.mockResolvedValue({ user: { id: '1' } });
 
     renderHook(() => useRedirectIfAuthenticated('/inicio'));
 
     await waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/inicio'));
-    expect(refreshSessionMock).not.toHaveBeenCalled();
-  });
-
-  it('renova a sessão expirada antes de redirecionar', async () => {
-    getCurrentUserMock.mockRejectedValueOnce(new Error('401')).mockResolvedValueOnce({
-      user: { id: '1' },
-    });
-    refreshSessionMock.mockResolvedValue({ success: true });
-
-    renderHook(() => useRedirectIfAuthenticated('/inicio'));
-
-    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/inicio'));
-    expect(refreshSessionMock).toHaveBeenCalled();
   });
 
   it('para de checar sem redirecionar quando não há sessão', async () => {
     getCurrentUserMock.mockRejectedValue(new Error('401'));
-    refreshSessionMock.mockRejectedValue(new Error('sem refresh token'));
 
     const { result } = renderHook(() => useRedirectIfAuthenticated('/inicio'));
 

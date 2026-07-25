@@ -32,6 +32,7 @@ describe('register', () => {
     expect(apiFetchMock).toHaveBeenCalledWith('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email: 'pessoa@example.com', password: 'senha12345' }),
+      skipAuthRetry: true,
     });
   });
 });
@@ -49,6 +50,7 @@ describe('login', () => {
     expect(apiFetchMock).toHaveBeenCalledWith('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email: 'pessoa@example.com', password: 'senha12345' }),
+      skipAuthRetry: true,
     });
   });
 });
@@ -66,6 +68,7 @@ describe('googleLogin', () => {
     expect(apiFetchMock).toHaveBeenCalledWith('/auth/google', {
       method: 'POST',
       body: JSON.stringify({ idToken: 'token-do-google' }),
+      skipAuthRetry: true,
     });
   });
 });
@@ -83,6 +86,7 @@ describe('forgotPassword', () => {
     expect(apiFetchMock).toHaveBeenCalledWith('/auth/forgot-password', {
       method: 'POST',
       body: JSON.stringify({ email: 'pessoa@example.com' }),
+      skipAuthRetry: true,
     });
   });
 });
@@ -100,6 +104,7 @@ describe('resetPassword', () => {
     expect(apiFetchMock).toHaveBeenCalledWith('/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify({ token: 'token-abc', newPassword: 'senha-nova-123' }),
+      skipAuthRetry: true,
     });
   });
 });
@@ -128,7 +133,7 @@ describe('refreshSession', () => {
 
     await refreshSession();
 
-    expect(apiFetchMock).toHaveBeenCalledWith('/auth/refresh', { method: 'POST' });
+    expect(apiFetchMock).toHaveBeenCalledWith('/auth/refresh', { method: 'POST', skipAuthRetry: true });
   });
 });
 
@@ -190,6 +195,6 @@ describe('logout', () => {
 
     await logout();
 
-    expect(apiFetchMock).toHaveBeenCalledWith('/auth/logout', { method: 'POST' });
+    expect(apiFetchMock).toHaveBeenCalledWith('/auth/logout', { method: 'POST', skipAuthRetry: true });
   });
 });
