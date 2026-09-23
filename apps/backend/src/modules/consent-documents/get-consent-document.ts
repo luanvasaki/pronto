@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { consentDocuments, ConsentDocumentChapter } from '../../db/schema';
 import { HttpError } from '../../shared/errors/http-error';
@@ -31,6 +31,31 @@ export async function getLatestConsentDocument(type: ConsentDocumentType): Promi
   });
   if (!document) {
     throw new HttpError(404, 'Documento de consentimento não encontrado.');
+  }
+  return {
+    type: document.type,
+    version: document.version,
+    chapters: document.chapters,
+    declaration: document.declaration,
+  };
+}
+
+/**
+ * Diferente de getLatestConsentDocument: busca a versão exata que um
+ * usuário específico aceitou (users.termsVersion / login_consents.version
+ * / jobs.minorsTermsVersion podem não ser a versão vigente hoje). Usado
+ * só pelo admin, pra mostrar o texto que a pessoa realmente viu na hora
+ * do aceite — não o texto atual, que pode ter mudado desde então.
+ */
+export async function getConsentDocumentByVersion(
+  type: ConsentDocumentType,
+  version: string,
+): Promise<ConsentDocumentResult> {
+  const document = await db.query.consentDocuments.findFirst({
+    where: and(eq(consentDocuments.type, type), eq(consentDocuments.version, version)),
+  });
+  if (!document) {
+    throw new HttpError(404, 'Essa versão do documento não foi encontrada.');
   }
   return {
     type: document.type,

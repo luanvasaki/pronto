@@ -57,10 +57,27 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+// Só aparece pra quem passa requireSuperAdmin no backend (ver
+// user.isSuperAdmin) — o menu esconder o item não é a proteção de
+// verdade, só evita levar quem não tem acesso a uma tela que vai
+// devolver 403.
+const SUPER_ADMIN_NAV_ITEM: NavItem = {
+  href: '/admin/administradores',
+  label: 'Administradores',
+  icon: (
+    <>
+      <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="2" />
+      <path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M15.5 3.5l1 1 2-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+};
+
 export interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   pendingVerificationsCount?: number;
+  isSuperAdmin?: boolean;
 }
 
 /**
@@ -75,8 +92,9 @@ export interface SidebarProps {
  * a tela abre, o badge continua visível enquanto o admin navega por
  * outras telas do painel.
  */
-export function Sidebar({ isOpen, onClose, pendingVerificationsCount = 0 }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, pendingVerificationsCount = 0, isSuperAdmin = false }: SidebarProps) {
   const pathname = usePathname();
+  const navItems = isSuperAdmin ? [...NAV_ITEMS, SUPER_ADMIN_NAV_ITEM] : NAV_ITEMS;
 
   useEffect(() => {
     onClose();
@@ -101,7 +119,7 @@ export function Sidebar({ isOpen, onClose, pendingVerificationsCount = 0 }: Side
         </div>
 
         <nav className="flex flex-col gap-1">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active = pathname === item.href;
             const showBadge = item.href === '/admin/verificacoes' && pendingVerificationsCount > 0;
 

@@ -35,6 +35,28 @@ function readJwtSecret(): string {
   return raw;
 }
 
+/**
+ * Quem pode conceder/revogar `isAdmin` de outro usuário pela UI (ver
+ * requireSuperAdmin). Deliberadamente fora do banco — trocar quem tem
+ * esse poder é uma mudança de configuração/deploy, não uma ação de
+ * produto, e não deve ficar num registro que um admin comum consiga
+ * ler ou influenciar. Vazia por padrão: sem essa env var, ninguém
+ * consegue promover ninguém pela tela (update direto no banco continua
+ * sendo o único caminho, como sempre foi).
+ */
+function readSuperAdminEmails(): string[] {
+  const raw = process.env.SUPER_ADMIN_EMAILS;
+
+  if (!raw) {
+    return [];
+  }
+
+  return raw
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter((email) => email.length > 0);
+}
+
 function readCorsOrigins(): string[] {
   const raw = process.env.CORS_ORIGINS;
 
@@ -51,6 +73,7 @@ export const env = {
   databaseUrl: readDatabaseUrl(),
   jwtSecret: readJwtSecret(),
   corsOrigins: readCorsOrigins(),
+  superAdminEmails: readSuperAdminEmails(),
   // Sem token, createFileStorage() cai pra disco local — só é obrigatória
   // quando quisermos de fato usar o Vercel Blob (ver file-storage.ts).
   // São dois tokens porque são dois stores diferentes na Vercel: um

@@ -2,11 +2,23 @@ import { eq } from 'drizzle-orm';
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
 import request from 'supertest';
-import { afterEach, describe, expect, it } from 'vitest';
-import { createApp } from '../../app';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../../db/client';
-import { companies, skillCategories, users, workerSkills } from '../../db/schema';
+import { adminActions, companies, skillCategories, users, workerSkills } from '../../db/schema';
 import { EmailSender } from '../auth/email-sender';
+
+// SUPER_ADMIN_EMAILS precisa estar disponível antes de createApp() importar
+// as rotas de admin — daí o mock ficar aqui em cima, mesclado com o resto
+// do env real (corsOrigins etc.) pra não quebrar o resto da suíte. Literal
+// repetido (não a const ADMIN_EMAIL abaixo) porque vi.mock é hoisted pro
+// topo do arquivo, antes de qualquer const ser inicializada.
+vi.mock('../../config/env', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../config/env')>();
+  return { env: { ...actual.env, superAdminEmails: ['admin-routes-admin@example.com'] } };
+});
+
+const { createApp } = await import('../../app');
+const ADMIN_EMAIL = 'admin-routes-admin@example.com';
 
 class CapturingEmailSender implements EmailSender {
   public lastEmail?: string;
@@ -32,7 +44,6 @@ class CapturingEmailSender implements EmailSender {
 
 const WORKER_EMAIL = 'admin-routes-worker@example.com';
 const OWNER_EMAIL = 'admin-routes-owner@example.com';
-const ADMIN_EMAIL = 'admin-routes-admin@example.com';
 const TEST_PASSWORD = 'senha-de-teste-123';
 const TEST_CATEGORY_NAME = 'Categoria de teste — admin-routes';
 const TEST_CNPJ = '11222333003016';
@@ -69,6 +80,12 @@ describe('rotas de admin', () => {
       await db.delete(workerSkills).where(eq(workerSkills.categoryId, testCategory.id));
     }
     await db.delete(skillCategories).where(eq(skillCategories.name, TEST_CATEGORY_NAME));
+    // admin_actions não tem cascade (é registro de auditoria, ver
+    // schema/admin-actions.ts) — precisa limpar antes dos usuários,
+    // senão a FK trava a limpeza depois de um teste de promoção/revogação.
+    const admin = await db.query.users.findFirst({ where: eq(users.email, ADMIN_EMAIL) });
+    if (worker) await db.delete(adminActions).where(eq(adminActions.targetUserId, worker.id));
+    if (admin) await db.delete(adminActions).where(eq(adminActions.actorUserId, admin.id));
     await db.delete(users).where(eq(users.email, WORKER_EMAIL));
     await db.delete(users).where(eq(users.email, OWNER_EMAIL));
     await db.delete(users).where(eq(users.email, ADMIN_EMAIL));
@@ -418,5 +435,79 @@ describe('rotas de admin', () => {
     expect(response.body.email).toBe(WORKER_EMAIL);
     expect(sender.lastEmail).toBe(WORKER_EMAIL);
     expect(sender.lastResetUrl).toContain('/redefinir-senha?token=');
+  });
+
+  it('PATCH /admin/users/:id/admin responde 403 pra admin comum (fora da lista de super admins)', async () => {
+    const app = createApp();
+    const workerAgent = await loginAgent(app, WORKER_EMAIL);
+    const meResponse = await workerAgent.get('/auth/me');
+
+    const otherAdminEmail = 'admin-routes-outro-admin@example.com';
+    const otherAdminAgent = await loginAgent(app, otherAdminEmail);
+    await makeAdmin(otherAdminEmail);
+
+    const response = await otherAdminAgent
+      .patch(`/admin/users/${meResponse.body.user.id}/admin`)
+      .send({ isAdmin: true });
+
+    expect(response.status).toBe(403);
+    await db.delete(users).where(eq(users.email, otherAdminEmail));
+  });
+
+  it('PATCH /admin/users/:id/admin concede admin quando quem pede está na lista de super admins', async () => {
+    const app = createApp();
+    const workerAgent = await loginAgent(app, WORKER_EMAIL);
+    const meResponse = await workerAgent.get('/auth/me');
+
+    const adminAgent = await loginAgent(app, ADMIN_EMAIL);
+    await makeAdmin(ADMIN_EMAIL);
+
+    const response = await adminAgent
+      .patch(`/admin/users/${meResponse.body.user.id}/admin`)
+      .send({ isAdmin: true });
+
+    expect(response.status).toBe(200);
+    expect(response.body.isAdmin).toBe(true);
+
+    const updated = await db.query.users.findFirst({ where: eq(users.id, meResponse.body.user.id) });
+    expect(updated?.isAdmin).toBe(true);
+  });
+
+  it('GET /admin/admins lista quem é admin, restrito a super admins', async () => {
+    const app = createApp();
+    const workerAgent = await loginAgent(app, WORKER_EMAIL);
+
+    const adminAgent = await loginAgent(app, ADMIN_EMAIL);
+    await makeAdmin(ADMIN_EMAIL);
+
+    const forbidden = await workerAgent.get('/admin/admins');
+    expect(forbidden.status).toBe(403);
+
+    const response = await adminAgent.get('/admin/admins');
+    expect(response.status).toBe(200);
+    expect(response.body.admins.some((admin: { email: string }) => admin.email === ADMIN_EMAIL)).toBe(true);
+  });
+
+  it('GET /admin/users/find encontra usuário pelo e-mail exato, restrito a super admins', async () => {
+    const app = createApp();
+    await loginAgent(app, WORKER_EMAIL);
+
+    const adminAgent = await loginAgent(app, ADMIN_EMAIL);
+    await makeAdmin(ADMIN_EMAIL);
+
+    const response = await adminAgent.get(`/admin/users/find?email=${encodeURIComponent(WORKER_EMAIL)}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.user.email).toBe(WORKER_EMAIL);
+    expect(response.body.user.isAdmin).toBe(false);
+  });
+
+  it('GET /admin/consent-documents/:type/:version responde 403 pra quem não é admin', async () => {
+    const app = createApp();
+    const agent = await loginAgent(app, WORKER_EMAIL);
+
+    const response = await agent.get('/admin/consent-documents/platform_terms/1.1');
+
+    expect(response.status).toBe(403);
   });
 });

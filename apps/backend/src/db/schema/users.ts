@@ -48,9 +48,13 @@ export const users = pgTable(
     termsUserAgent: text('terms_user_agent'),
     phoneVerifiedAt: timestamp('phone_verified_at', { withTimezone: true }),
     status: userStatusEnum('status').notNull().default('active'),
-    // Sem self-serve pra virar admin — só concedido via update direto
-    // no banco (ver README de operações). É deliberadamente rígido:
-    // aprovar KYC e verificação de empresa é ação sensível.
+    // Sem self-serve genérico pra virar admin — só concedido via update
+    // direto no banco, ou pela rota set-admin.ts restrita a uma lista
+    // fixa de e-mails (env SUPER_ADMIN_EMAILS, ver
+    // modules/admin/require-super-admin.ts). Deliberadamente rígido:
+    // aprovar KYC e verificação de empresa é ação sensível, então quem
+    // pode criar novos admins é uma decisão de configuração/deploy, não
+    // uma ação exposta a qualquer admin.
     isAdmin: boolean('is_admin').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

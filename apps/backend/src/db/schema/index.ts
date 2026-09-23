@@ -18,3 +18,4 @@ export * from './password-reset-tokens';
 export * from './push-subscriptions';
 export * from './consent-documents';
 export * from './login-consents';
+export * from './admin-actions';

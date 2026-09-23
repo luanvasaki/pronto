@@ -6,6 +6,7 @@ export interface UserResponse {
   email: string;
   status: string;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   googlePhotoUrl: string | null;
   fullName: string | null;
 }

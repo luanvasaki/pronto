@@ -1,6 +1,6 @@
 # Schema do banco de dados — Pronto
 
-> Postgres via Drizzle ORM (`drizzle-orm/node-postgres`). 19 tabelas, 16 enums, ~54 migrations até o momento desta documentação. Padrões gerais antes do detalhe tabela por tabela.
+> Postgres via Drizzle ORM (`drizzle-orm/node-postgres`). 20 tabelas, 17 enums, ~55 migrations até o momento desta documentação. Padrões gerais antes do detalhe tabela por tabela.
 
 ## Padrões gerais
 
@@ -13,7 +13,10 @@
 ## Tabelas
 
 ### `users`
-Conta de login. `email` nullable (por conveniência de fixture de teste, não por regra de produto — na aplicação é obrigatório), `passwordHash` nullable (null = conta só-Google), `googleId`, `phone`/`phoneVerifiedAt` (reservados pra uma verificação por celular que nunca foi implementada), `status` (active/suspended/banned), `isAdmin` (só setado por update direto no banco). `fullName` (nullable) — nome de exibição, hoje só usado pelo painel admin (que não tem tabela de perfil própria como `worker_profiles`/`companies`); quando ausente, o admin exibe a parte do e-mail antes do "@" (ver `apps/admin/src/app/admin/layout.tsx`). `termsAcceptedAt`/`termsVersion`/`termsIpAddress`/`termsUserAgent` — aceite do documento completo (`consent_documents.type = 'platform_terms'`) na tela `/cadastro/termos`, não mais na criação da conta (ver módulo `auth` e [`05-operations/auth-and-security.md`](../05-operations/auth-and-security.md)). Únicos: `phone`, `email`, `googleId`.
+Conta de login. `email` nullable (por conveniência de fixture de teste, não por regra de produto — na aplicação é obrigatório), `passwordHash` nullable (null = conta só-Google), `googleId`, `phone`/`phoneVerifiedAt` (reservados pra uma verificação por celular que nunca foi implementada), `status` (active/suspended/banned), `isAdmin` (só concedido por update direto no banco, ou pela rota `PATCH /admin/users/:id/admin` restrita a e-mails na env `SUPER_ADMIN_EMAILS` — ver `admin_actions` abaixo e [`05-operations/auth-and-security.md`](../05-operations/auth-and-security.md)). `fullName` (nullable) — nome de exibição, hoje só usado pelo painel admin (que não tem tabela de perfil própria como `worker_profiles`/`companies`); quando ausente, o admin exibe a parte do e-mail antes do "@" (ver `apps/admin/src/app/admin/layout.tsx`). `termsAcceptedAt`/`termsVersion`/`termsIpAddress`/`termsUserAgent` — aceite do documento completo (`consent_documents.type = 'platform_terms'`) na tela `/cadastro/termos`, não mais na criação da conta (ver módulo `auth` e [`05-operations/auth-and-security.md`](../05-operations/auth-and-security.md)). Únicos: `phone`, `email`, `googleId`.
+
+### `admin_actions`
+Log de auditoria só-inserção das mudanças de `users.isAdmin` feitas pela rota `set-user-admin.ts` (concessão/revogação pela UI, ver `users` acima) — o update direto no banco continua existindo e não passa por aqui. `actorUserId`/`targetUserId` (quem fez, pra quem), `action` (enum `grant_admin`/`revoke_admin`), `createdAt`. Sem cascade nas FKs (é registro de auditoria, não extensão de identidade — apagar o usuário não deveria apagar o rastro).
 
 ### `consent_documents`
 Texto legal versionado (aceite auditável, seção 12.5 do termo consolidado — nunca uma frase solta embutida em componente). `type` (`platform_terms`/`minors_opportunity`/`login_summary`), `version` (varchar), `chapters` (jsonb: `{ number, heading, body }[]`), `declaration` (texto da declaração final). **Nunca dá UPDATE numa linha existente** — nova versão do texto é sempre uma linha nova, histórico completo preservado. Único: par (`type`, `version`). Seedado por `db/seed-consent-documents.ts` (idempotente, `npm run db:seed-consent-documents` — precisa ser rodado manualmente contra produção, o `vitest globalSetup` só cobre testes). Servido publicamente (sem auth) por `GET /consent-documents/:type`.
@@ -74,7 +77,7 @@ N:N entre trabalhador e categoria. Cascade em `workerId`, sem cascade em `catego
 
 ## Enums
 
-`user_status`, `kyc_status`, `company_verification_status`, `company_person_type`, `business_segment`, `skill_category_status`, `job_status`, `benefit_provision`, `cnh_category`, `application_status`, `shift_status`, `rater_role`, `payment_status`, `document_status`, `document_type`, `consent_document_type` (`platform_terms`/`minors_opportunity`/`login_summary`).
+`user_status`, `kyc_status`, `company_verification_status`, `company_person_type`, `business_segment`, `skill_category_status`, `job_status`, `benefit_provision`, `cnh_category`, `application_status`, `shift_status`, `rater_role`, `payment_status`, `document_status`, `document_type`, `consent_document_type` (`platform_terms`/`minors_opportunity`/`login_summary`), `admin_action_type` (`grant_admin`/`revoke_admin`).
 
 ## Colunas mortas conhecidas
 

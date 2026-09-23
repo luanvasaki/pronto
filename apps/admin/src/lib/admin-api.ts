@@ -1,4 +1,4 @@
-import { apiFetch } from '@shift/shared';
+import { apiFetch, ConsentDocumentResponse } from '@shift/shared';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -179,6 +179,47 @@ export function listAdminWorkers(): Promise<{ workers: AdminWorker[] }> {
 
 export function resetUserPassword(userId: string): Promise<{ email: string }> {
   return apiFetch(`/admin/users/${userId}/reset-password`, { method: 'POST' });
+}
+
+export interface AdminUser {
+  id: string;
+  email: string | null;
+  fullName: string | null;
+  createdAt: string;
+}
+
+export interface FoundUser {
+  id: string;
+  email: string | null;
+  fullName: string | null;
+  isAdmin: boolean;
+}
+
+export function listAdmins(): Promise<{ admins: AdminUser[] }> {
+  return apiFetch('/admin/admins');
+}
+
+export function findUserByEmail(email: string): Promise<{ user: FoundUser }> {
+  return apiFetch(`/admin/users/find?email=${encodeURIComponent(email)}`);
+}
+
+export function setUserAdmin(userId: string, isAdmin: boolean): Promise<{ id: string; email: string | null; isAdmin: boolean }> {
+  return apiFetch(`/admin/users/${userId}/admin`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isAdmin }),
+  });
+}
+
+/**
+ * Busca o texto exato de uma versão de termo (não necessariamente a
+ * vigente hoje) — usado pra mostrar o que a pessoa realmente viu no
+ * momento do aceite, junto do ConsentHistory.
+ */
+export function getConsentDocumentVersion(
+  type: ConsentDocumentResponse['type'],
+  version: string,
+): Promise<ConsentDocumentResponse> {
+  return apiFetch(`/admin/consent-documents/${type}/${encodeURIComponent(version)}`);
 }
 
 export interface FailedPayment {

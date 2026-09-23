@@ -6,10 +6,11 @@ import { HttpError } from '../../shared/errors/http-error';
 
 /**
  * Roda depois de requireAuth (precisa de req.auth já preenchido).
- * isAdmin não é auto-atribuível por nenhuma rota — só via update
- * direto no banco (ver README) — por isso a checagem aqui é uma
- * consulta simples, sem cache: são poucas chamadas admin, e o custo
- * de servir uma permissão desatualizada é maior que uma query extra.
+ * isAdmin só pode ser concedido por update direto no banco ou pela
+ * rota de set-admin (que exige requireSuperAdmin além deste — ver
+ * require-super-admin.ts) — por isso a checagem aqui é uma consulta
+ * simples, sem cache: são poucas chamadas admin, e o custo de servir
+ * uma permissão desatualizada é maior que uma query extra.
  */
 export async function requireAdmin(req: Request, _res: Response, next: NextFunction): Promise<void> {
   try {

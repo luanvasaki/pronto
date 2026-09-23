@@ -50,7 +50,7 @@ A antiga constante fixa `CURRENT_TERMS_VERSION` (`shared/terms-version.ts`) foi 
 
 O sistema disciplinar progressivo descrito no texto legal (advertência → suspensão 7/14/28 dias → bloqueio) **não tem enforcement real** — só o texto/aceite existem hoje; a penalização de verdade é decisão explícita de ficar pra uma tarefa futura separada (ver [`05-operations/known-issues.md`](./known-issues.md)).
 
-Visibilidade pra prova em disputa: `GET /admin/companies`/`workers` devolvem o histórico de aceite (versão/data/IP dos três pontos acima) — sem endpoint de escrita novo, só leitura, renderizado colapsado nas páginas `/admin/empresas`/`/admin/trabalhadores` (componente `ConsentHistory`).
+Visibilidade pra prova em disputa: `GET /admin/companies`/`workers` devolvem o histórico de aceite (versão/data/IP dos três pontos acima) — sem endpoint de escrita novo, só leitura, renderizado colapsado nas páginas `/admin/empresas`/`/admin/trabalhadores` (componente `ConsentHistory`). Além da versão/data/IP, o admin também consegue ler o **texto completo daquela versão específica** (não a vigente hoje, que pode já ter mudado) via `GET /admin/consent-documents/:type/:version` (qualquer admin, não só super admin — é leitura de KYC/aceite, mesmo nível de acesso das telas de trabalhadores/empresas), acionado por um botão "Ver texto completo desta versão" dentro do `ConsentHistory`.
 
 ## Rate limiting
 
@@ -67,3 +67,12 @@ Checagem de mesma origem aplicada globalmente, antes de qualquer rota, logo depo
 ## Documentos de KYC
 
 Nunca servidos por URL direta do provedor de armazenamento — sempre através de um proxy autenticado que valida quem está pedindo antes de retornar o arquivo. Validação de tipo de arquivo é feita por assinatura real de bytes, não pelo `Content-Type` que o cliente declarou no upload.
+
+## Quem pode conceder acesso de administrador
+
+`users.isAdmin` continua deliberadamente rígido — virar admin nunca é self-serve por padrão. Duas formas coexistem:
+
+1. **Update direto no banco** — o caminho histórico, sempre disponível, sem passar por nenhuma rota.
+2. **`PATCH /admin/users/:id/admin`** (concede/revoga) — só acessível a quem já é admin **e** cujo e-mail está na env `SUPER_ADMIN_EMAILS` (lista fixa, separada por vírgula, configurada no deploy — ver `apps/backend/src/modules/admin/require-super-admin.ts`). Vazia por padrão: sem essa env var, ninguém consegue promover ninguém pela UI, preservando o comportamento histórico. Não é possível revogar o próprio acesso (evita lockout acidental).
+
+Toda concessão/revogação feita pela rota (não o update direto no banco) fica registrada em `admin_actions` (quem, pra quem, quando — ver [`03-architecture/database-schema.md`](../03-architecture/database-schema.md)). A tela `/admin/administradores` (só visível a quem está em `SUPER_ADMIN_EMAILS`, via `isSuperAdmin` no `GET /auth/me`) permite buscar um usuário por e-mail exato e promovê-lo, e listar/revogar admins atuais.

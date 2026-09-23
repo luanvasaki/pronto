@@ -18,6 +18,7 @@ function pageTitle(pathname: string): string {
   if (pathname === '/admin/verificacoes') return 'Verificações pendentes';
   if (pathname === '/admin/empresas') return 'Empresas';
   if (pathname === '/admin/trabalhadores') return 'Trabalhadores';
+  if (pathname === '/admin/administradores') return 'Administradores';
   return 'Administração';
 }
 
@@ -131,6 +132,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         isOpen={isNavOpen}
         onClose={() => setIsNavOpen(false)}
         pendingVerificationsCount={pendingVerificationsCount}
+        isSuperAdmin={currentUser?.isSuperAdmin ?? false}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
