@@ -184,7 +184,7 @@ describe('PainelPage', () => {
     renderPainel();
 
     await screen.findByText('Escalas abertas');
-    expect(screen.getByText('★ 4.8')).toBeInTheDocument();
+    expect(screen.getByText('4.8')).toBeInTheDocument();
   });
 
   it('mostra o resumo do mês vindo do perfil da empresa', async () => {

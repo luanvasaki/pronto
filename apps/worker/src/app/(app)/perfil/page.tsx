@@ -18,6 +18,7 @@ import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
 import { Chip } from '../../../components/ui/chip';
+import { CheckIcon, StarIcon } from '../../../components/ui/icons';
 import { Input } from '../../../components/ui/input';
 import { StatCard } from '../../../components/ui/stat-card';
 import {
@@ -301,7 +302,18 @@ export default function PerfilPage() {
       <div className="flex gap-3">
         <StatCard label="horas trabalhadas" value={`${profile.totalHoursWorked}h`} />
         <StatCard label="escalas" value={String(profile.totalShiftsCompleted)} />
-        <StatCard label="nota média" value={profile.avgRating ? `★ ${profile.avgRating}` : '—'} />
+        <StatCard
+          label="nota média"
+          value={
+            profile.avgRating ? (
+              <>
+                <StarIcon /> {profile.avgRating}
+              </>
+            ) : (
+              '—'
+            )
+          }
+        />
       </div>
 
       {profile.avgCategoryScores && (
@@ -320,7 +332,7 @@ export default function PerfilPage() {
                   key={category.id}
                   className="rounded-full bg-primary/10 px-3 py-1.5 text-[14px] font-semibold text-primary"
                 >
-                  ★ {score} {category.label}
+                  <StarIcon /> {score} {category.label}
                 </span>,
               ];
             })}
@@ -357,7 +369,9 @@ export default function PerfilPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-heading text-[16px] font-bold text-text">{entry.companyName}</p>
-                    <span className="whitespace-nowrap text-sm font-bold text-primary">★ {entry.score}</span>
+                    <span className="whitespace-nowrap text-sm font-bold text-primary">
+                      <StarIcon /> {entry.score}
+                    </span>
                   </div>
                   <p className="mt-1 text-xs text-text-secondary">
                     {[categoryName, formatShiftDate(entry.shiftDate)].filter(Boolean).join(' · ')}
@@ -373,7 +387,8 @@ export default function PerfilPage() {
                             key={category.id}
                             className="rounded-lg bg-background px-2 py-1 text-[11px] font-semibold text-text-secondary"
                           >
-                            ★{score} {category.label}
+                            <StarIcon />
+                            {score} {category.label}
                           </span>,
                         ];
                       })}
@@ -405,7 +420,17 @@ export default function PerfilPage() {
                     onClick={() => toggleCategory(category.id)}
                     disabled={isSavingCategories}
                   >
-                    {isSelected ? (hasExperience ? `${category.name} ✓` : category.name) : `+ ${category.name}`}
+                    {isSelected ? (
+                      hasExperience ? (
+                        <>
+                          {category.name} <CheckIcon />
+                        </>
+                      ) : (
+                        category.name
+                      )
+                    ) : (
+                      `+ ${category.name}`
+                    )}
                   </Chip>
                 );
               })}
@@ -468,7 +493,13 @@ export default function PerfilPage() {
                     disabled={savingExperienceCategoryId === categoryId}
                     aria-label={`Experiência em ${category.name}`}
                   >
-                    {hasExperience ? `${category.name} ✓` : category.name}
+                    {hasExperience ? (
+                      <>
+                        {category.name} <CheckIcon />
+                      </>
+                    ) : (
+                      category.name
+                    )}
                   </Chip>,
                 ];
               })}

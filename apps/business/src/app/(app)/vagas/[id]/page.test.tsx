@@ -205,7 +205,7 @@ describe('VagaCandidatosPage', () => {
 
     render(<VagaCandidatosPage />);
 
-    expect(await screen.findByText('✓ Já trabalhou 3x com você')).toBeInTheDocument();
+    expect(await screen.findByText('Já trabalhou 3x com você')).toBeInTheDocument();
   });
 
   it('não mostra o selo de "já trabalhou" pra quem nunca trabalhou com a empresa', async () => {

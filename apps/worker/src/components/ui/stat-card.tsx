@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
+
 export interface StatCardProps {
   label: string;
-  value: string;
+  value: ReactNode;
 }
 
 /** Card compacto pra tiras de 3+ estatísticas lado a lado (perfil do trabalhador). */

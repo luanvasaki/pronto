@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ChangeEvent, useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Chip } from '../../../components/ui/chip';
+import { CheckIcon, StarIcon } from '../../../components/ui/icons';
 import { MapLink } from '../../../components/ui/map-link';
 import { listMyApplications, markApplicationSeen, markRemovalSeen, MyApplication } from '../../../lib/applications-api';
 import { getCurrentPosition } from '../../../lib/geolocation';
@@ -444,7 +445,12 @@ export default function InicioPage() {
                     </p>
                     <p className="mt-1 text-[14px] text-text-secondary">
                       {job.companyName}
-                      {job.companyAvgRating && ` · ★ ${job.companyAvgRating}`}
+                      {job.companyAvgRating && (
+                        <>
+                          {' · '}
+                          <StarIcon /> {job.companyAvgRating}
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -564,7 +570,13 @@ export default function InicioPage() {
                 onClick={() => handleApply(job.id)}
                 className="mt-3.5 w-full"
               >
-                {applied ? 'Candidatura enviada ✓' : 'Aceitar escala'}
+                {applied ? (
+                  <>
+                    Candidatura enviada <CheckIcon />
+                  </>
+                ) : (
+                  'Aceitar escala'
+                )}
               </Button>
             </li>
           );

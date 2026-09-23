@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { RatingForm, RatingSummary } from '../../../../components/rating-form';
 import { Avatar } from '../../../../components/ui/avatar';
 import { Button } from '../../../../components/ui/button';
+import { CheckIcon, StarIcon } from '../../../../components/ui/icons';
 import { CardListSkeleton } from '../../../../components/ui/skeleton';
 import { createAnnouncement, JobAnnouncement, listJobAnnouncements } from '../../../../lib/announcements-api';
 import {
@@ -516,7 +517,9 @@ export default function VagaCandidatosPage() {
               <div className="min-w-0 flex-1">
                 <p className="font-heading text-[16px] font-bold text-text">{application.worker.fullName}</p>
                 {application.worker.avgRating && (
-                  <p className="text-[14px] text-text-secondary">★ {application.worker.avgRating}</p>
+                  <p className="text-[14px] text-text-secondary">
+                    <StarIcon /> {application.worker.avgRating}
+                  </p>
                 )}
               </div>
               <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(application)}`}>
@@ -534,7 +537,8 @@ export default function VagaCandidatosPage() {
                       key={category.id}
                       className="rounded-lg bg-background px-2 py-1 text-[11px] font-semibold text-text-secondary"
                     >
-                      ★{score} {category.label}
+                      <StarIcon />
+                      {score} {category.label}
                     </span>,
                   ];
                 })}
@@ -543,7 +547,7 @@ export default function VagaCandidatosPage() {
 
             {application.worker.previousShiftsWithCompany > 0 && (
               <p className="mt-2.5 rounded-lg bg-success/10 px-2.5 py-1.5 text-[14px] font-semibold text-success">
-                ✓ Já trabalhou {application.worker.previousShiftsWithCompany}x com você
+                <CheckIcon /> Já trabalhou {application.worker.previousShiftsWithCompany}x com você
               </p>
             )}
 

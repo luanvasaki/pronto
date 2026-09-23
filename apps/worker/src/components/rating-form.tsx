@@ -1,5 +1,6 @@
 import { Rating, RatingCategory } from '@shift/shared';
 import { Button } from './ui/button';
+import { StarIcon } from './ui/icons';
 
 export interface RatingFormProps {
   title: string;
@@ -46,9 +47,9 @@ export function RatingForm({
                     aria-label={`${category.label}: ${value} de 5`}
                     aria-pressed={selected}
                     onClick={() => onChangeScore(category.id, value)}
-                    className={`text-3xl leading-none transition ${selected ? 'text-primary' : 'text-border'}`}
+                    className={`transition ${selected ? 'text-primary' : 'text-border'}`}
                   >
-                    ★
+                    <StarIcon size={28} />
                   </button>
                 );
               })}
@@ -91,7 +92,8 @@ export function RatingSummary({ rating, categories }: RatingSummaryProps) {
                 key={category.id}
                 className="rounded-lg bg-background px-2.5 py-1 text-[14px] font-semibold text-text-secondary"
               >
-                ★{score} {category.label}
+                <StarIcon />
+                {score} {category.label}
               </span>
             );
           })}

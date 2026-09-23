@@ -92,7 +92,7 @@ describe('PerfilPage', () => {
     expect(screen.getByText('Bar do Zé')).toBeInTheDocument();
     expect(screen.getByText('Bar do Zé Ltda')).toBeInTheDocument();
     expect(screen.getByText('Empresa verificada')).toBeInTheDocument();
-    expect(screen.getByText('★ 4.2')).toBeInTheDocument();
+    expect(screen.getByText('4.2')).toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument();
     expect(screen.getByText('8')).toBeInTheDocument();
     expect(screen.getByText('40%')).toBeInTheDocument();
@@ -118,9 +118,9 @@ describe('PerfilPage', () => {
 
     expect(await screen.findByText('Avaliações recebidas')).toBeInTheDocument();
     expect(screen.getByText('Rafael Lima')).toBeInTheDocument();
-    expect(screen.getByText('★ 4')).toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
     expect(screen.getByText('“Endereço claro e pagamento em dia.”')).toBeInTheDocument();
-    expect(screen.getByText('★4 Pontualidade no pagamento')).toBeInTheDocument();
+    expect(screen.getByText('4 Pontualidade no pagamento')).toBeInTheDocument();
   });
 
   it('não mostra a seção de avaliações recebidas quando ainda não há nenhuma', async () => {
@@ -134,8 +134,8 @@ describe('PerfilPage', () => {
     renderWithProfile(BASE_PROFILE);
 
     expect(screen.getByText('Pontos fortes da empresa')).toBeInTheDocument();
-    expect(screen.getByText('★ 4.5 Pontualidade no pagamento')).toBeInTheDocument();
-    expect(screen.getByText('★ 4.0 Clareza das informações da vaga')).toBeInTheDocument();
+    expect(screen.getByText('4.5 Pontualidade no pagamento')).toBeInTheDocument();
+    expect(screen.getByText('4.0 Clareza das informações da vaga')).toBeInTheDocument();
   });
 
   it('não mostra a seção de pontos fortes sem avaliações por categoria ainda', async () => {
@@ -148,7 +148,7 @@ describe('PerfilPage', () => {
     renderWithProfile({ ...BASE_PROFILE, verificationStatus: 'pending', avgRating: null });
 
     expect(screen.getByText('Verificação em análise')).toBeInTheDocument();
-    expect(screen.getByText('★ —')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
   });
 
   it('mostra mensagem quando o perfil não está disponível', () => {

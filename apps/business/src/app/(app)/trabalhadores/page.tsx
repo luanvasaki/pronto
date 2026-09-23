@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
+import { StarIcon } from '../../../components/ui/icons';
 import { CardListSkeleton } from '../../../components/ui/skeleton';
 import { getCompanyWorkerHistory, WorkerHistoryEntry } from '../../../lib/workers-api';
 
@@ -115,7 +116,13 @@ export default function TrabalhadoresPage() {
               <div className="flex flex-col items-start">
                 <span className="text-[11px] text-text-secondary">Sua nota</span>
                 <span className="text-[14px] font-semibold text-text">
-                  {worker.avgRatingGiven ? `★ ${worker.avgRatingGiven}` : '—'}
+                  {worker.avgRatingGiven ? (
+                    <>
+                      <StarIcon /> {worker.avgRatingGiven}
+                    </>
+                  ) : (
+                    '—'
+                  )}
                 </span>
               </div>
 

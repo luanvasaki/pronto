@@ -104,7 +104,7 @@ describe('PerfilPage', () => {
     expect(screen.getByText('Identidade verificada')).toBeInTheDocument();
     expect(screen.getByText('12.5h')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
-    expect(screen.getByText('★ 4.5')).toBeInTheDocument();
+    expect(screen.getByText('4.5')).toBeInTheDocument();
   });
 
   it('mostra os pontos fortes por categoria quando disponíveis', async () => {
@@ -112,8 +112,8 @@ describe('PerfilPage', () => {
 
     await screen.findByText('Ana Souza');
     expect(screen.getByText('Seus pontos fortes')).toBeInTheDocument();
-    expect(screen.getByText('★ 4.7 Pontualidade')).toBeInTheDocument();
-    expect(screen.getByText('★ 4.3 Educação e respeito')).toBeInTheDocument();
+    expect(screen.getByText('4.7 Pontualidade')).toBeInTheDocument();
+    expect(screen.getByText('4.3 Educação e respeito')).toBeInTheDocument();
   });
 
   it('mostra o histórico com empresas atendidas, comparecimento, cancelamentos e recontratação', async () => {
@@ -153,9 +153,9 @@ describe('PerfilPage', () => {
 
     expect(await screen.findByText('Avaliações recebidas')).toBeInTheDocument();
     expect(screen.getByText('Bar do Zé')).toBeInTheDocument();
-    expect(screen.getByText('★ 5')).toBeInTheDocument();
+    expect(screen.getByText('5', { selector: '.text-primary' })).toBeInTheDocument();
     expect(screen.getByText('"Excelente profissional."')).toBeInTheDocument();
-    expect(screen.getByText('★5 Pontualidade')).toBeInTheDocument();
+    expect(screen.getByText('5 Pontualidade')).toBeInTheDocument();
   });
 
   it('não mostra a seção de avaliações recebidas quando ainda não há nenhuma', async () => {
@@ -215,7 +215,7 @@ describe('PerfilPage', () => {
   it('mostra o selo de experiência quando declarada pra categoria', async () => {
     renderWithProfile({ ...BASE_PROFILE, experienceByCategory: { 'cat-1': true } });
 
-    expect(await screen.findByRole('button', { name: 'Garçom ✓' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Garçom' })).toBeInTheDocument();
   });
 
   it('marca experiência numa função selecionada', async () => {
