@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useEffect, useRef, useState } from 'react';
 import { AddressFields, buildAddressLabel } from '../../../../components/ui/address-fields';
 import { Button } from '../../../../components/ui/button';
+import { CheckIcon } from '../../../../components/ui/icons';
 import { Input } from '../../../../components/ui/input';
 import { JobBenefitsFields } from '../../../../components/ui/job-benefits-fields';
 import { JobRequirementsFields } from '../../../../components/ui/job-requirements-fields';
@@ -422,7 +423,13 @@ function NovaVagaForm() {
 
         <div>
           <Button type="button" variant="outlined" onClick={useCurrentLocation} isLoading={isLocating}>
-            {lat !== null && lng !== null ? 'Localização definida ✓' : 'Usar minha localização atual'}
+            {lat !== null && lng !== null ? (
+              <>
+                Localização definida <CheckIcon />
+              </>
+            ) : (
+              'Usar minha localização atual'
+            )}
           </Button>
           {isGeocoding && <p className="mt-1.5 text-xs text-text-secondary">Localizando esse endereço...</p>}
           {!isGeocoding && lat !== null && lng !== null && locationSource === 'auto' && (

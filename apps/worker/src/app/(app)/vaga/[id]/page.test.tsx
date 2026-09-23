@@ -129,7 +129,7 @@ describe('VagaDetalhePage', () => {
 
     await user.click(screen.getByRole('button', { name: /^li e aceito$/i }));
 
-    expect(screen.getByText('Termo lido e aceito ✓')).toBeInTheDocument();
+    expect(screen.getByText('Termo lido e aceito')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeEnabled();
   });
 
@@ -219,7 +219,7 @@ describe('VagaDetalhePage', () => {
     await user.click(screen.getByRole('button', { name: 'Aceitar escala' }));
 
     await waitFor(() => expect(applyToJobMock).toHaveBeenCalledWith('job-1'));
-    expect(await screen.findByText('Candidatura enviada ✓')).toBeInTheDocument();
+    expect(await screen.findByText('Candidatura enviada')).toBeInTheDocument();
     await waitFor(() => expect(listJobAnnouncementsMock).toHaveBeenCalledWith('job-1'));
   });
 
@@ -232,7 +232,7 @@ describe('VagaDetalhePage', () => {
     await user.click(screen.getByRole('button', { name: 'Aceitar escala' }));
 
     expect(await screen.findByText('Essa vaga já está preenchida.')).toBeInTheDocument();
-    expect(screen.queryByText('Candidatura enviada ✓')).not.toBeInTheDocument();
+    expect(screen.queryByText('Candidatura enviada')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Aceitar escala' })).toBeInTheDocument();
   });
 

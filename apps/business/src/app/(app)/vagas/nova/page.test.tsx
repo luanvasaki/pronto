@@ -86,7 +86,7 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Rua'), 'Vila Madalena');
   await user.type(screen.getByLabelText('Número'), '100');
   await user.click(screen.getByRole('button', { name: /usar minha localização atual/i }));
-  await screen.findByText('Localização definida ✓');
+  await screen.findByText('Localização definida');
   await user.clear(screen.getByLabelText('Número de vagas'));
   await user.type(screen.getByLabelText('Número de vagas'), '4');
   await user.type(screen.getByLabelText('Valor por pessoa (R$)'), '130.00');
@@ -232,7 +232,7 @@ describe('NovaVagaPage', () => {
     await user.type(screen.getByLabelText('Número'), '1200');
     await user.type(screen.getByLabelText('Complemento (opcional)'), 'Sala 4');
     await user.click(screen.getByRole('button', { name: /usar minha localização atual/i }));
-    await screen.findByText('Localização definida ✓');
+    await screen.findByText('Localização definida');
     await user.clear(screen.getByLabelText('Número de vagas'));
     await user.type(screen.getByLabelText('Número de vagas'), '4');
     await user.type(screen.getByLabelText('Valor por pessoa (R$)'), '130.00');
@@ -438,7 +438,7 @@ describe('NovaVagaPage', () => {
     await user.type(screen.getByLabelText('Rua'), 'Vila Madalena');
     await user.type(screen.getByLabelText('Número'), '100');
     await user.click(screen.getByRole('button', { name: /usar minha localização atual/i }));
-    await screen.findByText('Localização definida ✓');
+    await screen.findByText('Localização definida');
     await user.clear(screen.getByLabelText('Número de vagas'));
     await user.type(screen.getByLabelText('Número de vagas'), '4');
     await user.type(screen.getByLabelText('Valor por pessoa (R$)'), '130.00');

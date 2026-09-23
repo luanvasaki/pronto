@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
+
 export interface StatCardProps {
   label: string;
-  value: string;
+  value: ReactNode;
   hint?: string;
   hintClassName?: string;
   /** "dark" reproduz o card escuro do mockup (ex. "Avaliação da casa"). */

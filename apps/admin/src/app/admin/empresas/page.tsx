@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
 import { ConsentHistory } from '../../../components/ui/consent-history';
+import { StarIcon } from '../../../components/ui/icons';
 import { Input } from '../../../components/ui/input';
 import { CardListSkeleton } from '../../../components/ui/skeleton';
 import { AdminCompany, listAdminCompanies, resetUserPassword } from '../../../lib/admin-api';
@@ -161,7 +162,11 @@ export default function AdminEmpresasPage() {
             <div className="mt-2.5 flex flex-wrap gap-2 text-[14px] font-semibold text-text-secondary">
               <span className="rounded-lg bg-background px-2.5 py-1">{company.jobsPosted} vaga(s) publicada(s)</span>
               <span className="rounded-lg bg-background px-2.5 py-1">{company.shiftsCompleted} escala(s) concluída(s)</span>
-              {company.avgRating && <span className="rounded-lg bg-background px-2.5 py-1">★ {company.avgRating}</span>}
+              {company.avgRating && (
+                <span className="rounded-lg bg-background px-2.5 py-1">
+                  <StarIcon /> {company.avgRating}
+                </span>
+              )}
             </div>
 
             {resetMessages[company.id] && <p className="mt-2.5 text-sm text-success">{resetMessages[company.id]}</p>}

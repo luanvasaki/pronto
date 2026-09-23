@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
 import { ConsentHistory } from '../../../components/ui/consent-history';
+import { StarIcon } from '../../../components/ui/icons';
 import { Input } from '../../../components/ui/input';
 import { CardListSkeleton } from '../../../components/ui/skeleton';
 import { AdminWorker, listAdminWorkers, resetUserPassword } from '../../../lib/admin-api';
@@ -165,7 +166,11 @@ export default function AdminTrabalhadoresPage() {
             <div className="mt-2.5 flex flex-wrap gap-2 text-[14px] font-semibold text-text-secondary">
               <span className="rounded-lg bg-background px-2.5 py-1">{worker.shiftsCompleted} escala(s) concluída(s)</span>
               <span className="rounded-lg bg-background px-2.5 py-1">{worker.hoursWorked}h trabalhadas</span>
-              {worker.avgRating && <span className="rounded-lg bg-background px-2.5 py-1">★ {worker.avgRating}</span>}
+              {worker.avgRating && (
+                <span className="rounded-lg bg-background px-2.5 py-1">
+                  <StarIcon /> {worker.avgRating}
+                </span>
+              )}
             </div>
 
             {resetMessages[worker.userId] && <p className="mt-2.5 text-sm text-success">{resetMessages[worker.userId]}</p>}

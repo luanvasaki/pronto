@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { Button } from '../../../components/ui/button';
+import { StarIcon } from '../../../components/ui/icons';
 import { Input } from '../../../components/ui/input';
 import { NotificationsToggle } from '../../../components/ui/notifications-toggle';
 import {
@@ -305,7 +306,9 @@ export default function PerfilPage() {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="rounded-2xl border border-border bg-surface p-5 text-center">
-          <p className="font-heading text-2xl font-bold text-text">★ {profile.avgRating ?? '—'}</p>
+          <p className="font-heading text-2xl font-bold text-text">
+            <StarIcon /> {profile.avgRating ?? '—'}
+          </p>
           <p className="mt-1 text-xs text-text-secondary">Nota média recebida</p>
         </div>
         <div className="rounded-2xl border border-border bg-surface p-5 text-center">
@@ -339,7 +342,7 @@ export default function PerfilPage() {
                   key={category.id}
                   className="rounded-full bg-primary/10 px-3 py-1.5 text-[14px] font-semibold text-primary"
                 >
-                  ★ {score} {category.label}
+                  <StarIcon /> {score} {category.label}
                 </span>,
               ];
             })}
@@ -360,7 +363,9 @@ export default function PerfilPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-heading text-[16px] font-bold text-text">{entry.workerName}</p>
-                    <span className="whitespace-nowrap text-sm font-bold text-primary">★ {entry.score}</span>
+                    <span className="whitespace-nowrap text-sm font-bold text-primary">
+                      <StarIcon /> {entry.score}
+                    </span>
                   </div>
                   <p className="mt-1 text-xs text-text-secondary">
                     {[categoryName, formatShiftDate(entry.shiftDate)].filter(Boolean).join(' · ')}
@@ -376,7 +381,8 @@ export default function PerfilPage() {
                             key={category.id}
                             className="rounded-lg bg-background px-2 py-1 text-[11px] font-semibold text-text-secondary"
                           >
-                            ★{score} {category.label}
+                            <StarIcon />
+                            {score} {category.label}
                           </span>,
                         ];
                       })}

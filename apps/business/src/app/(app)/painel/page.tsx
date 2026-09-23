@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Avatar } from '../../../components/ui/avatar';
 import { GrowthChart } from '../../../components/ui/growth-chart';
+import { StarIcon } from '../../../components/ui/icons';
 import { CardListSkeleton, Skeleton } from '../../../components/ui/skeleton';
 import { StatCard } from '../../../components/ui/stat-card';
 import { JobApplication } from '../../../lib/applications-api';
@@ -321,7 +322,16 @@ export default function PainelPage() {
           value={`R$ ${formatMoney(gastoNoMes)}`}
           hint={`${escalasPreenchidasNoMes} escala(s) preenchida(s)`}
         />
-        <StatCard label="Avaliação da casa" value={`★ ${profile?.avgRating ?? '—'}`} hint="como contratante" variant="dark" />
+        <StatCard
+          label="Avaliação da casa"
+          value={
+            <>
+              <StarIcon /> {profile?.avgRating ?? '—'}
+            </>
+          }
+          hint="como contratante"
+          variant="dark"
+        />
       </div>
 
       <div>

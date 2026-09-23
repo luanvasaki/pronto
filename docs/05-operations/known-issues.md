@@ -28,6 +28,10 @@
 - **Design handoff (`design_handoff_pronto/`) descreve login por OTP de telefone**, nunca implementado — a autenticação real é e-mail/senha + Google. O handoff é referência visual desatualizada nesse ponto específico.
 - **Aprovar empresa sem documento enviado é bloqueado só no front, não no backend** — `apps/admin/src/app/admin/verificacoes/page.tsx` (`cannotApprove = !company.documentId`) desabilita o botão, mas `reviewCompany` (`apps/backend/src/modules/admin/review-company.ts`) aceita `status: 'approved'` de qualquer empresa `pending`, com ou sem `company_documents`. Achado ao mexer no motivo de rejeição (mesmo módulo) — não corrigido nesta tarefa por não ter sido pedido; um admin chamando a API direto (ou uma versão futura do front sem essa checagem) conseguiria aprovar sem nunca ter visto um documento.
 
+## Testes com falha pré-existente (não é regressão, mas precisa de investigação)
+
+- **11 testes de `apps/business` falham isoladamente, independente de qualquer mudança de código** — `src/app/(app)/escalas/page.test.tsx` (7 testes) e `src/app/(app)/vagas/[id]/editar/page.test.tsx` (4 testes). Confirmado via `git stash` + rodar os mesmos arquivos contra o código já commitado em `main`: falham igual, então não é regressão de nenhuma tarefa recente. Em `escalas/page.test.tsx`, o sintoma é a aba "Futuras" aparecer vazia quando o teste espera encontrar a vaga mockada nela (ela aparece em "Passadas" em vez de "Futuras") — cheira a teste sensível a fuso horário/data do sistema (`vi.setSystemTime` + comparação de data hardcoded), não a um bug de produto de verdade, mas não foi investigado a fundo (fora do escopo desta tarefa, que era só UX/visual). Rodar a suíte completa do `business` no CI vai mostrar esses 11 como falha até alguém investigar.
+
 ## Perguntas em aberto (não são bugs, são decisões pendentes de negócio/produto)
 
 Ver [`01-business/roadmap.md`](../01-business/roadmap.md#perguntas-em-aberto-que-vieram-da-auditoria-técnica).

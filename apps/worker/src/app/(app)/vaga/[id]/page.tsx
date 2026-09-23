@@ -4,6 +4,7 @@ import { ApiError, formatBenefitLabel, listSkillCategories } from '@shift/shared
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '../../../../components/ui/button';
+import { CheckIcon, StarIcon } from '../../../../components/ui/icons';
 import { JobApplicationTermsModal } from '../../../../components/ui/job-application-terms-modal';
 import { MapLink } from '../../../../components/ui/map-link';
 import { CardListSkeleton } from '../../../../components/ui/skeleton';
@@ -139,7 +140,12 @@ export default function VagaDetalhePage() {
         </p>
         <p className="mt-1 text-[14px] text-text-secondary">
           {job.companyName}
-          {job.companyAvgRating && ` · ★ ${job.companyAvgRating}`}
+          {job.companyAvgRating && (
+            <>
+              {' · '}
+              <StarIcon /> {job.companyAvgRating}
+            </>
+          )}
         </p>
       </div>
 
@@ -228,7 +234,9 @@ export default function VagaDetalhePage() {
           )}
 
           {termsConfirmed ? (
-            <p className="text-[14px] font-semibold text-success">Termo lido e aceito ✓</p>
+            <p className="text-[14px] font-semibold text-success">
+              Termo lido e aceito <CheckIcon />
+            </p>
           ) : (
             <Button type="button" variant="outlined" onClick={() => setShowTermsModal(true)}>
               Ler termo e candidatar-se
@@ -255,7 +263,7 @@ export default function VagaDetalhePage() {
 
       {applied && (
         <p className="rounded-lg bg-success/10 px-2.5 py-1.5 text-[14px] font-semibold text-success">
-          Candidatura enviada ✓
+          Candidatura enviada <CheckIcon />
         </p>
       )}
 

@@ -76,7 +76,7 @@ describe('TrabalhadoresPage', () => {
     expect(await screen.findByText('Ana Souza')).toBeInTheDocument();
     expect(screen.getByText('8 concluído(s)')).toBeInTheDocument();
     expect(screen.getByText('95%')).toBeInTheDocument();
-    expect(screen.getByText('★ 4.9')).toBeInTheDocument();
+    expect(screen.getByText('4.9')).toBeInTheDocument();
     expect(screen.getByText('Ontem')).toBeInTheDocument();
   });
 

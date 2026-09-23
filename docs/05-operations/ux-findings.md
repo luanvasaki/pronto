@@ -76,6 +76,14 @@ Extraído `apps/admin/src/components/ui/topbar.tsx`, mesmo padrão do `Topbar` d
 
 Verificado: typecheck e lint limpos, suíte de testes completa do admin (96 testes — 89 anteriores + 7 novos do `Topbar` isolado, mais os 2 testes de sino do `layout.test.tsx` reescritos pra refletir botão+dropdown em vez de link+href), build de produção limpo. Sem conferência visual ao vivo — mesma limitação de login já registrada nos itens anteriores do admin.
 
+## ✅ Resolvido: ícone SVG de estrela/check no lugar de ★/✓ nos 3 apps
+
+Item deixado em aberto na varredura anterior ("fica como item separado se quiser fechar depois"). Criado `components/ui/icons.tsx` (mesma cópia nos 3 apps, mesmo padrão de duplicar UI por app já estabelecido) com `StarIcon` e `CheckIcon` — SVG de traço/preenchimento simples, `currentColor`, dimensionado por `em` pra acompanhar o texto ao redor (ou por um `size` em px explícito, usado no widget de avaliação por estrelas que precisa de alvo de toque maior). Substituídas as ~28 ocorrências de `★`/`✓` como texto literal em `apps/worker`, `apps/business` e `apps/admin` — nota média, pontos fortes por categoria, avaliações recebidas, widget de dar nota, "já trabalhou com você", "localização definida", "candidatura enviada", "termo lido e aceito", chip de categoria com experiência declarada. `StatCard` (worker e business) teve o tipo de `value` alargado de `string` pra `ReactNode` pra caber o ícone.
+
+Verificado: typecheck e lint limpos nos 3 apps, build de produção limpo nos 3, suíte de testes completa (242 worker + 270 business + 105 admin) — 10 testes que verificavam o texto literal do símbolo foram ajustados pra verificar o texto ao redor (o ícone é `aria-hidden`, então não faz parte do texto acessível nem do texto direto do nó). Sem conferência visual ao vivo — todas as telas afetadas ficam atrás de login (perfil, avaliação, candidatos, vaga), sem credencial de teste documentada, mesma limitação já registrada nos achados anteriores.
+
+**Nota**: ao rodar a suíte completa do `business` pra confirmar que nada quebrou, 2 arquivos de teste pré-existentes (`escalas/page.test.tsx`, `vagas/[id]/editar/page.test.tsx`, 11 testes) já falhavam **antes** desta mudança — confirmado revertendo a mudança e rodando os mesmos arquivos isoladamente contra o código já commitado. Não é regressão desta tarefa; fica registrado em [`known-issues.md`](./known-issues.md) como item separado pra investigar depois.
+
 ## Achado mais importante: os tokens de design existem, mas foram seguidos de forma decrescente ao longo do tempo
 
 O `apps/admin` (construído por último, extraído do business) segue os tokens de cor e raio do handoff **com fidelidade quase perfeita** — zero hex solto fora do CSS de tokens. Já `apps/worker` e `apps/business` (construídos primeiro, e evoluídos por mais tempo) acumularam dezenas de valores arbitrários de raio (`rounded-[20px]`, `rounded-[18px]`, `rounded-[14px]`, `rounded-[13px]`, `rounded-[11px]`) e tipografia (`text-[19px]`, `text-[15.5px]`, `text-[13.5px]`, `text-[12.5px]`, `text-[11.5px]`) que nunca correspondem exatamente aos 4 raios e 7 degraus tipográficos documentados. Isso é o oposto do que se esperaria — o app mais novo é o mais disciplinado. Sinal de que a deriva acontece com o tempo/pressa, não por falta de sistema — o sistema existe e funciona, só não está sendo consultado.
@@ -123,7 +131,7 @@ Detalhe completo — arquivos revisados: todas as páginas em `apps/admin/src/ap
 ## Top 10 do produto inteiro, priorizado
 
 1. ~~Padronizar raio de borda e escala tipográfica em `worker`/`business` pelos tokens já corretos (usar `admin` como referência).~~ **Feito.**
-2. ~~Trocar emoji por ícone SVG consistente em `worker` e `business`.~~ **Feito** (parcial — ver nota acima sobre `★`/`"Rótulo ✓"` deixados de fora).
+2. ~~Trocar emoji por ícone SVG consistente em `worker` e `business`.~~ **Feito** (o `★`/`"Rótulo ✓"` deixado de fora na época foi fechado depois — ver achado dedicado acima).
 3. ~~Adicionar skeleton loading nos 3 apps, no lugar de texto "Carregando...".~~ **Feito.**
 4. ~~Resolver a duplicidade/fragilidade de endereço→geolocalização (CEP não geocodifica automaticamente; editar vaga no business não tem CEP).~~ **Feito** (a parte do cadastro do worker não precisava de correção — ver nota acima).
 5. ~~Lightbox/zoom de documento no admin, pra revisão de KYC de verdade.~~ **Feito.**
