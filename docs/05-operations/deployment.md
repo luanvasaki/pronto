@@ -8,6 +8,8 @@ Um serviço único no Railway, conectado ao repositório `luanvasaki/pronto`, co
 
 `drizzle.config.ts` tem uma nota explícita no código sobre isso: não usar a mesma função de limpeza de URL de conexão que o cliente de runtime usa, porque isso travaria o `drizzle-kit migrate` do deploy silenciosamente (sem erro, só preso em "applying migrations..." até o Railway desistir).
 
+**`apps/backend/package.json` tem `engines.node` fixado em `20.x`, e isso é obrigatório, não cosmético.** Sem esse pin, o Railpack (builder do Railway) escolhe sozinho uma versão de Node (viu-se ele escolher 22.23.1) cujo npm embutido tem um bug conhecido do arborist (`Cannot read properties of null (reading 'edgesOut')`) que derruba o `npm install` inteiro assim que o `package-lock.json` muda de uma certa forma — mesmo lockfile que instala normalmente com CI (Node 20, `npm ci`) e localmente (Node 24, `npm ci`/`npm install`). Sintoma em produção: dois deploys seguidos falham no passo de build (Railway mantém servindo a última versão com deploy bem-sucedido, silenciosamente — sem esse doc, é fácil achar que o código foi ao ar só porque o `git push`/CI passaram). Sempre que mexer em `apps/backend/package.json` (dependência nova, engines, etc.), depois do push vale conferir `railway status` (deployment ativo bate com o commit mais recente?) — não basta o CI verde.
+
 ## Frontends — Vercel, um projeto por app
 
 `apps/worker`, `apps/business` e `apps/admin` são deployados como **3 projetos Vercel separados**, cada um apontando pro mesmo repositório com Root Directory configurado pra `apps/<nome>`. Deploy automático a cada push, cada app com seu próprio domínio.
