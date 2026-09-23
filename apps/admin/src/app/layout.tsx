@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Bricolage_Grotesque, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import { RegisterServiceWorker } from "./register-service-worker";
 import { InitSentry } from "./init-sentry";
@@ -61,6 +62,7 @@ export default function RootLayout({
         {children}
         <RegisterServiceWorker />
         <InitSentry />
+        <Analytics />
       </body>
     </html>
   );
