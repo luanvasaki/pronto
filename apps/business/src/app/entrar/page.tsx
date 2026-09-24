@@ -3,7 +3,7 @@
 import { ApiError, googleLogin, login } from '@shift/shared';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useState } from 'react';
+import { AnimationEvent, FormEvent, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { GoogleLoginButton } from '../../components/ui/google-login-button';
 import { Input } from '../../components/ui/input';
@@ -19,6 +19,20 @@ export default function EntrarPage() {
   const [error, setError] = useState<string | null>(null);
 
   const isValid = email.trim().length > 0 && password.length > 0;
+
+  /**
+   * Autofill do navegador (e-mail/senha salvos) preenche o input direto
+   * no DOM sem disparar onChange do React — sem isso, `isValid` fica
+   * travado em `false` e o botão "Entrar" parece desabilitado mesmo com
+   * os dois campos preenchidos (só digitar manualmente "descongelava").
+   * A animação `onAutoFillStart` (ver globals.css) é o único sinal
+   * confiável de que o autofill aconteceu.
+   */
+  function syncAutofill(setter: (value: string) => void, event: AnimationEvent<HTMLInputElement>): void {
+    if (event.animationName === 'onAutoFillStart') {
+      setter(event.currentTarget.value);
+    }
+  }
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -91,6 +105,7 @@ export default function EntrarPage() {
           placeholder="voce@empresa.com"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
+          onAnimationStart={(event) => syncAutofill(setEmail, event)}
         />
 
         <Input
@@ -100,6 +115,7 @@ export default function EntrarPage() {
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
+          onAnimationStart={(event) => syncAutofill(setPassword, event)}
           error={error ?? undefined}
         />
 

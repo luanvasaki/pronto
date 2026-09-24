@@ -69,3 +69,20 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans), sans-serif;
 }
+
+/*
+ * Truque de detecção de autofill: o navegador preenche o campo direto
+ * no DOM sem disparar onChange do React, então um estado como
+ * `email.length > 0` fica desatualizado (ex: botão "Entrar" parece
+ * desabilitado mesmo com usuário/senha salvos preenchidos). Aplicar
+ * essa animação vazia só quando `:-webkit-autofill` está ativo permite
+ * ouvir `onAnimationStart` no input e resincronizar o estado do React.
+ */
+@keyframes onAutoFillStart {
+  from {}
+  to {}
+}
+
+input:-webkit-autofill {
+  animation-name: onAutoFillStart;
+}
