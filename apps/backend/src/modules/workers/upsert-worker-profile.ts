@@ -4,6 +4,7 @@ import { skillCategories, users, workerProfiles, workerSkills } from '../../db/s
 import { CnhCategory, isCnhCategory } from '../jobs/cnh';
 import { calculateAge, isMinor as checkIsMinor } from '../../shared/validation/age';
 import { isValidCpf } from '../../shared/validation/cpf-cnpj';
+import { isReferralSource, ReferralSource } from '../../shared/validation/referral-source';
 import { HttpError } from '../../shared/errors/http-error';
 
 const PHONE_REGEX = /^\d{10,11}$/;
@@ -53,6 +54,11 @@ export interface UpsertWorkerProfileInput {
   // não reseta a experiência já declarada); categoria nova sem entrada
   // aqui vira `false`.
   experienceByCategory: Record<string, boolean> | undefined;
+  // "Como você conheceu a Pronto?" — pergunta de marketing, sempre
+  // opcional (nunca obrigatória, mesmo no cadastro inicial).
+  // referralSourceOther só é exigido quando referralSource === 'other'.
+  referralSource: string | undefined;
+  referralSourceOther: string | undefined;
 }
 
 export interface WorkerProfileResponse {
@@ -70,6 +76,8 @@ export interface WorkerProfileResponse {
   guardianPhone: string | null;
   guardianAuthorizedAt: Date | null;
   experienceByCategory: Record<string, boolean>;
+  referralSource: string | null;
+  referralSourceOther: string | null;
 }
 
 /**
@@ -222,6 +230,17 @@ export async function upsertWorkerProfile(
   }
   const cnhCategory: CnhCategory | null = rawCnhCategory && isCnhCategory(rawCnhCategory) ? rawCnhCategory : null;
 
+  const rawReferralSource = input.referralSource?.trim();
+  if (rawReferralSource && !isReferralSource(rawReferralSource)) {
+    throw new HttpError(400, 'Origem inválida.');
+  }
+  const referralSource: ReferralSource | null =
+    rawReferralSource && isReferralSource(rawReferralSource) ? rawReferralSource : null;
+  const referralSourceOther = input.referralSourceOther?.trim();
+  if (referralSource === 'other' && !referralSourceOther) {
+    throw new HttpError(400, 'Conte rapidamente como você conheceu a Pronto.');
+  }
+
   let photoUrl: string | undefined;
   if (input.photoUrl) {
     const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
@@ -248,6 +267,8 @@ export async function upsertWorkerProfile(
         phone: phone || null,
         birthDate: birthDate || null,
         cnhCategory,
+        referralSource,
+        referralSourceOther: referralSource === 'other' ? referralSourceOther || null : null,
         guardianFullName: isMinor ? guardianFullName || null : null,
         guardianCpf: isMinor ? guardianCpf || null : null,
         guardianPhone: isMinor ? guardianPhone || null : null,
@@ -274,6 +295,9 @@ export async function upsertWorkerProfile(
           ...(input.phone !== undefined ? { phone: phone || null } : {}),
           ...(input.birthDate !== undefined ? { birthDate: birthDate || null } : {}),
           ...(input.cnhCategory !== undefined ? { cnhCategory } : {}),
+          ...(input.referralSource !== undefined
+            ? { referralSource, referralSourceOther: referralSource === 'other' ? referralSourceOther || null : null }
+            : {}),
           ...(isMinor
             ? {
                 ...(input.guardianFullName !== undefined ? { guardianFullName: guardianFullName || null } : {}),
@@ -333,5 +357,7 @@ export async function upsertWorkerProfile(
     guardianPhone: profile?.guardianPhone ?? null,
     guardianAuthorizedAt: profile?.guardianAuthorizedAt ?? null,
     experienceByCategory,
+    referralSource: profile?.referralSource ?? null,
+    referralSourceOther: profile?.referralSourceOther ?? null,
   };
 }

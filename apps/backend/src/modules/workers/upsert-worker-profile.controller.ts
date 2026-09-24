@@ -28,6 +28,8 @@ export async function upsertWorkerProfileHandler(
       guardianPhone,
       guardianAuthorized,
       experienceByCategory,
+      referralSource,
+      referralSourceOther,
     } = req.body as {
       fullName?: string;
       categoryIds?: string[];
@@ -43,6 +45,8 @@ export async function upsertWorkerProfileHandler(
       guardianPhone?: string;
       guardianAuthorized?: boolean;
       experienceByCategory?: Record<string, boolean>;
+      referralSource?: string;
+      referralSourceOther?: string;
     };
     const result = await upsertWorkerProfile(userId, {
       fullName,
@@ -59,6 +63,8 @@ export async function upsertWorkerProfileHandler(
       guardianPhone,
       guardianAuthorized,
       experienceByCategory,
+      referralSource,
+      referralSourceOther,
     });
     res.status(200).json(result);
   } catch (error) {

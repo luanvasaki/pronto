@@ -39,6 +39,8 @@ export interface WorkerProfileDetails {
   rehireRate: number | null;
   attendanceRate: number | null;
   cancellations: number;
+  referralSource: string | null;
+  referralSourceOther: string | null;
 }
 
 export function getWorkerProfile(): Promise<WorkerProfileDetails> {
@@ -75,6 +77,8 @@ export interface UpsertWorkerProfileInput {
   guardianCpf?: string;
   guardianPhone?: string;
   guardianAuthorized?: boolean;
+  referralSource?: string;
+  referralSourceOther?: string;
 }
 
 export interface UpsertWorkerProfileResponse {
@@ -92,6 +96,8 @@ export interface UpsertWorkerProfileResponse {
   guardianCpf: string | null;
   guardianPhone: string | null;
   guardianAuthorizedAt: string | null;
+  referralSource: string | null;
+  referralSourceOther: string | null;
 }
 
 export function upsertWorkerProfile(input: UpsertWorkerProfileInput): Promise<UpsertWorkerProfileResponse> {

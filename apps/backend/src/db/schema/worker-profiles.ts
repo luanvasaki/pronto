@@ -12,6 +12,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 import { cnhCategoryEnum } from './cnh';
+import { referralSourceEnum } from './referral-source';
 import { users } from './users';
 
 export const kycStatusEnum = pgEnum('kyc_status', ['pending', 'approved', 'rejected']);
@@ -75,6 +76,12 @@ export const workerProfiles = pgTable(
     // uma vaga (ver jobs.cnh_category/cnh_required e create-application.ts).
     cnhCategory: cnhCategoryEnum('cnh_category'),
     searchRadiusKm: integer('search_radius_km').notNull().default(10),
+    // "Como você conheceu a Pronto?" — pergunta de marketing, opcional
+    // (ver referral-source.ts). referralSourceOther só preenchido quando
+    // referralSource === 'other', mesmo padrão de
+    // companies.businessSegmentOther.
+    referralSource: referralSourceEnum('referral_source'),
+    referralSourceOther: varchar('referral_source_other', { length: 255 }),
     kycStatus: kycStatusEnum('kyc_status').notNull().default('pending'),
     avgRating: numeric('avg_rating', { precision: 2, scale: 1 }),
     // Média por categoria (pontualidade, educação...) das avaliações

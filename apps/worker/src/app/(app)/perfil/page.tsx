@@ -9,6 +9,7 @@ import {
   formatPhone,
   listSkillCategories,
   logout,
+  REFERRAL_SOURCE_OPTIONS,
   SkillCategory,
   WORKER_RATING_CATEGORIES,
 } from '@shift/shared';
@@ -71,6 +72,8 @@ export default function PerfilPage() {
   const [phone, setPhone] = useState(profile?.phone ?? '');
   const [homeAddressFull, setHomeAddressFull] = useState(profile?.homeAddressFull ?? '');
   const [cnhCategory, setCnhCategory] = useState(profile?.cnhCategory ?? '');
+  const [referralSource, setReferralSource] = useState(profile?.referralSource ?? '');
+  const [referralSourceOther, setReferralSourceOther] = useState(profile?.referralSourceOther ?? '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -196,6 +199,9 @@ export default function PerfilPage() {
   if (fullName.trim().length < 2) profileMissingFields.push('nome completo');
   if (homeAddressFull.trim().length < 8) profileMissingFields.push('endereço completo');
   if (phone.length < 10 || phone.length > 11) profileMissingFields.push('telefone');
+  if (referralSource === 'other' && referralSourceOther.trim().length === 0) {
+    profileMissingFields.push('como você conheceu a Pronto');
+  }
 
   const isProfileFormValid = profileMissingFields.length === 0;
 
@@ -215,6 +221,8 @@ export default function PerfilPage() {
         phone,
         homeAddressFull: homeAddressFull.trim(),
         cnhCategory,
+        referralSource: referralSource || undefined,
+        referralSourceOther: referralSource === 'other' ? referralSourceOther.trim() : undefined,
       });
       applyUpdate(updated);
       setProfileSaved(true);
@@ -613,6 +621,43 @@ export default function PerfilPage() {
           <p className="mt-1.5 text-xs text-text-secondary">
             Algumas vagas exigem uma categoria de CNH pra se candidatar.
           </p>
+        </div>
+
+        <div>
+          <label htmlFor="referralSource" className="mb-1.5 block text-sm font-medium text-text-secondary">
+            Como você conheceu a Pronto? (opcional)
+          </label>
+          <select
+            id="referralSource"
+            value={referralSource}
+            onChange={(event) => {
+              setReferralSource(event.target.value);
+              setProfileSaved(false);
+            }}
+            className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+          >
+            <option value="">Prefiro não responder</option>
+            {REFERRAL_SOURCE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {referralSource === 'other' && (
+            <div className="mt-3">
+              <Input
+                id="referralSourceOther"
+                label="Conte rapidamente onde"
+                type="text"
+                placeholder="Ex: vi um cartaz, um anúncio..."
+                value={referralSourceOther}
+                onChange={(event) => {
+                  setReferralSourceOther(event.target.value);
+                  setProfileSaved(false);
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {profileError && <p className="text-sm text-danger">{profileError}</p>}

@@ -21,6 +21,8 @@ export interface CompanyProfileDetails {
   addressLabel: string | null;
   businessSegment: string | null;
   businessSegmentOther: string | null;
+  referralSource: string | null;
+  referralSourceOther: string | null;
   verificationStatus: string;
   rejectionReason: string | null;
   needsTermsAcceptance: boolean;
@@ -152,6 +154,8 @@ export interface CompanyProfileResponse {
   addressLabel: string | null;
   businessSegment: string | null;
   businessSegmentOther: string | null;
+  referralSource: string | null;
+  referralSourceOther: string | null;
   verificationStatus: string;
 }
 
@@ -165,6 +169,8 @@ export interface UpsertCompanyProfileInput {
   addressLabel?: string;
   businessSegment?: string;
   businessSegmentOther?: string;
+  referralSource?: string;
+  referralSourceOther?: string;
 }
 
 export function upsertCompanyProfile(input: UpsertCompanyProfileInput): Promise<CompanyProfileResponse> {

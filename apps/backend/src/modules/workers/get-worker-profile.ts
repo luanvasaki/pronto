@@ -54,6 +54,8 @@ export interface WorkerProfileDetails {
   rehireRate: number | null;
   attendanceRate: number | null;
   cancellations: number;
+  referralSource: string | null;
+  referralSourceOther: string | null;
 }
 
 export async function getWorkerProfile(userId: string): Promise<WorkerProfileDetails> {
@@ -188,5 +190,7 @@ export async function getWorkerProfile(userId: string): Promise<WorkerProfileDet
     attendanceRate:
       attendanceDenominator > 0 ? Math.round(((totalShiftsCompleted + checkedIn) / attendanceDenominator) * 100) : null,
     cancellations: Number(cancellations),
+    referralSource: profile.referralSource,
+    referralSourceOther: profile.referralSourceOther,
   };
 }

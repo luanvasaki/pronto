@@ -76,6 +76,8 @@ const BASE_PROFILE: WorkerProfileDetails = {
   rehireRate: 50,
   attendanceRate: 90,
   cancellations: 1,
+  referralSource: null,
+  referralSourceOther: null,
 };
 
 function renderWithProfile(profile: WorkerProfileDetails | null) {

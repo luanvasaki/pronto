@@ -12,6 +12,7 @@ import {
   getCurrentUser,
   isValidCpf,
   listSkillCategories,
+  REFERRAL_SOURCE_OPTIONS,
   SkillCategory,
 } from '@shift/shared';
 import { AddressFields, buildAddressLabel } from '../../components/ui/address-fields';
@@ -47,6 +48,8 @@ export default function CadastroPage() {
   const [resolvedAddress, setResolvedAddress] = useState({ neighborhood: '', city: '', state: '' });
   const [birthDate, setBirthDate] = useState('');
   const [cnhCategory, setCnhCategory] = useState('');
+  const [referralSource, setReferralSource] = useState('');
+  const [referralSourceOther, setReferralSourceOther] = useState('');
   const [guardianFullName, setGuardianFullName] = useState('');
   const [guardianCpf, setGuardianCpf] = useState('');
   const [guardianPhone, setGuardianPhone] = useState('');
@@ -154,6 +157,9 @@ export default function CadastroPage() {
     if (guardianPhone.length < 10 || guardianPhone.length > 11) missingFields.push('telefone do responsável');
     if (!guardianAuthorized) missingFields.push('autorização do responsável');
   }
+  if (referralSource === 'other' && referralSourceOther.trim().length === 0) {
+    missingFields.push('como você conheceu a Pronto');
+  }
   const isValid = missingFields.length === 0 && !isUnderage;
 
   async function handleSubmit(event: FormEvent): Promise<void> {
@@ -175,6 +181,8 @@ export default function CadastroPage() {
         birthDate,
         cnhCategory: cnhCategory || undefined,
         experienceByCategory,
+        referralSource: referralSource || undefined,
+        referralSourceOther: referralSource === 'other' ? referralSourceOther.trim() : undefined,
         guardianFullName: isMinor ? guardianFullName.trim() : undefined,
         guardianCpf: isMinor ? guardianCpf : undefined,
         guardianPhone: isMinor ? guardianPhone : undefined,
@@ -359,6 +367,37 @@ export default function CadastroPage() {
           <p className="mt-1.5 text-xs text-text-secondary">
             Algumas vagas exigem uma categoria de CNH pra se candidatar.
           </p>
+        </div>
+
+        <div>
+          <label htmlFor="referralSource" className="mb-1.5 block text-sm font-medium text-text-secondary">
+            Como você conheceu a Pronto? (opcional)
+          </label>
+          <select
+            id="referralSource"
+            value={referralSource}
+            onChange={(event) => setReferralSource(event.target.value)}
+            className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+          >
+            <option value="">Prefiro não responder</option>
+            {REFERRAL_SOURCE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {referralSource === 'other' && (
+            <div className="mt-3">
+              <Input
+                id="referralSourceOther"
+                label="Conte rapidamente onde"
+                type="text"
+                placeholder="Ex: vi um cartaz, um anúncio..."
+                value={referralSourceOther}
+                onChange={(event) => setReferralSourceOther(event.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         <div>

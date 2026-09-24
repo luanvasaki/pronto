@@ -149,6 +149,61 @@ describe('upsertCompanyProfile', () => {
     expect(result.businessSegmentOther).toBe('Confeitaria');
   });
 
+  it('salva a origem informada', async () => {
+    const user = await createTestUser(TEST_PHONE);
+
+    const result = await upsertCompanyProfile(user.id, {
+      legalName: 'Bar do Zé Ltda',
+      tradeName: 'Bar do Zé',
+      cnpj: CNPJ_A,
+      referralSource: 'google_search',
+    });
+
+    expect(result.referralSource).toBe('google_search');
+    expect(result.referralSourceOther).toBeNull();
+  });
+
+  it('rejeita origem inválida', async () => {
+    const user = await createTestUser(TEST_PHONE);
+
+    await expect(
+      upsertCompanyProfile(user.id, {
+        legalName: 'Bar do Zé Ltda',
+        tradeName: 'Bar do Zé',
+        cnpj: CNPJ_A,
+        referralSource: 'unicornio',
+      }),
+    ).rejects.toThrow('Origem inválida');
+  });
+
+  it('exige o texto livre quando a origem é "other"', async () => {
+    const user = await createTestUser(TEST_PHONE);
+
+    await expect(
+      upsertCompanyProfile(user.id, {
+        legalName: 'Bar do Zé Ltda',
+        tradeName: 'Bar do Zé',
+        cnpj: CNPJ_A,
+        referralSource: 'other',
+        referralSourceOther: undefined,
+      }),
+    ).rejects.toThrow('como você conheceu a Pronto');
+  });
+
+  it('salva o texto livre quando a origem é "other"', async () => {
+    const user = await createTestUser(TEST_PHONE);
+
+    const result = await upsertCompanyProfile(user.id, {
+      legalName: 'Bar do Zé Ltda',
+      tradeName: 'Bar do Zé',
+      cnpj: CNPJ_A,
+      referralSource: 'other',
+      referralSourceOther: 'Anúncio no jornal do bairro',
+    });
+
+    expect(result.referralSourceOther).toBe('Anúncio no jornal do bairro');
+  });
+
   it('rejeita CNPJ já usado por outro dono', async () => {
     const owner = await createTestUser(TEST_PHONE);
     const otherOwner = await createTestUser(OTHER_PHONE);

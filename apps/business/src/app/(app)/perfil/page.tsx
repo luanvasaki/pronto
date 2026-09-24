@@ -11,6 +11,7 @@ import {
   isValidPassword,
   listSkillCategories,
   logout,
+  REFERRAL_SOURCE_OPTIONS,
   SkillCategory,
 } from '@shift/shared';
 import { useRouter } from 'next/navigation';
@@ -66,6 +67,8 @@ export default function PerfilPage() {
   const [cpf, setCpf] = useState(profile?.cpf ?? '');
   const [businessSegment, setBusinessSegment] = useState(profile?.businessSegment ?? '');
   const [businessSegmentOther, setBusinessSegmentOther] = useState(profile?.businessSegmentOther ?? '');
+  const [referralSource, setReferralSource] = useState(profile?.referralSource ?? '');
+  const [referralSourceOther, setReferralSourceOther] = useState(profile?.referralSourceOther ?? '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState<{
@@ -75,6 +78,8 @@ export default function PerfilPage() {
     cpf: string;
     businessSegment: string;
     businessSegmentOther: string;
+    referralSource: string;
+    referralSourceOther: string;
   } | null>(null);
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -99,7 +104,9 @@ export default function PerfilPage() {
     savedSnapshot.cnpj === cnpj &&
     savedSnapshot.cpf === cpf &&
     savedSnapshot.businessSegment === businessSegment &&
-    savedSnapshot.businessSegmentOther === businessSegmentOther;
+    savedSnapshot.businessSegmentOther === businessSegmentOther &&
+    savedSnapshot.referralSource === referralSource &&
+    savedSnapshot.referralSourceOther === referralSourceOther;
 
   useEffect(() => {
     listSkillCategories()
@@ -170,7 +177,8 @@ export default function PerfilPage() {
     legalName.trim().length >= 2 &&
     tradeName.trim().length >= 2 &&
     (isIndividual ? isValidCpf(cpf.trim()) : isValidCnpj(cnpj.trim())) &&
-    (businessSegment !== 'outro' || businessSegmentOther.trim().length >= 2);
+    (businessSegment !== 'outro' || businessSegmentOther.trim().length >= 2) &&
+    (referralSource !== 'other' || referralSourceOther.trim().length > 0);
 
   async function handleSaveProfile(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -188,9 +196,20 @@ export default function PerfilPage() {
         cpf: isIndividual ? cpf : undefined,
         businessSegment: businessSegment || undefined,
         businessSegmentOther: businessSegment === 'outro' ? businessSegmentOther.trim() : undefined,
+        referralSource: referralSource || undefined,
+        referralSourceOther: referralSource === 'other' ? referralSourceOther.trim() : undefined,
       });
       setProfile({ ...profile, ...updated });
-      setSavedSnapshot({ legalName, tradeName, cnpj, cpf, businessSegment, businessSegmentOther });
+      setSavedSnapshot({
+        legalName,
+        tradeName,
+        cnpj,
+        cpf,
+        businessSegment,
+        businessSegmentOther,
+        referralSource,
+        referralSourceOther,
+      });
     } catch (err) {
       setProfileError(err instanceof ApiError ? err.message : 'Não foi possível salvar os dados da empresa.');
     } finally {
@@ -466,6 +485,37 @@ export default function PerfilPage() {
                 placeholder="Descreva o ramo da sua empresa"
                 value={businessSegmentOther}
                 onChange={(event) => setBusinessSegmentOther(event.target.value)}
+              />
+            </div>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="referralSource" className="mb-1.5 block text-sm font-medium text-text-secondary">
+            Como você conheceu a Pronto? (opcional)
+          </label>
+          <select
+            id="referralSource"
+            value={referralSource}
+            onChange={(event) => setReferralSource(event.target.value)}
+            className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+          >
+            <option value="">Prefiro não responder</option>
+            {REFERRAL_SOURCE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {referralSource === 'other' && (
+            <div className="mt-3">
+              <Input
+                id="referralSourceOther"
+                label="Conte rapidamente onde"
+                type="text"
+                placeholder="Ex: vi um cartaz, um anúncio..."
+                value={referralSourceOther}
+                onChange={(event) => setReferralSourceOther(event.target.value)}
               />
             </div>
           )}

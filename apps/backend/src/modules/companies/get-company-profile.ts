@@ -16,6 +16,8 @@ export interface CompanyProfileDetails {
   addressLabel: string | null;
   businessSegment: string | null;
   businessSegmentOther: string | null;
+  referralSource: string | null;
+  referralSourceOther: string | null;
   verificationStatus: string;
   rejectionReason: string | null;
   needsTermsAcceptance: boolean;
@@ -115,6 +117,8 @@ export async function getCompanyProfile(ownerUserId: string): Promise<CompanyPro
     addressLabel: company.addressLabel,
     businessSegment: company.businessSegment,
     businessSegmentOther: company.businessSegmentOther,
+    referralSource: company.referralSource,
+    referralSourceOther: company.referralSourceOther,
     verificationStatus: company.verificationStatus,
     rejectionReason: company.rejectionReason,
     needsTermsAcceptance: consentStatus.needsTermsAcceptance,

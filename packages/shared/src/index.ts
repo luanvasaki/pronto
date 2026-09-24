@@ -3,6 +3,8 @@ export { formatBenefitLabel } from './benefits';
 export type { BenefitProvision } from './benefits';
 export { CNH_CATEGORY_OPTIONS } from './cnh';
 export type { CnhCategoryOption } from './cnh';
+export { REFERRAL_SOURCE_OPTIONS } from './referral-source';
+export type { ReferralSourceOption } from './referral-source';
 export {
   acceptLoginTerms,
   acceptTerms,

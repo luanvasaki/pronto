@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { companies } from '../../db/schema';
 import { isValidCnpj, isValidCpf } from '../../shared/validation/cpf-cnpj';
+import { isReferralSource, ReferralSource } from '../../shared/validation/referral-source';
 import { HttpError } from '../../shared/errors/http-error';
 
 const BUSINESS_SEGMENTS = ['bar', 'restaurante', 'buffet', 'hotel', 'eventos', 'casa_noturna', 'outro'] as const;
@@ -29,6 +30,11 @@ export interface UpsertCompanyProfileInput {
   addressLabel: string | undefined;
   businessSegment: string | undefined;
   businessSegmentOther: string | undefined;
+  // "Como você conheceu a Pronto?" — pergunta de marketing, sempre
+  // opcional. referralSourceOther só é exigido quando
+  // referralSource === 'other'.
+  referralSource: string | undefined;
+  referralSourceOther: string | undefined;
 }
 
 export interface CompanyProfileResponse {
@@ -42,6 +48,8 @@ export interface CompanyProfileResponse {
   businessSegment: string | null;
   businessSegmentOther: string | null;
   verificationStatus: string;
+  referralSource: string | null;
+  referralSourceOther: string | null;
 }
 
 /**
@@ -102,6 +110,16 @@ export async function upsertCompanyProfile(
     throw new HttpError(400, 'Digite qual é o ramo de atividade.');
   }
 
+  if (input.referralSource && !isReferralSource(input.referralSource)) {
+    throw new HttpError(400, 'Origem inválida.');
+  }
+  const referralSource = input.referralSource as ReferralSource | undefined;
+  const referralSourceOther = input.referralSourceOther?.trim();
+  if (referralSource === 'other' && !referralSourceOther) {
+    throw new HttpError(400, 'Conte rapidamente como você conheceu a Pronto.');
+  }
+  const referralSourceOtherToSave = referralSource === 'other' ? referralSourceOther : null;
+
   if (cnpj) {
     const cnpjOwner = await db.query.companies.findFirst({ where: eq(companies.cnpj, cnpj) });
     if (cnpjOwner && cnpjOwner.ownerUserId !== ownerUserId) {
@@ -141,6 +159,8 @@ export async function upsertCompanyProfile(
       addressLabel: addressLabel || undefined,
       businessSegment,
       businessSegmentOther: businessSegmentOtherToSave,
+      referralSource,
+      referralSourceOther: referralSourceOtherToSave,
     })
     .onConflictDoUpdate({
       target: companies.ownerUserId,
@@ -153,6 +173,8 @@ export async function upsertCompanyProfile(
         addressLabel: addressLabel || null,
         businessSegment: businessSegment ?? null,
         businessSegmentOther: businessSegmentOtherToSave,
+        referralSource: referralSource ?? null,
+        referralSourceOther: referralSourceOtherToSave,
         updatedAt: new Date(),
         ...(shouldResetVerification ? { verificationStatus: 'pending' as const } : {}),
       },
@@ -174,5 +196,7 @@ export async function upsertCompanyProfile(
     businessSegment: company.businessSegment,
     businessSegmentOther: company.businessSegmentOther,
     verificationStatus: company.verificationStatus,
+    referralSource: company.referralSource,
+    referralSourceOther: company.referralSourceOther,
   };
 }

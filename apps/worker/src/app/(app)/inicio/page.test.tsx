@@ -82,6 +82,8 @@ const PROFILE = {
   rehireRate: 33,
   attendanceRate: 95,
   cancellations: 0,
+  referralSource: null,
+  referralSourceOther: null,
 };
 
 function renderPage() {

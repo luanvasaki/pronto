@@ -80,6 +80,8 @@ const PROFILE: CompanyProfileDetails = {
   workersHiredThisMonth: 3,
   topHiredWorkerName: 'Ana Souza',
   topHiredWorkerCount: 2,
+  referralSource: null,
+  referralSourceOther: null,
 };
 
 // Quarta-feira, dentro da semana e do mês usados nas vagas de teste.

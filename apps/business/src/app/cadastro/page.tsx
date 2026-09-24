@@ -1,6 +1,14 @@
 'use client';
 
-import { ApiError, extractDigits, formatCnpj, formatCpf, isValidCnpj, isValidCpf } from '@shift/shared';
+import {
+  ApiError,
+  extractDigits,
+  formatCnpj,
+  formatCpf,
+  isValidCnpj,
+  isValidCpf,
+  REFERRAL_SOURCE_OPTIONS,
+} from '@shift/shared';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { Button } from '../../components/ui/button';
@@ -18,6 +26,8 @@ export default function CadastroPage() {
   const [cnpj, setCnpj] = useState('');
   const [cpf, setCpf] = useState('');
   const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [referralSource, setReferralSource] = useState('');
+  const [referralSourceOther, setReferralSourceOther] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Perfil e documento são dois awaits sequenciais — se o documento falhar
@@ -32,7 +42,8 @@ export default function CadastroPage() {
     legalName.trim().length >= 2 &&
     tradeName.trim().length >= 2 &&
     (isIndividual ? isValidCpf(cpf) : isValidCnpj(cnpj)) &&
-    documentFile !== null;
+    documentFile !== null &&
+    (referralSource !== 'other' || referralSourceOther.trim().length > 0);
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -54,6 +65,8 @@ export default function CadastroPage() {
           personType,
           cnpj: isIndividual ? undefined : cnpj,
           cpf: isIndividual ? cpf : undefined,
+          referralSource: referralSource || undefined,
+          referralSourceOther: referralSource === 'other' ? referralSourceOther.trim() : undefined,
         });
         alreadyHadProfile = true;
         setProfileSaved(true);
@@ -160,6 +173,37 @@ export default function CadastroPage() {
             onChange={(event) => setCnpj(extractDigits(event.target.value).slice(0, 14))}
           />
         )}
+
+        <div>
+          <label htmlFor="referralSource" className="mb-1.5 block text-sm font-medium text-text-secondary">
+            Como você conheceu a Pronto? (opcional)
+          </label>
+          <select
+            id="referralSource"
+            value={referralSource}
+            onChange={(event) => setReferralSource(event.target.value)}
+            className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-base text-text transition focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
+          >
+            <option value="">Prefiro não responder</option>
+            {REFERRAL_SOURCE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {referralSource === 'other' && (
+            <div className="mt-3">
+              <Input
+                id="referralSourceOther"
+                label="Conte rapidamente onde"
+                type="text"
+                placeholder="Ex: vi um cartaz, um anúncio..."
+                value={referralSourceOther}
+                onChange={(event) => setReferralSourceOther(event.target.value)}
+              />
+            </div>
+          )}
+        </div>
 
         <div>
           <label

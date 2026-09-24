@@ -64,6 +64,8 @@ const BASE_PROFILE: CompanyProfileDetails = {
   workersHiredThisMonth: 0,
   topHiredWorkerName: null,
   topHiredWorkerCount: 0,
+  referralSource: null,
+  referralSourceOther: null,
 };
 
 function renderWithProfile(profile: CompanyProfileDetails | null) {

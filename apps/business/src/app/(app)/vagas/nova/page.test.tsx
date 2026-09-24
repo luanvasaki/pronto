@@ -69,6 +69,8 @@ const PROFILE: CompanyProfileDetails = {
   workersHiredThisMonth: 0,
   topHiredWorkerName: null,
   topHiredWorkerCount: 0,
+  referralSource: null,
+  referralSourceOther: null,
 };
 
 function renderPage(profile: CompanyProfileDetails | null = PROFILE) {

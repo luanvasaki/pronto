@@ -10,6 +10,7 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
+import { referralSourceEnum } from './referral-source';
 import { users } from './users';
 
 export const companyVerificationStatusEnum = pgEnum('company_verification_status', [
@@ -65,6 +66,10 @@ export const companies = pgTable(
     // Só preenchido quando businessSegment === 'outro' — o texto que a
     // empresa digitou pra descrever o ramo dela, já que o enum não cobre.
     businessSegmentOther: varchar('business_segment_other', { length: 255 }),
+    // "Como você conheceu a Pronto?" — pergunta de marketing, opcional
+    // (ver referral-source.ts). Mesmo enum de worker_profiles.
+    referralSource: referralSourceEnum('referral_source'),
+    referralSourceOther: varchar('referral_source_other', { length: 255 }),
     verificationStatus: companyVerificationStatusEnum('verification_status')
       .notNull()
       .default('pending'),

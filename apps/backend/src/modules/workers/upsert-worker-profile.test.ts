@@ -721,4 +721,74 @@ describe('upsertWorkerProfile', () => {
     const updated = await upsertWorkerProfile(user.id, { fullName: 'Ana Souza Lima', categoryIds: [category.id] });
     expect(updated.cnhCategory).toBe('AB');
   });
+
+  it('salva a origem informada', async () => {
+    const user = await createTestUser();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+    const result = await upsertWorkerProfile(user.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
+      referralSource: 'instagram',
+    });
+
+    expect(result.referralSource).toBe('instagram');
+    expect(result.referralSourceOther).toBeNull();
+  });
+
+  it('exige o texto livre quando a origem é "other"', async () => {
+    const user = await createTestUser();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+    await expect(
+      upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
+        birthDate: TEST_BIRTH_DATE,
+        referralSource: 'other',
+      }),
+    ).rejects.toThrow('como você conheceu a Pronto');
+  });
+
+  it('salva o texto livre quando a origem é "other"', async () => {
+    const user = await createTestUser();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+    const result = await upsertWorkerProfile(user.id, {
+      fullName: 'Ana Souza',
+      categoryIds: [category.id],
+      cpf: TEST_CPF,
+      homeAddressFull: TEST_ADDRESS,
+      phone: TEST_WORKER_PHONE,
+      birthDate: TEST_BIRTH_DATE,
+      referralSource: 'other',
+      referralSourceOther: 'Panfleto na rua',
+    });
+
+    expect(result.referralSourceOther).toBe('Panfleto na rua');
+  });
+
+  it('rejeita origem inválida', async () => {
+    const user = await createTestUser();
+    const [category] = await db.insert(skillCategories).values({ name: CATEGORY_A }).returning();
+
+    await expect(
+      upsertWorkerProfile(user.id, {
+        fullName: 'Ana Souza',
+        categoryIds: [category.id],
+        cpf: TEST_CPF,
+        homeAddressFull: TEST_ADDRESS,
+        phone: TEST_WORKER_PHONE,
+        birthDate: TEST_BIRTH_DATE,
+        referralSource: 'unicornio',
+      }),
+    ).rejects.toThrow('Origem inválida');
+  });
 });
