@@ -7,6 +7,7 @@ import { Button } from '../../../components/ui/button';
 import { ConsentDocumentReader } from '../../../components/ui/consent-document-reader';
 import { Logo } from '../../../components/ui/logo';
 import { SignupProgress } from '../../../components/ui/signup-progress';
+import { getWorkerProfile } from '../../../lib/worker-profile-api';
 
 /**
  * Tela cheia mostrada uma vez, logo depois de criar a conta (e também
@@ -36,7 +37,27 @@ export default function CadastroTermosPage() {
     setIsSubmitting(true);
     try {
       await acceptTerms(document.version);
-      router.push('/cadastro');
+
+      // Quem chega aqui pode ser um cadastro novo (perfil ainda não
+      // existe) ou alguém que já tinha tudo pronto e só foi pego pelo
+      // gate de (app)/layout.tsx por causa de uma versão de termo nova
+      // — nesse segundo caso, mandar de volta pra /cadastro (formulário
+      // em branco) faria a pessoa "perder" um cadastro que já tinha
+      // preenchido. Rechecar o estado real do perfil antes de decidir.
+      try {
+        const profile = await getWorkerProfile();
+        if (!profile.hasDocument || !profile.hasSelfie || (profile.isMinor && !profile.hasGuardianDocument)) {
+          router.push('/cadastro/documento');
+        } else {
+          router.push('/inicio');
+        }
+      } catch (profileErr) {
+        if (profileErr instanceof ApiError && profileErr.status === 404) {
+          router.push('/cadastro');
+        } else {
+          router.push('/inicio');
+        }
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível registrar seu aceite.');
       setIsSubmitting(false);

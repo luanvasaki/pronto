@@ -109,6 +109,26 @@ export default function InicioPage() {
     void load();
   }, []);
 
+  // Mesma lógica de `load()` acima, duplicada de propósito: extrair um
+  // helper compartilhado e chamá-lo tanto no efeito de montagem quanto
+  // aqui dispara o lint `react-hooks/set-state-in-effect` (ver mesmo
+  // padrão em admin/administradores/page.tsx), porque o linter não
+  // consegue provar que a chamada indireta só reseta estado depois de
+  // um await.
+  async function handleRetryLoadJobs(): Promise<void> {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [jobsResult, categoriesResult] = await Promise.all([fetchNearbyJobs(), listSkillCategories()]);
+      setJobs(jobsResult.jobs);
+      setCategoryNames(Object.fromEntries(categoriesResult.categories.map((c) => [c.id, c.name])));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível carregar as vagas.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -245,8 +265,11 @@ export default function InicioPage() {
 
   if (error) {
     return (
-      <main className="flex flex-1 items-center justify-center px-4 text-center">
-        <p className="text-sm text-danger">{error}</p>
+      <main className="flex flex-1 flex-col items-center justify-center gap-4 px-4 text-center">
+        <p className="text-sm text-text">{error}</p>
+        <Button type="button" variant="outlined" onClick={handleRetryLoadJobs}>
+          Tentar novamente
+        </Button>
       </main>
     );
   }
